@@ -1,0 +1,489 @@
+.modalOverlay {
+  position: fixed; /* Para cobrir a tela inteira */
+  inset: 0; /* Atalho para top: 0; right: 0; bottom: 0; left: 0; */
+  background-color: rgba(0, 0, 0, 0.65); /* Fundo escuro semi-transparente */
+  display: flex;
+  align-items: center; /* Centraliza verticalmente */
+  justify-content: center; /* Centraliza horizontalmente */
+  padding: 1rem; /* Espaçamento das bordas da tela */
+  z-index: 1000; /* Para ficar acima de outros conteúdos */
+  opacity: 0; /* Começa invisível para animação */
+  animation: fadeInOverlay 0.3s ease-out forwards;
+  width: 100%;
+}
+
+.modalCard {
+  background-color: #ffffff; /* Fundo branco para o card */
+  padding: 1.5rem 2rem; /* Padding interno (24px vertical, 32px horizontal) */
+  border-radius: 0.75rem; /* Bordas arredondadas (12px) */
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); /* Sombra sutil */
+  max-width: 30rem; /* Largura máxima do modal (aprox. 672px) */
+  width: 100%; /* Responsivo */
+  position: relative; /* Para o botão de fechar absoluto */
+  max-height: 90vh; /* Altura máxima, permite scroll interno se necessário */
+  overflow-y: auto; /* Adiciona scroll se o conteúdo exceder max-height */
+  transform: scale(0.95) translateY(10px); /* Posição inicial para animação */
+  opacity: 0; /* Começa invisível para animação */
+  animation: slideInModal 0.3s 0.1s ease-out forwards; /* Delay para overlay aparecer primeiro */
+  align-items: center;
+}
+
+.closeButton {
+  position: absolute;
+  top: 0.75rem; /* 12px */
+  right: 0.75rem; /* 12px */
+  color: #9ca3af; /* gray-400 */
+  background: none;
+  border: none;
+  padding: 0.25rem; /* Área de clique pequena */
+  cursor: pointer;
+  transition: color 0.2s ease-in-out;
+  /* Este .closeButton é para o 'X' superior. Se você tiver um SVG dentro, precisará de estilos para o SVG, como abaixo */
+  font-size: 1.75rem; /* Tamanho do 'X' se for texto */
+  line-height: 1;
+}
+/* Se você usa um SVG para o botão de fechar, descomente e ajuste:
+.closeButton svg {
+  width: 1.5rem; 
+  height: 1.5rem; 
+}
+*/
+.closeButton:hover {
+  color: #374151; /* gray-700 */
+}
+
+.closeButtonBottom { /* Para o botão "Fechar" na parte inferior */
+  display: flex;
+  align-items:center; 
+  justify-content: center; /* Centraliza o texto/conteúdo do botão */
+  width: auto; /* Ajusta à largura do conteúdo + padding */
+  min-width: 6rem; /* Largura mínima */
+  padding: 0.75rem 1.5rem; /* Ajuste no padding para melhor aparência */
+  margin-top: 1.5rem; /* Mais espaço acima */
+  margin-left: auto; /* Alinha à direita se o container pai permitir */
+  margin-right: auto; /* Alinha à esquerda/centro se o container pai permitir */
+  background-color: #e5e7eb; /* gray-200 (cor mais neutra para fechar) */
+  color: #1f2937; /* gray-800 */
+  border-radius: 0.5rem; /* 8px */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid transparent; /* Para o focus state */
+  font-weight: 500; /* medium */
+  cursor: pointer;
+}
+.closeButtonBottom:hover {
+  background-color: #d1d5db; /* gray-300 */
+}
+
+.exerciseTitle {
+  font-size: 1.25rem; /* Entre text-2xl e text-3xl (28px) */
+  font-weight: 600; /* bold */
+  color: #1f2937; /* gray-800 */
+  margin-bottom: 0.5rem; /* 24px */
+  padding-right: auto; /* Espaço para o botão de fechar não sobrepor */
+  align-items: center;
+}
+
+.contentLayout { /* NOVO: Container flex para thumbnail e detalhes */
+  display: flex;
+  flex-direction:column; /* Empilhado por padrão (mobile-first) */
+  gap: 1rem; /* Espaço entre thumbnail e detalhes (24px) */
+  width: 100%;
+}
+
+/* Em telas maiores, layout lado a lado */
+/*@media (min-width: 768px) { /* md breakpoint (768px) */
+  /*.contentLayout {
+    flex-direction: row; /* Lado a lado */
+  /*}
+  /*.detailsSection{
+    flex-direction: row; /* Alinhar lado a lado em telas maiores */
+    /*align-items: center; /* Alinhar verticalmente ao centro em telas maiores */
+  /*}*/
+/*}*/
+
+.thumbnailSection {
+  flex-shrink: 0; /* Impede que a thumbnail encolha demais */
+  width: 90%;
+}
+
+/* Em telas maiores, a thumbnail ocupa uma parte e os detalhes outra */
+/*@media (min-width: 768px) {
+  .thumbnailSection {
+    width: 90%; /* Ajuste a porcentagem conforme desejado */
+  /*}
+  .detailsSection {
+    width: 55%; /* O restante do espaço */
+  /*}
+}*/
+
+.thumbnailLink {
+  display: block;
+  border-radius: 0.5rem; /* 8px */
+  overflow: hidden; /* Para o arredondamento da imagem funcionar */
+  border: 1px solid #e5e7eb; /* gray-200, borda sutil */
+  transition: box-shadow 0.2s ease-in-out;
+  align-items: center;
+}
+.thumbnailLink:hover {
+  box-shadow: 0 0 0 3px #6366f1; /* indigo-500, efeito de foco/hover */
+}
+.thumbnailLink:focus, .thumbnailLink:focus-visible {
+  outline: 2px solid #6366f1; /* Exemplo de anel de foco para acessibilidade */
+  outline-offset: 2px;
+}
+
+
+.thumbnailImage {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9; /* Proporção da imagem */
+  object-fit: cover; /* Garante que a imagem cubra a área sem distorcer */
+  display: block; /* Remove espaço extra abaixo da imagem */
+  align-items: center;
+}
+
+.detailsSection {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    font-size: 0.95rem; /* Tamanho de fonte base para os detalhes */
+    color: #374151; /* gray-700 */
+    width: 100%;
+    gap: 0.5rem;
+}
+.detailsSection p {
+  margin-bottom: 0.2rem; /* Espaçamento entre os parágrafos de detalhes */
+  line-height: 1;
+}
+.detailsSection strong {
+  color: #111827; /* gray-900, um pouco mais escuro para os rótulos */
+  font-weight: 300; /* semibold */
+}
+
+.detailRow strong{
+    font-weight: bold;
+    color: #1f2937;
+    display: block; /* O label ocupa a largura total da linha */
+    font-size: 300;
+}
+.repet{
+    font-weight: bold;
+    color: #1f2937;
+    display: flex;
+    padding-right: 3rem;
+    flex-direction: column; /* O label ocupa a largura total da linha */
+    font-size: 300;
+}
+
+.valueBox {
+  border: 1px solid hsl(46, 81%, 61%); /* Borda cinza clara */
+  border-radius: 1rem; /* Bordas arredondadas */
+  padding: 0.5rem 0.5rem; /* Espaçamento interno */
+  background-color: #f9fafb; /* Fundo cinza bem claro */
+  font-size: 1rem;
+  color: #0561f4;
+  display: flex;
+  gap: 0.3rem; /* Espaçamento entre label e valor */
+  align-items:center; /* Alinhar label e valor verticalmente */
+  margin-bottom: 0.25rem; /* Espaçamento abaixo de cada caixa */
+  width: 110%;
+  height: 1.8rem;
+}
+
+.valueBox strong {
+  font-weight: 600;
+  color: #1f2937;
+}
+.valueBox span{
+    font-weight: 300;
+    font-size: 1rem;
+    color: rgb(1, 1, 1);
+}
+
+.editIcon {
+  width: 1rem; /* Ajuste o tamanho conforme necessário */
+  height: 1rem;
+  color: #a1a1aa; /* Cor do ícone */
+  cursor: pointer; /* Indica que é interativo (opcional) */
+}
+
+.detailRow {
+  display: flex;
+  gap: 0.2rem; /* Espaçamento entre as caixas de Repetições e Peso */
+  align-items: baseline; /* Alinhar os textos pela linha de base */
+  margin-bottom: 0.5rem;
+  flex-direction: row;
+  width: 100%; /* Alinhar verticalmente em telas menores */
+}
+.timedInfo {
+  margin-top: 0.25rem;
+  font-size: 0.75rem; /* text-xs */
+  font-weight: 600; /* semibold */
+  background-color: #fef3c7; /* yellow-100 */
+  color: #92400e; /* yellow-700 */
+  padding: 0.25rem 0.5rem; /* py-0.5 px-2 */
+  border-radius: 0.25rem; /* rounded-sm */
+  display: inline-block;
+}
+
+
+.watchVideoLink { /* Para o link "Assistir exemplo" quando não há thumbnail */
+  margin-top: 0.5rem;
+  color: #4f46e5; /* indigo-600 */
+  font-weight: 500; /* medium */
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+.watchVideoLink:hover {
+  color: #3730a3; /* indigo-800 */
+  text-decoration: underline;
+}
+
+/* --- ESTILOS ADICIONADOS PARA NOTESSECTION --- */
+.notesSection {
+  margin-top: 1rem; /* Espaçamento acima da seção de anotações (16px) */
+  padding-top: 0.2rem; /* Espaçamento interno no topo (16px) */
+  border-top: 1px solid #e5e7eb; /* Borda superior sutil (gray-200) */
+  font-size: 0.90rem; /* Um pouco menor que os detalhes principais, ajuste conforme gosto */
+  color: #4b5563; /* gray-600, um tom ligeiramente mais claro */
+  line-height: 1.5;
+  font-size: 0.7rem;
+}
+
+.notesSection strong { /* Para o título "Anotações:" se você usar <strong> */
+  display: block; /* Faz o strong ocupar a linha inteira */
+  margin-bottom: 0.5rem; /* Espaço abaixo do título "Anotações:" (8px) */
+  color: #1f2937; /* gray-800, mesma cor do .exerciseTitle para consistência */
+  font-weight: 600; /* semibold */
+}
+
+.notesSection p { /* Para o parágrafo que contém o texto das anotações */
+  margin-bottom: 0.25rem; /* Menor espaçamento entre parágrafos de anotações, se houver múltiplos */
+  /* Herda a cor de .notesSection */
+}
+.userAnnotationsSection{
+    background-color: hsl(220, 100%, 98%);
+    border-radius: 0.5rem;
+    border-color: hsl(46, 81%, 61%) ;
+    width: 100%;
+}
+
+.userAnnotationsInput{
+    background-color: hsl(220, 100%, 98%);
+    border-radius: 0.5rem;
+    border-color: hsl(46, 81%, 61%) ;
+    width: 100%;
+}
+.saveAnnotationsButton{
+    border-color: hsl(46, 81%, 61%) ;
+    border-radius: 0.5rem;
+    align-items: center;
+    
+
+}
+
+.restTimerSection { /* Para o link "Assistir vídeo completo" abaixo da thumbnail */
+  margin-top: 0.5rem; /* 8px */
+  font-size: 0.875rem; /* text-sm */
+  color: #4f46e5; /* indigo-600 */
+  display: inline-block;
+  text-decoration: none;
+}
+.timerDisplay{ /* Para o link "Assistir vídeo completo" abaixo da thumbnail */
+  margin-top: 0.5rem; /* 8px */
+  font-size: 0.875rem; /* text-sm */
+  color: #4f46e5; /* indigo-600 */
+  display: inline-block;
+  text-decoration: none;
+}
+.timerControls{ /* Para o link "Assistir vídeo completo" abaixo da thumbnail */
+  margin-top: 0.5rem; /* 8px */
+  font-size: 0.875rem; /* text-sm */
+  color: #4f46e5; /* indigo-600 */
+  display: inline-block;
+  text-decoration: none;
+}
+.timerButton{ /* Para o link "Assistir vídeo completo" abaixo da thumbnail */
+  margin-top: 0.5rem; /* 8px */
+  font-size: 0.875rem; /* text-sm */
+  color: #4f46e5; /* indigo-600 */
+  display: inline-block;
+  text-decoration: none;
+}
+.timerButton:hover{ /* Para o link "Assistir vídeo completo" abaixo da thumbnail */
+  margin-top: 0.5rem; /* 8px */
+  font-size: 0.875rem; /* text-sm */
+  color: #4f46e5; /* indigo-600 */
+  display: inline-block;
+  text-decoration: none;
+}
+
+/* Se você usa um SVG no watchVideoLink, descomente e ajuste:
+.watchVideoLink svg {
+  width: 1rem; 
+  height: 1rem; 
+  margin-left: 0.375rem; 
+}
+*/
+
+
+/* Removido o .closeButtonBottom button aninhado, pois o .closeButtonBottom é o próprio botão */
+
+
+/*
+  Comentários sobre .closeButton (o 'X' no canto) e .closeButtonTopRight:
+  O .closeButton que você tinha mais abaixo parecia ser uma redefinição ou uma alternativa.
+  O primeiro .closeButton já define position:absolute.
+  A classe .closeButtonTopRight não estava definida, mas o primeiro .closeButton já faz o posicionamento top/right.
+  Se você pretende ter um estilo base .closeButton e um modificador de posicionamento,
+  seria algo como:
+  .closeButton { ... estilos base ... }
+  .closeButtonTopRight { position: absolute; top: 10px; right: 15px; }
+  E no HTML: className={`${styles.closeButton} ${styles.closeButtonTopRight}`}
+
+  No seu código atual, o primeiro .closeButton já inclui o posicionamento.
+  Para o botão de fechar do modal de vídeo, você tem .videoModalCloseButton que também é absoluto.
+  Ajustei o primeiro .closeButton para ter um tamanho de fonte e line-height para o 'X' textual.
+*/
+
+/* Overlay para o Modal de Vídeo */
+.videoModalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.75); /* Fundo escuro semi-transparente, um pouco mais escuro */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050; 
+  padding: 1rem;
+  opacity: 0;
+  animation: fadeInOverlay 0.3s ease-out forwards;
+}
+
+/* Card/Contêiner do Modal de Vídeo */
+.videoModalCard {
+  background-color: #000; /* Fundo preto para foco no vídeo */
+  padding: 0; /* Sem padding se o vídeo ocupa tudo */
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  position: relative;
+  width: 90%;
+  max-width: 800px;
+  opacity: 0;
+  animation: slideInModal 0.3s 0.1s ease-out forwards;
+}
+
+/* Botão de fechar para o Modal de Vídeo */
+.videoModalCloseButton {
+  position: absolute;
+  top: -10px; /* Um pouco para fora para não cobrir o vídeo */
+  right: -10px; /* Um pouco para fora */
+  font-size: 1.5rem;
+  background-color: white;
+  color: #333;
+  border: none;
+  border-radius: 50%; /* Botão redondo */
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  z-index: 10; /* Acima do iframe */
+}
+
+.videoModalCloseButton:hover {
+  background-color: #f0f0f0;
+  color: #000;
+}
+
+/* Contêiner para o iframe para manter a proporção */
+.videoPlayerContainer {
+  position: relative;
+  padding-bottom: 56.25%; /* Proporção 16:9 (altura / largura) */
+  height: 0;
+  overflow: hidden;
+  border-radius: 8px; /* Arredonda o container do vídeo também */
+}
+
+.videoIframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none; /* Remove borda do iframe */
+}
+
+
+/* Animações */
+@keyframes fadeInOverlay {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slideInModal {
+  from { opacity: 0; transform: scale(0.95) translateY(20px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Estilos para o cronômetro (exemplo, adicione ao final ou onde preferir) */
+.restTimerSection {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid #e5e7eb; /* Mesma borda que .notesSection */
+
+}
+
+.timerDisplay {
+    font-size: 2em; /* Tamanho maior para o display do cronômetro */
+    font-weight: bold;
+    color: #1f2937; /* gray-800 */
+    text-align: center;
+    margin: 0.5rem 0 1rem 0; /* Espaçamento vertical e abaixo */
+    padding: 0.5rem;
+    background-color: #f3f4f6; /* gray-100, fundo sutil */
+    border-radius: 0.375rem; /* rounded-md */
+}
+
+.timerControls {
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem; /* Espaço entre os botões */
+}
+
+.timerButton {
+    padding: 0.5rem 1rem; /* py-2 px-4 */
+    border: 1px solid #d1d5db; /* gray-300 */
+    background-color: #ffffff; /* white */
+    color: #374151; /* gray-700 */
+    cursor: pointer;
+    border-radius: 0.375rem; /* rounded-md */
+    font-weight: 500; /* medium */
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.timerButton:hover {
+    background-color: #f9fafb; /* gray-50 */
+    border-color: #9ca3af; /* gray-400 */
+}
+
+
+
+
+/*@media (min-width: 768px) {
+  .detailRow {
+    flex-direction: row; /* Voltar a alinhar lado a lado em telas maiores */
+   /* align-items: center; /* Alinhar verticalmente ao centro em telas maiores */
+ /* }
+}*/
+
+
+

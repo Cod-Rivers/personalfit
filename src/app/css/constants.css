@@ -1,0 +1,10 @@
+:root {
+    --color-gold: #cab543;
+    --color-dark-gray: #A19F9F;
+    --color-black: #000;
+    --color-white: #fff;
+    --color-light-gray: #D9D9D9;
+    --color-bg-dark: #222;
+
+    --bg-image-url: url('/assets/images/main-background.png');
+}

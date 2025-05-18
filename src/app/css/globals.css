@@ -1,0 +1,45 @@
+@import url(./constants.css);
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.main_back {
+    background: var(--bg-image-url) no-repeat bottom center fixed;
+    background-color: var(--color-bg-dark);
+    background-size: cover;
+
+    color: var(--color-white);
+}
+
+.bg-gold {
+    background-color: var(--color-gold);
+    color: var(--color-white) !important;
+}
+
+.btn-outline-gold {
+    background-color: transparent;
+    color: var(--color-gold);
+    border: 1px solid var(--color-gold);
+}
+
+.btn-gold {
+    background-color: var(--color-gold);
+    color: var(--color-white);
+    font-weight: 900;
+}
+
+.btn-gold:hover {
+    background-color: var(--color-gold);
+}
+
+.btn-gold:disabled {
+    background-color: var(--color-gold);
+    opacity: 0.5;
+}
+
+.text-gold {
+    color: var(--color-gold);
+}

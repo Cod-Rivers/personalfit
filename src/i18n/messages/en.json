@@ -1,0 +1,23 @@
+{
+  "LoginPage": {
+    "title": "Olá, faça o login",
+    "usermameInput": "Email",
+    "passwordInput": "Senha",
+    "btn": {
+        "login": "Login"
+    }
+  },
+  "SignUpPage": {
+    "title": "Bem vindo ao teamdbomfim",
+    "nameInput": "Nome",
+    "lastNameInput": "Sobrenome",
+    "emailInput": "Email",
+    "phoneInput": "Telefone",
+    "cpfInput": "CPF",
+    "passwordInput": "Senha",
+    "passwordConfirmInput": "Confirme a senha",
+    "btn": {
+        "signup": "Cadastrar"
+    }
+  }
+}

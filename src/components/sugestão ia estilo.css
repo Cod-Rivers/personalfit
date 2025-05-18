@@ -1,0 +1,185 @@
+/* src/components/ExerciseDetailCard.module.css */
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1000;
+  opacity: 0;
+  animation: fadeInOverlay 0.3s ease-out forwards;
+}
+
+.modalCard {
+  background-color: #ffffff;
+  padding: 1.5rem 2rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  max-width: 35rem;
+  width: 90%;
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+  transform: scale(0.95) translateY(10px);
+  opacity: 0;
+  animation: slideInModal 0.3s 0.1s ease-out forwards;
+  align-items: flex-start; /* Alinhar os itens ao início */
+}
+
+.closeButton {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  color: #9ca3af;
+  background: none;
+  border: none;
+  padding: 0.25rem;
+  cursor: pointer;
+  transition: color 0.2s ease-in-out;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+.closeButton:hover {
+  color: #374151;
+}
+
+.exerciseTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 1rem;
+  padding-right: 2rem;
+}
+
+.contentLayout {
+  display: flex;
+  flex-direction: column; /* Manter a direção como coluna */
+  gap: 1rem;
+  width: 100%;
+}
+
+.thumbnailSection {
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.thumbnailLink {
+  display: block;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  transition: box-shadow 0.2s ease-in-out;
+}
+.thumbnailLink:hover {
+  box-shadow: 0 0 0 3px #6366f1;
+}
+.thumbnailLink:focus, .thumbnailLink:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
+.thumbnailImage {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  display: block;
+}
+
+.detailsSection {
+  font-size: 0.9rem;
+  color: #374151;
+  display: flex;
+  flex-direction: column; /* Manter a direção como coluna */
+  gap: 0.5rem; /* Reduzir o espaçamento entre os itens de detalhe */
+}
+
+.detailItem {
+  display: flex;
+  flex-direction: column; /* Organizar label e valor em coluna */
+  margin-bottom: 0.5rem; /* Espaçamento entre os itens de detalhe */
+}
+
+.detailItem strong {
+  display: block; /* Label acima do valor */
+  color: #111827;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.detailsSection p {
+  margin-bottom: 0.25rem; /* Menor espaçamento padrão */
+  line-height: 1.5;
+}
+
+/* --- ESTILOS PARA NOTESSECTION --- */
+.notesSection {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+  font-size: 0.9rem;
+  color: #4b5563;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.notesSection strong {
+  display: block;
+  color: #1f2937;
+  font-weight: 600;
+  margin-bottom: 0.25rem; /* Adicionar um pouco de espaço abaixo do título */
+}
+
+.userAnnotationsSection {
+  margin-top: 0.75rem;
+}
+
+.userAnnotationsSection strong {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.userAnnotationsInput {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-bottom: 0.75rem; /* Adicionar espaço acima do botão Salvar */
+}
+
+.saveAnnotationsButton {
+  background-color: #facc15; /* Cor amarela/dourada como na imagem */
+  color: #374151; /* Texto escuro */
+  padding: 0.6rem 1rem;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  align-self: flex-end; /* Alinhar o botão à direita */
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  transition: background-color 0.2s ease-in-out;
+}
+
+.saveAnnotationsButton:hover {
+  background-color: #eab308; /* Tom mais escuro no hover */
+}
+
+.timedInfo {
+  margin-top: 0.5rem; /* Mais espaço acima do tempo */
+  font-size: 0.75rem;
+  font-weight: 600;
+  background-color: #fef3c7;
+  color: #92400e;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  display: inline-block;
