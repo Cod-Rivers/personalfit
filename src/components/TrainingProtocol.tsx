@@ -4,12 +4,12 @@
 import React from 'react';
 import Link from 'next/link'; // Para navegação semântica
 // import { useRouter } from 'next/navigation'; // Alternativa para navegação programática
-import { TrainingProtocolListProps } from './types'; // Ajuste o caminho
+import { TrainingProtocolProps } from './types'; // Ajuste o caminho
 import TrainingCard from './TrainingCard'; // Seu componente TrainingCard
-import styles from './TrainingProtocol.module.css'; // Se estiver usando CSS Modules
+import styles from './TrainingProtocolList.module.css'; // Se estiver usando CSS Modules
 import { BsClipboardData } from 'react-icons/bs';
 
-const TrainingProtocolList: React.FC<TrainingProtocolListProps> = ({
+const TrainingProtocol: React.FC<TrainingProtocolProps> = ({
     protocolId, // ID do protocolo atual (da URL da página anterior)
     protocolNumber,
     trainings, // Agora é TrainingCardProps[] (id e label)
@@ -72,4 +72,4 @@ const TrainingProtocolList: React.FC<TrainingProtocolListProps> = ({
     );
 };
 
-export default TrainingProtocolList;
+export default TrainingProtocol;

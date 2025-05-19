@@ -8,7 +8,7 @@ import { ExerciseLog } from '../../../../components/types'; // Ajuste o caminho!
 import ExerciseDetailCard from '../../../../components/ExerciseDetailCard'; // Ajuste o caminho!
 import styles from './TrainingPage.module.css';
 import weight from './../../../../../public/assets/icons/weight-icon.png';
-
+//import Header from '@/components/organism/Header';
 // Parâmetros da rota (ex: { id: string; trainingId: string; })
 interface TrainingPageParams {
     id: string; // Representa o protocolId
@@ -72,6 +72,8 @@ export default function TrainingExercisesPage({
     }
 
     return (
+        /* <>
+            <Header />*/
         <div className="container mx-auto p-4 sm:p-6 bg-gray-50 min-h-screen relative">
             {' '}
             {/* Adicionado relative para o modal */}
@@ -150,5 +152,6 @@ export default function TrainingExercisesPage({
                 />
             )}
         </div>
+        /* </>*/
     );
 }

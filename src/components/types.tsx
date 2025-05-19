@@ -36,6 +36,15 @@ export interface TrainingProtocolListProps {
     // allTrainingProgress: TrainingProgress[];
 }
 
+export interface TrainingProtocolProps {
+    protocolId: string; // ID do protocolo vindo da URL
+    protocolNumber: number;
+    trainings: TrainingCardProps[]; // Lista simplificada para os cards
+    // Se quiser passar todos os dados de 'trainings_progress' para evitar refetch,
+    // pode mudar 'trainings' para ser do tipo TrainingProgress[]
+    // allTrainingProgress: TrainingProgress[];
+}
+
 // Props para a página de detalhes do exercício
 export interface ExerciseDetailPageProps {
     params: {

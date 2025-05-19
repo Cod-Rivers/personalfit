@@ -238,18 +238,8 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
         <>
             {/* Overlay e Card Principal do Exercício */}
             <div className={styles.modalOverlay}>
-                <div className={styles.modalCard}>
-                    {onClose && (
-                        <button
-                            onClick={onClose}
-                            className={`${styles.closeButton || styles.closeButtonBottom} ${styles.closeButtonTopRight}`}
-                            aria-label="Fechar detalhes do exercício"
-                        >
-                            ×
-                        </button>
-                    )}
-                    <h2 className={styles.exerciseTitle}>{exercise.name}</h2>
-                    <div className={styles.contentLayout}>
+                <div>
+                    <div>
                         {exercise.video_thumb && (
                             <div className={styles.thumbnailSection}>
                                 <div
@@ -275,157 +265,176 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                 </div>
                             </div>
                         )}
-                        <div className={styles.detailsSection}>
-                            <div className={styles.detailRow}>
-                                <div className={styles.repet}>
-                                    <strong>Repetições:</strong>{' '}
-                                    <div className={styles.valueBox}>
-                                        <span>
-                                            {exercise.series.join(' - ')}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div>
-                                    <strong>Peso (KG):</strong>{' '}
-                                    {isWeightEditing ? (
-                                        <input
-                                            type="number"
-                                            className={styles.valueBox}
-                                            value={weightValue}
-                                            onChange={(e) =>
-                                                setWeightValue(e.target.value)
-                                            }
-                                            onBlur={handleWeightEditEnd} // Salvar ao perder o foco
-                                            onKeyDown={handleWeightKeyDown} // Salvar ao pressionar Enter
-                                        />
-                                    ) : (
-                                        <span
-                                            className={styles.valueBox}
-                                            onClick={handleWeightEditStart}
-                                        >
-                                            {weightValue !== ''
-                                                ? `${weightValue} kg`
-                                                : 'Peso'}
-                                            {/* Renderizar o ícone de edição aqui */}
-                                            <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                viewBox="0 0 24 24"
-                                                width="1em"
-                                                height="1em"
-                                                fill="currentColor"
-                                                className={styles.editIcon}
-                                            >
-                                                <path
-                                                    fillRule="evenodd"
-                                                    clipRule="evenodd"
-                                                    d="M15.023 6.27l1.707 1.707-8.486 8.485-1.707-1.707 8.486-8.485zM13.5 4a1.5 1.5 0 011.06.44l6 6a1.5 1.5 0 010 2.12l-6 6a1.5 1.5 0 01-2.12 0l-6-6a1.5 1.5 0 010-2.12l6-6A1.5 1.5 0 0113.5 4zm-1.06 2.44l-6 6a.5.5 0 00.707.707L13.5 7.14a.5.5 0 00-.707-.707z"
-                                                />
-                                            </svg>
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-                            <div className={styles.detailRow}>
-                                <p>
-                                    <strong>Variações:</strong>{' '}
-                                    {exercise.variations || 'N/A'}
-                                </p>
-                            </div>
-                            {exercise.timed && (
-                                <p className={styles.timedInfo}>
-                                    Controlado por tempo
-                                </p>
-                            )}
-                            {exercise.video_url && !exercise.video_thumb && (
-                                <p>
-                                    <strong>Vídeo:</strong>{' '}
-                                    <a
-                                        href="#" // Poderia também abrir o player interno
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            handleOpenVideoPlayer();
-                                        }}
-                                        className={styles.watchVideoLink}
-                                    >
-                                        Assistir exemplo
-                                    </a>
-                                </p>
-                            )}
-                            {/* Observações do Exercício (renomeado de Anotações) */}
-                            {exercise.notes && (
-                                <div className={styles.notesSection}>
-                                    <p>
-                                        <strong>Observações:</strong>
-                                    </p>
-                                    <p>{exercise.notes}</p>
-                                </div>
-                            )}
-                            {/* Campo de Anotações do Usuário */}
-                            <div className={styles.userAnnotationsSection}>
-                                <p>
-                                    <strong>Minhas Anotações:</strong>
-                                </p>
-                                <textarea
-                                    value={userAnnotations}
-                                    onChange={handleAnnotationsChange}
-                                    className={styles.userAnnotationsInput}
-                                    placeholder="Adicione suas anotações aqui..."
-                                />
-                                <button
-                                    onClick={handleSaveAnnotations}
-                                    className={styles.saveAnnotationsButton}
-                                >
-                                    Salvar Anotações
-                                </button>
-                            </div>
-                            {/* Tempo de Descanso e Cronômetro */}
-                            {exercise.restTime > 0 && (
-                                <div className={styles.restTimerSection}>
-                                    <p>
-                                        <strong>Tempo de Descanso:</strong>{' '}
-                                        {formatTime(exercise.restTime)}
-                                    </p>
-                                    <div className={styles.timerDisplay}>
-                                        {formatTime(timerValue)}
-                                    </div>
-                                    <div className={styles.timerControls}>
-                                        {!isTimerRunning && timerValue > 0 && (
-                                            <button
-                                                onClick={handleStartTimer}
-                                                className={styles.timerButton}
-                                            >
-                                                Iniciar
-                                            </button>
-                                        )}
-                                        {isTimerRunning && (
-                                            <button
-                                                onClick={handlePauseTimer}
-                                                className={styles.timerButton}
-                                            >
-                                                Pausar
-                                            </button>
-                                        )}
-                                        <button
-                                            onClick={handleResetTimer}
-                                            className={styles.timerButton}
-                                        >
-                                            Resetar
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
                     </div>
-                    {onClose && (
-                        <div className="mt-6 text-right">
+                    <div className={styles.modalCard}>
+                        {onClose && (
                             <button
                                 onClick={onClose}
-                                className={styles.closeButtonBottom}
+                                className={`${styles.closeButton || styles.closeButtonBottom} ${styles.closeButtonTopRight}`}
+                                aria-label="Fechar detalhes do exercício"
                             >
-                                Fechar
+                                ×
                             </button>
+                        )}
+                        <h2 className={styles.exerciseTitle}>
+                            {exercise.name}
+                        </h2>
+                        <div className={styles.contentLayout}>
+                            <div className={styles.detailsSection}>
+                                <div className={styles.detailRow}>
+                                    <div className={styles.repet}>
+                                        <strong>Repetições:</strong>{' '}
+                                        <div className={styles.valueBox}>
+                                            <span>
+                                                {exercise.series.join(' - ')}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <strong>Peso (KG):</strong>{' '}
+                                        {isWeightEditing ? (
+                                            <input
+                                                type="number"
+                                                className={styles.valueBox}
+                                                value={weightValue}
+                                                onChange={(e) =>
+                                                    setWeightValue(
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                onBlur={handleWeightEditEnd} // Salvar ao perder o foco
+                                                onKeyDown={handleWeightKeyDown} // Salvar ao pressionar Enter
+                                            />
+                                        ) : (
+                                            <span
+                                                className={styles.valueBox}
+                                                onClick={handleWeightEditStart}
+                                            >
+                                                {weightValue !== ''
+                                                    ? `${weightValue} kg`
+                                                    : 'Peso'}
+                                                {/* Renderizar o ícone de edição aqui */}
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    viewBox="0 0 24 24"
+                                                    width="1em"
+                                                    height="1em"
+                                                    fill="currentColor"
+                                                    className={styles.editIcon}
+                                                >
+                                                    <path
+                                                        fillRule="evenodd"
+                                                        clipRule="evenodd"
+                                                        d="M15.023 6.27l1.707 1.707-8.486 8.485-1.707-1.707 8.486-8.485zM13.5 4a1.5 1.5 0 011.06.44l6 6a1.5 1.5 0 010 2.12l-6 6a1.5 1.5 0 01-2.12 0l-6-6a1.5 1.5 0 010-2.12l6-6A1.5 1.5 0 0113.5 4zm-1.06 2.44l-6 6a.5.5 0 00.707.707L13.5 7.14a.5.5 0 00-.707-.707z"
+                                                    />
+                                                </svg>
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className={styles.detailRow}>
+                                    <p>
+                                        <strong>Variações:</strong>{' '}
+                                        {exercise.variations || 'N/A'}
+                                    </p>
+                                </div>
+                                {exercise.timed && (
+                                    <p className={styles.timedInfo}>
+                                        Controlado por tempo
+                                    </p>
+                                )}
+                                {exercise.video_url &&
+                                    !exercise.video_thumb && (
+                                        <p>
+                                            <strong>Vídeo:</strong>{' '}
+                                            <a
+                                                href="#" // Poderia também abrir o player interno
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    handleOpenVideoPlayer();
+                                                }}
+                                                className={
+                                                    styles.watchVideoLink
+                                                }
+                                            >
+                                                Assistir exemplo
+                                            </a>
+                                        </p>
+                                    )}
+                                {/* Observações do Exercício (renomeado de Anotações) */}
+                                {exercise.notes && (
+                                    <div className={styles.notesSection}>
+                                        <p>
+                                            <strong>Observações:</strong>
+                                        </p>
+                                        <p>{exercise.notes}</p>
+                                    </div>
+                                )}
+                                {/* Campo de Anotações do Usuário */}
+                                <div className={styles.userAnnotationsSection}>
+                                    <p>
+                                        <strong>Minhas Anotações:</strong>
+                                    </p>
+                                    <textarea
+                                        value={userAnnotations}
+                                        onChange={handleAnnotationsChange}
+                                        className={styles.userAnnotationsInput}
+                                        placeholder="Adicione suas anotações aqui..."
+                                    />
+                                    <button
+                                        onClick={handleSaveAnnotations}
+                                        className={styles.saveAnnotationsButton}
+                                    >
+                                        Salvar
+                                    </button>
+                                </div>
+                                {/* Tempo de Descanso e Cronômetro */}
+                                {exercise.restTime > 0 && (
+                                    <div className={styles.restTimerSection}>
+                                        <div className={styles.timerDisplay}>
+                                            {formatTime(timerValue)}
+                                            <p>
+                                                <strong>
+                                                    (descanso entre exercicios)
+                                                </strong>{' '}
+                                            </p>
+                                        </div>
+                                        <div className={styles.timerControls}>
+                                            {!isTimerRunning &&
+                                                timerValue > 0 && (
+                                                    <button
+                                                        onClick={
+                                                            handleStartTimer
+                                                        }
+                                                        className={
+                                                            styles.timerButton
+                                                        }
+                                                    >
+                                                        Iniciar
+                                                    </button>
+                                                )}
+                                            {isTimerRunning && (
+                                                <button
+                                                    onClick={handlePauseTimer}
+                                                    className={
+                                                        styles.timerButton
+                                                    }
+                                                >
+                                                    Pausar
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={handleResetTimer}
+                                                className={styles.timerButton}
+                                            >
+                                                Resetar
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    )}
+                    </div>
                 </div>
             </div>
 

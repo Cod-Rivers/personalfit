@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useEffect, useState, use } from 'react';
-import TrainingProtocolList from '../../../components/TrainingProtocolList'; // Ajuste o caminho
+import TrainingProtocol from '../../components/TrainingProtocol'; // Ajuste o caminho
 //import Header from '@/components/organism/Header';
 import {
     TrainingCardProps,
@@ -10,10 +10,10 @@ import {
     ApiResponse, // Usado pela função importada e por processProtocolData
     // User, ApiTrainingProgress, ExerciseLog não são mais diretamente definidos/usados aqui
     // se ApiResponse os encapsula corretamente e getProtocolDataById retorna ApiResponse.
-} from '../../../components/types'; // Ajuste o caminho
+} from '../../components/types'; // Ajuste o caminho
 
 // MODIFICADO: Importar a nova função de busca de dados do protocolo
-import { getProtocolDataById } from '../../../libs/mockProtocolData'; // Ajuste o caminho!
+import { getProtocolDataById } from '../../libs/mockProtocolData2'; // Ajuste o caminho!
 
 // Função de processamento de dados local (poderia estar em um utilitário)
 function processProtocolData(
