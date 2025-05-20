@@ -14,6 +14,13 @@ const TrainingProtocol: React.FC<TrainingProtocolProps> = ({
     protocolNumber,
     trainings, // Agora é TrainingCardProps[] (id e label)
 }) => {
+    // LOG: Verifique as props recebidas pelo componente TrainingProtocol
+    console.log('TrainingProtocol: Props recebidas', {
+        protocolId,
+        protocolNumber,
+        trainings,
+    });
+
     // const router = useRouter(); // Descomente se preferir router.push
     const handleBackButtonClick = () => {
         // Esta função é chamada apenas no cliente quando o botão é clicado.
@@ -37,6 +44,7 @@ const TrainingProtocol: React.FC<TrainingProtocolProps> = ({
                         Meus treinos do protocolo {protocolNumber}:
                     </h1>
                 </div>
+
                 {trainings.length > 0 ? (
                     trainings.map((training) => (
                         // Envolver o TrainingCard com o componente Link do Next.js

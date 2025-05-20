@@ -55,6 +55,9 @@ export interface ExerciseDetailPageProps {
 export interface ProtocolListPageParams {
     id: string;
 }
+export interface ProtocolPageParams {
+    id: string;
+}
 
 export interface PageProps {
     params: {
@@ -102,8 +105,3 @@ export interface ApiResponse {
 }
 
 // Props para o componente TrainingProtocolList
-export interface TrainingProtocolListProps {
-    protocolId: string;
-    protocolNumber: number;
-    trainings: TrainingCardProps[];
-}

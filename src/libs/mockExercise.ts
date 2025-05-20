@@ -13,7 +13,7 @@ export interface ExerciseLog {
 
 // Mock de exercícios para diferentes treinos
 const mockExercises: Record<string, ExerciseLog[]> = {
-  'superior': [ // Treino ID 1
+  't1': [ // Treino ID 1
     {
       id: '1',
       name: 'Supino Reto',
