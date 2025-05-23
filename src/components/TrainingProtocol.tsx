@@ -30,7 +30,7 @@ const TrainingProtocol: React.FC<TrainingProtocolProps> = ({
     // Não precisamos mais de handleCardClick aqui se usarmos <Link> diretamente no map
 
     return (
-        <div className={styles.cardButton}>
+        <div className={styles.firstDiv}>
             <div className={styles.contentWrapper}>
                 <div className={styles.header}>
                     <button

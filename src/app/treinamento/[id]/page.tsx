@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState, use } from 'react';
 import TrainingProtocolList from '../../../components/TrainingProtocolList'; // Ajuste o caminho
-import Header from '@/components/organism/Header';
+//import Header from '@/components/organism/Header';
 import {
     TrainingCardProps,
     ProtocolListPageParams,
@@ -128,13 +128,13 @@ export default function ProtocolPage({
     }
 
     return (
-        <>
-            <Header />
-            <TrainingProtocolList
-                protocolId={protocolRouteId}
-                protocolNumber={protocolData.protocolNumber}
-                trainings={protocolData.trainings}
-            />
-        </>
+        /* <>
+            <Header />*/
+        <TrainingProtocolList
+            protocolId={protocolRouteId}
+            protocolNumber={protocolData.protocolNumber}
+            trainings={protocolData.trainings}
+        />
+        /* </>*/
     );
 }

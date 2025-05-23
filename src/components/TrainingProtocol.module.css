@@ -1,76 +1,76 @@
 /* components/TrainingCard.module.css */
 
-.cardButton {
-  display: block;
-  width: 97%; /* Ajuste a largura conforme necessário */
-  max-width: 830px; /* Largura máxima para telas maiores */
-  background-color: transparent;
-  margin: 6rem auto; /* Centraliza o container horizontalmente e adiciona margem vertical */
-  padding: 2rem; /* Ajuste o padding conforme necessário */
-  min-height: 100vh; /* Garante que o container ocupe pelo menos a altura total da tela */
+.firstDiv {
+    display: block;
+    width: 97%; /* Ajuste a largura conforme necessário */
+    max-width: 830px; /* Largura máxima para telas maiores */
+    background-color: transparent;
+    margin: 6rem auto; /* Centraliza o container horizontalmente e adiciona margem vertical */
+    padding: 2rem; /* Ajuste o padding conforme necessário */
+    min-height: 100vh; /* Garante que o container ocupe pelo menos a altura total da tela */
 }
 .protocolButton {
-  max-width: 90%; /* Ajuste a largura para telas menores */
-   margin: 0.7rem;
- }
+    max-width: 90%; /* Ajuste a largura para telas menores */
+    margin: 0.7rem;
+}
 
 .contentWrapper {
-  max-width: 90%; /* Ajuste a largura para telas menores */
-  margin-left: auto;
-  margin-right: auto;
+    max-width: 90%; /* Ajuste a largura para telas menores */
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .header {
-  display: flex;
-  align-items: center;
-  margin-bottom: 1rem; /* Adicionei margem inferior para espaçamento */
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem; /* Adicionei margem inferior para espaçamento */
 }
 
 .backButton {
-  margin-right: 0.5rem; /* Reduzi a margem */
-  color: transparent;
-  transition: color 0.2s;
+    margin-right: 0.5rem; /* Reduzi a margem */
+    color: transparent;
+    transition: color 0.2s;
 }
 
 .backButton:hover {
-  color: lab(28.55% 61.47 -89.61);
+    color: lab(28.55% 61.47 -89.61);
 }
 
 .title {
-  font-size: 1.25rem; /* Reduzi o tamanho da fonte para telas menores */
-  font-weight: 600;
-  color: #ffffff;
+    font-size: 1.25rem; /* Reduzi o tamanho da fonte para telas menores */
+    font-weight: 600;
+    color: #ffffff;
 }
 
 .noTrainingsMessage {
-  font-size: 1.25rem; /* Reduzi o tamanho da fonte para telas menores */
-  font-weight: 600;
-  color: #eab308;
+    font-size: 1.25rem; /* Reduzi o tamanho da fonte para telas menores */
+    font-weight: 600;
+    color: #eab308;
 }
 /* Media query para telas menores (ex: tablets e smartphones) */
 @media (max-width: 768px) {
-  .firstitle {
-    padding: 1.5rem;
-    margin: 1.5rem auto;
-  }
+    .firstitle {
+        padding: 1.5rem;
+        margin: 1.5rem auto;
+    }
 
-  .title {
-    font-size: 1.125rem; /* Menor ainda em telas menores */
-  }
+    .title {
+        font-size: 1.125rem; /* Menor ainda em telas menores */
+    }
 }
 
 /* Media query para telas ainda menores (smartphones) */
 @media (max-width: 480px) {
-  .firstitle {
-    padding: 1rem;
-    margin: 1rem auto;
-  }
+    .firstitle {
+        padding: 1rem;
+        margin: 1rem auto;
+    }
 
-  .header {
-    margin-bottom: 0.75rem;
-  }
+    .header {
+        margin-bottom: 0.75rem;
+    }
 
-  .title {
-    font-size: 1rem; /* Ainda menor em telas muito pequenas */
-  }
+    .title {
+        font-size: 1rem; /* Ainda menor em telas muito pequenas */
+    }
 }

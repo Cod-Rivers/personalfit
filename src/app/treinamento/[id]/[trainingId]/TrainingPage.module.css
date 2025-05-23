@@ -1,86 +1,77 @@
 .cardButton {
     display: flex;
-    align-items:center; 
+    align-items: center;
     justify-content: space-between;
     width: 90%;
     padding: 1rem; /* 16px */
     margin-top: 0.5rem; /* 8px */
     margin-bottom: 0.5rem; /* 8px */
-    background-color: #e71414;
+    background-color: #ffffff;
     color: black;
     border-radius: 0.5rem; /* 8px */
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
+    box-shadow:
+        0 4px 6px -1px rgba(0, 0, 0, 0.1),
+        0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transition-property:
+        background-color, border-color, color, fill, stroke, opacity,
+        box-shadow, transform;
     transition-duration: 150ms;
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     border: 1px solid transparent; /* Para o focus state */
-  }
-  
-  .cardButton:hover {
+}
+
+.cardButton:hover {
     background-color: #f3f4f6; /* gray-100 */
-  }
-  
-  .cardButton:focus {
+}
+
+.cardButton:focus {
     outline: 2px solid transparent;
     outline-offset: 2px;
     border-color: #f59e0b; /* Exemplo de um amarelo (ring-yellow-500) */
     box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.5); /* ring-opacity-50 */
-  }
-  .card-label {
-  font-size: 0.8em;
-  color: #777;
-  background-color: #f0f0f0;
-  padding: 4px 8px;
-  border-radius: 4px;
-  margin-bottom: 8px;
-  display: inline-block; /* Para se ajustar ao conteúdo */
 }
-    
-  .cardIcon {
+.card-label {
+    font-size: 0.8em;
+    color: #777;
+    background-color: #ad0d0d;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+    display: inline-block; /* Para se ajustar ao conteúdo */
+}
+
+.cardIcon {
     height: 1.5rem; /* h-6 */
     width: 1.5rem; /* w-6 */
     color: #f59e0b; /* text-yellow-500 - ajuste conforme a cor exata que você usava */
-  }
+}
 
-  
-  .exerciseItemContainer {
-  display: flex; /* Ativa o Flexbox */
-  align-items: center; /* Alinha a imagem e o texto verticalmente ao centro */
-  width: 100%; /* Garante que o botão ocupe a largura disponível */
-  text-align: left; /* Garante que o texto dentro do botão comece à esquerda */
-  /* O padding pode já estar em .cardButton, ajuste conforme necessário */
-  /* padding: 12px 16px; */
+.exerciseItemContainer {
+    display: flex; /* Ativa o Flexbox */
+    align-items: center; /* Alinha a imagem e o texto verticalmente ao centro */
+    width: 100%; /* Garante que o botão ocupe a largura disponível */
+    text-align: left; /* Garante que o texto dentro do botão comece à esquerda */
+    /* O padding pode já estar em .cardButton, ajuste conforme necessário */
+    /* padding: 12px 16px; */
 }
 .exerciseThumbnail {
-  width: 60px; /* Largura da thumbnail - ajuste conforme necessário */
-  height: 60px; /* Altura da thumbnail - ajuste conforme necessário */
-  object-fit: cover; /* Garante que a imagem preencha o espaço sem distorcer */
-  border-radius: 8px; /* Bordas arredondadas para a thumbnail */
-  margin-right: 16px; /* Espaçamento entre a thumbnail e o nome do exercício */
-  flex-shrink: 0; /* Impede que a imagem encolha se o nome do exercício for muito longo */
-  background-color: #e2e8f0; /* Cor de fundo para o caso da imagem não carregar */
+    width: 60px; /* Largura da thumbnail - ajuste conforme necessário */
+    height: 60px; /* Altura da thumbnail - ajuste conforme necessário */
+    object-fit: cover; /* Garante que a imagem preencha o espaço sem distorcer */
+    border-radius: 8px; /* Bordas arredondadas para a thumbnail */
+    margin-right: 16px; /* Espaçamento entre a thumbnail e o nome do exercício */
+    flex-shrink: 0; /* Impede que a imagem encolha se o nome do exercício for muito longo */
+    background-color: #e2e8f0; /* Cor de fundo para o caso da imagem não carregar */
 }
 
 /* Estilos para o nome do exercício (se necessário além do Tailwind) */
 .exerciseName {
-  /* Se precisar de estilos que não são facilmente cobertos pelo Tailwind,
+    /* Se precisar de estilos que não são facilmente cobertos pelo Tailwind,
      ou para garantir consistência, adicione-os aqui.
      Exemplo:
      line-height: 1.4;
   */
-  flex-grow: 1; /* Permite que o nome do exercício ocupe o espaço restante */
+    flex-grow: 1; /* Permite que o nome do exercício ocupe o espaço restante */
 }
 
 /* Seus estilos existentes para .cardButton devem ser mantidos */
-.cardButton {
-  background-color: #fff; 
-  border: 1px solid #e2e8f0; 
-  border-radius: 0.5rem; 
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); 
-  transition: box-shadow 0.15s ease-in-out; 
-  padding: 12px 16px; /* <- Se .exerciseItemContainer tem padding, remova ou ajuste este */
-}
-
- .cardButton:hover {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-} 
