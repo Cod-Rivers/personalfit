@@ -10,6 +10,7 @@
     opacity: 0; /* Começa invisível para animação */
     animation: fadeInOverlay 0.3s ease-out forwards;
     width: 100%;
+    
 }
 
 .modalCard {
@@ -26,7 +27,7 @@
     width: 100%; /* Responsivo */
     position: relative; /* Para o botão de fechar absoluto */
     max-height: 90vh; /* Altura máxima, permite scroll interno se necessário */
-    min-width: 60vh;
+    min-width: 37vh;
     overflow-y: auto; /* Adiciona scroll se o conteúdo exceder max-height */
     transform: scale(0.95) translateY(10px); /* Posição inicial para animação */
     opacity: 0; /* Começa invisível para animação */
@@ -107,15 +108,7 @@
 }
 
 /* Em telas maiores, layout lado a lado */
-/*@media (min-width: 768px) { /* md breakpoint (768px) */
-/*.contentLayout {
-    flex-direction: row; /* Lado a lado */
-/*}
-  /*.detailsSection{
-    flex-direction: row; /* Alinhar lado a lado em telas maiores */
-/*align-items: center; /* Alinhar verticalmente ao centro em telas maiores */
-/*}*/
-/*}*/
+
 
 .thumbnailSection {
     flex-shrink: 0; /* Impede que a thumbnail encolha demais */
@@ -124,14 +117,6 @@
 }
 
 /* Em telas maiores, a thumbnail ocupa uma parte e os detalhes outra */
-/*@media (min-width: 768px) {
-  .thumbnailSection {
-    width: 90%; /* Ajuste a porcentagem conforme desejado */
-/*}
-  .detailsSection {
-    width: 55%; /* O restante do espaço */
-/*}
-}*/
 
 .thumbnailLink {
     display: block;
@@ -145,16 +130,16 @@
     align-items: center;
 }
 .thumbnailLink:hover {
-    box-shadow: 0 0 0 3px #6366f1; /* indigo-500, efeito de foco/hover */
+    box-shadow: 0 0 0 1px #cab543; /* indigo-500, efeito de foco/hover */
 }
 .thumbnailLink:focus,
 .thumbnailLink:focus-visible {
-    outline: 2px solid #6366f1; /* Exemplo de anel de foco para acessibilidade */
+    outline: 2px solid #cab543; /* Exemplo de anel de foco para acessibilidade */
     outline-offset: 2px;
 }
 
 .thumbnailImage {
-    width: 100%;
+    width:100%;
     height: auto;
     margin-left: auto;
     margin-right: auto;
@@ -162,6 +147,13 @@
     object-fit: cover; /* Garante que a imagem cubra a área sem distorcer */
     display: block; /* Remove espaço extra abaixo da imagem */
     align-items: center;
+    box-shadow:
+        0 10px 25px -5px rgba(0, 0, 0, 0.1),
+        0 8px 10px -6px rgba(0, 0, 0, 0.1); /* Sombra sutil */
+    max-width: 30rem; /* Largura máxima do modal (aprox. 672px) */
+    transform: scale(0.95) translateY(10px); /* Posição inicial para animação */
+    opacity: 0; /* Começa invisível para animação */
+    animation: slideInModal 0.3s 0.1s ease-out forwards; /* Delay para overlay aparecer primeiro */
 }
 
 .detailsSection {
@@ -249,7 +241,7 @@
 .watchVideoLink {
     /* Para o link "Assistir exemplo" quando não há thumbnail */
     margin-top: 0.5rem;
-    color: #4f46e5; /* indigo-600 */
+    color: #cab543; /* indigo-600 */
     font-weight: 500; /* medium */
     display: inline-flex;
     align-items: center;
@@ -529,9 +521,39 @@
     flex-direction: column;
 }
 
-/*@media (min-width: 768px) {
-  .detailRow {
-    flex-direction: row; /* Voltar a alinhar lado a lado em telas maiores */
-/* align-items: center; /* Alinhar verticalmente ao centro em telas maiores */
-/* }
-}*/
+@media (max-width: 428px) {
+    .modalOverlay {
+        padding: 0.5rem; /* Ajusta o padding do overlay em telas pequenas */
+    }
+
+    .modalCard {
+        width: 100%; /* Ocupa a largura total */
+        max-width: none; /* Remove a largura máxima */
+        margin: 0; /* Remove margens extras */
+        border-top-left-radius: 0;
+        border-top-right-radius: 0;
+        min-width: unset; /* Remove min-width para não forçar tamanho */
+        padding: 1rem; /* Reduz o padding interno */
+    }
+}
+
+/* Opcional: Para telas ainda menores (ex: iPhone SE, modelos muito antigos) */
+@media (max-width: 375px) {
+    .modalCard {
+        padding: 0.75rem;
+        border-top-left-radius: 0;
+        border-top-right-radius: 0;
+    }
+    .exerciseTitle {
+        font-size: 1rem;
+    }
+    .detailsSection {
+        font-size: 0.8rem;
+    }
+    .valueBox {
+        width: 95%; /* Pouco mais de espaço */
+    }
+    .timerButton {
+        flex-basis: 48%; /* Botões do timer tentam ocupar metade da linha */
+    }
+}

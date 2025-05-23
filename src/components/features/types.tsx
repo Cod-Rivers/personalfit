@@ -104,4 +104,9 @@ export interface ApiResponse {
     trainings_progress: ApiTrainingProgress[];
 }
 
+export interface ProtocolListItem {
+    id: string; // Este deve ser o ID real do protocolo (ex: "1", "outroProtocolo")
+    label: string;
+}
+
 // Props para o componente TrainingProtocolList

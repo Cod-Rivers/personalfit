@@ -73,5 +73,28 @@
   */
     flex-grow: 1; /* Permite que o nome do exercício ocupe o espaço restante */
 }
+.Title{
+    display: flex;
+    align-items: center;
+}
+.myImageInTitle { /* Crie uma nova classe se não tiver */
+    margin-right: 1rem; /* Exemplo de 8px */
+    padding-top: 1rem;
+}
 
-/* Seus estilos existentes para .cardButton devem ser mantidos */
+/* src/app/treinamento/[id]/[trainingId]/TrainingPage.module.css */
+
+/* ... (seus estilos existentes acima) ... */
+
+.exerciseListContainer {
+    list-style-type: none; /* Remove o marcador de lista */
+    padding-left: 0;      /* Remove o padding padrão que ULs podem ter */
+    margin: 0 auto;       /* Centraliza a lista, se necessário, e remove margem padrão */
+    width: 90%;           /* Garante a largura que os botões já usam */
+    max-width: 900px;     /* Adiciona uma largura máxima opcional para desktop */
+}
+
+/* Opcional: Para garantir que os LI dentro desta UL também não tenham marcadores herdados */
+.exerciseListContainer li {
+    list-style-type: none;
+}

@@ -4,22 +4,19 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Header from '@/components/organism/Header';
-import TrainingCard from '../../components/TrainingCard';
-import { ApiResponse, User } from '../../components/types';
+import TrainingCard from '../../components/features/TrainingCard';
+import { useRouter } from 'next/navigation';
+import { ApiResponse, User } from '../../components/features/types';
 
 // Importe a nova função
 import { getProtocolsByUserId } from '../../libs/mockProtocolData2';
-
-interface ProtocolListItem {
-    id: string; // Este deve ser o ID real do protocolo (ex: "1", "outroProtocolo")
-    label: string;
-}
 
 export default function UserProtocolsPage() {
     const [protocolsList, setProtocolsList] = useState<ProtocolListItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isMounted, setIsMounted] = useState(false);
+    const router = useRouter();
 
     useEffect(() => {
         setIsMounted(true);
@@ -45,6 +42,7 @@ export default function UserProtocolsPage() {
                         'Você precisa estar logado para ver seus protocolos.',
                     );
                     setLoading(false);
+                    router.push('/app');
                     return;
                 }
 
@@ -108,13 +106,13 @@ export default function UserProtocolsPage() {
     return (
         <>
             <Header />
-            <div className="container py-5 mx-auto">
+            <div className="container ml-auto mr-auto py-5 mx-auto ">
                 <h1 className="text-3xl font-bold mb-6 text-white">
-                    Seus Protocolos de Treino:
+                    Meus Protocolos de Treino:
                 </h1>
-                <div className="row g-4">
+                <div className="flex flex-col gap-4">
                     {protocolsList.map((protocol) => (
-                        <div className="col-12 col-md-6" key={protocol.id}>
+                        <div className="mb-3" key={protocol.id}>
                             <Link href={`/treinamento/${protocol.id}`} passHref>
                                 <TrainingCard
                                     id={protocol.id}

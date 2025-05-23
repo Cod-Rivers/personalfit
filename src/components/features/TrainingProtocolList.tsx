@@ -3,10 +3,10 @@
 
 import React from 'react';
 import Link from 'next/link'; // Para navegação semântica
-// import { useRouter } from 'next/navigation'; // Alternativa para navegação programática
+import { useRouter } from 'next/navigation'; // Alternativa para navegação programática
 import { TrainingProtocolListProps } from './types'; // Ajuste o caminho
 import TrainingCard from './TrainingCard'; // Seu componente TrainingCard
-import styles from './TrainingProtocol.module.css'; // Se estiver usando CSS Modules
+import styles from './TrainingProtocolList.module.css'; // Se estiver usando CSS Modules
 import { BsClipboardData } from 'react-icons/bs';
 
 const TrainingProtocolList: React.FC<TrainingProtocolListProps> = ({
@@ -14,17 +14,17 @@ const TrainingProtocolList: React.FC<TrainingProtocolListProps> = ({
     protocolNumber,
     trainings, // Agora é TrainingCardProps[] (id e label)
 }) => {
-    // const router = useRouter(); // Descomente se preferir router.push
+    const router = useRouter(); // Descomente se preferir router.push
     const handleBackButtonClick = () => {
         // Esta função é chamada apenas no cliente quando o botão é clicado.
         // A referência a 'window' aqui é geralmente segura.
-        window.history.back();
+        router.push('/treinamento');
     };
     // Não precisamos mais de handleCardClick aqui se usarmos <Link> diretamente no map
 
     return (
-        <div className={styles.cardButton}>
-            <div className={styles.contentWrapper}>
+        <div className="container ml-auto mr-auto sm:p-6 bg-gray-50 min-h-screen relative flex:center">
+            <div className="pl-auto pr-auto">
                 <div className={styles.header}>
                     <button
                         onClick={handleBackButtonClick} // Ou router.back()

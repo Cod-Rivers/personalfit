@@ -239,7 +239,7 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
             {/* Overlay e Card Principal do Exercício */}
             <div className={styles.modalOverlay}>
                 <div>
-                    <div>
+                    <div className={styles.thumbnailImage}>
                         {exercise.video_thumb && (
                             <div className={styles.thumbnailSection}>
                                 <div

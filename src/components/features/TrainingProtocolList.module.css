@@ -1,27 +1,16 @@
 /* components/TrainingCard.module.css */
 
-.cardButton {
-  display: block;
-  width: 97%; /* Ajuste a largura conforme necessário */
-  max-width: 830px; /* Largura máxima para telas maiores */
-  background-color: transparent;
-  margin: 6rem auto; /* Centraliza o container horizontalmente e adiciona margem vertical */
-  padding: 2rem; /* Ajuste o padding conforme necessário */
-  min-height: 100vh; /* Garante que o container ocupe pelo menos a altura total da tela */
-}
+
 .protocolButton {
   max-width: 90%; /* Ajuste a largura para telas menores */
-   margin: 0.7rem;
+   margin-bottom: 0.7rem;
+   margin-left: auto;
+   margin-right: auto;
  }
-
-.contentWrapper {
-  max-width: 90%; /* Ajuste a largura para telas menores */
-  margin-left: auto;
-  margin-right: auto;
-}
 
 .header {
   display: flex;
+  flex-direction: row;
   align-items: center;
   margin-bottom: 1rem; /* Adicionei margem inferior para espaçamento */
 }
@@ -49,11 +38,6 @@
 }
 /* Media query para telas menores (ex: tablets e smartphones) */
 @media (max-width: 768px) {
-  .firstitle {
-    padding: 1.5rem;
-    margin: 1.5rem auto;
-  }
-
   .title {
     font-size: 1.125rem; /* Menor ainda em telas menores */
   }
@@ -61,11 +45,6 @@
 
 /* Media query para telas ainda menores (smartphones) */
 @media (max-width: 480px) {
-  .firstitle {
-    padding: 1rem;
-    margin: 1rem auto;
-  }
-
   .header {
     margin-bottom: 0.75rem;
   }
