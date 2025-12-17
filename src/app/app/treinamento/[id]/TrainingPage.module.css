@@ -1,0 +1,106 @@
+.cardButton {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 90%;
+    padding: 1rem;
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+    background-color: #ffffff;
+    color: black;
+    border-radius: 0.5rem;
+    box-shadow:
+        0 4px 6px -1px rgba(0, 0, 0, 0.1),
+        0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transition-property:
+        background-color, border-color, color, fill, stroke, opacity,
+        box-shadow, transform;
+    transition-duration: 150ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid transparent;
+}
+
+.cardButton:hover {
+    background-color: #f3f4f6;
+}
+
+.cardButton:focus {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.5);
+}
+.card-label {
+    font-size: 0.8em;
+    color: #777;
+    background-color: #ad0d0d;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+    display: inline-block;
+}
+
+.cardIcon {
+    height: 1.5rem;
+    width: 1.5rem;
+    color: #f59e0b;
+}
+
+.exerciseItemContainer {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    text-align: left;
+
+
+}
+.exerciseThumbnail {
+    width: 86px;
+    height: 86px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-right: 16px;
+    flex-shrink: 0;
+    background-color: #e2e8f0;
+}
+
+
+.exerciseName {
+
+    flex-grow: 1;
+}
+.Title{
+    display: flex;
+    align-items: center;
+}
+.myImageInTitle {
+    margin-right: 1rem;
+    padding-top: 1rem;
+}
+
+
+
+
+
+.exerciseListContainer {
+    list-style-type: none;
+    padding-left: 0;
+    margin: 0 auto;
+}
+
+
+.exerciseListContainer li {
+    list-style-type: none;
+}
+
+.exerciseImg {
+  display: flex;
+  flex-direction: row;
+}
+.exerciseInfoCol {
+  display: flex;
+  flex-direction: column;
+  font-size:0.7rem;
+  color: #777;
+}
+

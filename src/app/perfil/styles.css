@@ -1,0 +1,134 @@
+@import url("./../../app/css/constants.css");
+
+.profile-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+    color: var(--color-white);
+    padding-top: 2rem;
+}
+
+.profile-card {
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    border: none;
+    border-radius: 15px;
+    overflow: hidden;
+    background: var(--color-white);
+}
+
+.profile-card .card-header {
+    border: none;
+    padding: 2rem 1.5rem 1.5rem;
+}
+
+.profile-avatar {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.profile-info {
+    padding: 1rem 0;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.info-item:last-child {
+    border-bottom: none;
+}
+
+.info-label {
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+}
+
+.info-label i {
+    color: var(--color-gold);
+    width: 20px;
+}
+
+.info-value {
+    color: #333;
+    font-weight: 500;
+}
+
+.profile-actions {
+    border-top: 1px solid #f0f0f0;
+    padding-top: 1.5rem;
+}
+
+.btn-outline-danger:hover {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: white;
+}
+
+.modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+    border-radius: 15px;
+    border: none;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+    background: linear-gradient(135deg, var(--color-gold) 0%, #e6a800 100%);
+    color: white;
+    border: none;
+    border-radius: 15px 15px 0 0;
+}
+
+.modal-header .btn-close {
+    filter: invert(1);
+}
+
+.text-gold {
+    color: var(--color-gold) !important;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .profile-container {
+        padding-top: 1rem;
+    }
+
+    .profile-card .card-header {
+        padding: 1.5rem 1rem 1rem;
+    }
+
+    .info-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+        text-align: left;
+    }
+
+    .info-label {
+        width: 100%;
+    }
+
+    .info-value {
+        width: 100%;
+        text-align: left;
+        padding-left: 0;
+    }
+}
+
+@media (max-width: 576px) {
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    .profile-avatar i {
+        font-size: 3rem !important;
+    }
+}

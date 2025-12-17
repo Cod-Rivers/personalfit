@@ -1,0 +1,55 @@
+
+.footer {
+  background: var(--color-bg-dark);
+  color: #f1f1f1;
+  font-size: 0.95rem;
+}
+.footer a {
+  color: #f1f1f1;
+  opacity: 0.9;
+}
+.footer a:hover {
+  text-decoration: underline;
+  opacity: 1;
+}
+
+/* footer specific classes */
+.link {
+  color: inherit;
+  text-decoration: none;
+  margin: 0 6px;
+}
+.link:hover {
+  text-decoration: underline;
+}
+.social {
+  display: flex;
+  align-items: center;
+}
+.social i {
+  font-size: 1.15rem;
+  margin-right: 8px;
+}
+.socialText {
+  margin-left: 4px;
+}
+.contact {
+  margin: 0 12px;
+  font-size: 0.95rem;
+}
+.copyright {
+  margin: 0 12px;
+  font-size: 0.95rem;
+}
+.footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  height: 72px; /* defina a altura desejada do footer */
+  background: var(--color-bg-dark);
+  color: #f1f1f1;
+  display: flexbox;
+  align-items: center;
+}

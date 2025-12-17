@@ -1,0 +1,56 @@
+
+
+
+.protocolButton {
+  max-width: 90%;
+   margin-bottom: 0.7rem;
+   margin-left: auto;
+   margin-right: auto;
+ }
+
+.header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.backButton {
+  margin-right: 0.5rem;
+  color: transparent;
+  transition: color 0.2s;
+}
+
+
+.backButton:hover {
+  color: lab(28.55% 61.47 -89.61);
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.noTrainingsMessage {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #eab308;
+}
+
+@media (max-width: 768px) {
+  .title {
+    font-size: 1.125rem;
+  }
+}
+
+
+@media (max-width: 480px) {
+  .header {
+    margin-bottom: 0.75rem;
+  }
+
+  .title {
+    font-size: 1rem;
+  }
+}

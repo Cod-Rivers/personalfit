@@ -1,0 +1,63 @@
+@import url("./../../app/css/constants.css");
+
+
+* {
+    color: var(--color-text-dark);
+}
+
+.container-box {
+    width: 100%;
+    min-height: 100dvh;
+    padding: 24px 0 calc(96px);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+
+}
+
+
+.main_box {
+    margin-top: 20px;
+    margin-bottom: 20px;
+    max-width: 50dvw;
+    background-color: var(--color-white);
+    border-radius: 10px;
+}
+
+@media screen and (max-width: 900px) {
+    .main_box {
+        max-width: 90dvw;
+        margin-top: 20px;
+    }
+
+}
+.placeholder {
+    color: var(--color-text-dark);
+}
+
+/* Ensure form inputs show typed text (avoid inheriting white from global .main_back) */
+.form-control {
+    color: var(--color-black) !important;
+}
+
+/* Make placeholders visible and consistent */
+.form-control::placeholder,
+.form-floating .form-control::placeholder {
+    color: rgba(0,0,0,0.45) !important;
+    opacity: 1 !important;
+}
+
+/* Keep floating labels gray even when focused or when input has content */
+.form-floating > label {
+    color: rgba(0,0,0,0.55) !important; /* default gray for label */
+}
+
+.form-floating .form-control:focus ~ label,
+.form-floating .form-control:not(:placeholder-shown) ~ label {
+    color: rgba(0,0,0,0.55) !important; /* keep gray when floated */
+}
+
+/* In case Bootstrap uses :focus-visible or other selectors, override them */
+.form-floating .form-control:focus-visible ~ label {
+    color: rgba(0,0,0,0.55) !important;
+}

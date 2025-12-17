@@ -1,0 +1,39 @@
+
+import { ApiResponse, ApiTrainingProgress, User } from '../components/types';
+
+interface ProtocolData {
+    [protocolId: string]: ApiResponse;
+}
+
+const allProtocolsData: ProtocolData = {
+    "1": {
+        user: { id: "user1", name: "Usuário Protocolo 1" },
+        trainings_progress: [
+            { id: "tp1-p1", user_id: "user1", training_id: "t1", reference: "A", exercise_logs: [] },
+            { id: "tp2-p1", user_id: "user1", training_id: "t2", reference: "B", exercise_logs: [] },
+            { id: "tp3-p1", user_id: "user1", training_id: "t3", reference: "C", exercise_logs: [] },
+            { id: "tp4-p1", user_id: "user1", training_id: "t4", reference: "D", exercise_logs: [] },
+            { id: "tp5-p1", user_id: "user1", training_id: "t5", reference: "E", exercise_logs: [] },
+        ]
+    },
+
+};
+
+export const getProtocolDataById = async (protocolId: string): Promise<ApiResponse | null> => {
+    await new Promise(resolve => setTimeout(resolve, 100));
+    return allProtocolsData[protocolId] || null;
+};
+
+
+export const getProtocolsByUserId = async (userId: string): Promise<Array<{ protocolId: string, data: ApiResponse }>> => {
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    const userProtocols: Array<{ protocolId: string, data: ApiResponse }> = [];
+
+    for (const protocolId in allProtocolsData) {
+        //if (allProtocolsData[protocolId].user.id === userId) {
+            userProtocols.push({ protocolId: protocolId, data: allProtocolsData[protocolId] });
+        //}
+    }
+    return userProtocols;
+};

@@ -1,0 +1,178 @@
+'use client';
+import React, { useEffect, useState, use } from 'react';
+import { getExercisesByTrainingId } from '../../../../libs/mockExercise';
+import { ExerciseLog } from '../../../../components/features/types';
+import ExerciseDetailCard from '../../../../components/features/ExerciseDetailCard';
+import styles from './TrainingPage.module.css';
+import ImageComponent from 'next/image';
+import weightIcon from './../../../../../public/assets/icons/weight-icon.png';
+import Header from '@/components/organism/Header';
+import BackButton from '@/components/molecules/BackButton';
+import Image from 'next/image';
+
+interface TrainingPageParams {
+    id: string;
+}
+
+interface TrainingExercisesPageProps {
+    params: Promise<TrainingPageParams>;
+}
+
+function formatRestTime(seconds: number) {
+    if (seconds < 60) {
+        return `${seconds}s`;
+    }
+    const min = Math.floor(seconds / 60);
+    const sec = seconds % 60;
+    return sec === 0 ? `${min} min` : `${min} min e ${sec}s`;
+}
+
+export default function TrainingExercisesPage({
+    params: paramsPromise,
+}: TrainingExercisesPageProps) {
+    const routeParams = use(paramsPromise);
+    const { id: protocolId } = routeParams;
+
+    const [protocol, setProtocol] = useState<any>(null);
+    const [exercises, setExercises] = useState<ExerciseLog[]>([]);
+    const [selectedExercise, setSelectedExercise] =
+        useState<ExerciseLog | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (protocolId) {
+            setIsLoading(true);
+            setError(null);
+            getExercisesByTrainingId(protocolId)
+                .then((data) => {
+                    setExercises(data?.exercise_logs as any);
+                    setProtocol(data);
+                })
+                .catch((err) => {
+                    console.error('Erro ao buscar exercícios:', err);
+                    setError('Não foi possível carregar os exercícios.');
+                })
+                .finally(() => {
+                    setIsLoading(false);
+                });
+        }
+    }, [protocolId]);
+
+    const handleExerciseClick = (exercise: ExerciseLog) => {
+        setSelectedExercise(exercise);
+    };
+
+    const handleCloseDetailCard = () => {
+        setSelectedExercise(null);
+    };
+
+    if (isLoading) {
+        return <div className="p-6 text-center">Carregando exercícios...</div>;
+    }
+
+    if (error) {
+        return (
+            <div className="p-6 text-center text-red-600">Erro: {error}</div>
+        );
+    }
+
+    return (
+        <>
+            <Header />
+            <div className="container mx-auto p-4 sm:p-6 bg-gray-50 min-h-screen relative">
+                <div className="mb-4">
+                    <BackButton link="/app" label="Voltar" />
+                </div>
+                <div className="mb-8">
+                    <div className={styles.Title}>
+                        <ImageComponent
+                            className={styles.myImageInTitle}
+                            src={weightIcon}
+                            alt="This is a weight image"
+                            width={30}
+                            height={30}
+                        />
+
+                        <h1 className="mt-4 text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">
+                            Execicios do treino{' '}
+                            <span className="text-indigo-600">
+                                {protocol?.reference}
+                            </span>
+                        </h1>
+                    </div>
+                    <p className="text-lg text-gray-600 mt-1">
+                        Clique em um exercício para ver os detalhes.
+                    </p>
+                </div>
+                {exercises.length > 0 ? (
+                    <ul className={`${styles.exerciseListContainer}`}>
+                        {exercises.map((exercise, index) => (
+                            <li key={exercise.id}>
+                                <button
+                                    onClick={() =>
+                                        handleExerciseClick(exercise)
+                                    }
+                                    className={`${styles.cardButton} ${styles.exerciseItemContainer}`}
+                                >
+                                    <div className={styles.exerciseImg}>
+                                        <div className={styles.exerciseInfoCol}>
+                                            <span className="h3 font-bold text-black">
+                                                {exercise.name}
+                                            </span>
+                                            <span className="h6 font-semibold text-black">
+                                                {Array.isArray(exercise.series)
+                                                    ? exercise.series.join(
+                                                          ' / ',
+                                                      ) + ' séries'
+                                                    : exercise.series +
+                                                      ' série'}
+                                            </span>
+                                            {exercise.timed && (
+                                                <div className="d-flex gap-2">
+                                                    <span className="text-sm text-black">
+                                                        {formatRestTime(
+                                                            exercise.restTime,
+                                                        )}{' '}
+                                                    </span>
+                                                    <span className="text-sm font-semibold text-gray-700">
+                                                        (de descanso)
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <Image
+                                        src="/assets/icons/chevron-right.png"
+                                        alt="logo"
+                                        width={24}
+                                        height={34}
+                                    />
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                ) : (
+                    <div className="text-center py-12">
+                        {}
+                        <h3 className="mt-2 text-xl font-semibold text-gray-800">
+                            Nenhum exercício encontrado
+                        </h3>
+                        <p className="mt-1 text-sm text-gray-500">
+                            Não há exercícios cadastrados para este treino (
+                            {protocolId}).
+                        </p>
+                    </div>
+                )}
+                {}
+                {selectedExercise && (
+                    <ExerciseDetailCard
+                        exercise={selectedExercise}
+                        trainingId={protocolId}
+                        onClose={handleCloseDetailCard}
+                    />
+                )}
+            </div>
+        </>
+    );
+}

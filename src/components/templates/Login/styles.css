@@ -1,0 +1,52 @@
+@import url(./../../../app/css/constants.css);
+
+.login_main_container {
+    width: 100vw;
+    height: 100vh;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.login_box {
+    min-width: 450px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    background-color: var(--color-white);
+    border-radius: 10px;
+
+    color: var(--color-black);
+
+    padding: 20px;
+    font-weight: 900;
+}
+
+.login_box h1 {
+    font-size: 2rem;
+    margin: 10px;
+}
+
+.btn-gold {
+    background-color: var(--color-gold);
+    color: var(--color-white);
+    font-size: 1.5em;
+}
+
+
+.btn-gold:hover {
+    background-color: var(--color-gold);
+    color: var(--color-white);
+}
+
+a {
+    color: var(--color-gold);
+}
+
+.input-form {
+    outline: var(--color-gold);
+    border: 1px solid var(--color-gold);
+}
