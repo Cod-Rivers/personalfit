@@ -5,7 +5,6 @@ import BackButton from '@/components/molecules/BackButton';
 import QuestionsRenderer from '@/components/organism/QuestionsRenderer';
 import { useRouter } from 'next/navigation';
 
-
 const getQuestions = async () => {
     try {
         const { data } = await Api.get('/questions');
@@ -39,14 +38,32 @@ const Questions: FC = () => {
                     Authorization: `${user_token}`,
                 },
             });
+
+            // Buscar dados atualizados do usuário após enviar anamnese
+            try {
+                const userResponse = await Api.get('/user', {
+                    headers: {
+                        Authorization: `${user_token}`,
+                    },
+                });
+                // Atualizar localStorage com dados atualizados
+                localStorage.setItem('user', JSON.stringify(userResponse.data));
+            } catch (err) {
+                console.error(
+                    'Erro ao buscar dados atualizados do usuário:',
+                    err,
+                );
+            }
+
             alert(data.message);
+            // Forçar refresh da página ao redirecionar
             router.push('/app');
+            router.refresh();
         } catch (error) {
             console.log(error);
         } finally {
             setLoading(false);
         }
-
     };
 
     useEffect(() => {
@@ -54,15 +71,16 @@ const Questions: FC = () => {
     }, []);
 
     return (
-        <div
-        className='container'
-        >
+        <div className="container">
             <header className="d-flex w-100 mt-4">
                 <BackButton />
             </header>
-            <div className="d-flex justify-content-center align-items-center" style={{
-                height: '90vh',
-            }}>
+            <div
+                className="d-flex justify-content-center align-items-center"
+                style={{
+                    height: '90vh',
+                }}
+            >
                 {loading && <span className="text-center spinner-border" />}
                 {questions.length > 0 && (
                     <div className="w-100">
