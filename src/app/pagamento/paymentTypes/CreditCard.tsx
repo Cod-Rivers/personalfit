@@ -114,6 +114,7 @@ export const CreditCardPayment = (): ReactNode => {
                 holder_postal_code: cleanCEP,
                 holder_address_num: formFields.holder_address_num,
                 holder_phone: cleanPhone,
+                indication_receiver: formFields.indication_receiver,
             };
 
             console.log('Enviando dados de assinatura:', subscriptionData);
@@ -125,7 +126,7 @@ export const CreditCardPayment = (): ReactNode => {
                 subscriptionData,
                 {
                     headers: {
-                        Authorization: `${token}`,
+                        Authorization: `Bearer ${token}`,
                     },
                 },
             );
