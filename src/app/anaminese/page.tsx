@@ -39,6 +39,8 @@ const Questions: FC = () => {
                 },
             });
 
+            alert(data.message);
+
             // Buscar dados atualizados do usuário após enviar anamnese
             try {
                 const userResponse = await Api.get('/user', {
@@ -46,19 +48,20 @@ const Questions: FC = () => {
                         Authorization: `${user_token}`,
                     },
                 });
+                console.log('Dados atualizados recebidos:', userResponse.data);
                 // Atualizar localStorage com dados atualizados
                 localStorage.setItem('user', JSON.stringify(userResponse.data));
+
+                // Forçar reload completo da página para garantir atualização
+                window.location.href = '/app';
             } catch (err) {
                 console.error(
                     'Erro ao buscar dados atualizados do usuário:',
                     err,
                 );
+                // Redirecionar mesmo se houver erro na atualização
+                window.location.href = '/app';
             }
-
-            alert(data.message);
-            // Forçar refresh da página ao redirecionar
-            router.push('/app');
-            router.refresh();
         } catch (error) {
             console.log(error);
         } finally {
