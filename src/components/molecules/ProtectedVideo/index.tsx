@@ -131,12 +131,35 @@ const ProtectedVideo: React.FC<ProtectedVideoProps> = ({
                     objectFit: 'contain',
                     borderRadius: '8px',
                 }}
+                onLoad={() => {
+                    console.log('[ProtectedVideo] ✅ GIF carregada:', videoSrc);
+                }}
                 onError={(e) => {
-                    console.error(
-                        '[ProtectedVideo] Erro ao carregar GIF:',
+                    // Suprimir erro do console e mostrar mensagem amigável
+                    e.preventDefault();
+                    console.warn(
+                        '[ProtectedVideo] ⚠️ GIF não disponível:',
                         videoSrc,
                     );
-                    setError('Erro ao carregar a GIF do exercício');
+                    // Esconder a imagem quebrada
+                    (e.target as HTMLImageElement).style.display = 'none';
+                    // Criar placeholder amigável
+                    const parent = (e.target as HTMLElement).parentElement;
+                    if (
+                        parent &&
+                        !parent.querySelector('.gif-error-placeholder')
+                    ) {
+                        const placeholder = document.createElement('div');
+                        placeholder.className =
+                            'gif-error-placeholder d-flex justify-content-center align-items-center flex-column';
+                        placeholder.style.minHeight = '300px';
+                        placeholder.style.color = '#6c757d';
+                        placeholder.innerHTML = `
+                            <i class="fa-solid fa-image fa-3x mb-3" style="opacity: 0.3;"></i>
+                            <p style="opacity: 0.7;">Demonstração em vídeo não disponível</p>
+                        `;
+                        parent.appendChild(placeholder);
+                    }
                 }}
             />
         );
@@ -157,12 +180,35 @@ const ProtectedVideo: React.FC<ProtectedVideoProps> = ({
                 aspectRatio: '9/16', // Vertical aspect ratio
                 objectFit: 'contain',
             }}
+            onLoadedData={() => {
+                console.log('[ProtectedVideo] ✅ Vídeo carregado:', videoSrc);
+            }}
             onError={(e) => {
-                console.error(
-                    '[ProtectedVideo] Erro ao carregar vídeo:',
+                // Suprimir erro do console e mostrar mensagem amigável
+                e.preventDefault();
+                console.warn(
+                    '[ProtectedVideo] ⚠️ Vídeo não disponível:',
                     videoSrc,
                 );
-                setError('Erro ao carregar o vídeo do exercício');
+                // Esconder o vídeo quebrado
+                (e.target as HTMLVideoElement).style.display = 'none';
+                // Criar placeholder amigável
+                const parent = (e.target as HTMLElement).parentElement;
+                if (
+                    parent &&
+                    !parent.querySelector('.video-error-placeholder')
+                ) {
+                    const placeholder = document.createElement('div');
+                    placeholder.className =
+                        'video-error-placeholder d-flex justify-content-center align-items-center flex-column';
+                    placeholder.style.minHeight = '300px';
+                    placeholder.style.color = '#6c757d';
+                    placeholder.innerHTML = `
+                        <i class="fa-solid fa-video fa-3x mb-3" style="opacity: 0.3;"></i>
+                        <p style="opacity: 0.7;">Demonstração em vídeo não disponível</p>
+                    `;
+                    parent.appendChild(placeholder);
+                }
             }}
         >
             Seu navegador não suporta vídeos.
