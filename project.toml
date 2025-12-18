@@ -1,0 +1,3 @@
+[[build.env]]
+name = "NEXT_PUBLIC_API_URL"
+value = "https://dbomfim-1003252716435.us-west1.run.app"
