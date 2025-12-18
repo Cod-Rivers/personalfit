@@ -126,7 +126,7 @@ export const CreditCardPayment = (): ReactNode => {
                 subscriptionData,
                 {
                     headers: {
-                        Authorization: `Bearer ${token}`,
+                        Authorization: `${token}`,
                     },
                 },
             );
