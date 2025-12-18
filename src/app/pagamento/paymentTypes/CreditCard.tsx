@@ -135,6 +135,35 @@ export const CreditCardPayment = (): ReactNode => {
 
             setSuccess(true);
 
+            // Buscar dados atualizados do usuário através do endpoint /me
+            try {
+                const userResponse = await Api.get('/me', {
+                    headers: {
+                        Authorization: token,
+                    },
+                });
+
+                console.log('Dados do usuário atualizados:', userResponse.data);
+
+                // Atualizar localStorage com os dados mais recentes, incluindo active: true
+                if (userResponse.data) {
+                    localStorage.setItem(
+                        'user',
+                        JSON.stringify(userResponse.data),
+                    );
+                    console.log('localStorage atualizado com status ativo');
+                }
+            } catch (userError) {
+                console.error('Erro ao buscar dados do usuário:', userError);
+                // Mesmo com erro, atualizar o status manualmente
+                const currentUser = JSON.parse(
+                    localStorage.getItem('user') || '{}',
+                );
+                currentUser.active = true;
+                localStorage.setItem('user', JSON.stringify(currentUser));
+                console.log('Status atualizado manualmente no localStorage');
+            }
+
             // Redirecionar após sucesso
             setTimeout(() => {
                 if (typeof window !== 'undefined') {
