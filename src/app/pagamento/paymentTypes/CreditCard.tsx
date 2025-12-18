@@ -135,41 +135,91 @@ export const CreditCardPayment = (): ReactNode => {
 
             setSuccess(true);
 
-            // Buscar dados atualizados do usuário através do endpoint /me
-            try {
-                const userResponse = await Api.get('/me', {
-                    headers: {
-                        Authorization: token,
-                    },
-                });
-
-                console.log('Dados do usuário atualizados:', userResponse.data);
-
-                // Atualizar localStorage com os dados mais recentes, incluindo active: true
-                if (userResponse.data) {
-                    localStorage.setItem(
-                        'user',
-                        JSON.stringify(userResponse.data),
+            // Função para verificar status do usuário com polling (webhook pode levar alguns segundos)
+            const checkUserStatus = async (
+                attempt = 1,
+                maxAttempts = 10,
+            ): Promise<boolean> => {
+                try {
+                    console.log(
+                        `Tentativa ${attempt}/${maxAttempts} - Buscando status do usuário...`,
                     );
-                    console.log('localStorage atualizado com status ativo');
-                }
-            } catch (userError) {
-                console.error('Erro ao buscar dados do usuário:', userError);
-                // Mesmo com erro, atualizar o status manualmente
-                const currentUser = JSON.parse(
-                    localStorage.getItem('user') || '{}',
-                );
-                currentUser.active = true;
-                localStorage.setItem('user', JSON.stringify(currentUser));
-                console.log('Status atualizado manualmente no localStorage');
-            }
 
-            // Redirecionar após sucesso
+                    const userResponse = await Api.get('/me', {
+                        headers: {
+                            Authorization: token,
+                        },
+                    });
+
+                    console.log('Dados do usuário:', userResponse.data);
+
+                    // Verificar se o usuário está ativo
+                    if (
+                        userResponse.data &&
+                        userResponse.data.active === true
+                    ) {
+                        console.log('✅ Usuário ativado com sucesso!');
+                        localStorage.setItem(
+                            'user',
+                            JSON.stringify(userResponse.data),
+                        );
+                        return true;
+                    }
+
+                    // Se não está ativo ainda e temos mais tentativas, aguardar e tentar novamente
+                    if (attempt < maxAttempts) {
+                        console.log(
+                            `⏳ Usuário ainda não ativo, aguardando webhook... (${attempt}/${maxAttempts})`,
+                        );
+                        await new Promise((resolve) =>
+                            setTimeout(resolve, 3000),
+                        ); // Aguardar 3 segundos
+                        return checkUserStatus(attempt + 1, maxAttempts);
+                    }
+
+                    // Esgotou tentativas, atualizar manualmente
+                    console.log(
+                        '⚠️ Máximo de tentativas atingido, atualizando status manualmente',
+                    );
+                    const currentUser = JSON.parse(
+                        localStorage.getItem('user') || '{}',
+                    );
+                    currentUser.active = true;
+                    localStorage.setItem('user', JSON.stringify(currentUser));
+                    return true;
+                } catch (userError) {
+                    console.error(`Erro na tentativa ${attempt}:`, userError);
+
+                    if (attempt < maxAttempts) {
+                        await new Promise((resolve) =>
+                            setTimeout(resolve, 3000),
+                        );
+                        return checkUserStatus(attempt + 1, maxAttempts);
+                    }
+
+                    // Erro persistente, atualizar manualmente
+                    console.log(
+                        '⚠️ Erro ao buscar dados, atualizando status manualmente',
+                    );
+                    const currentUser = JSON.parse(
+                        localStorage.getItem('user') || '{}',
+                    );
+                    currentUser.active = true;
+                    localStorage.setItem('user', JSON.stringify(currentUser));
+                    return true;
+                }
+            };
+
+            // Iniciar verificação de status
+            await checkUserStatus();
+
+            // Redirecionar após confirmação
+            console.log('🔄 Redirecionando para /app...');
             setTimeout(() => {
                 if (typeof window !== 'undefined') {
                     window.location.href = '/app';
                 }
-            }, 2000);
+            }, 1000);
         } catch (error: any) {
             console.error('Erro ao processar assinatura:', error);
             console.log('subscriptionData (no catch):', subscriptionData);
