@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/organism/Header';
@@ -22,8 +22,8 @@ const ProfilePage: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [mounted, setMounted] = useState(false);
     const [showCancelModal, setShowCancelModal] = useState(false);
-    const [error, setError] = useState<string>("");
-    const [success, setSuccess] = useState<string>("");
+    const [error, setError] = useState<string>('');
+    const [success, setSuccess] = useState<string>('');
 
     useEffect(() => {
         // Carregar dados do usuário do localStorage
@@ -39,51 +39,57 @@ const ProfilePage: React.FC = () => {
     }, [router]);
 
     const handleCancelSubscription = async () => {
-        // Função para cancelar assinatura via API /user/cancel-subscribe
-        // Usa token de autenticação do localStorage
         try {
             setLoading(true);
-            setError("");
-            setSuccess("");
+            setError('');
+            setSuccess('');
 
-            // Obter token do localStorage
             const token = localStorage.getItem('token');
-
             if (!token) {
                 throw new Error('Token de autenticação não encontrado');
             }
 
-            console.log('Cancelando assinatura...');
+            console.log('[ProfilePage] Cancelando assinatura...');
 
-            // Fazer requisição para cancelar assinatura
-            const response = await Api.post('/cancel-subscribe', {}, {
-                headers: {
-                    'Authorization': token
-                }
-            });
+            // Endpoint correto: POST /user/cancel-subscribe
+            const response = await Api.post(
+                '/user/cancel-subscribe',
+                {},
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                },
+            );
 
-            console.log('Assinatura cancelada com sucesso:', response.data);
+            console.log('[ProfilePage] Assinatura cancelada:', response.data);
 
             // Atualizar status do usuário localmente
             if (user) {
                 const updatedUser = { ...user, active: false };
                 setUser(updatedUser);
-
-                // Atualizar localStorage
                 localStorage.setItem('user', JSON.stringify(updatedUser));
             }
 
             setSuccess('Assinatura cancelada com sucesso!');
             setShowCancelModal(false);
-            router.push('/');   
-
+            router.push('/');
         } catch (error: any) {
-            console.error('Erro ao cancelar assinatura:', error);
+            console.error('[ProfilePage] Erro ao cancelar assinatura:', error);
 
             let errorMessage = 'Erro ao cancelar assinatura. Tente novamente.';
 
-            if (error.response?.data?.message) {
-                errorMessage = error.response.data.message;
+            // Exibe mensagem detalhada do backend, se disponível
+            if (error.response?.data) {
+                if (typeof error.response.data === 'string') {
+                    errorMessage = error.response.data;
+                } else if (error.response.data.error) {
+                    errorMessage = error.response.data.error;
+                } else if (error.response.data.message) {
+                    errorMessage = error.response.data.message;
+                } else {
+                    errorMessage = JSON.stringify(error.response.data);
+                }
             } else if (error.message) {
                 errorMessage = error.message;
             }
@@ -116,13 +122,16 @@ const ProfilePage: React.FC = () => {
                         <div className="col-md-8 col-lg-6">
                             {/* Mensagem de Erro */}
                             {error && (
-                                <div className="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                                <div
+                                    className="alert alert-danger alert-dismissible fade show mb-4"
+                                    role="alert"
+                                >
                                     <i className="fa-solid fa-exclamation-triangle me-2"></i>
                                     {error}
                                     <button
                                         type="button"
                                         className="btn-close"
-                                        onClick={() => setError("")}
+                                        onClick={() => setError('')}
                                         aria-label="Close"
                                     ></button>
                                 </div>
@@ -130,13 +139,16 @@ const ProfilePage: React.FC = () => {
 
                             {/* Mensagem de Sucesso */}
                             {success && (
-                                <div className="alert alert-success alert-dismissible fade show mb-4" role="alert">
+                                <div
+                                    className="alert alert-success alert-dismissible fade show mb-4"
+                                    role="alert"
+                                >
                                     <i className="fa-solid fa-check-circle me-2"></i>
                                     {success}
                                     <button
                                         type="button"
                                         className="btn-close"
-                                        onClick={() => setSuccess("")}
+                                        onClick={() => setSuccess('')}
                                         aria-label="Close"
                                     ></button>
                                 </div>
@@ -156,7 +168,9 @@ const ProfilePage: React.FC = () => {
                                                 <i className="fa-solid fa-user me-2"></i>
                                                 Nome:
                                             </label>
-                                            <span className="info-value">{user.name}</span>
+                                            <span className="info-value">
+                                                {user.name}
+                                            </span>
                                         </div>
 
                                         <div className="info-item">
@@ -164,7 +178,9 @@ const ProfilePage: React.FC = () => {
                                                 <i className="fa-solid fa-envelope me-2"></i>
                                                 E-mail:
                                             </label>
-                                            <span className="info-value">{user.email}</span>
+                                            <span className="info-value">
+                                                {user.email}
+                                            </span>
                                         </div>
 
                                         <div className="info-item">
@@ -172,7 +188,9 @@ const ProfilePage: React.FC = () => {
                                                 <i className="fa-solid fa-phone me-2"></i>
                                                 Telefone:
                                             </label>
-                                            <span className="info-value">{user.phone}</span>
+                                            <span className="info-value">
+                                                {user.phone}
+                                            </span>
                                         </div>
 
                                         <div className="info-item">
@@ -180,7 +198,9 @@ const ProfilePage: React.FC = () => {
                                                 <i className="fa-solid fa-id-card me-2"></i>
                                                 CPF:
                                             </label>
-                                            <span className="info-value">{user.cpf}</span>
+                                            <span className="info-value">
+                                                {user.cpf}
+                                            </span>
                                         </div>
 
                                         <div className="info-item">
@@ -188,8 +208,12 @@ const ProfilePage: React.FC = () => {
                                                 <i className="fa-solid fa-circle-check me-2"></i>
                                                 Status:
                                             </label>
-                                            <span className={`info-value badge ${user.active ? 'bg-success' : 'bg-warning'}`}>
-                                                {user.active ? 'Ativo' : 'Inativo'}
+                                            <span
+                                                className={`info-value badge ${user.active ? 'bg-success' : 'bg-warning'}`}
+                                            >
+                                                {user.active
+                                                    ? 'Ativo'
+                                                    : 'Inativo'}
                                             </span>
                                         </div>
                                     </div>
@@ -197,7 +221,9 @@ const ProfilePage: React.FC = () => {
                                     <div className="profile-actions mt-4">
                                         <button
                                             className="btn btn-outline-danger w-100"
-                                            onClick={() => setShowCancelModal(true)}
+                                            onClick={() =>
+                                                setShowCancelModal(true)
+                                            }
                                             disabled={!user.active}
                                         >
                                             <i className="fa-solid fa-times-circle me-2"></i>
@@ -223,7 +249,9 @@ const ProfilePage: React.FC = () => {
                     <div className="modal-dialog modal-dialog-centered">
                         <div className="modal-content">
                             <div className="modal-header">
-                                <h5 className="modal-title">Cancelar Assinatura</h5>
+                                <h5 className="modal-title">
+                                    Cancelar Assinatura
+                                </h5>
                                 <button
                                     type="button"
                                     className="btn-close"
@@ -235,10 +263,12 @@ const ProfilePage: React.FC = () => {
                                 <div className="text-center">
                                     <i className="fa-solid fa-exclamation-triangle text-warning fa-3x mb-3"></i>
                                     <p className="mb-3">
-                                        Tem certeza de que deseja cancelar sua assinatura?
+                                        Tem certeza de que deseja cancelar sua
+                                        assinatura?
                                     </p>
                                     <p className="text-muted small">
-                                        Esta ação não pode ser desfeita e você perderá o acesso aos treinos.
+                                        Esta ação não pode ser desfeita e você
+                                        perderá o acesso aos treinos.
                                     </p>
                                 </div>
                             </div>
@@ -259,7 +289,10 @@ const ProfilePage: React.FC = () => {
                                 >
                                     {loading ? (
                                         <>
-                                            <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                                            <span
+                                                className="spinner-border spinner-border-sm me-2"
+                                                role="status"
+                                            ></span>
                                             Processando...
                                         </>
                                     ) : (

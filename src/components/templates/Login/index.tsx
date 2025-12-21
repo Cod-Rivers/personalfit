@@ -23,10 +23,6 @@ const TLogin: FC = () => {
         setLoading(true);
         try {
             const { data } = await Api.post('/login', form);
-            console.log('Dados do usuário retornados pelo login:', data.user);
-            console.log('Campo active:', data.user.active);
-            console.log('Campo paid_at:', data.user.paid_at);
-            
             if (data.error) {
                 setError(data.error);
                 return;
@@ -40,13 +36,11 @@ const TLogin: FC = () => {
 
             // Redirecionar para pagamento se não estiver ativo
             if (!data.user.active) {
-                console.log('Usuário NÃO está ativo, redirecionando para pagamento');
                 window.location.href = '/pagamento';
                 return;
             }
 
             // Usuário ativo, redirecionar para app
-            console.log('Usuário está ATIVO, redirecionando para app');
             window.location.href = '/app';
         } catch (error) {
             setError('Erro ao realizar login');

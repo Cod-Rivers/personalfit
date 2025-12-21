@@ -7,10 +7,12 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    padding: 15px;
 }
 
 .login_box {
-    min-width: 450px;
+    width: 100%;
+    max-width: 450px;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -21,8 +23,42 @@
 
     color: var(--color-black);
 
-    padding: 20px;
+    padding: 30px 20px;
     font-weight: 900;
+}
+
+/* Responsividade para dispositivos móveis */
+@media (max-width: 768px) {
+    .login_main_container {
+        padding: 10px;
+    }
+
+    .login_box {
+        padding: 20px 15px;
+        border-radius: 8px;
+    }
+
+    .login_box h1 {
+        font-size: 1.5rem !important;
+    }
+
+    .btn-gold {
+        font-size: 1.2em !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .login_main_container {
+        padding: 5px;
+    }
+
+    .login_box {
+        padding: 15px 10px;
+    }
+
+    .login_box h1 {
+        font-size: 1.3rem !important;
+    }
 }
 
 .login_box h1 {

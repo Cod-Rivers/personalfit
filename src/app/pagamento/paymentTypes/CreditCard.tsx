@@ -1,7 +1,15 @@
 import { ReactNode, useState, useEffect } from 'react';
 import { Api } from '@/app/utils/api';
 
-export const CreditCardPayment = (): ReactNode => {
+interface CreditCardPaymentProps {
+    planValue: number;
+    planCycle: 'BIMONTHLY' | 'SEMIANNUALLY';
+}
+
+export const CreditCardPayment = ({
+    planValue,
+    planCycle,
+}: CreditCardPaymentProps): ReactNode => {
     const [loading, setLoading] = useState(false);
     const [mounted, setMounted] = useState(false);
     const [error, setError] = useState<string>('');
@@ -44,9 +52,6 @@ export const CreditCardPayment = (): ReactNode => {
 
             const formData = new FormData(e.currentTarget);
             const formFields = Object.fromEntries(formData.entries());
-            console.log('formFields', formFields);
-            console.log('localStorage token', localStorage.getItem('token'));
-            console.log('localStorage user', localStorage.getItem('user'));
             if (!formFields.indication_receiver) {
                 setError('Selecione se foi indicação ou não.');
                 setLoading(false);
@@ -56,6 +61,13 @@ export const CreditCardPayment = (): ReactNode => {
             // Obter dados do usuário e token do localStorage
             const token = localStorage.getItem('token');
             const user_data = localStorage.getItem('user');
+
+            console.log('🔑 Token encontrado:', token ? 'Sim' : 'Não');
+            console.log(
+                '� Primeiros 50 caracteres do token:',
+                token?.substring(0, 50) + '...',
+            );
+            console.log('�👤 Dados do usuário:', user_data ? 'Sim' : 'Não');
 
             if (!token) {
                 throw new Error('Token de autenticação não encontrado');
@@ -101,8 +113,9 @@ export const CreditCardPayment = (): ReactNode => {
 
             // Preparar payload para a API conforme estrutura esperada pelo backend
             subscriptionData = {
-                plan_value: 100.0,
-                plan_cycle: 'BIMONTHLY',
+                user_id,
+                plan_value: planValue,
+                plan_cycle: planCycle,
                 card_holder_name: formFields.card_holder_name,
                 card_number: cleanCardNumber,
                 card_expiry_month: formFields.card_expiry_month,
@@ -117,28 +130,32 @@ export const CreditCardPayment = (): ReactNode => {
                 indication_receiver: formFields.indication_receiver,
             };
 
-            console.log('Enviando dados de assinatura:', subscriptionData);
-            console.log('subscriptionData', subscriptionData);
-
             // Fazer requisição para API de assinatura
+            const authHeader = `Bearer ${token}`;
+            console.log('📤 Enviando dados de assinatura:', {
+                endpoint: '/user/subscribe',
+                planValue: subscriptionData.plan_value,
+                planCycle: subscriptionData.plan_cycle,
+                hasToken: !!token,
+            });
+            console.log('🔑 Authorization Header:', authHeader);
+
             const response = await Api.post(
                 '/user/subscribe',
                 subscriptionData,
                 {
                     headers: {
-                        Authorization: `${token}`,
+                        Authorization: authHeader,
                     },
                 },
             );
-
-            console.log('Assinatura criada com sucesso:', response.data);
 
             setSuccess(true);
 
             // Função para verificar status do usuário com polling (webhook pode levar alguns segundos)
             const checkUserStatus = async (
                 attempt = 1,
-                maxAttempts = 10,
+                maxAttempts = 5,
             ): Promise<boolean> => {
                 try {
                     console.log(
@@ -147,11 +164,9 @@ export const CreditCardPayment = (): ReactNode => {
 
                     const userResponse = await Api.get('/me', {
                         headers: {
-                            Authorization: token,
+                            Authorization: `Bearer ${token}`,
                         },
                     });
-
-                    console.log('Dados do usuário:', userResponse.data);
 
                     // Verificar se o usuário está ativo
                     if (
@@ -172,60 +187,60 @@ export const CreditCardPayment = (): ReactNode => {
                             `⏳ Usuário ainda não ativo, aguardando webhook... (${attempt}/${maxAttempts})`,
                         );
                         await new Promise((resolve) =>
-                            setTimeout(resolve, 3000),
-                        ); // Aguardar 3 segundos
+                            setTimeout(resolve, 2000),
+                        ); // Aguardar 2 segundos
                         return checkUserStatus(attempt + 1, maxAttempts);
                     }
 
-                    // Esgotou tentativas, atualizar manualmente
+                    // Esgotou tentativas,
                     console.log(
-                        '⚠️ Máximo de tentativas atingido, atualizando status manualmente',
+                        '⚠️ Máximo de tentativas atingido, O status será atualizado quando webhook for processado',
                     );
-                    const currentUser = JSON.parse(
-                        localStorage.getItem('user') || '{}',
-                    );
-                    currentUser.active = true;
-                    localStorage.setItem('user', JSON.stringify(currentUser));
-                    return true;
+                    return false;
                 } catch (userError) {
                     console.error(`Erro na tentativa ${attempt}:`, userError);
 
                     if (attempt < maxAttempts) {
                         await new Promise((resolve) =>
-                            setTimeout(resolve, 3000),
+                            setTimeout(resolve, 2000),
                         );
                         return checkUserStatus(attempt + 1, maxAttempts);
                     }
 
-                    // Erro persistente, atualizar manualmente
+                    // Erro persistente
                     console.log(
-                        '⚠️ Erro ao buscar dados, atualizando status manualmente',
+                        '⚠️ Erro ao buscar dados, Tente fazer login novamente em alguns minutos.',
                     );
-                    const currentUser = JSON.parse(
-                        localStorage.getItem('user') || '{}',
-                    );
-                    currentUser.active = true;
-                    localStorage.setItem('user', JSON.stringify(currentUser));
-                    return true;
+                    return false;
                 }
             };
 
             // Iniciar verificação de status
-            await checkUserStatus();
+            const statusConfirmed = await checkUserStatus();
 
             // Redirecionar após confirmação
-            console.log('🔄 Redirecionando para /app...');
-            setTimeout(() => {
-                if (typeof window !== 'undefined') {
-                    window.location.href = '/app';
-                }
-            }, 1000);
+            if (statusConfirmed) {
+                console.log('🔄 Redirecionando para /app em 5 segundos...');
+                console.log('⏱️ Tempo para verificar DevTools Network!');
+                setTimeout(() => {
+                    if (typeof window !== 'undefined') {
+                        window.location.href = '/app';
+                    }
+                }, 5000);
+            } else {
+                setError(
+                    'Assinatura realizada, mas houve demora na ativação. Por favor, faça login novamente em alguns minutos.',
+                );
+                setSuccess(false);
+            }
         } catch (error: any) {
             console.error('Erro ao processar assinatura:', error);
-            console.log('subscriptionData (no catch):', subscriptionData);
-            console.log('Error response:', error.response);
-            console.log('Error response data:', error.response?.data);
-            console.log('Error response status:', error.response?.status);
+            console.error('Detalhes do erro:', {
+                message: error.message,
+                response: error.response,
+                status: error.response?.status,
+                data: error.response?.data,
+            });
 
             let errorMessage = 'Erro ao processar pagamento. Tente novamente.';
 

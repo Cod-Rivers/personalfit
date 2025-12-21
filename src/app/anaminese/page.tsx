@@ -28,10 +28,31 @@ const Questions: FC = () => {
     const submitQuestions = async (awnsers: { [key: string]: string }) => {
         try {
             setLoading(true);
-            const payload = Object.entries(awnsers).map(([key, value]) => ({
-                question_id: key,
-                answer_id: value,
-            }));
+
+            // Extrair user_id do localStorage
+            const user_data = localStorage.getItem('user');
+            let user_id = undefined;
+            if (user_data) {
+                try {
+                    const parsed_user = JSON.parse(user_data);
+                    user_id = parsed_user.id || parsed_user._id;
+                } catch (e) {
+                    // fallback: não faz nada
+                }
+            }
+            if (!user_id) {
+                setError('ID do usuário não encontrado. Faça login novamente.');
+                setLoading(false);
+                return;
+            }
+
+            const payload = {
+                user_id,
+                answers: Object.entries(awnsers).map(([key, value]) => ({
+                    question_id: key,
+                    answer_id: value,
+                })),
+            };
             const user_token = localStorage.getItem('token');
             const { data } = await Api.post('/user/anamnesis', payload, {
                 headers: {
