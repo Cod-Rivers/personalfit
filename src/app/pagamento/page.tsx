@@ -6,7 +6,7 @@ import './styles.css';
 import { CreditCardPayment } from './paymentTypes/CreditCard';
 import { PixPayment } from './paymentTypes/pix';
 
-type PlanType = 'BIMONTHLY' | 'SEMIANNUALLY';
+type PlanType = 'BIMONTHLY' | 'SEMIANNUALLY' | 'YEARLY';
 
 const Payment: React.FC = () => {
     const [selectedPlan, setSelectedPlan] =
@@ -23,6 +23,12 @@ const Payment: React.FC = () => {
             value: 209.9,
             cycle: 'SEMIANNUALLY' as const,
             description: 'Cobrança a cada 6 meses',
+        },
+        YEARLY: {
+            name: 'Plano Anual',
+            value: 379.9,
+            cycle: 'YEARLY' as const,
+            description: 'Cobrança a cada 12 meses',
         },
     };
 
@@ -47,8 +53,8 @@ const Payment: React.FC = () => {
                                     Escolha seu Plano
                                 </h5>
 
-                                {/* Seletor de Planos */}
                                 <div className="row g-3 mb-4">
+                                    {/* Primeira linha: Bimestral e Semestral */}
                                     <div className="col-12 col-md-6">
                                         <div
                                             className={`card h-100 cursor-pointer ${selectedPlan === 'BIMONTHLY' ? 'border-primary border-3' : ''}`}
@@ -122,9 +128,58 @@ const Payment: React.FC = () => {
                                             </div>
                                         </div>
                                     </div>
+                                    {/* Segunda linha: Plano Anual centralizado */}
+                                    <div className="col-12 col-md-6 offset-md-3">
+                                        <div
+                                            className={`card h-100 cursor-pointer ${selectedPlan === 'YEARLY' ? 'border-primary border-3' : ''}`}
+                                            onClick={() =>
+                                                setSelectedPlan('YEARLY')
+                                            }
+                                            style={{ cursor: 'pointer' }}
+                                        >
+                                            <div className="card-body text-center">
+                                                <input
+                                                    type="radio"
+                                                    name="plan"
+                                                    checked={
+                                                        selectedPlan ===
+                                                        'YEARLY'
+                                                    }
+                                                    onChange={() =>
+                                                        setSelectedPlan(
+                                                            'YEARLY',
+                                                        )
+                                                    }
+                                                    className="form-check-input me-2"
+                                                />
+                                                <h6 className="card-title">
+                                                    Plano Anual
+                                                </h6>
+                                                <p
+                                                    className="h4 mb-2"
+                                                    style={{
+                                                        color: 'var(--color-gold)',
+                                                    }}
+                                                >
+                                                    R$ 379,90
+                                                </p>
+                                                <p className="text-muted small mb-1">
+                                                    A cada 12 meses
+                                                </p>
+                                                <span
+                                                    className="badge"
+                                                    style={{
+                                                        backgroundColor:
+                                                            'var(--color-gold)',
+                                                        color: '#fff',
+                                                    }}
+                                                >
+                                                    Economia de 20,8%
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-
-                                {/* Resumo */}
                                 <div className="border-top pt-3">
                                     <h6>Resumo do Pedido</h6>
                                     <div className="d-flex justify-content-between">

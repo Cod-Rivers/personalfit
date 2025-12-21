@@ -3,7 +3,7 @@ import { Api } from '@/app/utils/api';
 
 interface CreditCardPaymentProps {
     planValue: number;
-    planCycle: 'BIMONTHLY' | 'SEMIANNUALLY';
+    planCycle: 'BIMONTHLY' | 'SEMIANNUALLY' | 'YEARLY';
 }
 
 export const CreditCardPayment = ({

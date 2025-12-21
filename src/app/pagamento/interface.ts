@@ -5,7 +5,7 @@ export enum EPaymentTypes {
     PIX = 'PIX'
 }
 
-export type TPlanCycle = 'BIMONTHLY' | 'SEMIANNUALLY';
+export type TPlanCycle = 'BIMONTHLY' | 'SEMIANNUALLY'| 'YEARLY';
 
 export interface IPlan{
     name: string;
