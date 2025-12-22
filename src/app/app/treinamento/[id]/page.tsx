@@ -1,7 +1,14 @@
 'use client';
+// Debug: logar exercícios de dor
+
 import React, { useEffect, useState, use } from 'react';
 import { getExercisesByTrainingId } from '../../../../libs/mockExercise';
-import { ExerciseLog } from '../../../../components/features/types';
+import {
+    ExerciseLog,
+    ExerciciosDor,
+    ExercicioIndividual,
+    User,
+} from '../../../../components/features/types';
 import ExerciseDetailCard from '../../../../components/features/ExerciseDetailCard';
 import styles from './TrainingPage.module.css';
 import ImageComponent from 'next/image';
@@ -39,6 +46,7 @@ export default function TrainingExercisesPage({
         useState<ExerciseLog | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [exerciciosDor, setExerciciosDor] = useState<ExerciciosDor[]>([]);
 
     useEffect(() => {
         if (protocolId) {
@@ -56,11 +64,29 @@ export default function TrainingExercisesPage({
                 .finally(() => {
                     setIsLoading(false);
                 });
+
+            // Buscar exercícios de dor do usuário logado (localStorage)
+            if (typeof window !== 'undefined') {
+                const userString = localStorage.getItem('user');
+                if (userString) {
+                    try {
+                        const user: any = JSON.parse(userString);
+                        // Aceita snake_case e camelCase
+                        const exDor =
+                            user.exercicios_dor_selecionados ||
+                            user.exerciciosDorSelecionados ||
+                            [];
+                        setExerciciosDor(exDor);
+                    } catch {}
+                }
+            }
         }
     }, [protocolId]);
 
-    const handleExerciseClick = (exercise: ExerciseLog) => {
-        setSelectedExercise(exercise);
+    const handleExerciseClick = (
+        exercise: ExerciseLog | ExercicioIndividual,
+    ) => {
+        setSelectedExercise(exercise as ExerciseLog);
     };
 
     const handleCloseDetailCard = () => {
@@ -84,6 +110,71 @@ export default function TrainingExercisesPage({
                 <div className="mb-4">
                     <BackButton link="/app" label="Voltar" />
                 </div>
+                {/* Exercícios de dor recomendados */}
+                {exerciciosDor && exerciciosDor.length > 0 && (
+                    <div className="mb-6">
+                        <h4 className="mb-2">
+                            Exercícios recomendados para suas dores:
+                        </h4>
+                        {exerciciosDor.map((dorObj, dorIdx) => (
+                            <li key={dorIdx} className="mb-5 list-group-item">
+                                <h5 className="text-capitalize mb-3 text-lg font-semibold text-indigo-600">
+                                    Dor: {dorObj.dor}
+                                </h5>
+
+                                <ul className={styles.exerciseListContainer}>
+                                    {dorObj.exercicios?.map((ex, exIdx) => {
+                                        const key =
+                                            ex.id ||
+                                            `${ex.nome || 'ex'}-${exIdx}`;
+                                        return (
+                                            <li key={key} className="card">
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        handleExerciseClick?.(
+                                                            ex,
+                                                        )
+                                                    }
+                                                    className={`${styles.cardButton} ${styles.exerciseItemContainer}`}
+                                                >
+                                                    <div
+                                                        className={
+                                                            styles.exerciseImg
+                                                        }
+                                                    >
+                                                        {/* Container de Informações */}
+                                                        <div
+                                                            className={
+                                                                styles.exerciseInfoCol
+                                                            }
+                                                        >
+                                                            <span className="h3 font-bold text-black text-start">
+                                                                {ex.nome}
+                                                            </span>
+                                                            <span className="h6 font-semibold text-black text-start">
+                                                                {ex.descricao ||
+                                                                    'Mobilidade e alongamento'}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Ícone de Seta (conforme teu padrão) */}
+                                                    <Image
+                                                        src="/assets/icons/chevron-right.png"
+                                                        alt="seta"
+                                                        width={24}
+                                                        height={34}
+                                                    />
+                                                </button>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            </li>
+                        ))}
+                    </div>
+                )}
                 <div className="mb-8">
                     <div className={styles.Title}>
                         <ImageComponent
@@ -93,7 +184,6 @@ export default function TrainingExercisesPage({
                             width={30}
                             height={30}
                         />
-
                         <h1 className="mt-4 text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">
                             Execicios do treino{' '}
                             <span className="text-indigo-600">
@@ -154,7 +244,6 @@ export default function TrainingExercisesPage({
                     </ul>
                 ) : (
                     <div className="text-center py-12">
-                        {}
                         <h3 className="mt-2 text-xl font-semibold text-gray-800">
                             Nenhum exercício encontrado
                         </h3>
@@ -164,7 +253,6 @@ export default function TrainingExercisesPage({
                         </p>
                     </div>
                 )}
-                {}
                 {selectedExercise && (
                     <ExerciseDetailCard
                         exercise={selectedExercise}

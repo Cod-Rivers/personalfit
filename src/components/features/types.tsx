@@ -77,9 +77,26 @@ export interface ApiTrainingProgress {
     exercise_logs: ExerciseLog[];
 }
 
+export interface ExercicioIndividual {
+    id?: string;
+    nome: string;
+    descricao?: string;
+    video_url?: string;
+}
+
+export interface ExerciciosDor {
+    id?: string;
+    dor: string;
+    nome?: string;
+    descricao?: string;
+    video_url?: string;
+    exercicios?: ExercicioIndividual[];
+}
+
 export interface User {
     id: string;
     name: string;
+    exercicios_dor_selecionados?: ExerciciosDor[];
 }
 
 export interface ApiResponse {

@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { Api } from '@/app/utils/api';
 import './styles.css';
 
+import { ExerciciosDor } from '@/components/features/types';
 interface UserProfile {
     id: string;
     name: string;
@@ -14,6 +15,7 @@ interface UserProfile {
     phone: string;
     cpf: string;
     active: boolean;
+    exercicios_dor_selecionados?: ExerciciosDor[];
 }
 
 const ProfilePage: React.FC = () => {
@@ -136,7 +138,6 @@ const ProfilePage: React.FC = () => {
                                     ></button>
                                 </div>
                             )}
-
                             {/* Mensagem de Sucesso */}
                             {success && (
                                 <div
@@ -153,7 +154,6 @@ const ProfilePage: React.FC = () => {
                                     ></button>
                                 </div>
                             )}
-
                             <div className="card profile-card">
                                 <div className="card-header text-center bg-gold text-white">
                                     <div className="profile-avatar mb-3">
@@ -172,7 +172,6 @@ const ProfilePage: React.FC = () => {
                                                 {user.name}
                                             </span>
                                         </div>
-
                                         <div className="info-item">
                                             <label className="info-label">
                                                 <i className="fa-solid fa-envelope me-2"></i>
@@ -182,7 +181,6 @@ const ProfilePage: React.FC = () => {
                                                 {user.email}
                                             </span>
                                         </div>
-
                                         <div className="info-item">
                                             <label className="info-label">
                                                 <i className="fa-solid fa-phone me-2"></i>
@@ -192,7 +190,6 @@ const ProfilePage: React.FC = () => {
                                                 {user.phone}
                                             </span>
                                         </div>
-
                                         <div className="info-item">
                                             <label className="info-label">
                                                 <i className="fa-solid fa-id-card me-2"></i>
@@ -202,7 +199,6 @@ const ProfilePage: React.FC = () => {
                                                 {user.cpf}
                                             </span>
                                         </div>
-
                                         <div className="info-item">
                                             <label className="info-label">
                                                 <i className="fa-solid fa-circle-check me-2"></i>
@@ -217,7 +213,60 @@ const ProfilePage: React.FC = () => {
                                             </span>
                                         </div>
                                     </div>
-
+                                    {/* Exercícios de dor selecionados */}
+                                    {user.exercicios_dor_selecionados &&
+                                        user.exercicios_dor_selecionados
+                                            .length > 0 && (
+                                            <div className="mt-4">
+                                                <h5 className="mb-2">
+                                                    Exercícios recomendados para
+                                                    suas dores:
+                                                </h5>
+                                                <ul className="list-group">
+                                                    {user.exercicios_dor_selecionados.map(
+                                                        (ex) => (
+                                                            <li
+                                                                key={ex.id}
+                                                                className="list-group-item d-flex align-items-center gap-2"
+                                                            >
+                                                                {ex.video_url && (
+                                                                    <video
+                                                                        width="60"
+                                                                        height="40"
+                                                                        controls
+                                                                        style={{
+                                                                            objectFit:
+                                                                                'cover',
+                                                                        }}
+                                                                    >
+                                                                        <source
+                                                                            src={
+                                                                                ex.video_url
+                                                                            }
+                                                                            type="video/mp4"
+                                                                        />
+                                                                    </video>
+                                                                )}
+                                                                <div>
+                                                                    <strong>
+                                                                        {
+                                                                            ex.nome
+                                                                        }
+                                                                    </strong>
+                                                                    {ex.descricao && (
+                                                                        <div className="small text-muted">
+                                                                            {
+                                                                                ex.descricao
+                                                                            }
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </li>
+                                                        ),
+                                                    )}
+                                                </ul>
+                                            </div>
+                                        )}
                                     <div className="profile-actions mt-4">
                                         <button
                                             className="btn btn-outline-danger w-100"
@@ -229,7 +278,6 @@ const ProfilePage: React.FC = () => {
                                             <i className="fa-solid fa-times-circle me-2"></i>
                                             Cancelar Assinatura
                                         </button>
-
                                         {!user.active && (
                                             <small className="text-muted d-block mt-2 text-center">
                                                 Sua assinatura já está inativa

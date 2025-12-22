@@ -6,7 +6,11 @@ import Header from '@/components/organism/Header';
 import BackButton from '@/components/molecules/BackButton';
 import TrainingCard from '@/components/features/TrainingCard';
 import { useRouter } from 'next/navigation';
-import { ApiResponse, User, ProtocolListItem } from '@/components/features/types';
+import {
+    ApiResponse,
+    User,
+    ProtocolListItem,
+} from '@/components/features/types';
 
 // Importe a nova função
 import { getProtocolsByUserId } from '@/libs/mockProtocolData2';
