@@ -113,65 +113,71 @@ export default function TrainingExercisesPage({
                 {/* Exercícios de dor recomendados */}
                 {exerciciosDor && exerciciosDor.length > 0 && (
                     <div className="mb-6">
-                        <h4 className="mb-2">
-                            Exercícios recomendados para suas dores:
-                        </h4>
+                        <div className={styles.Title}>
+                            <ImageComponent
+                                className={styles.myImageInTitle}
+                                src={weightIcon}
+                                alt="This is a weight image"
+                                width={30}
+                                height={30}
+                            />
+                            <h1 className="mt-4 text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">
+                                Exercícios recomendados para suas dores:
+                            </h1>
+                        </div>
                         {exerciciosDor.map((dorObj, dorIdx) => (
-                            <li key={dorIdx} className="mb-5 list-group-item">
+                            <ul
+                                key={dorIdx}
+                                className={`${styles.exerciseListContainer}`}
+                            >
                                 <h5 className="text-capitalize mb-3 text-lg font-semibold text-indigo-600">
                                     Dor: {dorObj.dor}
-                                </h5>
-
-                                <ul className={styles.exerciseListContainer}>
-                                    {dorObj.exercicios?.map((ex, exIdx) => {
-                                        const key =
-                                            ex.id ||
-                                            `${ex.nome || 'ex'}-${exIdx}`;
-                                        return (
-                                            <li key={key} className="card">
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        handleExerciseClick?.(
-                                                            ex,
-                                                        )
+                                </h5>{' '}
+                                {dorObj.exercicios?.map((ex, exIdx) => {
+                                    const key =
+                                        ex.id || `${ex.nome || 'ex'}-${exIdx}`;
+                                    return (
+                                        <li key={key}>
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    handleExerciseClick?.(ex)
+                                                }
+                                                className={`${styles.cardButton} ${styles.exerciseItemContainer}`}
+                                            >
+                                                <div
+                                                    className={
+                                                        styles.exerciseImg
                                                     }
-                                                    className={`${styles.cardButton} ${styles.exerciseItemContainer}`}
                                                 >
+                                                    {/* Container de Informações */}
                                                     <div
                                                         className={
-                                                            styles.exerciseImg
+                                                            styles.exerciseInfoCol
                                                         }
                                                     >
-                                                        {/* Container de Informações */}
-                                                        <div
-                                                            className={
-                                                                styles.exerciseInfoCol
-                                                            }
-                                                        >
-                                                            <span className="h3 font-bold text-black text-start">
-                                                                {ex.nome}
-                                                            </span>
-                                                            <span className="h6 font-semibold text-black text-start">
-                                                                {ex.descricao ||
-                                                                    'Mobilidade e alongamento'}
-                                                            </span>
-                                                        </div>
+                                                        <span className="h3 font-bold text-black text-start">
+                                                            {ex.nome}
+                                                        </span>
+                                                        <span className="h6 font-semibold text-black text-start">
+                                                            {ex.descricao ||
+                                                                'Mobilidade e alongamento'}
+                                                        </span>
                                                     </div>
+                                                </div>
 
-                                                    {/* Ícone de Seta (conforme teu padrão) */}
-                                                    <Image
-                                                        src="/assets/icons/chevron-right.png"
-                                                        alt="seta"
-                                                        width={24}
-                                                        height={34}
-                                                    />
-                                                </button>
-                                            </li>
-                                        );
-                                    })}
-                                </ul>
-                            </li>
+                                                {/* Ícone de Seta (conforme teu padrão) */}
+                                                <Image
+                                                    src="/assets/icons/chevron-right.png"
+                                                    alt="seta"
+                                                    width={24}
+                                                    height={34}
+                                                />
+                                            </button>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
                         ))}
                     </div>
                 )}
