@@ -6,15 +6,16 @@ import BackButton from '@/components/molecules/BackButton';
 import QuestionsRenderer from '@/components/organism/QuestionsRenderer';
 import { useRouter } from 'next/navigation';
 import { useAnamnesisStatus } from '@/hooks/useAnamnesisStatus';
+import styles from '../app/treinamento/[id]/TrainingPage.module.css';
 
 const DORES_LIST = [
     'Lombar',
     'Joelho',
     'Ombro',
     //'Cervical',
-    //'Tornozelo',
+    'Tornozelo',
     'Quadril',
-    'Punho',
+    //'Punho',
     //'Cotovelo',
     //'Outro',
 ];
@@ -123,9 +124,9 @@ const Questions: FC = () => {
     }, []);
 
     return (
-        <div className="container">
+        <div className={`${styles.exerciseListContainer}`}>
             <div
-                className="d-flex justify-content-center align-items-center"
+                className="d-flex justify-content-center background-color: #ffffff align-items-center"
                 style={{ minHeight: '90vh' }}
             >
                 {(loading || statusLoading) && (
@@ -137,23 +138,24 @@ const Questions: FC = () => {
                     !loading &&
                     anamnesisStatus &&
                     !anamnesisStatus.can_register && (
-                        <div className="w-100 text-center px-3">
+                        <div className=" background-color: #ffffff;">
                             <div
-                                className="alert alert-warning p-4"
+                                className="alert alert-warning p-4 background-color: #ffffff"
                                 role="alert"
+                                style={{ backgroundColor: '#d8d8d7ff' }}
                             >
-                                <h4 className="alert-heading">
+                                <h4 className="alert-heading text-black">
                                     ⏰ Anamnese Temporariamente Indisponível
                                 </h4>
                                 <hr />
-                                <p className="mb-3">
+                                <p className="mb-3 text-black">
                                     A anamnese só pode ser realizada a cada{' '}
                                     <strong>2 meses</strong> para garantir um
                                     acompanhamento adequado da sua evolução.
                                 </p>
 
                                 {anamnesisStatus.last_anamnesis_date && (
-                                    <p className="mb-2">
+                                    <p className="mb-2 text-black">
                                         <strong>Última anamnese:</strong>{' '}
                                         {new Date(
                                             anamnesisStatus.last_anamnesis_date,
@@ -166,7 +168,7 @@ const Questions: FC = () => {
                                 )}
 
                                 {anamnesisStatus.next_available_date && (
-                                    <p className="mb-2">
+                                    <p className="mb-2 text-black">
                                         <strong>
                                             Próxima anamnese disponível em:
                                         </strong>{' '}
@@ -183,7 +185,7 @@ const Questions: FC = () => {
                                 {anamnesisStatus.days_remaining !==
                                     undefined && (
                                     <div className="mt-3">
-                                        <div className="badge bg-info text-dark fs-5 p-3">
+                                        <div className="badge bg-light text-secondary border fs-5 p-3">
                                             📅 {anamnesisStatus.days_remaining}{' '}
                                             {anamnesisStatus.days_remaining ===
                                             1
@@ -196,7 +198,7 @@ const Questions: FC = () => {
 
                                 <div className="mt-4">
                                     <button
-                                        className="btn btn-primary btn-lg"
+                                        className="btn btn-outline-dark btn-lg"
                                         onClick={() => router.push('/app')}
                                     >
                                         🏠 Voltar ao Início
@@ -259,25 +261,6 @@ const Questions: FC = () => {
                             )}
                         </div>
                     )}
-
-                {/* Debug: Mostrar estados atuais */}
-                {!loading && !statusLoading && (
-                    <div
-                        className="position-fixed bottom-0 start-0 p-2 bg-dark text-white small"
-                        style={{ fontSize: '10px', opacity: 0.7 }}
-                    >
-                        <div>Loading: {loading ? 'true' : 'false'}</div>
-                        <div>
-                            StatusLoading: {statusLoading ? 'true' : 'false'}
-                        </div>
-                        <div>Questions: {questions.length}</div>
-                        <div>
-                            Can Register:{' '}
-                            {anamnesisStatus?.can_register ? 'true' : 'false'}
-                        </div>
-                        <div>Status: {JSON.stringify(anamnesisStatus)}</div>
-                    </div>
-                )}
             </div>
         </div>
     );

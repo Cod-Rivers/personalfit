@@ -97,6 +97,7 @@ export interface User {
     id: string;
     name: string;
     exercicios_dor_selecionados?: ExerciciosDor[];
+    protocol_notes?: string;
 }
 
 export interface ApiResponse {
