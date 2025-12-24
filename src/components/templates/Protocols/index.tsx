@@ -65,10 +65,9 @@ const TProtocols: React.FC = () => {
 
                 {protocolNotes && (
                     <div
-                        className="alert alert-info mb-4"
+                        className=" mb-4"
                         style={{
-                            backgroundColor: '#e0e7ff',
-                            borderLeft: '4px solid #4f46e5',
+                            backgroundColor: '#ffff',
                             padding: '1rem',
                             borderRadius: '0.5rem',
                             color: '#1e293b',
@@ -79,7 +78,7 @@ const TProtocols: React.FC = () => {
                                 <svg
                                     width="24"
                                     height="24"
-                                    fill="#4f46e5"
+                                    fill="#d18d26ff"
                                     viewBox="0 0 20 20"
                                 >
                                     <path

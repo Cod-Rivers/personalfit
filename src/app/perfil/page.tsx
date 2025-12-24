@@ -66,16 +66,17 @@ const ProfilePage: React.FC = () => {
 
             console.log('[ProfilePage] Assinatura cancelada:', response.data);
 
-            // Atualizar status do usuário localmente
-            if (user) {
-                const updatedUser = { ...user, active: false };
-                setUser(updatedUser);
-                localStorage.setItem('user', JSON.stringify(updatedUser));
-            }
+            // Limpar dados do localStorage (logout completo)
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
 
-            setSuccess('Assinatura cancelada com sucesso!');
+            setSuccess('Assinatura cancelada com sucesso! Redirecionando...');
             setShowCancelModal(false);
-            router.push('/');
+
+            // Redirecionar para home após logout
+            setTimeout(() => {
+                router.push('/');
+            }, 1000);
         } catch (error: any) {
             console.error('[ProfilePage] Erro ao cancelar assinatura:', error);
 

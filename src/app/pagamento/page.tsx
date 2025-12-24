@@ -7,10 +7,13 @@ import { CreditCardPayment } from './paymentTypes/CreditCard';
 import { PixPayment } from './paymentTypes/pix';
 
 type PlanType = 'BIMONTHLY' | 'SEMIANNUALLY' | 'YEARLY';
+type PaymentMethod = 'CREDIT_CARD' | 'PIX';
 
 const Payment: React.FC = () => {
     const [selectedPlan, setSelectedPlan] =
         React.useState<PlanType>('BIMONTHLY');
+    const [paymentMethod, setPaymentMethod] =
+        React.useState<PaymentMethod>('CREDIT_CARD');
     const plans = {
         BIMONTHLY: {
             name: 'Plano Bimestral',
@@ -200,11 +203,94 @@ const Payment: React.FC = () => {
                             </div>
                         </div>
                     </div>
+
+                    {/* Seleção do Método de Pagamento */}
                     <div className="col-12">
-                        <CreditCardPayment
-                            planValue={plans[selectedPlan].value}
-                            planCycle={plans[selectedPlan].cycle}
-                        />
+                        <div className="card">
+                            <div className="card-body">
+                                <h5 className="card-title mb-3">
+                                    Método de Pagamento
+                                </h5>
+                                <div className="row g-3">
+                                    <div className="col-12 col-md-6">
+                                        <div
+                                            className={`card h-100 cursor-pointer ${paymentMethod === 'CREDIT_CARD' ? 'border-primary border-3' : ''}`}
+                                            onClick={() =>
+                                                setPaymentMethod('CREDIT_CARD')
+                                            }
+                                            style={{ cursor: 'pointer' }}
+                                        >
+                                            <div className="card-body text-center">
+                                                <input
+                                                    type="radio"
+                                                    name="paymentMethod"
+                                                    checked={
+                                                        paymentMethod ===
+                                                        'CREDIT_CARD'
+                                                    }
+                                                    onChange={() =>
+                                                        setPaymentMethod(
+                                                            'CREDIT_CARD',
+                                                        )
+                                                    }
+                                                    className="form-check-input me-2"
+                                                />
+                                                <h6 className="card-title">
+                                                    Cartão de Crédito
+                                                </h6>
+                                                <p className="text-muted small mb-0">
+                                                    Aprovação imediata
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="col-12 col-md-6">
+                                        <div
+                                            className={`card h-100 cursor-pointer ${paymentMethod === 'PIX' ? 'border-primary border-3' : ''}`}
+                                            onClick={() =>
+                                                setPaymentMethod('PIX')
+                                            }
+                                            style={{ cursor: 'pointer' }}
+                                        >
+                                            <div className="card-body text-center">
+                                                <input
+                                                    type="radio"
+                                                    name="paymentMethod"
+                                                    checked={
+                                                        paymentMethod === 'PIX'
+                                                    }
+                                                    onChange={() =>
+                                                        setPaymentMethod('PIX')
+                                                    }
+                                                    className="form-check-input me-2"
+                                                />
+                                                <h6 className="card-title">
+                                                    PIX
+                                                </h6>
+                                                <p className="text-muted small mb-0">
+                                                    Pagamento instantâneo
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Formulário de Pagamento Condicional */}
+                    <div className="col-12">
+                        {paymentMethod === 'CREDIT_CARD' ? (
+                            <CreditCardPayment
+                                planValue={plans[selectedPlan].value}
+                                planCycle={plans[selectedPlan].cycle}
+                            />
+                        ) : (
+                            <PixPayment
+                                planValue={plans[selectedPlan].value}
+                                planCycle={plans[selectedPlan].cycle}
+                            />
+                        )}
                     </div>
                 </div>
             </div>

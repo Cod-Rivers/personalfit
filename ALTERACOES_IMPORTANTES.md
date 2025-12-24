@@ -153,3 +153,32 @@ Este arquivo documenta alterações significativas realizadas no projeto para co
 ---
 
 ## [Adicione suas próximas alterações abaixo]
+
+---
+
+## 🔐 Logout automático após cancelamento de assinatura (24/12/2025)
+
+**Problema:** Ao cancelar a assinatura, o backend apaga os dados de anamnese do usuário. O frontend mantinha `user` e `token` no `localStorage`, permitindo que o cliente continuasse autenticado localmente.
+
+**Solução implementada:**
+
+- No frontend (`src/app/perfil/page.tsx`) ao confirmar o cancelamento da assinatura, agora:
+    - Remove `user` do `localStorage` (`localStorage.removeItem('user')`).
+    - Remove `token` do `localStorage` (`localStorage.removeItem('token')`).
+    - Exibe mensagem de sucesso e redireciona para a página inicial (`/`) após ~1 segundo.
+
+**Arquivos modificados:**
+
+- `src/app/perfil/page.tsx` — adicionada limpeza de `localStorage` e redirecionamento após cancelamento.
+
+**Passos para testar:**
+
+1. Logue com um usuário que possua assinatura ativa.
+2. Acesse `/perfil` e clique em "Cancelar Assinatura".
+3. Confirme o cancelamento.
+4. Verifique que `localStorage` não contém mais as chaves `user` e `token` e que o cliente é redirecionado para `/`.
+
+**Observações:**
+
+- Mantive a mensagem de sucesso visível por 1s antes do redirecionamento, para feedback ao usuário.
+- Caso queira comportamento diferente (redirecionamento imediato ou voltar para tela de login), ajustar o `setTimeout` em `page.tsx`.
