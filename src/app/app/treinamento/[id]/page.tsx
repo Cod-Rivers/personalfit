@@ -16,6 +16,9 @@ import weightIcon from './../../../../../public/assets/icons/weight-icon.png';
 import Header from '@/components/organism/Header';
 import BackButton from '@/components/molecules/BackButton';
 import Image from 'next/image';
+import { getGifUrl } from '@/libs/gifUtils';
+import { normalizeExerciseGif } from '@/libs/exerciseGifMapping';
+import GifThumbnail from '@/components/molecules/GifThumbnail';
 
 interface TrainingPageParams {
     id: string;
@@ -133,50 +136,95 @@ export default function TrainingExercisesPage({
                                 <h5 className="text-capitalize mb-3 text-lg font-semibold text-indigo-600">
                                     Dor: {dorObj.dor}
                                 </h5>{' '}
-                                {dorObj.exercicios?.map((ex, exIdx) => {
-                                    const key =
-                                        ex.id || `${ex.nome || 'ex'}-${exIdx}`;
-                                    return (
-                                        <li key={key}>
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    handleExerciseClick?.(ex)
-                                                }
-                                                className={`${styles.cardButton} ${styles.exerciseItemContainer}`}
+                                {dorObj.exercicios?.map(
+                                    (
+                                        ex: ExercicioIndividual,
+                                        exIdx: number,
+                                    ) => {
+                                        // Normalizar o exercício para garantir que o GIF correto seja usado
+                                        const exerciseNormalized =
+                                            normalizeExerciseGif(ex);
+                                        return (
+                                            <li
+                                                key={`dor-${dorIdx}-ex-${exIdx}`}
                                             >
-                                                <div
-                                                    className={
-                                                        styles.exerciseImg
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        handleExerciseClick(
+                                                            exerciseNormalized,
+                                                        )
                                                     }
+                                                    className={`${styles.cardButton} ${styles.exerciseItemContainer}`}
                                                 >
-                                                    {/* Container de Informações */}
                                                     <div
                                                         className={
-                                                            styles.exerciseInfoCol
+                                                            styles.exerciseImg
                                                         }
                                                     >
-                                                        <span className="h3 font-bold text-black text-start">
-                                                            {ex.nome}
-                                                        </span>
-                                                        <span className="h6 font-semibold text-black text-start">
-                                                            {ex.descricao ||
-                                                                'Mobilidade e alongamento'}
-                                                        </span>
+                                                        {/* Thumbnail do GIF */}
+                                                        {exerciseNormalized.video_url && (
+                                                            <div
+                                                                className="mr-3"
+                                                                style={{
+                                                                    flexShrink: 0,
+                                                                }}
+                                                            >
+                                                                <GifThumbnail
+                                                                    src={getGifUrl(
+                                                                        exerciseNormalized.video_url,
+                                                                    )}
+                                                                    alt={
+                                                                        exerciseNormalized.nome
+                                                                    }
+                                                                    width={80}
+                                                                    height={80}
+                                                                    freezeAtSeconds={
+                                                                        1.5
+                                                                    }
+                                                                    style={{
+                                                                        borderRadius:
+                                                                            '8px',
+                                                                    }}
+                                                                    onError={() => {
+                                                                        console.error(
+                                                                            'Erro ao carregar GIF:',
+                                                                            exerciseNormalized.video_url,
+                                                                        );
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                        )}
+                                                        {/* Container de Informações */}
+                                                        <div
+                                                            className={
+                                                                styles.exerciseInfoCol
+                                                            }
+                                                        >
+                                                            <span className="h3 font-bold text-black text-start">
+                                                                {
+                                                                    exerciseNormalized.nome
+                                                                }
+                                                            </span>
+                                                            <span className="h6 font-semibold text-black text-start">
+                                                                {exerciseNormalized.descricao ||
+                                                                    'Mobilidade e alongamento'}
+                                                            </span>
+                                                        </div>
                                                     </div>
-                                                </div>
 
-                                                {/* Ícone de Seta (conforme teu padrão) */}
-                                                <Image
-                                                    src="/assets/icons/chevron-right.png"
-                                                    alt="seta"
-                                                    width={24}
-                                                    height={34}
-                                                />
-                                            </button>
-                                        </li>
-                                    );
-                                })}
+                                                    {/* Ícone de Seta (conforme teu padrão) */}
+                                                    <Image
+                                                        src="/assets/icons/chevron-right.png"
+                                                        alt="seta"
+                                                        width={24}
+                                                        height={34}
+                                                    />
+                                                </button>
+                                            </li>
+                                        );
+                                    },
+                                )}
                             </ul>
                         ))}
                     </div>
@@ -212,6 +260,32 @@ export default function TrainingExercisesPage({
                                     className={`${styles.cardButton} ${styles.exerciseItemContainer}`}
                                 >
                                     <div className={styles.exerciseImg}>
+                                        {/* Thumbnail do GIF */}
+                                        {exercise.video_url && (
+                                            <div
+                                                className="mr-3"
+                                                style={{ flexShrink: 0 }}
+                                            >
+                                                <GifThumbnail
+                                                    src={getGifUrl(
+                                                        exercise.video_url,
+                                                    )}
+                                                    alt={exercise.name}
+                                                    width={80}
+                                                    height={80}
+                                                    freezeAtSeconds={1.5}
+                                                    style={{
+                                                        borderRadius: '8px',
+                                                    }}
+                                                    onError={() => {
+                                                        console.error(
+                                                            'Erro ao carregar GIF:',
+                                                            exercise.video_url,
+                                                        );
+                                                    }}
+                                                />
+                                            </div>
+                                        )}
                                         <div className={styles.exerciseInfoCol}>
                                             <span className="h3 font-bold text-black">
                                                 {exercise.name}

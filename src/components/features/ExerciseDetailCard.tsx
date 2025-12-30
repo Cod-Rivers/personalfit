@@ -1,17 +1,25 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { ExerciseLog } from './types';
+import { ExerciseLog, ExercicioIndividual } from './types';
 import styles from './ExerciseDetailCard.module.css';
 import { FaEdit } from 'react-icons/fa';
 import ProtectedVideo from '@/components/molecules/ProtectedVideo';
 import { saveExerciseNotes } from '@/app/utils/api';
 
 interface ExerciseDetailCardProps {
-    exercise: ExerciseLog;
+    exercise: ExerciseLog | ExercicioIndividual;
     trainingId: string;
     onClose?: () => void;
 }
+
+const isExerciseLog = (
+    exercise: ExerciseLog | ExercicioIndividual,
+): exercise is ExerciseLog => {
+    return (
+        'series' in exercise && Array.isArray((exercise as ExerciseLog).series)
+    );
+};
 
 const getVideoId = (url: string): string | null => {
     console.log('[getVideoId] URL original recebida:', url);
@@ -42,16 +50,21 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
     trainingId,
     onClose,
 }) => {
+    const exerciseLog = isExerciseLog(exercise) ? exercise : null;
+    const exerciseIndividual = !isExerciseLog(exercise)
+        ? (exercise as ExercicioIndividual)
+        : null;
+
     const [timerValue, setTimerValue] = useState<number>(
-        exercise.restTime || 60,
+        exerciseLog?.restTime || 60,
     );
     const [isTimerRunning, setIsTimerRunning] = useState<boolean>(false);
     const [userAnnotations, setUserAnnotations] = useState<string>(
-        exercise.notes || '',
+        exerciseLog?.notes || '',
     );
     const [isWeightEditing, setIsWeightEditing] = useState<boolean>(false);
     const [weightValue, setWeightValue] = useState<number | string>(
-        exercise.weight > 0 ? exercise.weight : '',
+        (exerciseLog?.weight || 0) > 0 ? exerciseLog?.weight || 0 : '',
     );
     const [isSavingNotes, setIsSavingNotes] = useState<boolean>(false);
 
@@ -73,9 +86,9 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
     }, [isTimerRunning, timerValue]);
 
     useEffect(() => {
-        setTimerValue(exercise.restTime || 60);
+        setTimerValue(exerciseLog?.restTime || 60);
         setIsTimerRunning(false);
-    }, [exercise.restTime, exercise.id]);
+    }, [exerciseLog?.restTime, exercise]);
 
     const handleStartTimer = useCallback(() => {
         if (timerValue > 0) {
@@ -89,8 +102,8 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
 
     const handleResetTimer = useCallback(() => {
         setIsTimerRunning(false);
-        setTimerValue(exercise.restTime || 60);
-    }, [exercise.restTime]);
+        setTimerValue(exerciseLog?.restTime || 60);
+    }, [exerciseLog?.restTime]);
 
     const formatTime = (timeInSeconds: number): string => {
         const minutes = Math.floor(timeInSeconds / 60);
@@ -105,11 +118,16 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
     };
 
     const handleSaveAnnotations = async () => {
+        if (!exerciseLog?.id) {
+            alert('Exercícios de dor não suportam anotações no momento.');
+            return;
+        }
+
         setIsSavingNotes(true);
 
         const result = await saveExerciseNotes(
             trainingId,
-            exercise.id,
+            exerciseLog.id,
             userAnnotations,
         );
 
@@ -118,7 +136,7 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
         if (result.success) {
             alert(result.message || 'Anotações salvas com sucesso!');
             // Atualizar os dados locais
-            exercise.notes = userAnnotations;
+            exerciseLog.notes = userAnnotations;
         } else {
             alert(
                 'Erro ao salvar anotações: ' +
@@ -129,15 +147,17 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
 
     if (!exercise) return null;
 
-    const embedUrl = getVideoId(exercise.video_url || '');
+    const exerciseName =
+        exerciseLog?.name || exerciseIndividual?.nome || 'Unknown';
+    const videoUrl =
+        exerciseLog?.video_url || exerciseIndividual?.video_url || '';
+    const embedUrl = getVideoId(videoUrl);
+
     console.log(
         '[ExerciseDetailCard] Renderizando para o exercício:',
-        exercise?.name,
+        exerciseName,
     );
-    console.log(
-        '[ExerciseDetailCard] video_url do exercício:',
-        exercise?.video_url,
-    );
+    console.log('[ExerciseDetailCard] video_url do exercício:', videoUrl);
     console.log('[ExerciseDetailCard] videoId calculado:', embedUrl);
     console.log(
         '[ExerciseDetailCard] Exercício completo:',
@@ -170,7 +190,7 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                         <div className={styles.videoSection}>
                             <ProtectedVideo
                                 videoId={embedUrl}
-                                title={`Vídeo demonstrativo - ${exercise.name}`}
+                                title={`Vídeo demonstrativo - ${exerciseName}`}
                                 className={styles.verticalVideo}
                             />
                         </div>
@@ -205,106 +225,133 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                             </button>
                         )}
                         <h2 className={styles.exerciseTitle}>
-                            {exercise.name}
+                            {exerciseLog?.name || exerciseIndividual?.nome}
                         </h2>
+                        {exerciseIndividual && exerciseIndividual.descricao && (
+                            <p className="text-center text-gray-600 mb-3">
+                                {exerciseIndividual.descricao}
+                            </p>
+                        )}
                         <div className={styles.contentLayout}>
                             <div className={styles.detailsSection}>
-                                <div className={styles.detailRow}>
-                                    <div className={styles.repet}>
-                                        <strong>Repetições:</strong>{' '}
-                                        <div className={styles.valueBox}>
-                                            <span>
-                                                {exercise.series.join(' - ')}
-                                            </span>
+                                {exerciseLog && (
+                                    <div className={styles.detailRow}>
+                                        <div className={styles.repet}>
+                                            <strong>Repetições:</strong>{' '}
+                                            <div className={styles.valueBox}>
+                                                <span>
+                                                    {exerciseLog.series.join(
+                                                        ' - ',
+                                                    )}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <strong>Peso (KG):</strong>{' '}
+                                            {isWeightEditing ? (
+                                                <input
+                                                    type="number"
+                                                    className={styles.valueBox}
+                                                    value={weightValue}
+                                                    onChange={(e) =>
+                                                        setWeightValue(
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    onBlur={handleWeightEditEnd}
+                                                    onKeyDown={
+                                                        handleWeightKeyDown
+                                                    }
+                                                />
+                                            ) : (
+                                                <span
+                                                    className={styles.valueBox}
+                                                    onClick={
+                                                        handleWeightEditStart
+                                                    }
+                                                >
+                                                    {weightValue !== ''
+                                                        ? `${weightValue} kg`
+                                                        : 'Peso'}
+                                                    {}
+                                                    <svg
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        viewBox="0 0 24 24"
+                                                        width="1em"
+                                                        height="1em"
+                                                        fill="currentColor"
+                                                        className={
+                                                            styles.editIcon
+                                                        }
+                                                    >
+                                                        <path
+                                                            fillRule="evenodd"
+                                                            clipRule="evenodd"
+                                                            d="M15.023 6.27l1.707 1.707-8.486 8.485-1.707-1.707 8.486-8.485zM13.5 4a1.5 1.5 0 011.06.44l6 6a1.5 1.5 0 010 2.12l-6 6a1.5 1.5 0 01-2.12 0l-6-6a1.5 1.5 0 010-2.12l6-6A1.5 1.5 0 0113.5 4zm-1.06 2.44l-6 6a.5.5 0 00.707.707L13.5 7.14a.5.5 0 00-.707-.707z"
+                                                        />
+                                                    </svg>
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
-                                    <div>
-                                        <strong>Peso (KG):</strong>{' '}
-                                        {isWeightEditing ? (
-                                            <input
-                                                type="number"
-                                                className={styles.valueBox}
-                                                value={weightValue}
-                                                onChange={(e) =>
-                                                    setWeightValue(
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                onBlur={handleWeightEditEnd}
-                                                onKeyDown={handleWeightKeyDown}
-                                            />
-                                        ) : (
-                                            <span
-                                                className={styles.valueBox}
-                                                onClick={handleWeightEditStart}
-                                            >
-                                                {weightValue !== ''
-                                                    ? `${weightValue} kg`
-                                                    : 'Peso'}
-                                                {}
-                                                <svg
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    viewBox="0 0 24 24"
-                                                    width="1em"
-                                                    height="1em"
-                                                    fill="currentColor"
-                                                    className={styles.editIcon}
-                                                >
-                                                    <path
-                                                        fillRule="evenodd"
-                                                        clipRule="evenodd"
-                                                        d="M15.023 6.27l1.707 1.707-8.486 8.485-1.707-1.707 8.486-8.485zM13.5 4a1.5 1.5 0 011.06.44l6 6a1.5 1.5 0 010 2.12l-6 6a1.5 1.5 0 01-2.12 0l-6-6a1.5 1.5 0 010-2.12l6-6A1.5 1.5 0 0113.5 4zm-1.06 2.44l-6 6a.5.5 0 00.707.707L13.5 7.14a.5.5 0 00-.707-.707z"
-                                                    />
-                                                </svg>
-                                            </span>
-                                        )}
+                                )}
+                                {exerciseLog && (
+                                    <div className={styles.detailRow}>
+                                        <p>
+                                            <strong>Variações:</strong>{' '}
+                                            {exerciseLog.variations || 'N/A'}
+                                        </p>
                                     </div>
-                                </div>
-                                <div className={styles.detailRow}>
-                                    <p>
-                                        <strong>Variações:</strong>{' '}
-                                        {exercise.variations || 'N/A'}
-                                    </p>
-                                </div>
-                                {exercise.timed && (
+                                )}
+                                {exerciseLog?.timed && (
                                     <p className={styles.timedInfo}>
                                         Controlado por tempo
                                     </p>
                                 )}
                                 {/* Video is now shown directly in the modal above */}
                                 {}
-                                {exercise.notes && (
+                                {exerciseLog?.notes && (
                                     <div className={styles.notesSection}>
                                         <p>
                                             <strong>Observações:</strong>
                                         </p>
-                                        <p>{exercise.notes}</p>
+                                        <p>{exerciseLog.notes}</p>
                                     </div>
                                 )}
                                 {}
-                                <div className={styles.userAnnotationsSection}>
-                                    <p>
-                                        <strong>Minhas Anotações:</strong>
-                                    </p>
-                                    <textarea
-                                        value={userAnnotations}
-                                        onChange={handleAnnotationsChange}
-                                        className={styles.userAnnotationsInput}
-                                        placeholder="Adicione suas anotações aqui..."
-                                        disabled={isSavingNotes}
-                                    />
-                                    <button
-                                        onClick={handleSaveAnnotations}
-                                        className={styles.saveAnnotationsButton}
-                                        disabled={isSavingNotes}
+                                {exerciseLog && (
+                                    <div
+                                        className={
+                                            styles.userAnnotationsSection
+                                        }
                                     >
-                                        {isSavingNotes
-                                            ? 'Salvando...'
-                                            : 'Salvar Anotação'}
-                                    </button>
-                                </div>
+                                        <p>
+                                            <strong>Minhas Anotações:</strong>
+                                        </p>
+                                        <textarea
+                                            value={userAnnotations}
+                                            onChange={handleAnnotationsChange}
+                                            className={
+                                                styles.userAnnotationsInput
+                                            }
+                                            placeholder="Adicione suas anotações aqui..."
+                                            disabled={isSavingNotes}
+                                        />
+                                        <button
+                                            onClick={handleSaveAnnotations}
+                                            className={
+                                                styles.saveAnnotationsButton
+                                            }
+                                            disabled={isSavingNotes}
+                                        >
+                                            {isSavingNotes
+                                                ? 'Salvando...'
+                                                : 'Salvar Anotação'}
+                                        </button>
+                                    </div>
+                                )}
                                 {}
-                                {exercise.restTime > 0 && (
+                                {exerciseLog && exerciseLog.restTime > 0 && (
                                     <div className={styles.restTimerSection}>
                                         <div className={styles.timerDisplay}>
                                             {formatTime(timerValue)}
