@@ -23,30 +23,41 @@ const TLogin: FC = () => {
         setLoading(true);
         try {
             const { data } = await Api.post('/login', form);
-            console.log('Dados do usuário retornados pelo login:', data.user);
-            console.log('Campo active:', data.user.active);
-            console.log('Campo paid_at:', data.user.paid_at);
-            
             if (data.error) {
                 setError(data.error);
                 return;
             }
 
-            // Salvar token e dados do usuário
+            // Salvar token
             if (data.token) {
-                localStorage.setItem('user', JSON.stringify(data.user));
                 localStorage.setItem('token', data.token);
+
+                // Buscar dados completos do usuário (incluindo exercícios de dor)
+                try {
+                    const userResponse = await Api.get('/me', {
+                        headers: { Authorization: `Bearer ${data.token}` },
+                    });
+                    localStorage.setItem(
+                        'user',
+                        JSON.stringify(userResponse.data),
+                    );
+                } catch (err) {
+                    console.error(
+                        '[LOGIN] Erro ao buscar dados do usuário:',
+                        err,
+                    );
+                    // Fallback: usar dados do login
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                }
             }
 
             // Redirecionar para pagamento se não estiver ativo
             if (!data.user.active) {
-                console.log('Usuário NÃO está ativo, redirecionando para pagamento');
                 window.location.href = '/pagamento';
                 return;
             }
 
             // Usuário ativo, redirecionar para app
-            console.log('Usuário está ATIVO, redirecionando para app');
             window.location.href = '/app';
         } catch (error) {
             setError('Erro ao realizar login');

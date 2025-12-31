@@ -1,7 +1,14 @@
 'use client';
+// Debug: logar exercícios de dor
+
 import React, { useEffect, useState, use } from 'react';
 import { getExercisesByTrainingId } from '../../../../libs/mockExercise';
-import { ExerciseLog } from '../../../../components/features/types';
+import {
+    ExerciseLog,
+    ExerciciosDor,
+    ExercicioIndividual,
+    User,
+} from '../../../../components/features/types';
 import ExerciseDetailCard from '../../../../components/features/ExerciseDetailCard';
 import styles from './TrainingPage.module.css';
 import ImageComponent from 'next/image';
@@ -9,6 +16,9 @@ import weightIcon from './../../../../../public/assets/icons/weight-icon.png';
 import Header from '@/components/organism/Header';
 import BackButton from '@/components/molecules/BackButton';
 import Image from 'next/image';
+import { getGifUrl } from '@/libs/gifUtils';
+import { normalizeExerciseGif } from '@/libs/exerciseGifMapping';
+import GifThumbnail from '@/components/molecules/GifThumbnail';
 
 interface TrainingPageParams {
     id: string;
@@ -39,6 +49,7 @@ export default function TrainingExercisesPage({
         useState<ExerciseLog | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [exerciciosDor, setExerciciosDor] = useState<ExerciciosDor[]>([]);
 
     useEffect(() => {
         if (protocolId) {
@@ -56,11 +67,29 @@ export default function TrainingExercisesPage({
                 .finally(() => {
                     setIsLoading(false);
                 });
+
+            // Buscar exercícios de dor do usuário logado (localStorage)
+            if (typeof window !== 'undefined') {
+                const userString = localStorage.getItem('user');
+                if (userString) {
+                    try {
+                        const user: any = JSON.parse(userString);
+                        // Aceita snake_case e camelCase
+                        const exDor =
+                            user.exercicios_dor_selecionados ||
+                            user.exerciciosDorSelecionados ||
+                            [];
+                        setExerciciosDor(exDor);
+                    } catch {}
+                }
+            }
         }
     }, [protocolId]);
 
-    const handleExerciseClick = (exercise: ExerciseLog) => {
-        setSelectedExercise(exercise);
+    const handleExerciseClick = (
+        exercise: ExerciseLog | ExercicioIndividual,
+    ) => {
+        setSelectedExercise(exercise as ExerciseLog);
     };
 
     const handleCloseDetailCard = () => {
@@ -84,6 +113,122 @@ export default function TrainingExercisesPage({
                 <div className="mb-4">
                     <BackButton link="/app" label="Voltar" />
                 </div>
+                {/* Exercícios de dor recomendados */}
+                {exerciciosDor && exerciciosDor.length > 0 && (
+                    <div className="mb-6">
+                        <div className={styles.Title}>
+                            <ImageComponent
+                                className={styles.myImageInTitle}
+                                src={weightIcon}
+                                alt="This is a weight image"
+                                width={30}
+                                height={30}
+                            />
+                            <h1 className="mt-4 text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">
+                                Exercícios recomendados para suas dores:
+                            </h1>
+                        </div>
+                        {exerciciosDor.map((dorObj, dorIdx) => (
+                            <ul
+                                key={dorIdx}
+                                className={`${styles.exerciseListContainer}`}
+                            >
+                                <h5 className="text-capitalize mb-3 text-lg font-semibold text-indigo-600">
+                                    Dor: {dorObj.dor}
+                                </h5>{' '}
+                                {dorObj.exercicios?.map(
+                                    (
+                                        ex: ExercicioIndividual,
+                                        exIdx: number,
+                                    ) => {
+                                        // Normalizar o exercício para garantir que o GIF correto seja usado
+                                        const exerciseNormalized =
+                                            normalizeExerciseGif(ex);
+                                        return (
+                                            <li
+                                                key={`dor-${dorIdx}-ex-${exIdx}`}
+                                            >
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        handleExerciseClick(
+                                                            exerciseNormalized,
+                                                        )
+                                                    }
+                                                    className={`${styles.cardButton} ${styles.exerciseItemContainer}`}
+                                                >
+                                                    <div
+                                                        className={
+                                                            styles.exerciseImg
+                                                        }
+                                                    >
+                                                        {/* Thumbnail do GIF */}
+                                                        {exerciseNormalized.video_url && (
+                                                            <div
+                                                                className="mr-3"
+                                                                style={{
+                                                                    flexShrink: 0,
+                                                                }}
+                                                            >
+                                                                <GifThumbnail
+                                                                    src={getGifUrl(
+                                                                        exerciseNormalized.video_url,
+                                                                    )}
+                                                                    alt={
+                                                                        exerciseNormalized.nome
+                                                                    }
+                                                                    width={80}
+                                                                    height={80}
+                                                                    freezeAtSeconds={
+                                                                        1.5
+                                                                    }
+                                                                    style={{
+                                                                        borderRadius:
+                                                                            '8px',
+                                                                    }}
+                                                                    onError={() => {
+                                                                        console.error(
+                                                                            'Erro ao carregar GIF:',
+                                                                            exerciseNormalized.video_url,
+                                                                        );
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                        )}
+                                                        {/* Container de Informações */}
+                                                        <div
+                                                            className={
+                                                                styles.exerciseInfoCol
+                                                            }
+                                                        >
+                                                            <span className="h3 font-bold text-black text-start">
+                                                                {
+                                                                    exerciseNormalized.nome
+                                                                }
+                                                            </span>
+                                                            <span className="h6 font-semibold text-black text-start">
+                                                                {exerciseNormalized.descricao ||
+                                                                    'Mobilidade e alongamento'}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Ícone de Seta (conforme teu padrão) */}
+                                                    <Image
+                                                        src="/assets/icons/chevron-right.png"
+                                                        alt="seta"
+                                                        width={24}
+                                                        height={34}
+                                                    />
+                                                </button>
+                                            </li>
+                                        );
+                                    },
+                                )}
+                            </ul>
+                        ))}
+                    </div>
+                )}
                 <div className="mb-8">
                     <div className={styles.Title}>
                         <ImageComponent
@@ -93,7 +238,6 @@ export default function TrainingExercisesPage({
                             width={30}
                             height={30}
                         />
-
                         <h1 className="mt-4 text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">
                             Execicios do treino{' '}
                             <span className="text-indigo-600">
@@ -116,6 +260,32 @@ export default function TrainingExercisesPage({
                                     className={`${styles.cardButton} ${styles.exerciseItemContainer}`}
                                 >
                                     <div className={styles.exerciseImg}>
+                                        {/* Thumbnail do GIF */}
+                                        {exercise.video_url && (
+                                            <div
+                                                className="mr-3"
+                                                style={{ flexShrink: 0 }}
+                                            >
+                                                <GifThumbnail
+                                                    src={getGifUrl(
+                                                        exercise.video_url,
+                                                    )}
+                                                    alt={exercise.name}
+                                                    width={80}
+                                                    height={80}
+                                                    freezeAtSeconds={1.5}
+                                                    style={{
+                                                        borderRadius: '8px',
+                                                    }}
+                                                    onError={() => {
+                                                        console.error(
+                                                            'Erro ao carregar GIF:',
+                                                            exercise.video_url,
+                                                        );
+                                                    }}
+                                                />
+                                            </div>
+                                        )}
                                         <div className={styles.exerciseInfoCol}>
                                             <span className="h3 font-bold text-black">
                                                 {exercise.name}
@@ -154,7 +324,6 @@ export default function TrainingExercisesPage({
                     </ul>
                 ) : (
                     <div className="text-center py-12">
-                        {}
                         <h3 className="mt-2 text-xl font-semibold text-gray-800">
                             Nenhum exercício encontrado
                         </h3>
@@ -164,7 +333,6 @@ export default function TrainingExercisesPage({
                         </p>
                     </div>
                 )}
-                {}
                 {selectedExercise && (
                     <ExerciseDetailCard
                         exercise={selectedExercise}

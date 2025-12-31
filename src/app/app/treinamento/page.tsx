@@ -6,16 +6,36 @@ import Header from '@/components/organism/Header';
 import BackButton from '@/components/molecules/BackButton';
 import TrainingCard from '@/components/features/TrainingCard';
 import { useRouter } from 'next/navigation';
-import { ApiResponse, User, ProtocolListItem } from '@/components/features/types';
+import {
+    ApiResponse,
+    User,
+    ProtocolListItem,
+} from '@/components/features/types';
+import { Api } from '@/app/utils/api';
 
 // Importe a nova função
 import { getProtocolsByUserId } from '@/libs/mockProtocolData2';
+
+/**
+ * Converte quebras de linha (\n) em elementos <br /> para renderização HTML
+ * @param text - Texto com quebras de linha
+ * @returns Array de elementos React alternando texto e <br />
+ */
+function formatTextWithLineBreaks(text: string) {
+    return text.split('\n').map((line, index, array) => (
+        <React.Fragment key={index}>
+            {line}
+            {index < array.length - 1 && <br />}
+        </React.Fragment>
+    ));
+}
 
 export default function UserProtocolsPage() {
     const [protocolsList, setProtocolsList] = useState<ProtocolListItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isMounted, setIsMounted] = useState(false);
+    const [currentUser, setCurrentUser] = useState<User | null>(null);
     const router = useRouter();
 
     useEffect(() => {
@@ -48,17 +68,43 @@ export default function UserProtocolsPage() {
                     return;
                 }
 
-                const currentUser: User = JSON.parse(userString);
-                console.log('Usuário logado:', currentUser);
+                // Buscar dados atualizados do backend (incluindo protocol_notes)
+                try {
+                    Api.defaults.headers.common['Authorization'] =
+                        `Bearer ${userToken}`;
+                    const { data: backendUser } = await Api.get<User>('/me');
+                    console.log('✅ Dados do usuário do backend:', backendUser);
+                    console.log(
+                        '📝 Protocol Notes:',
+                        backendUser.protocol_notes,
+                    );
+                    console.log(
+                        '🔍 Protocol Notes existe?',
+                        !!backendUser.protocol_notes,
+                    );
+                    console.log(
+                        '📏 Protocol Notes length:',
+                        backendUser.protocol_notes?.length,
+                    );
+                    setCurrentUser(backendUser);
 
+                    // Atualizar localStorage com dados mais recentes
+                    localStorage.setItem('user', JSON.stringify(backendUser));
+                } catch (apiError) {
+                    console.warn(
+                        '❌ Erro ao buscar dados do backend, usando localStorage:',
+                        apiError,
+                    );
+                    // Fallback para localStorage se a API falhar
+                    const localUser: User = JSON.parse(userString);
+                    console.log('💾 Usando dados do localStorage:', localUser);
+                    setCurrentUser(localUser);
+                }
+
+                const currentUserData: User = JSON.parse(userString);
                 const fetchedProtocolEntries = await getProtocolsByUserId(
-                    currentUser.id,
+                    currentUserData.id,
                 );
-                console.log(
-                    'Dados brutos dos protocolos recebidos:',
-                    fetchedProtocolEntries,
-                );
-
                 const processedProtocols: ProtocolListItem[] =
                     fetchedProtocolEntries.map(({ protocolId, data }) => ({
                         id: protocolId,
@@ -114,6 +160,48 @@ export default function UserProtocolsPage() {
                 <h1 className="text-3xl font-bold mb-6 text-white">
                     Meus Protocolos de Treino:
                 </h1>
+
+                {/* DEBUG: Mostrar sempre para testar */}
+                <div className="mb-4 p-3 bg-yellow-100 border border-yellow-400 rounded text-sm text-black">
+                    <strong>🔍 DEBUG:</strong> currentUser existe?{' '}
+                    {currentUser ? 'SIM' : 'NÃO'} | protocol_notes existe?{' '}
+                    {currentUser?.protocol_notes ? 'SIM' : 'NÃO'} | Valor:{' '}
+                    {currentUser?.protocol_notes || '(vazio)'}
+                </div>
+
+                {/* Renderização condicional das observações do protocolo */}
+                {currentUser?.protocol_notes && (
+                    <div className="mt-6 mb-6 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 border-l-4 border-indigo-600 rounded-lg shadow-md">
+                        <div className="flex items-start gap-3">
+                            <div className="flex-shrink-0 mt-1">
+                                {/* Ícone de informação */}
+                                <svg
+                                    className="w-6 h-6 text-indigo-600"
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                >
+                                    <path
+                                        fillRule="evenodd"
+                                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                        clipRule="evenodd"
+                                    />
+                                </svg>
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="text-base font-semibold text-indigo-900 mb-2">
+                                    📋 Observações do Protocolo
+                                </h3>
+                                <p className="text-sm font-medium text-gray-800 leading-relaxed">
+                                    {formatTextWithLineBreaks(
+                                        currentUser.protocol_notes,
+                                    )}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 <div className="flex flex-col gap-4">
                     {protocolsList.map((protocol) => (
                         <div className="mb-3" key={protocol.id}>

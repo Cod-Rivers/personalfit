@@ -46,7 +46,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 1000;
+  z-index: 100; /* Reduzido para não sobrepor modais (z-index: 1000+) */
   height: 72px; /* defina a altura desejada do footer */
   background: var(--color-bg-dark);
   color: #f1f1f1;
