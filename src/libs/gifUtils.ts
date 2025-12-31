@@ -24,18 +24,21 @@ export function getGifUrl(gifPath: string): string {
     return gifPath;
   }
 
-  // Se começa com "static/", usa diretamente
-  if (gifPath.startsWith('static/')) {
-    return `${API_BASE}/${gifPath}`;
+  // Remove barra inicial se existir para normalizar
+  const normalizedPath = gifPath.startsWith('/') ? gifPath.slice(1) : gifPath;
+
+  // Se começa com "static/", usa diretamente com barra inicial
+  if (normalizedPath.startsWith('static/')) {
+    return `${API_BASE}/${normalizedPath}`;
   }
 
-  // Se começa com "gifs/", adiciona "static/"
-  if (gifPath.startsWith('gifs/')) {
-    return `${API_BASE}/static/${gifPath}`;
+  // Se começa com "gifs/", adiciona "static/" com barra inicial
+  if (normalizedPath.startsWith('gifs/')) {
+    return `${API_BASE}/static/${normalizedPath}`;
   }
 
-  // Se é apenas o nome do arquivo, adiciona o caminho completo
-  return `${API_BASE}/static/gifs/${gifPath}`;
+  // Se é apenas o nome do arquivo, adiciona o caminho completo com barra inicial
+  return `${API_BASE}/static/gifs/${normalizedPath}`;
 }
 
 /**

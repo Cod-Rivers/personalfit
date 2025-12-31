@@ -69,39 +69,28 @@ export default function UserProtocolsPage() {
                 }
 
                 // Buscar dados atualizados do backend (incluindo protocol_notes)
+                let backendUser: User | null = null;
                 try {
                     Api.defaults.headers.common['Authorization'] =
                         `Bearer ${userToken}`;
-                    const { data: backendUser } = await Api.get<User>('/me');
+                    const { data } = await Api.get<User>('/me');
+                    backendUser = data;
                     console.log('✅ Dados do usuário do backend:', backendUser);
-                    console.log(
-                        '📝 Protocol Notes:',
-                        backendUser.protocol_notes,
-                    );
-                    console.log(
-                        '🔍 Protocol Notes existe?',
-                        !!backendUser.protocol_notes,
-                    );
-                    console.log(
-                        '📏 Protocol Notes length:',
-                        backendUser.protocol_notes?.length,
-                    );
                     setCurrentUser(backendUser);
 
                     // Atualizar localStorage com dados mais recentes
                     localStorage.setItem('user', JSON.stringify(backendUser));
                 } catch (apiError) {
-                    console.warn(
-                        '❌ Erro ao buscar dados do backend, usando localStorage:',
-                        apiError,
-                    );
-                    // Fallback para localStorage se a API falhar
-                    const localUser: User = JSON.parse(userString);
-                    console.log('💾 Usando dados do localStorage:', localUser);
-                    setCurrentUser(localUser);
+                    console.error('❌ Erro ao buscar dados do backend:', apiError);
+                    setError('Erro ao obter dados do servidor. Faça login novamente.');
+                    setLoading(false);
+                    // Redirecionar para a área principal /login para forçar nova autenticação
+                    router.push('/app');
+                    return;
                 }
 
-                const currentUserData: User = JSON.parse(userString);
+                // Usar o usuário retornado pelo backend (não usar fallback localStorage)
+                const currentUserData: User = backendUser as User;
                 const fetchedProtocolEntries = await getProtocolsByUserId(
                     currentUserData.id,
                 );
@@ -161,7 +150,6 @@ export default function UserProtocolsPage() {
                     Meus Protocolos de Treino:
                 </h1>
 
-                {/* DEBUG: Mostrar sempre para testar */}
                 <div className="mb-4 p-3 bg-yellow-100 border border-yellow-400 rounded text-sm text-black">
                     <strong>🔍 DEBUG:</strong> currentUser existe?{' '}
                     {currentUser ? 'SIM' : 'NÃO'} | protocol_notes existe?{' '}
@@ -202,6 +190,7 @@ export default function UserProtocolsPage() {
                     </div>
                 )}
 
+                {/* DEBUG: Mostrar sempre para testar */}
                 <div className="flex flex-col gap-4">
                     {protocolsList.map((protocol) => (
                         <div className="mb-3" key={protocol.id}>

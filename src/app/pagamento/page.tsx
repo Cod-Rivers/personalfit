@@ -244,7 +244,8 @@ const Payment: React.FC = () => {
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="col-12 col-md-6">
+                                    {/* PIX temporariamente desabilitado */}
+                                    {/* <div className="col-12 col-md-6">
                                         <div
                                             className={`card h-100 cursor-pointer ${paymentMethod === 'PIX' ? 'border-primary border-3' : ''}`}
                                             onClick={() =>
@@ -272,7 +273,7 @@ const Payment: React.FC = () => {
                                                 </p>
                                             </div>
                                         </div>
-                                    </div>
+                                    </div> */}
                                 </div>
                             </div>
                         </div>

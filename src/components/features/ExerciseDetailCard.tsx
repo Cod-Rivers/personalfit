@@ -5,7 +5,7 @@ import { ExerciseLog, ExercicioIndividual } from './types';
 import styles from './ExerciseDetailCard.module.css';
 import { FaEdit } from 'react-icons/fa';
 import ProtectedVideo from '@/components/molecules/ProtectedVideo';
-import { saveExerciseNotes } from '@/app/utils/api';
+import { saveExerciseNotes, saveExerciseWeight } from '@/app/utils/api';
 
 interface ExerciseDetailCardProps {
     exercise: ExerciseLog | ExercicioIndividual;
@@ -67,6 +67,7 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
         (exerciseLog?.weight || 0) > 0 ? exerciseLog?.weight || 0 : '',
     );
     const [isSavingNotes, setIsSavingNotes] = useState<boolean>(false);
+    const [isSavingWeight, setIsSavingWeight] = useState<boolean>(false);
 
     useEffect(() => {
         let interval: NodeJS.Timeout | null = null;
@@ -123,6 +124,13 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
             return;
         }
 
+        console.log('[handleSaveAnnotations] Iniciando salvamento:', {
+            trainingId,
+            exerciseId: exerciseLog.id,
+            notesLength: userAnnotations.length,
+            exerciseLogCompleto: exerciseLog,
+        });
+
         setIsSavingNotes(true);
 
         const result = await saveExerciseNotes(
@@ -132,6 +140,8 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
         );
 
         setIsSavingNotes(false);
+
+        console.log('[handleSaveAnnotations] Resultado:', result);
 
         if (result.success) {
             alert(result.message || 'Anotações salvas com sucesso!');
@@ -168,9 +178,56 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
         setIsWeightEditing(true);
     };
 
-    const handleWeightEditEnd = () => {
+    const handleWeightEditEnd = async () => {
         setIsWeightEditing(false);
-        console.log('Peso atualizado para:', weightValue);
+
+        if (!exerciseLog?.id) {
+            console.log('Exercício sem ID - não é possível salvar peso');
+            return;
+        }
+
+        const numericWeight = Number(weightValue);
+
+        // Validar peso
+        if (isNaN(numericWeight) || numericWeight < 0) {
+            alert('Por favor, insira um peso válido (maior ou igual a 0)');
+            setWeightValue(exerciseLog?.weight || 0);
+            return;
+        }
+
+        console.log('[handleWeightEditEnd] Iniciando salvamento:', {
+            trainingId,
+            exerciseId: exerciseLog.id,
+            weight: numericWeight,
+            exerciseLogCompleto: exerciseLog,
+        });
+
+        // Salvar peso no backend
+        setIsSavingWeight(true);
+
+        const result = await saveExerciseWeight(
+            trainingId,
+            exerciseLog.id,
+            numericWeight,
+        );
+
+        setIsSavingWeight(false);
+
+        console.log('[handleWeightEditEnd] Resultado:', result);
+
+        if (result.success) {
+            console.log('Peso salvo com sucesso:', numericWeight);
+            // Atualizar dados locais
+            if (exerciseLog) {
+                exerciseLog.weight = numericWeight;
+            }
+        } else {
+            alert(
+                'Erro ao salvar peso: ' + (result.error || 'Erro desconhecido'),
+            );
+            // Reverter para valor anterior em caso de erro
+            setWeightValue(exerciseLog?.weight || 0);
+        }
     };
 
     const handleWeightKeyDown = (
