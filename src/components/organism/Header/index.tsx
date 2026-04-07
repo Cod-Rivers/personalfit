@@ -44,9 +44,21 @@ const Header: React.FC = () => {
                     <i className="fa-solid fa-house"></i>
                     <span>Início</span>
                 </Link>
+                <Link href="/feed" className="bottom-nav__item">
+                    <i className="fa-solid fa-fire"></i>
+                    <span>Feed</span>
+                </Link>
+                <Link href="/forum" className="bottom-nav__item">
+                    <i className="fa-solid fa-comments"></i>
+                    <span>Fórum</span>
+                </Link>
+                <Link href="/noticias" className="bottom-nav__item">
+                    <i className="fa-solid fa-newspaper"></i>
+                    <span>Notícias</span>
+                </Link>
                 <Link href="/anaminese" className="bottom-nav__item">
                     <i className="fa-solid fa-clipboard-list"></i>
-                    <span>Anaminese</span>
+                    <span>Anamnese</span>
                 </Link>
                 <Link href="/perfil" className="bottom-nav__item">
                     <i className="fa-solid fa-user"></i>

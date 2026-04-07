@@ -78,7 +78,7 @@ const TProtocols: React.FC = () => {
                                 <svg
                                     width="24"
                                     height="24"
-                                    fill="#d18d26ff"
+                                    fill="#3eb489"
                                     viewBox="0 0 20 20"
                                 >
                                     <path

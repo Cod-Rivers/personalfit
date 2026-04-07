@@ -1,0 +1,338 @@
+.feedContainer {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 16px 12px 90px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    background: var(--color-bg-light, #f0f3f9);
+    min-height: 100vh;
+}
+
+/* ── Avatar ── */
+.avatar {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.85rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+}
+
+.avatarSm {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.7rem;
+}
+
+/* ── Caixa novo post ── */
+.newPostCard {
+    background: #fff;
+    border-radius: 16px;
+    padding: 14px;
+    box-shadow: 0 2px 12px rgba(27,63,122,0.10);
+}
+
+.newPostRow {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.newPostInput {
+    flex: 1;
+    border: 1.5px solid #e0e7ef;
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-size: 0.92rem;
+    color: #222;
+    resize: none;
+    outline: none;
+    background: #f7fafd;
+    transition: border-color 0.2s;
+    font-family: inherit;
+}
+
+.newPostInput:focus {
+    border-color: #3eb489;
+}
+
+.newPostActions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.photoBtn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: 1.5px solid #3eb489;
+    color: #3eb489;
+    font-weight: 600;
+    font-size: 0.82rem;
+    border-radius: 10px;
+    padding: 0.36rem 0.9rem;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.photoBtn:hover {
+    background: #eaf9f3;
+}
+
+.imagePreviewWrapper {
+    position: relative;
+    margin-top: 10px;
+    border-radius: 12px;
+    overflow: hidden;
+    max-height: 260px;
+}
+
+.imagePreview {
+    width: 100%;
+    max-height: 260px;
+    object-fit: cover;
+    display: block;
+    border-radius: 12px;
+}
+
+.removeImageBtn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(0,0,0,0.55);
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: background 0.15s;
+}
+
+.removeImageBtn:hover {
+    background: rgba(0,0,0,0.8);
+}
+
+.postImageWrapper {
+    border-radius: 12px;
+    overflow: hidden;
+    max-height: 320px;
+}
+
+.postImage {
+    width: 100%;
+    max-height: 320px;
+    object-fit: cover;
+    display: block;
+}
+
+.postBtn {
+    padding: 0.4rem 1.4rem;
+    border: none;
+    border-bottom: 3px solid #1e7a52;
+    background: linear-gradient(160deg, #7dddb8 0%, #4dbf95 40%, #3eb489 100%);
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.875rem;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.35),
+        0 4px 6px rgba(30,122,82,0.3),
+        0 2px 0 #1e7a52;
+    transition: transform 0.1s, box-shadow 0.15s, background 0.2s;
+}
+
+.postBtn:hover:not(:disabled) {
+    background: linear-gradient(160deg, #96e8c8 0%, #5ed4a8 40%, #4ec99a 100%);
+    transform: translateY(-2px);
+}
+
+.postBtn:active:not(:disabled) {
+    transform: translateY(3px);
+    border-bottom-width: 1px;
+}
+
+.postBtn:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+/* ── Card de post ── */
+.postCard {
+    background: #fff;
+    border-radius: 16px;
+    padding: 14px;
+    box-shadow: 0 2px 12px rgba(27,63,122,0.09);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.postHeader {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.authorName {
+    margin: 0;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #1a2a3a;
+}
+
+.timestamp {
+    margin: 0;
+    font-size: 0.75rem;
+    color: #8fa3be;
+}
+
+.postContent {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #222;
+    line-height: 1.55;
+    white-space: pre-wrap;
+}
+
+/* ── Ações ── */
+.postActions {
+    display: flex;
+    gap: 18px;
+    border-top: 1px solid #f0f3f9;
+    padding-top: 8px;
+}
+
+.actionBtn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #8fa3be;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 4px 6px;
+    border-radius: 8px;
+    transition: color 0.15s, background 0.15s;
+}
+
+.actionBtn:hover {
+    color: #3eb489;
+    background: #eaf9f3;
+}
+
+.actionBtn i {
+    font-size: 1.1rem;
+}
+
+.liked {
+    color: #e05c74;
+}
+
+.liked:hover {
+    color: #e05c74;
+    background: #fdeef1;
+}
+
+/* ── Comentários ── */
+.commentsSection {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-top: 1px solid #f0f3f9;
+    padding-top: 8px;
+}
+
+.comment {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+}
+
+.commentBody {
+    background: #f4f7fb;
+    border-radius: 10px;
+    padding: 6px 10px;
+    flex: 1;
+}
+
+.commentAuthor {
+    font-weight: 700;
+    font-size: 0.78rem;
+    color: #1B3F7A;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.commentText {
+    font-size: 0.85rem;
+    color: #333;
+}
+
+.commentInputRow {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-top: 4px;
+}
+
+.commentInput {
+    flex: 1;
+    border: 1.5px solid #e0e7ef;
+    border-radius: 20px;
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    outline: none;
+    background: #f7fafd;
+    font-family: inherit;
+    transition: border-color 0.2s;
+}
+
+.commentInput:focus {
+    border-color: #3eb489;
+}
+
+.commentSendBtn {
+    background: #3eb489;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: background 0.15s, transform 0.1s;
+    flex-shrink: 0;
+}
+
+.commentSendBtn:hover {
+    background: #2d9e73;
+    transform: scale(1.08);
+}

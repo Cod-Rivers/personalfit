@@ -23,10 +23,10 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    color: var(--color-dark-gray);
+    gap: 2px;
+    color: #ffffff;
     text-decoration: none;
-    font-size: 0.65rem;
+    font-size: 0.52rem;
     font-weight: 600;
     letter-spacing: 0.02em;
     background: none;
@@ -37,7 +37,8 @@
 }
 
 .bottom-nav__item i {
-    font-size: 1.3rem;
+    font-size: 1.15rem;
+    color: var(--color-mint);
 }
 
 .bottom-nav__item:hover,
@@ -47,7 +48,7 @@
 }
 
 .bottom-nav__logout {
-    color: var(--color-dark-gray);
+    color: #ffffff;
 }
 
 .bottom-nav__logout:hover,

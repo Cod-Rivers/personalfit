@@ -70,23 +70,27 @@ export default function UserProtocolsPage() {
 
                 // Buscar dados atualizados do backend (incluindo protocol_notes)
                 let backendUser: User | null = null;
-                try {
-                    Api.defaults.headers.common['Authorization'] =
-                        `Bearer ${userToken}`;
-                    const { data } = await Api.get<User>('/me');
-                    backendUser = data;
-                    console.log('✅ Dados do usuário do backend:', backendUser);
-                    setCurrentUser(backendUser);
+                const isDemo = userToken === 'demo-token';
+                if (!isDemo) {
+                    try {
+                        Api.defaults.headers.common['Authorization'] =
+                            `Bearer ${userToken}`;
+                        const { data } = await Api.get<User>('/me');
+                        backendUser = data;
+                        console.log('✅ Dados do usuário do backend:', backendUser);
+                        setCurrentUser(backendUser);
 
-                    // Atualizar localStorage com dados mais recentes
-                    localStorage.setItem('user', JSON.stringify(backendUser));
-                } catch (apiError) {
-                    console.error('❌ Erro ao buscar dados do backend:', apiError);
-                    setError('Erro ao obter dados do servidor. Faça login novamente.');
-                    setLoading(false);
-                    // Redirecionar para a área principal /login para forçar nova autenticação
-                    router.push('/app');
-                    return;
+                        // Atualizar localStorage com dados mais recentes
+                        localStorage.setItem('user', JSON.stringify(backendUser));
+                    } catch (apiError) {
+                        console.warn('⚠️ API indisponível, usando dados locais:', apiError);
+                        backendUser = JSON.parse(userString) as User;
+                        setCurrentUser(backendUser);
+                    }
+                } else {
+                    // Modo demo: usa dados do localStorage diretamente
+                    backendUser = JSON.parse(userString) as User;
+                    setCurrentUser(backendUser);
                 }
 
                 // Usar o usuário retornado pelo backend (não usar fallback localStorage)

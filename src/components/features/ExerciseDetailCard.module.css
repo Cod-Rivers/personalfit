@@ -59,7 +59,7 @@
     position: absolute;
     top: 0.75rem;
     right: 0.75rem;
-    color: #cab543;
+    color: #3eb489;
     background: none;
     border: none;
     padding: 0.25rem;
@@ -85,8 +85,8 @@
     margin-top: 1.5rem;
     margin-left: auto;
     margin-right: auto;
-    background-color: #cab543;
-    color: #d9d9d9;
+    background-color: #3eb489;
+    color: #ffffff;
     border-radius: 0.5rem;
     box-shadow:
         0 4px 6px -1px rgba(0, 0, 0, 0.1),
@@ -145,11 +145,11 @@
     align-items: center;
 }
 .thumbnailLink:hover {
-    box-shadow: 0 0 0 1px #cab543;
+    box-shadow: 0 0 0 1px #3eb489;
 }
 .thumbnailLink:focus,
 .thumbnailLink:focus-visible {
-    outline: 2px solid #cab543;
+    outline: 2px solid #3eb489;
     outline-offset: 2px;
 }
 
@@ -212,7 +212,7 @@
 }
 
 .valueBox {
-    border: 1px solid #cab543;
+    border: 1px solid #3eb489;
     border-radius: 1rem;
     padding: 0.5rem 0.5rem;
     background-color: #f9fafb;
@@ -247,7 +247,7 @@
     margin-top: 0.25rem;
     font-size: 0.75rem;
     font-weight: 600;
-    background-color: #fef3c7;
+    background-color: #d4f5e8;
     padding: 0.25rem 0.5rem;
     border-radius: 0.25rem;
     display: inline-block;
@@ -256,14 +256,14 @@
 .watchVideoLink {
 
     margin-top: 0.5rem;
-    color: #cab543;
+    color: #3eb489;
     font-weight: 500;
     display: inline-flex;
     align-items: center;
     text-decoration: none;
 }
 .watchVideoLink:hover {
-    color: #cab543;
+    color: #2d9e73;
     text-decoration: underline;
 }
 
@@ -297,33 +297,56 @@
 .userAnnotationsSection {
     background-color: hsl(220, 100%, 98%);
     border-radius: 0.5rem;
-    border-color: #cab543;
+    border-color: #3eb489;
     width: 100%;
 }
 
 .userAnnotationsInput {
     background-color: hsl(220, 100%, 98%);
     border-radius: 0.5rem;
-    border-color: #cab543;
+    border-color: #3eb489;
     width: 100%;
 }
 .saveAnnotationsButton {
-    border: 1px solid #cab543;
-    background-color: #cab543;
+    display: block;
+    margin: 0.5rem auto 0;
+    padding: 0.29rem 1.5rem;
+    border: none;
+    border-bottom: 3px solid #1e7a52;
+    background: linear-gradient(160deg, #7dddb8 0%, #4dbf95 40%, #3eb489 100%);
     color: #ffffff;
     cursor: pointer;
     border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.875rem;
     transition:
-        background-color 0.2s,
-        border-color 0.2s,
+        background 0.2s,
         box-shadow 0.2s,
         transform 0.1s ease-in-out;
     box-shadow:
-        1px 1px #ddd,
-        2px 2px #ccc,
-        3px 3px rgba(0, 0, 0, 0.1),
-        4px 4px rgba(0, 0, 0, 0.15),
-        5px 5px 5px rgba(0, 0, 0, 0.2);
+        inset 0 1px 0 rgba(255, 255, 255, 0.35),
+        0 4px 6px rgba(30, 122, 82, 0.35),
+        0 2px 0 #1e7a52,
+        0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.saveAnnotationsButton:hover {
+    background: linear-gradient(160deg, #96e8c8 0%, #5ed4a8 40%, #4ec99a 100%);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.45),
+        0 6px 10px rgba(30, 122, 82, 0.4),
+        0 2px 0 #1e7a52,
+        0 8px 16px rgba(0, 0, 0, 0.18);
+    transform: translateY(-2px);
+}
+
+.saveAnnotationsButton:active {
+    transform: translateY(3px);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.2),
+        0 1px 0 #1e7a52,
+        0 2px 4px rgba(0, 0, 0, 0.15);
+    border-bottom-width: 1px;
 }
 
 .restTimerSection {
@@ -345,10 +368,6 @@
 .timerButton:hover {
 
     margin-top: 0.5rem;
-    font-size: 0.875rem;
-    color: #4f46e5;
-    display: inline-block;
-    text-decoration: none;
 }
 
 
@@ -487,28 +506,43 @@
 
 .timerButton {
     padding: 0.5rem 1rem;
-    border: 1px solid #cab543;
-    background-color: #cab543;
+    border: none;
+    border-bottom: 3px solid #1e7a52;
+    background: linear-gradient(160deg, #7dddb8 0%, #4dbf95 40%, #3eb489 100%);
     color: #ffffff;
     cursor: pointer;
     border-radius: 0.5rem;
-    font-weight: 500;
+    font-weight: 600;
+    font-size: 0.875rem;
     transition:
-        background-color 0.2s,
-        border-color 0.2s,
+        background 0.2s,
         box-shadow 0.2s,
         transform 0.1s ease-in-out;
     box-shadow:
-        1px 1px #ddd,
-        2px 2px #ccc,
-        3px 3px rgba(0, 0, 0, 0.1),
-        4px 4px rgba(0, 0, 0, 0.15),
-        5px 5px 5px rgba(0, 0, 0, 0.2);
+        inset 0 1px 0 rgba(255, 255, 255, 0.35),
+        0 4px 6px rgba(30, 122, 82, 0.35),
+        0 2px 0 #1e7a52,
+        0 6px 12px rgba(0, 0, 0, 0.15);
+    position: relative;
 }
 
 .timerButton:hover {
-    background-color: #f9fafb;
-    border-color: #9ca3af;
+    background: linear-gradient(160deg, #96e8c8 0%, #5ed4a8 40%, #4ec99a 100%);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.45),
+        0 6px 10px rgba(30, 122, 82, 0.4),
+        0 2px 0 #1e7a52,
+        0 8px 16px rgba(0, 0, 0, 0.18);
+    transform: translateY(-2px);
+}
+
+.timerButton:active {
+    transform: translateY(3px);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.2),
+        0 1px 0 #1e7a52,
+        0 2px 4px rgba(0, 0, 0, 0.15);
+    border-bottom-width: 1px;
 }
 
 .teste {

@@ -7,6 +7,7 @@ import QuestionsRenderer from '@/components/organism/QuestionsRenderer';
 import { useRouter } from 'next/navigation';
 import { useAnamnesisStatus } from '@/hooks/useAnamnesisStatus';
 import styles from '../app/treinamento/[id]/TrainingPage.module.css';
+import Header from '@/components/organism/Header';
 
 const DORES_LIST = [
     'Lombar',
@@ -125,9 +126,10 @@ const Questions: FC = () => {
 
     return (
         <div className={`${styles.exerciseListContainer}`}>
+            <Header />
             <div
                 className="d-flex justify-content-center background-color: #ffffff align-items-center"
-                style={{ minHeight: '90vh' }}
+                style={{ minHeight: '90vh', paddingBottom: '80px' }}
             >
                 {(loading || statusLoading) && (
                     <span className="text-center spinner-border" />

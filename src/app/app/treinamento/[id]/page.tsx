@@ -214,12 +214,9 @@ export default function TrainingExercisesPage({
                                                     </div>
 
                                                     {/* Ícone de Seta (conforme teu padrão) */}
-                                                    <Image
-                                                        src="/assets/icons/chevron-right.png"
-                                                        alt="seta"
-                                                        width={24}
-                                                        height={34}
-                                                    />
+                                                    <svg width="24" height="34" viewBox="0 0 24 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                        <path d="M9 9L18 17L9 25" stroke="#3eb489" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                                    </svg>
                                                 </button>
                                             </li>
                                         );
@@ -312,12 +309,9 @@ export default function TrainingExercisesPage({
                                             )}
                                         </div>
                                     </div>
-                                    <Image
-                                        src="/assets/icons/chevron-right.png"
-                                        alt="logo"
-                                        width={24}
-                                        height={34}
-                                    />
+                                    <svg width="24" height="34" viewBox="0 0 24 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M9 9L18 17L9 25" stroke="#3eb489" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                    </svg>
                                 </button>
                             </li>
                         ))}

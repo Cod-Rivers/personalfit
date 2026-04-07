@@ -118,6 +118,15 @@ const TLogin: FC = () => {
                 <span>
                     Não tem conta? <Link href={`/cadastro`}>cadastre-se</Link>
                 </span>
+                <div className="w-100 mt-3 text-center">
+                    <Link
+                        href="/demo"
+                        className="text-secondary"
+                        style={{ fontSize: '0.85rem', opacity: 0.7 }}
+                    >
+                        Acessar modo demonstração
+                    </Link>
+                </div>
             </div>
         </div>
     );

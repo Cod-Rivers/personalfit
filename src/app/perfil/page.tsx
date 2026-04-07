@@ -106,7 +106,7 @@ const ProfilePage: React.FC = () => {
     if (!user) {
         return (
             <div className="d-flex justify-content-center align-items-center vh-100">
-                <div className="spinner-border text-gold" role="status">
+                <div className="spinner-border" style={{ color: '#3eb489' }} role="status">
                     <span className="visually-hidden">Carregando...</span>
                 </div>
             </div>
@@ -156,7 +156,7 @@ const ProfilePage: React.FC = () => {
                                 </div>
                             )}
                             <div className="card profile-card">
-                                <div className="card-header text-center bg-gold text-white">
+                                <div className="card-header text-center text-white" style={{ background: 'linear-gradient(135deg, #3eb489 0%, #2d9e73 100%)' }}>
                                     <div className="profile-avatar mb-3">
                                         <i className="fa-solid fa-user-circle fa-5x"></i>
                                     </div>
@@ -206,7 +206,8 @@ const ProfilePage: React.FC = () => {
                                                 Status:
                                             </label>
                                             <span
-                                                className={`info-value badge ${user.active ? 'bg-success' : 'bg-warning'}`}
+                                                className="info-value badge"
+                                                style={{ backgroundColor: user.active ? '#3eb489' : '#6c757d' }}
                                             >
                                                 {user.active
                                                     ? 'Ativo'
@@ -310,7 +311,7 @@ const ProfilePage: React.FC = () => {
                             </div>
                             <div className="modal-body">
                                 <div className="text-center">
-                                    <i className="fa-solid fa-exclamation-triangle text-warning fa-3x mb-3"></i>
+                                    <i className="fa-solid fa-exclamation-triangle fa-3x mb-3" style={{ color: '#3eb489' }}></i>
                                     <p className="mb-3">
                                         Tem certeza de que deseja cancelar sua
                                         assinatura?
