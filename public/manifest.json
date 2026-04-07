@@ -1,0 +1,18 @@
+{
+    "name": "Personal Fit - Team D Bom Fim",
+    "short_name": "Personal Fit",
+    "description": "Plataforma de treinos Team D Bom Fim",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#f0f3f9",
+    "theme_color": "#1B3F7A",
+    "orientation": "portrait",
+    "icons": [
+        {
+            "src": "/assets/images/main-background.png",
+            "sizes": "any",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}

@@ -1,12 +1,27 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { getLocale } from 'next-intl/server';
 import { NextIntlClientProvider } from 'next-intl';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './css/globals.css';
 import Footer from '@/components/organism/Footer';
 
+export const viewport: Viewport = {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+    themeColor: '#1B3F7A',
+};
+
 export const metadata: Metadata = {
-    title: 'Personal Fit Tela de Login',
+    title: 'Personal Fit',
+    description: 'Plataforma Team D Bom Fim',
+    manifest: '/manifest.json',
+    appleWebApp: {
+        capable: true,
+        statusBarStyle: 'black-translucent',
+        title: 'Personal Fit',
+    },
 };
 
 export default async function RootLayout({

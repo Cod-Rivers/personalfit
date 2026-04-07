@@ -4,14 +4,30 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+    height: 100%;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
 }
 
 .main_back {
-    background: var(--bg-image-url) no-repeat bottom center fixed;
-    background-color: var(--color-bg-dark);
-    background-size: cover;
+    background: var(--color-bg-light);
+    color: var(--color-black);
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+}
 
-    color: var(--color-white);
+/* main que expande ocupando o espaço disponível entre header e footer */
+.app_content {
+    flex: 1 1 auto;
+    padding-bottom: 72px; /* espaço para o footer fixo */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .bg-gold {
@@ -21,47 +37,81 @@
 
 .btn-outline-gold {
     background-color: transparent;
-    color: var(--color-gold);
-    border: 1px solid var(--color-gold);
+    color: var(--color-mint);
+    border: 2px solid var(--color-mint);
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-size: 1rem;
+    font-weight: 700;
+    touch-action: manipulation;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 8px rgba(62, 180, 137, 0.25);
+}
+
+.btn-outline-gold:hover {
+    background: linear-gradient(135deg, var(--color-mint) 0%, #2a9d70 100%);
+    color: var(--color-white);
+    box-shadow: 0 6px 16px rgba(62, 180, 137, 0.4);
+    transform: translateY(-1px);
+}
+
+.btn-outline-gold:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 6px rgba(62, 180, 137, 0.3);
 }
 
 .btn-gold {
-    background-color: var(--color-gold);
+    background: linear-gradient(160deg, #7dddb8 0%, #4dbf95 40%, #3eb489 100%);
     color: var(--color-white);
-    font-weight: 900;
+    font-weight: 700;
+    border-radius: 12px;
+    padding: 14px 20px;
+    font-size: 1rem;
+    border: none;
+    border-bottom: 3px solid #1e7a52;
+    width: 100%;
+    touch-action: manipulation;
+    cursor: pointer;
+    letter-spacing: 0.03em;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+    box-shadow:
+        0 4px 0 #1e7a52,
+        0 6px 16px rgba(62, 180, 137, 0.45),
+        inset 0 2px 4px rgba(255, 255, 255, 0.35);
+    transition:
+        transform 0.12s ease,
+        box-shadow 0.12s ease,
+        filter 0.12s ease;
 }
 
 .btn-gold:hover {
-    background-color: var(--color-gold);
+    background: linear-gradient(160deg, #96e8c8 0%, #5ed4a8 40%, #4ec99a 100%);
+    box-shadow:
+        0 6px 0 #1e7a52,
+        0 10px 24px rgba(62, 180, 137, 0.5),
+        inset 0 2px 6px rgba(255, 255, 255, 0.42);
+    transform: translateY(-2px);
+    filter: brightness(1.04);
+}
+
+.btn-gold:active {
+    transform: translateY(3px);
+    box-shadow:
+        0 1px 0 #1e7a52,
+        0 2px 6px rgba(62, 180, 137, 0.3),
+        inset 0 3px 6px rgba(0, 0, 0, 0.12);
+    filter: brightness(0.97);
 }
 
 .btn-gold:disabled {
-    background-color: var(--color-gold);
-    opacity: 0.5;
+    background: linear-gradient(160deg, #c8f5e4 0%, #8dd9bc 100%);
+    border-bottom: 3px solid #4a9e7f;
+    box-shadow: 0 3px 0 #4a9e7f, 0 4px 8px rgba(62, 180, 137, 0.2);
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
 }
 
 .text-gold {
-    color: var(--color-gold);
-}
-
-/* garante que o body ocupe a altura total e organize os elementos em coluna */
-.main_back {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-/* main que expande ocupando o espaço disponível entre header e footer */
-.app_content {
-  flex: 1 1 auto; /* expande para empurrar o footer para baixo */
-}
-
-/* garantia compatibilidade cross-browser */
-html, body {
-  height: 100%;
-}
-/* Evita que conteúdo seja coberto pelo footer (ajuste valor conforme altura real do footer) */
-.app_content {
-  flex: 1 1 auto;
-  padding-bottom: 80px; /* >= altura do footer */
+    color: var(--color-military);
 }

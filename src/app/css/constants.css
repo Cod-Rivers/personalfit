@@ -1,10 +1,15 @@
 :root {
+    --color-military: #1B3F7A;
+    --color-military-dark: #122C57;
+    --color-military-light: #2A5BA8;
+    --color-mint: #3eb489;
     --color-gold: #cab543;
-    --color-dark-gray: #a19f9f;
-    --color-black: #000;
+    --color-dark-gray: #5a5a6e;
+    --color-black: #111;
     --color-white: #fff;
-    --color-light-gray: #d9d9d9;
-    --color-bg-dark: #222;
+    --color-light-gray: #e8ecf3;
+    --color-bg-light: #f0f3f9;
+    --color-bg-dark: #1B3F7A;
 
-    --bg-image-url: url('/assets/images/main-background.png');
+    --bg-image-url: none;
 }

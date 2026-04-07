@@ -1,54 +1,56 @@
 @import url("./../../../app/css/constants.css");
 
-.bg-header {
-  background-color: var(--color-bg-dark);
-  color: var(--color-white) !important;
-  border-bottom: 4px solid var(--color-gold);
-  padding: 25px 0;
+/* Bottom Navigation Bar — estilo app Android */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    height: 64px;
+    background-color: var(--color-military);
+    border-top: 3px solid var(--color-military-dark);
+    display: flex;
+    align-items: stretch;
+    justify-content: space-around;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    box-shadow: 0 -2px 12px rgba(27, 63, 122, 0.25);
 }
 
-
-
-.btn-gold {
-  background-color: var(--color-gold);
-  color: var(--color-white);
-  border: none;
-  padding: 10px 20px;
-  border-radius: 5px;
-  font-size: 1.2rem;
-  font-weight: bold;
-  cursor: pointer;
+.bottom-nav__item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    color: var(--color-dark-gray);
+    text-decoration: none;
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: color 0.15s ease;
+    padding: 6px 0;
 }
 
-.btn-outline-light {
-  color: var(--color-white);
-  border-color: var(--color-white);
-  padding: 10px 15px;
-  border-radius: 5px;
-  font-size: 1.2rem;
-  font-weight: bold;
-  cursor: pointer;
-  text-decoration: none;
-  transition: all 0.3s ease;
+.bottom-nav__item i {
+    font-size: 1.3rem;
 }
 
-.btn-outline-light:hover {
-  background-color: var(--color-white);
-  color: var(--color-bg-dark);
+.bottom-nav__item:hover,
+.bottom-nav__item:active {
+    color: var(--color-white);
+    text-decoration: none;
 }
 
-.nav-item, .nav-link, .navbar-brand {
-  color: var(--color-white) !important;
+.bottom-nav__logout {
+    color: var(--color-dark-gray);
 }
 
-
-@media (max-width: 1080px) {
-    .btn-gold {
-        width: 100%;
-    }
-
-    .navbar-brand {
-        padding-top: 0px;
-    }
-
+.bottom-nav__logout:hover,
+.bottom-nav__logout:active {
+    color: #e05c5c;
 }

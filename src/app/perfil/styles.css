@@ -2,22 +2,23 @@
 
 .profile-container {
     min-height: 100vh;
-    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
-    color: var(--color-white);
-    padding-top: 2rem;
+    min-height: 100dvh;
+    background: var(--color-bg-light);
+    color: var(--color-black);
+    padding: 16px 16px 80px 16px;
 }
 
 .profile-card {
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
     border: none;
-    border-radius: 15px;
+    border-radius: 20px;
     overflow: hidden;
     background: var(--color-white);
 }
 
 .profile-card .card-header {
     border: none;
-    padding: 2rem 1.5rem 1.5rem;
+    padding: 1.5rem 1rem 1rem;
 }
 
 .profile-avatar {
@@ -25,13 +26,14 @@
 }
 
 .profile-info {
-    padding: 1rem 0;
+    padding: 0.5rem 0;
 }
 
 .info-item {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
     padding: 0.75rem 0;
     border-bottom: 1px solid #f0f0f0;
 }
@@ -46,16 +48,18 @@
     margin-bottom: 0;
     display: flex;
     align-items: center;
+    font-size: 0.85rem;
 }
 
 .info-label i {
-    color: var(--color-gold);
+    color: var(--color-military);
     width: 20px;
 }
 
 .info-value {
     color: #333;
     font-weight: 500;
+    font-size: 1rem;
 }
 
 .profile-actions {
@@ -74,16 +78,17 @@
 }
 
 .modal-content {
-    border-radius: 15px;
+    border-radius: 20px;
     border: none;
     box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+    margin: 16px;
 }
 
 .modal-header {
-    background: linear-gradient(135deg, var(--color-gold) 0%, #e6a800 100%);
+    background: linear-gradient(135deg, var(--color-military) 0%, var(--color-military-light) 100%);
     color: white;
     border: none;
-    border-radius: 15px 15px 0 0;
+    border-radius: 20px 20px 0 0;
 }
 
 .modal-header .btn-close {
@@ -91,44 +96,6 @@
 }
 
 .text-gold {
-    color: var(--color-gold) !important;
+    color: var(--color-military) !important;
 }
 
-/* Responsividade */
-@media (max-width: 768px) {
-    .profile-container {
-        padding-top: 1rem;
-    }
-
-    .profile-card .card-header {
-        padding: 1.5rem 1rem 1rem;
-    }
-
-    .info-item {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.5rem;
-        text-align: left;
-    }
-
-    .info-label {
-        width: 100%;
-    }
-
-    .info-value {
-        width: 100%;
-        text-align: left;
-        padding-left: 0;
-    }
-}
-
-@media (max-width: 576px) {
-    .container {
-        padding-left: 1rem;
-        padding-right: 1rem;
-    }
-
-    .profile-avatar i {
-        font-size: 3rem !important;
-    }
-}
