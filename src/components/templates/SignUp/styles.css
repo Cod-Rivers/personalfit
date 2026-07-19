@@ -2,51 +2,82 @@
 
 .login_main_container {
     width: 100vw;
-    height: 100vh;
-
+    min-height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
+    padding: 16px;
+    background: var(--grad-hero);
+    position: relative;
+    overflow: hidden;
+}
+
+.login_main_container::before {
+    content: '';
+    position: absolute;
+    width: 420px;
+    height: 420px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(61,255,208,0.08) 0%, transparent 70%);
+    top: -100px;
+    right: -100px;
+    pointer-events: none;
 }
 
 .login_box {
-    min-width: 450px;
+    width: 100%;
+    max-width: 460px;
     display: flex;
     flex-direction: column;
-    justify-content: center;
     align-items: center;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 32px 24px;
+    box-shadow: var(--shadow-lg);
+    backdrop-filter: blur(12px);
+    animation: fadeInUp 0.4s ease-out both;
+    color: var(--text-primary);
+    position: relative;
+    z-index: 1;
+}
 
-    background-color: var(--color-white);
-    border-radius: 10px;
-
-    color: var(--color-black);
-
-    padding: 20px;
-    font-weight: 900;
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
 .login_box h1 {
-    font-size: 2rem;
-    margin: 10px;
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 12px 0 4px;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
 }
 
 .btn-gold {
-    background-color: var(--color-gold);
-    color: var(--color-white);
-    font-size: 1.5em;
-}
-
-
-.btn-gold:hover {
-    background-color: var(--color-gold);
-    color: var(--color-white);
+    width: 100%;
+    padding: 12px;
+    font-size: 1rem;
+    letter-spacing: 0.03em;
 }
 
 a {
-    color: var(--color-gold);
+    color: var(--mint);
+    font-weight: 600;
+    transition: color 0.2s;
 }
+a:hover { color: var(--mint-dim); }
 
 .input-form {
-    outline: var(--color-gold);
-    border: 1px solid var(--color-gold);
+    border: 1.5px solid var(--border-subtle);
+    border-radius: 8px;
+}
+
+@media (max-width: 480px) {
+    .login_box {
+        padding: 24px 16px;
+        border-radius: 12px;
+    }
+    .login_box h1 { font-size: 1.5rem; }
 }

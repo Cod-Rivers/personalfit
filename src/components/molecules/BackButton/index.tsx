@@ -1,5 +1,5 @@
-import React, { FC } from 'react';
-import { IBackButtonProps } from './interface';
+﻿import React, { FC } from 'react';
+import { IBackButtonProps } from './types';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 

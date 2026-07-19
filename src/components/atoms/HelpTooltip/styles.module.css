@@ -1,0 +1,150 @@
+.wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    margin-left: 4px;
+    vertical-align: middle;
+}
+
+.trigger {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    border: 1.5px solid var(--mint);
+    background: var(--surface-2);
+    color: var(--mint-text);
+    font-size: 11px;
+    line-height: 1;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: help;
+    padding: 0;
+    transition:
+        background 0.15s,
+        transform 0.15s;
+}
+
+.trigger:hover,
+.trigger:focus-visible {
+    background: var(--mint-glow);
+    transform: scale(1.12);
+}
+
+.backdrop {
+    display: none;
+}
+
+/* Balão estilo "diálogo de RPG": caixa arredondada, borda destacada e
+   rabicho apontando para o gatilho que o abriu. */
+.bubble {
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 50%;
+    margin-left: -120px;
+    width: 240px;
+    max-width: min(240px, 70vw);
+    background: var(--surface-1);
+    border: 2px solid var(--mint);
+    border-radius: 14px;
+    padding: 10px 12px;
+    box-shadow: var(--shadow-lg);
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    text-align: left;
+    animation: popIn 0.15s ease-out;
+}
+
+.bubbleText {
+    font-size: 12.5px;
+    line-height: 1.4;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.bubbleLink {
+    align-self: flex-end;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--mint-text) !important;
+    white-space: nowrap;
+}
+
+.bubbleTail {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 9px solid var(--mint);
+}
+
+.bubbleTail::after {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: -6px;
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 7px solid var(--surface-1);
+}
+
+@keyframes popIn {
+    from {
+        opacity: 0;
+        transform: translateY(4px) scale(0.92);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Em telas pequenas (toque), o balão vira uma caixa de diálogo fixa no
+   rodapé, no estilo JRPG, com um fundo escurecido atrás — mais fácil de
+   ler e tocar do que um balão flutuante minúsculo. */
+@media (max-width: 640px) {
+    .backdrop {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.4);
+        z-index: 40;
+    }
+
+    .bubble {
+        position: fixed;
+        left: 12px;
+        right: 12px;
+        bottom: 16px;
+        top: auto;
+        margin-left: 0;
+        width: auto;
+        max-width: none;
+        animation: slideUp 0.18s ease-out;
+    }
+
+    .bubbleTail {
+        display: none;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

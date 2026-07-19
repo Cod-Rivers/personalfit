@@ -1,10 +1,130 @@
-:root {
-    --color-gold: #cab543;
-    --color-dark-gray: #a19f9f;
+:root,
+[data-theme="light"] {
+    /* ── Legacy alias (mantido para compat) ── */
+    --color-gold: #3dffd0;
+    --color-dark-gray: #7a6e5c;
     --color-black: #000;
     --color-white: #fff;
-    --color-light-gray: #d9d9d9;
-    --color-bg-dark: #222;
+    --color-light-gray: #c4b89e;
+    --color-bg-dark: #f5f0e8;
 
-    --bg-image-url: url('/assets/images/main-background.png');
+    /* ── Paleta principal (fixa em ambos temas) ── */
+    --mint:           #0ffcbe;
+    --mint-dim:       #0ac99a;
+    --mint-glow:      rgba(15,252,190,0.12);
+    --mint-text:      #0b7a61;
+    --mint-text-dim:  #085e4b;
+    --coral:          #ff6b6b;
+    --coral-dim:      #e04f4f;
+    --amber:          #f0a500;
+    --amber-dim:      #cc8b00;
+
+    /* ── Paleta de superfície — LIGHT ── */
+    --mil-blue:       #f5f0e8;
+    --mil-blue-mid:   #ebe5d9;
+    --mil-blue-light: #e0d8ca;
+    --surface-1:      #faf6ef;
+    --surface-2:      #f5f0e8;
+    --surface-3:      #ebe5d9;
+    --border-subtle:  rgba(60,50,30,0.15);
+    --border-mid:     rgba(60,50,30,0.28);
+
+    /* ── Texto — LIGHT ── */
+    --text-primary:   #2c2418;
+    --text-secondary: #4a3f30;
+    --text-muted:     #7a6e5c;
+
+    /* ── Texto de botão sobre gradiente ── */
+    --btn-text: #2c2418;
+
+    /* ── Gradientes ── */
+    --grad-mint:  linear-gradient(135deg, #0ffcbe 0%, #0ac99a 100%);
+    --grad-amber: linear-gradient(135deg, #f0a500 0%, #cc8b00 100%);
+    --grad-coral: linear-gradient(135deg, #ff6b6b 0%, #e04f4f 100%);
+    --grad-card:  linear-gradient(160deg, #faf6ef 0%, #f0ebe0 100%);
+    --grad-hero:  linear-gradient(160deg, #f5f0e8 0%, #ebe5d9 60%, #f5f0e8 100%);
+
+    /* ── Sombras ── */
+    --shadow-sm:  0 1px 4px rgba(50,40,20,0.12);
+    --shadow-md:  0 4px 14px rgba(50,40,20,0.18);
+    --shadow-lg:  0 8px 28px rgba(50,40,20,0.22);
+    --shadow-mint: 0 0 16px rgba(15,252,190,0.25);
+    --shadow-amber: 0 4px 16px rgba(240,165,0,0.22);
+
+    /* ── Efeito de vidro ── */
+    --glass-bg:     rgba(245,240,232,0.88);
+    --glass-border: rgba(60,50,30,0.15);
+
+    /* ── Header ── */
+    --header-bg: linear-gradient(90deg, #0b1929 0%, #1c2f4a 100%);
+    --header-text: #e8f4ff;
+    --header-border: var(--mint);
+
+    /* ── Scrollbar ── */
+    --scrollbar-track: #e0d8ca;
+    --scrollbar-thumb: #c4b89e;
+
+    --bg-image-url: none;
+    --bg-image-opacity: 0;
+
+    /* ── Fundo perolado ── */
+    --body-bg: linear-gradient(
+        135deg,
+        #ffffff    0%,
+        #fdf8ff   18%,
+        #f5f0ff   32%,
+        #eff6ff   48%,
+        #f4fff8   64%,
+        #fffbf0   80%,
+        #ffffff  100%
+    );
+}
+
+/* ══════════════════════════════════════════
+   DARK THEME
+   ══════════════════════════════════════════ */
+[data-theme="dark"] {
+    --color-dark-gray: #7a8aaa;
+    --color-bg-dark: #000000;
+
+    --mil-blue:       #000000;
+    --mil-blue-mid:   #0a0a0a;
+    --mil-blue-light: #141414;
+    --surface-1:      #0f0f0f;
+    --surface-2:      #1a1a1a;
+    --surface-3:      #242424;
+    --border-subtle:  rgba(255,255,255,0.08);
+    --border-mid:     rgba(255,255,255,0.16);
+
+    --text-primary:   #e8e8e8;
+    --text-secondary: #a0a0a0;
+    --text-muted:     #666666;
+
+    --btn-text: #0b0b0b;
+    --mint-text: #0ffcbe;
+    --mint-text-dim: #0ac99a;
+
+    --grad-card:  linear-gradient(160deg, #111111 0%, #080808 100%);
+    --grad-hero:  linear-gradient(160deg, #000000 0%, #111111 60%, #000000 100%);
+
+    --shadow-sm:  0 2px 8px rgba(0,0,0,0.5);
+    --shadow-md:  0 4px 16px rgba(0,0,0,0.6);
+    --shadow-lg:  0 8px 32px rgba(0,0,0,0.7);
+    --shadow-mint: 0 0 20px rgba(15,252,190,0.25);
+    --shadow-amber: 0 4px 20px rgba(240,165,0,0.3);
+
+    --glass-bg:     rgba(10,10,10,0.85);
+    --glass-border: rgba(255,255,255,0.08);
+
+    --header-bg: linear-gradient(90deg, #000000 0%, #111111 100%);
+    --header-text: #e8e8e8;
+    --header-border: var(--mint);
+
+    --scrollbar-track: #0a0a0a;
+    --scrollbar-thumb: #333333;
+
+    --bg-image-url: none;
+    --bg-image-opacity: 0;
+
+    --body-bg: #000000;
 }

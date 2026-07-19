@@ -1,25 +1,35 @@
-"use client";
-import React, { ReactNode, useState} from 'react';
+﻿'use client';
+import React, { useState } from 'react';
 import Image from 'next/image';
 
 import './styles.css';
 import { CreditCardPayment } from './paymentTypes/CreditCard';
 import { PixPayment } from './paymentTypes/pix';
-import { EPaymentTypes, TPaymentTypes } from './interface';
-
+import { EPaymentTypes, TPaymentTypes } from './types';
 
 const Payment: React.FC = () => {
-
-    const [currentPaymentType, setCurrentPaymentType] = useState<TPaymentTypes>(EPaymentTypes.CreditCard);
+    const [currentPaymentType, setCurrentPaymentType] = useState<TPaymentTypes>(
+        EPaymentTypes.CreditCard,
+    );
 
     const paymentTypes = {
         CreditCard: <CreditCardPayment />,
-        Pix: <PixPayment />
-    }
+        Pix: <PixPayment />,
+    };
 
     return (
         <div className="container-box">
             <div className="main_box">
+                <div
+                    className="alert alert-warning m-3 d-flex align-items-center gap-2"
+                    role="alert"
+                >
+                    <i className="fa-solid fa-triangle-exclamation"></i>
+                    <span>
+                        Módulo de pagamentos temporariamente inoperante. Em
+                        breve disponível.
+                    </span>
+                </div>
                 <header className="m-3 d-flex align-items-center gap-4">
                     <Image
                         src="/assets/images/logo.png"
@@ -34,21 +44,31 @@ const Payment: React.FC = () => {
                     <div className="col-12 col-md-6">
                         <div className="d-flex gap-3">
                             <button
-                                className={`btn btn-${currentPaymentType != "CreditCard" ? "outline-" : ""}gold w-50`}
-                                onClick={() => setCurrentPaymentType(EPaymentTypes.CreditCard)}
+                                className={`btn btn-${currentPaymentType != 'CreditCard' ? 'outline-' : ''}gold w-50`}
+                                onClick={() =>
+                                    setCurrentPaymentType(
+                                        EPaymentTypes.CreditCard,
+                                    )
+                                }
                             >
                                 <h5>Cartão de Crédito</h5>
                                 <div className="d-flex flex-column justify-content-center">
-                                     <i className={`fa-solid fa-credit-card ${currentPaymentType != "CreditCard" ? "text-gold" : "text-white"} fa-2x`}></i>
+                                    <i
+                                        className={`fa-solid fa-credit-card ${currentPaymentType != 'CreditCard' ? 'text-gold' : 'text-white'} fa-2x`}
+                                    ></i>
                                 </div>
                             </button>
                             <button
-                                className={`btn btn-${currentPaymentType != "Pix" ? "outline-" : ""}gold w-50`}
-                                onClick={() => setCurrentPaymentType(EPaymentTypes.Pix)}
+                                className={`btn btn-${currentPaymentType != 'Pix' ? 'outline-' : ''}gold w-50`}
+                                onClick={() =>
+                                    setCurrentPaymentType(EPaymentTypes.Pix)
+                                }
                             >
                                 <h5>Pix</h5>
                                 <div className="d-flex flex-column justify-content-center">
-                                    <i className={`fa-solid fa-qrcode ${currentPaymentType != "Pix" ? "text-gold" : "text-white"} fa-2x`}></i>
+                                    <i
+                                        className={`fa-solid fa-qrcode ${currentPaymentType != 'Pix' ? 'text-gold' : 'text-white'} fa-2x`}
+                                    ></i>
                                 </div>
                             </button>
                         </div>

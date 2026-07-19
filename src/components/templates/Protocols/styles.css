@@ -3,5 +3,17 @@
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-
+    background: linear-gradient(135deg, var(--mil-blue-mid) 0%, var(--mil-blue-light) 100%);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 0.75rem;
+    box-shadow: var(--shadow-sm);
+    color: var(--text-primary);
+    transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
+}
+.protocol_card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-amber);
+    border-color: var(--amber);
 }

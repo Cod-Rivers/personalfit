@@ -1,0 +1,207 @@
+.wrapper {
+    position: relative;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.circle {
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--grad-mint);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    position: relative;
+    border: 2px solid var(--border-subtle);
+    box-shadow: var(--shadow-sm);
+}
+
+.img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.initials {
+    color: var(--btn-text);
+    font-weight: 700;
+    line-height: 1;
+    user-select: none;
+}
+
+.overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.spinner {
+    width: 22px;
+    height: 22px;
+    border: 3px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.editBtn {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--surface-1);
+    border: 1.5px solid var(--border-mid);
+    cursor: pointer;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-sm);
+    transition: background 0.15s;
+    padding: 0;
+    line-height: 1;
+}
+.editBtn:hover { background: var(--surface-3); }
+
+.editBtnError {
+    border-color: #e05252;
+    background: #fff0f0;
+}
+
+.hiddenInput {
+    display: none;
+}
+
+.error {
+    margin: 4px 0 0;
+    font-size: 0.7rem;
+    color: var(--coral);
+    text-align: center;
+    max-width: 120px;
+}
+
+/* ── Modal de posicionamento ── */
+
+.cropModal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 16px;
+}
+
+.cropCard {
+    background: var(--surface-1);
+    border-radius: 18px;
+    padding: 24px 20px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    max-width: 340px;
+    width: 100%;
+    border: 1px solid var(--border-subtle);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+
+.cropTitle {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.cropHint {
+    margin: -6px 0 0;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-align: center;
+}
+
+/* Círculo-viewport onde o usuário arrasta a imagem */
+.cropViewport {
+    width: 280px;
+    height: 280px;
+    border-radius: 50%;
+    overflow: hidden;
+    position: relative;
+    cursor: grab;
+    background: #111;
+    border: 3px solid var(--mint);
+    flex-shrink: 0;
+    /* impede scroll nativo em touch */
+    touch-action: none;
+}
+
+.cropViewport:active {
+    cursor: grabbing;
+}
+
+/* Imagem arrastável dentro do viewport */
+.cropImg {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    display: block;
+    user-select: none;
+    pointer-events: none;
+    /* impede que o navegador limite a largura */
+    max-width: none;
+    /* o transform é aplicado via style inline */
+}
+
+.cropActions {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+}
+
+.cropCancel,
+.cropSave {
+    flex: 1;
+    padding: 10px 0;
+    border-radius: 10px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: opacity 0.15s, transform 0.1s;
+}
+
+.cropCancel {
+    background: var(--surface-3);
+    color: var(--text-primary);
+    border: 1px solid var(--border-mid);
+}
+
+.cropSave {
+    background: var(--grad-mint);
+    color: var(--btn-text);
+}
+
+.cropCancel:hover,
+.cropSave:hover {
+    opacity: 0.85;
+}
+
+.cropCancel:active,
+.cropSave:active {
+    transform: scale(0.97);
+}
+

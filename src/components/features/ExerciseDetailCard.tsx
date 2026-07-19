@@ -3,7 +3,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ExerciseLog } from './types';
 import styles from './ExerciseDetailCard.module.css';
-import { FaEdit } from 'react-icons/fa';
+import {
+    isVideoExtension,
+    isInstagramUrl,
+    isTikTokUrl,
+} from '@/libs/exerciseVideoService';
 
 interface ExerciseDetailCardProps {
     exercise: ExerciseLog;
@@ -11,57 +15,34 @@ interface ExerciseDetailCardProps {
 }
 
 const getEmbedUrl = (url: string): string | null => {
-    console.log('[getEmbedUrl] URL original recebida:', url);
-    if (!url) {
-        console.log('[getEmbedUrl] URL está vazia, retornando null.');
-        return null;
-    }
-    let videoId;
-    // Condição para URLs do YouTube (incluindo as que vêm via googleusercontent)
+    if (!url) return null;
+
+    let videoId: string | undefined;
     if (
-        url.includes('youtube.com/watch?v=') ||
+        url.includes('youtube.com/watch') ||
         url.includes('youtu.be/') ||
-        url.includes('youtu.be/')
+        url.includes('youtube.com/shorts/')
     ) {
-        if (url.includes('v=')) {
-            // Formato padrão com v=VIDEO_ID
+        if (url.includes('youtube.com/shorts/')) {
+            videoId = url.split('/shorts/')[1]?.split('?')[0];
+        } else if (url.includes('v=')) {
             videoId = url.split('v=')[1]?.split('&')[0];
         } else if (url.includes('youtu.be/')) {
-            // Formato youtu.be/VIDEO_ID
-            videoId = url.split('youtu.be/')[1]?.split('?')[0];
-        } else if (url.includes('youtu.be/')) {
-            // Formato específico googleusercontent sem v=
             videoId = url.split('youtu.be/')[1]?.split('?')[0];
         }
-        // Se um videoId foi extraído, formata para a URL de embed padrão do YouTube
-        const result = videoId
-            ? `https://www.youtube.com/embed/${videoId}` // FORMATO PADRÃO YOUTUBE EMBED
-            : url; // Retorna a URL original se não conseguir extrair o ID
-        console.log(
-            '[getEmbedUrl] YouTube ID:',
-            videoId,
-            'Resultado (YouTube Embed):',
-            result,
-        );
-        return result;
-    } else if (url.includes('vimeo.com/')) {
-        videoId = url.split('vimeo.com/')[1]?.split('?')[0];
-        const result = videoId
-            ? `https://player.vimeo.com/video/${videoId}` // Formato padrão Vimeo embed
-            : url;
-        console.log(
-            '[getEmbedUrl] Vimeo ID:',
-            videoId,
-            'Resultado (Vimeo Embed):',
-            result,
-        );
-        return result;
+        return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
     }
-    console.warn(
-        '[getEmbedUrl] URL de vídeo não suportada para embed direto ou ID não extraído:',
-        url,
-    );
-    return url; // Retorna a URL original como fallback
+    if (url.includes('vimeo.com/')) {
+        videoId = url.split('vimeo.com/')[1]?.split('?')[0];
+        return videoId ? `https://player.vimeo.com/video/${videoId}` : url;
+    }
+    if (url.includes('tiktok.com/') && url.includes('/video/')) {
+        videoId = url.split('/video/')[1]?.split(/[?/]/)[0];
+        return videoId
+            ? `https://www.tiktok.com/embed/v2/${videoId}`
+            : null;
+    }
+    return null;
 };
 
 const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
@@ -74,6 +55,9 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
     );
     const [isTimerRunning, setIsTimerRunning] = useState<boolean>(false);
     const [isVideoPlayerOpen, setIsVideoPlayerOpen] = useState(false);
+    const [videoAspectRatio, setVideoAspectRatio] = useState<number | null>(
+        null,
+    );
     const [userAnnotations, setUserAnnotations] = useState<string>(''); // Novo estado para as anotações do usuário
     const [isWeightEditing, setIsWeightEditing] = useState<boolean>(false); // Novo estado para controlar a edição do peso
     const [weightValue, setWeightValue] = useState<number | string>(
@@ -128,25 +112,14 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
 
     // --- Handlers de Eventos ---
     const handleOpenVideoPlayer = () => {
-        console.log(
-            '[handleOpenVideoPlayer] Clicou para abrir. video_url:',
-            exercise.video_url,
-        );
         if (exercise.video_url) {
             setIsVideoPlayerOpen(true);
-            console.log(
-                '[handleOpenVideoPlayer] isVideoPlayerOpen definido para true',
-            );
-        } else {
-            console.log(
-                '[handleOpenVideoPlayer] Nenhuma video_url encontrada.',
-            );
         }
     };
 
     const handleCloseVideoPlayer = () => {
-        console.log('[handleCloseVideoPlayer] Fechando player.');
         setIsVideoPlayerOpen(false);
+        setVideoAspectRatio(null);
     };
 
     const handleAnnotationsChange = (
@@ -157,7 +130,127 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
     };
 
     const renderVideoModal = () => {
-        if (isVideoPlayerOpen && embedUrl) {
+        if (!isVideoPlayerOpen) return null;
+
+        // video_url já vem resolvido pela API como URL final pronta para tocar
+        // (R2/CDN, ou link do YouTube/Vimeo/TikTok). embedUrl tem prioridade
+        // quando aplicável; Instagram (e TikTok com link curto) só redireciona.
+        const playUrl =
+            embedUrl || isExternalRedirectOnly
+                ? ''
+                : exercise.video_url || '';
+
+        if (isExternalRedirectOnly) {
+            const platform = isInstagramUrl(exercise.video_url || '')
+                ? 'Instagram'
+                : 'TikTok';
+            return (
+                <div
+                    className={styles.videoModalOverlay}
+                    onClick={handleCloseVideoPlayer}
+                >
+                    <div
+                        className={styles.videoModalCard}
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ padding: '2rem', textAlign: 'center' }}
+                    >
+                        <button
+                            onClick={handleCloseVideoPlayer}
+                            className={`${styles.closeButton || ''} ${styles.videoModalCloseButton || ''}`}
+                            aria-label="Fechar player de vídeo"
+                        >
+                            ×
+                        </button>
+                        <p style={{ color: '#ccc', marginBottom: '1rem' }}>
+                            Este vídeo está hospedado no {platform}.
+                        </p>
+                        <a
+                            href={exercise.video_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn btn-primary"
+                        >
+                            Ver no {platform} ↗
+                        </a>
+                    </div>
+                </div>
+            );
+        }
+
+        if (playUrl) {
+            return (
+                <div
+                    className={styles.videoModalOverlay}
+                    onClick={handleCloseVideoPlayer}
+                >
+                    <div
+                        className={styles.videoModalCard}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <button
+                            onClick={handleCloseVideoPlayer}
+                            className={`${styles.closeButton || ''} ${styles.videoModalCloseButton || ''}`}
+                            aria-label="Fechar player de vídeo"
+                        >
+                            ×
+                        </button>
+                        <div
+                            className={styles.videoPlayerContainer}
+                            style={
+                                videoAspectRatio != null
+                                    ? {
+                                          paddingBottom: 0,
+                                          height: 'auto',
+                                      }
+                                    : undefined
+                            }
+                        >
+                            {isVideoExtension(playUrl) ? (
+                                <video
+                                    src={playUrl}
+                                    controls
+                                    autoPlay
+                                    muted
+                                    loop
+                                    playsInline
+                                    className={styles.videoIframe}
+                                    onLoadedMetadata={(e) => {
+                                        const { videoWidth, videoHeight } =
+                                            e.currentTarget;
+                                        if (videoWidth && videoHeight) {
+                                            setVideoAspectRatio(
+                                                videoWidth / videoHeight,
+                                            );
+                                        }
+                                    }}
+                                    style={
+                                        videoAspectRatio != null
+                                            ? {
+                                                  position: 'static',
+                                                  width: '100%',
+                                                  height: 'auto',
+                                                  maxHeight: '72vh',
+                                                  objectFit: 'contain',
+                                                  display: 'block',
+                                              }
+                                            : undefined
+                                    }
+                                />
+                            ) : (
+                                <img
+                                    src={playUrl}
+                                    alt={exercise.name}
+                                    className={styles.videoIframe}
+                                    style={{ objectFit: 'contain' }}
+                                />
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+        // Caso 2: YouTube / Vimeo
+        if (embedUrl) {
             return (
                 <div
                     className={styles.videoModalOverlay}
@@ -176,7 +269,7 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                         </button>
                         <div className={styles.videoPlayerContainer}>
                             <iframe
-                                src={embedUrl} // embedUrl já estará no formato correto
+                                src={embedUrl}
                                 title={`Vídeo para ${exercise.name}`}
                                 frameBorder="0"
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -201,21 +294,15 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
     // --- Lógica de Renderização ---
     if (!exercise) return null;
 
-    const embedUrl = getEmbedUrl(exercise.video_url || ''); // Agora usa a lógica atualizada
-    console.log(
-        '[ExerciseDetailCard] Renderizando para o exercício:',
-        exercise?.name,
-    );
-    console.log(
-        '[ExerciseDetailCard] video_url do exercício:',
-        exercise?.video_url,
-    );
-    console.log('[ExerciseDetailCard] embedUrl calculada:', embedUrl);
-    console.log(
-        '[ExerciseDetailCard] isVideoPlayerOpen ATUAL:',
-        isVideoPlayerOpen,
-    );
-    //fução de alteração da carga
+    const embedUrl = getEmbedUrl(exercise.video_url || '');
+    // Instagram nunca é embutido; TikTok cai aqui quando o link é curto
+    // (vm.tiktok.com) e não dá pra extrair o ID do vídeo para o embed.
+    const isExternalRedirectOnly =
+        !embedUrl &&
+        !!exercise.video_url &&
+        (isInstagramUrl(exercise.video_url) ||
+            isTikTokUrl(exercise.video_url));
+    //função de alteração da carga
     const handleWeightEditStart = () => {
         setIsWeightEditing(true);
     };
@@ -240,7 +327,7 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
             <div className={styles.modalOverlay}>
                 <div>
                     <div className={styles.thumbnailImage}>
-                        {exercise.video_thumb && (
+                        {exercise.video_thumb ? (
                             <div className={styles.thumbnailSection}>
                                 <div
                                     onClick={handleOpenVideoPlayer}
@@ -261,10 +348,87 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                         src={exercise.video_thumb}
                                         alt={`Ver vídeo para ${exercise.name}`}
                                         className={styles.thumbnailImage}
+                                        onError={(e) => {
+                                            (
+                                                e.target as HTMLImageElement
+                                            ).style.display = 'none';
+                                        }}
                                     />
                                 </div>
                             </div>
-                        )}
+                        ) : exercise.video_url && isExternalRedirectOnly ? (
+                            <div className={styles.thumbnailSection}>
+                                <div
+                                    onClick={handleOpenVideoPlayer}
+                                    className={styles.thumbnailLink}
+                                    style={{
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        background: '#1a1a2e',
+                                        borderRadius: 8,
+                                        fontSize: 28,
+                                    }}
+                                    role="button"
+                                    tabIndex={0}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ')
+                                            handleOpenVideoPlayer();
+                                    }}
+                                >
+                                    {isInstagramUrl(exercise.video_url)
+                                        ? '📷'
+                                        : '🎵'}
+                                </div>
+                            </div>
+                        ) : exercise.video_url && !embedUrl ? (
+                            <div className={styles.thumbnailSection}>
+                                <div
+                                    onClick={handleOpenVideoPlayer}
+                                    className={styles.thumbnailLink}
+                                    style={{
+                                        cursor: 'pointer',
+                                        position: 'relative',
+                                    }}
+                                    role="button"
+                                    tabIndex={0}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ')
+                                            handleOpenVideoPlayer();
+                                    }}
+                                >
+                                    <video
+                                        src={exercise.video_url}
+                                        autoPlay
+                                        muted
+                                        loop
+                                        playsInline
+                                        className={styles.thumbnailImage}
+                                        style={{
+                                            display: 'block',
+                                            borderRadius: 8,
+                                            objectFit: 'cover',
+                                        }}
+                                    />
+                                    <div
+                                        style={{
+                                            position: 'absolute',
+                                            bottom: 6,
+                                            right: 8,
+                                            background: 'rgba(0,0,0,0.55)',
+                                            borderRadius: 4,
+                                            padding: '2px 6px',
+                                            fontSize: 11,
+                                            color: '#fff',
+                                            pointerEvents: 'none',
+                                        }}
+                                    >
+                                        ▶ ver completo
+                                    </div>
+                                </div>
+                            </div>
+                        ) : null}
                     </div>
                     <div className={styles.modalCard}>
                         {onClose && (
@@ -286,7 +450,15 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                         <strong>Repetições:</strong>{' '}
                                         <div className={styles.valueBox}>
                                             <span>
-                                                {exercise.series.join(' - ')}
+                                                {exercise.series_label
+                                                    ? exercise.series_label
+                                                    : exercise.timed
+                                                      ? exercise.series
+                                                            .map((s) => `${s}s`)
+                                                            .join(' - ')
+                                                      : exercise.series.join(
+                                                            ' - ',
+                                                        )}
                                             </span>
                                         </div>
                                     </div>
@@ -370,6 +542,17 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                         <p>{exercise.notes}</p>
                                     </div>
                                 )}
+                                {/* Instruções do personal trainer (campo comments) */}
+                                {exercise.comments && (
+                                    <div className={styles.notesSection}>
+                                        <p>
+                                            <strong>
+                                                Instruções do Personal:
+                                            </strong>
+                                        </p>
+                                        <p>{exercise.comments}</p>
+                                    </div>
+                                )}
                                 {/* Campo de Anotações do Usuário */}
                                 <div className={styles.userAnnotationsSection}>
                                     <p>
@@ -389,7 +572,7 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                     </button>
                                 </div>
                                 {/* Tempo de Descanso e Cronômetro */}
-                                {exercise.restTime > 0 && (
+                                {(exercise.restTime ?? 0) > 0 && (
                                     <div className={styles.restTimerSection}>
                                         <div className={styles.timerDisplay}>
                                             {formatTime(timerValue)}

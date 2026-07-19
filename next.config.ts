@@ -3,7 +3,13 @@ import createNextIntlPlugin from "next-intl/plugin";
 
 const nextConfig: NextConfig = {
   images: {
-    domains: ["placehold.co"],
+    domains: ["placehold.co", "storage.googleapis.com", "midia.venafit.codriverslabs.com"],
+  },
+  webpack: (config) => {
+    // Desativa source maps de JS e CSS no nível do webpack
+    config.devtool = false;
+
+    return config;
   },
 };
 

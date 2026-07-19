@@ -1,55 +1,59 @@
-/* components/TrainingCard.module.css */
-
+/* components/TrainingProtocolList.module.css */
 
 .protocolButton {
-  max-width: 90%; /* Ajuste a largura para telas menores */
-   margin-bottom: 0.7rem;
-   margin-left: auto;
-   margin-right: auto;
- }
+    max-width: 90%;
+    margin-bottom: 0.7rem;
+    margin-left: auto;
+    margin-right: auto;
+}
 
 .header {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  margin-bottom: 1rem; /* Adicionei margem inferior para espaçamento */
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 1rem;
 }
 
 .backButton {
-  margin-right: 0.5rem; /* Reduzi a margem */
-  color: transparent;
-  transition: color 0.2s;
+    margin-right: 0.5rem;
+    color: #fff;
+    background: var(--grad-amber);
+    border: none;
+    cursor: pointer;
+    padding: 6px 14px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    font-weight: 700;
+    font-size: 0.875rem;
+    box-shadow: 0 2px 10px rgba(240,165,0,0.3);
+    transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
 }
-
 .backButton:hover {
-  color: lab(28.55% 61.47 -89.61);
+    color: #fff;
+    transform: translateX(-2px) translateY(-1px);
+    box-shadow: 0 4px 14px rgba(240,165,0,0.45);
+    filter: brightness(1.07);
 }
 
 .title {
-  font-size: 1.25rem; /* Reduzi o tamanho da fonte para telas menores */
-  font-weight: 600;
-  color: #ffffff;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
 }
 
 .noTrainingsMessage {
-  font-size: 1.25rem; /* Reduzi o tamanho da fonte para telas menores */
-  font-weight: 600;
-  color: #eab308;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--mint);
+    text-align: center;
+    padding: 2rem 0;
 }
-/* Media query para telas menores (ex: tablets e smartphones) */
+
 @media (max-width: 768px) {
-  .title {
-    font-size: 1.125rem; /* Menor ainda em telas menores */
-  }
+    .title { font-size: 1.125rem; }
 }
-
-/* Media query para telas ainda menores (smartphones) */
 @media (max-width: 480px) {
-  .header {
-    margin-bottom: 0.75rem;
-  }
-
-  .title {
-    font-size: 1rem; /* Ainda menor em telas muito pequenas */
-  }
+    .header { margin-bottom: 0.75rem; }
+    .title { font-size: 1rem; }
 }

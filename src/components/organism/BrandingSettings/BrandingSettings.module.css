@@ -1,0 +1,322 @@
+.wrapper {
+    position: relative;
+    padding: 1.5rem 0;
+}
+
+.loading {
+    color: var(--text-muted);
+    padding: 2rem 0;
+}
+
+/* ── Premium Gate ── */
+.gateOverlay {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(2px);
+    border-radius: 12px;
+}
+
+.gateBox {
+    background: var(--surface-1);
+    border: 1px solid var(--mint);
+    border-radius: 16px;
+    padding: 2rem 2.5rem;
+    text-align: center;
+    max-width: 360px;
+    box-shadow: var(--shadow-lg);
+}
+
+.gateIcon {
+    font-size: 2.5rem;
+    display: block;
+    margin-bottom: 0.75rem;
+}
+
+.gateTitle {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.gateText {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin-bottom: 0.5rem;
+}
+
+.gateSub {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.blurred {
+    filter: blur(3px);
+    pointer-events: none;
+    user-select: none;
+}
+
+/* ── Sections ── */
+.section {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--surface-3);
+}
+
+.section:last-of-type {
+    border-bottom: none;
+}
+
+.sectionTitle {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.sectionDesc {
+    font-size: 0.83rem;
+    color: var(--text-muted);
+    margin-bottom: 0.875rem;
+}
+
+/* ── Logo ── */
+.logoRow {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.logoPreview {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    border-radius: 10px;
+    overflow: visible;
+    border: 1px solid var(--surface-3);
+}
+
+.logoImg {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    border-radius: 10px;
+    background: var(--surface-2);
+}
+
+.removeBtn {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 22px;
+    height: 22px;
+    background: var(--coral);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    font-size: 0.65rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+.logoPlaceholder {
+    width: 80px;
+    height: 80px;
+    border: 2px dashed var(--surface-3);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-align: center;
+    background: var(--surface-2);
+}
+
+.uploadBtn {
+    padding: 0.45rem 1rem;
+    background: var(--surface-2);
+    border: 1px solid var(--surface-3);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.uploadBtn:hover:not(:disabled) {
+    background: var(--surface-3);
+}
+
+.uploadBtn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* ── Colors ── */
+.colorRow {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.colorLabel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.colorInputWrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.colorPicker {
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 8px;
+    padding: 2px;
+    cursor: pointer;
+    background: transparent;
+}
+
+.colorPicker:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.colorHex {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-family: monospace;
+}
+
+/* ── Banner ── */
+.textarea {
+    width: 100%;
+    background: var(--surface-2);
+    border: 1px solid var(--surface-3);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    padding: 0.75rem;
+    resize: vertical;
+    transition: border-color 0.15s;
+    font-family: inherit;
+}
+
+.textarea:focus {
+    outline: none;
+    border-color: var(--mint);
+}
+
+.textarea:disabled {
+    opacity: 0.4;
+}
+
+.charCount {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    display: block;
+    text-align: right;
+    margin-top: 0.25rem;
+}
+
+/* ── Preview ── */
+.preview {
+    border: 1px solid var(--surface-3);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--surface-2);
+}
+
+.previewHeader {
+    background: var(--preview-primary, var(--mint));
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.previewLogo {
+    height: 32px;
+    width: auto;
+    max-width: 100px;
+    object-fit: contain;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.15);
+}
+
+.previewLogoText {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: rgba(0,0,0,0.55);
+    background: rgba(255,255,255,0.3);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    border: 1px dashed rgba(0,0,0,0.2);
+}
+
+.previewAppName {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: rgba(0,0,0,0.7);
+}
+
+.previewBanner {
+    background: var(--preview-secondary, var(--coral));
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+    color: #fff;
+    font-weight: 500;
+}
+
+/* ── Actions ── */
+.error {
+    color: var(--coral);
+    font-size: 0.85rem;
+    margin-bottom: 0.75rem;
+}
+
+.successMsg {
+    color: var(--mint);
+    font-size: 0.85rem;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+}
+
+.saveBtn {
+    padding: 0.65rem 2rem;
+    background: var(--grad-mint);
+    border: none;
+    border-radius: 10px;
+    color: #0d1a0d;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.15s;
+}
+
+.saveBtn:hover:not(:disabled) {
+    opacity: 0.85;
+}
+
+.saveBtn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}

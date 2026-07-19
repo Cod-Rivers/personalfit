@@ -1,0 +1,65 @@
+.banner {
+    width: 100%;
+    max-width: 728px;
+    margin: 0 auto;
+    background: var(--surface-1);
+    border: 1px solid var(--border-mid);
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.sticky {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    border-radius: 8px 8px 0 0;
+    box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.15);
+    max-width: 100%;
+    width: 100%;
+}
+
+.label {
+    font-size: 10px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 4px 8px;
+    align-self: flex-end;
+}
+
+.media {
+    width: 100%;
+    height: 80px;
+    object-fit: cover;
+    border: none;
+    display: block;
+}
+
+.title {
+    font-size: 12px;
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 4px 8px;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+}
+
+.link:hover .banner {
+    border-color: var(--mint);
+    transition: border-color 0.2s;
+}

@@ -13,17 +13,18 @@ const TrainingProtocolList: React.FC<TrainingProtocolListProps> = ({
     protocolId, // ID do protocolo atual (da URL da página anterior)
     protocolNumber,
     trainings, // Agora é TrainingCardProps[] (id e label)
+    basePath = '/treinamento',
 }) => {
     const router = useRouter(); // Descomente se preferir router.push
     const handleBackButtonClick = () => {
         // Esta função é chamada apenas no cliente quando o botão é clicado.
         // A referência a 'window' aqui é geralmente segura.
-        router.push('/treinamento');
+        router.push(basePath);
     };
     // Não precisamos mais de handleCardClick aqui se usarmos <Link> diretamente no map
 
     return (
-        <div className="container ml-auto mr-auto sm:p-6 bg-gray-50 min-h-screen relative flex:center">
+        <div className="container mx-auto p-4 min-h-screen relative">
             <div className="pl-auto pr-auto">
                 <div className={styles.header}>
                     <button
@@ -41,7 +42,7 @@ const TrainingProtocolList: React.FC<TrainingProtocolListProps> = ({
                     trainings.map((training) => (
                         // Envolver o TrainingCard com o componente Link do Next.js
                         <Link
-                            href={`/treinamento/${protocolId}/${training.id}`} // Constrói a URL para a página de detalhes
+                            href={`${basePath}/${protocolId}/${training.id}`} // Constrói a URL para a página de detalhes
                             key={training.id}
                             passHref // Recomendado para passar o href para componentes customizados como TrainingCard se ele for um <a> internamente
                             // (Se TrainingCard for um <button>, passHref não é estritamente necessário aqui, mas não prejudica)

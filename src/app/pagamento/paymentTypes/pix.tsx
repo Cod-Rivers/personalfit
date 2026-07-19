@@ -1,9 +1,10 @@
 import { ReactNode, useState } from "react";
+import Image from 'next/image';
 
 export const PixPayment = (): ReactNode => {
 
     const [loading, setLoading] = useState(false);
-    const [qrcode, setQRCode] = useState<string>("https://placehold.co/250x250?text=QRCode");
+    const [qrcode, setQRCode] = useState<string>("");
 
     const handleGenerateQRCode = async (e: React.MouseEvent<HTMLButtonElement>) => {
         try {
@@ -23,9 +24,9 @@ export const PixPayment = (): ReactNode => {
     return (
         <div className="text-center">
             <div className="my-3">
-                {qrcode && <img src={qrcode} alt="QR Code" />}
+                {qrcode && <Image src={qrcode} alt="QR Code" width={250} height={250} />}
             </div>
-            <button className="btn btn-lg btn-gold w-100 " onClick={handleGenerateQRCode} disabled={loading ?? qrcode}>
+            <button className="btn btn-lg btn-gold w-100 " onClick={handleGenerateQRCode} disabled={loading || !!qrcode}>
                 {loading ? <div className="spinner-border text-light" role="status">
                     <span className="visually-hidden">Loading...</span>
                 </div> : "Gerar QR Code"}

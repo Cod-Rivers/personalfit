@@ -1,0 +1,35 @@
+@import url("./../../../app/css/constants.css");
+
+.footer {
+    background: var(--header-bg);
+    color: var(--header-text);
+    border-top: 2px solid var(--header-border);
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.3);
+    padding: 16px 0;
+    text-align: center;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+}
+
+.footer a {
+    color: var(--mint);
+    text-decoration: none;
+    transition: opacity 0.2s;
+}
+
+.footer a:hover {
+    opacity: 0.8;
+}
+
+.footer__brand {
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+}
+
+.footer__copy {
+    font-size: 0.8rem;
+    opacity: 0.7;
+}

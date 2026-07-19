@@ -1,12 +1,29 @@
-'use client';
-import React, { useEffect, useState } from 'react';
+﻿'use client';
+import React, { useEffect, useState, useCallback } from 'react';
+import { usePathname } from 'next/navigation';
 
 import './styles.css';
-import { IUser } from './interface';
+import { IUser } from './types';
 import Link from 'next/link';
+import * as notifService from '@/libs/notificationService';
+import * as studentLinkService from '@/libs/studentLinkService';
+import { useTheme } from '@/context/ThemeContext';
+import { useBranding } from '@/context/BrandingContext';
+import AvatarUpload from '@/components/molecules/AvatarUpload';
 
 const Header: React.FC = () => {
+    const { theme, toggleTheme } = useTheme();
+    const { branding } = useBranding();
+    const pathname = usePathname();
     const [user, setUser] = useState<IUser>({});
+    const [notifications, setNotifications] = useState<
+        notifService.Notification[]
+    >([]);
+    const [showNotif, setShowNotif] = useState(false);
+    const [linkStatus, setLinkStatus] =
+        useState<studentLinkService.LinkStatus | null>(null);
+    const [linkResponding, setLinkResponding] = useState(false);
+    const [linkError, setLinkError] = useState('');
 
     const checkUser = () => {
         const user = localStorage.getItem('user');
@@ -19,18 +36,166 @@ const Header: React.FC = () => {
         window.location.href = '/';
     };
 
+    const fetchNotifications = useCallback(async () => {
+        try {
+            const data = await notifService.getMyNotifications();
+            setNotifications(data);
+        } catch {
+            /* silent */
+        }
+    }, []);
+
+    const fetchLinkStatus = useCallback(async () => {
+        try {
+            const status = await studentLinkService.getMyLinkStatus();
+            setLinkStatus(status);
+        } catch {
+            /* silent */
+        }
+    }, []);
+
+    useEffect(checkUser, []);
+    useEffect(() => {
+        fetchNotifications();
+        // Polling a cada 30 segundos para notificações em tempo real
+        const interval = setInterval(fetchNotifications, 30000);
+        return () => clearInterval(interval);
+    }, [fetchNotifications]);
+
+    useEffect(() => {
+        // Buscamos independentemente da role: uma conta admin/personal pode
+        // também ter um vínculo de aluno na mesma conta.
+        if (!user.name) return;
+        fetchLinkStatus();
+        const interval = setInterval(fetchLinkStatus, 30000);
+        return () => clearInterval(interval);
+    }, [user.name, fetchLinkStatus]);
+
+    const isOnStudentArea =
+        pathname.startsWith('/app') ||
+        pathname.startsWith('/meus-treinos') ||
+        pathname.startsWith('/agendamentos') ||
+        pathname.startsWith('/anamnese');
+    const showProfileSwitcher =
+        linkStatus === 'active' && user.role !== 'student';
+
+    const handleAcceptLink = async () => {
+        setLinkError('');
+        setLinkResponding(true);
+        try {
+            await studentLinkService.acceptPersonalLink();
+            await fetchLinkStatus();
+        } catch {
+            setLinkError('Erro ao confirmar o vínculo. Tente novamente.');
+        } finally {
+            setLinkResponding(false);
+        }
+    };
+
+    const handleDeclineLink = async () => {
+        setLinkError('');
+        setLinkResponding(true);
+        try {
+            await studentLinkService.declinePersonalLink();
+            await fetchLinkStatus();
+        } catch {
+            setLinkError('Erro ao recusar o vínculo. Tente novamente.');
+        } finally {
+            setLinkResponding(false);
+        }
+    };
+
+    const unreadCount = notifications.filter((n) => !n.read).length;
+
+    const handleMarkRead = async (id: string) => {
+        try {
+            await notifService.markAsRead(id);
+            setNotifications((prev) =>
+                prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
+            );
+        } catch {
+            /* silent */
+        }
+    };
+
     const logout = () => {
         localStorage.removeItem('user');
         localStorage.removeItem('token');
         window.location.href = '/';
     };
 
-    useEffect(checkUser, []);
+    const anamineseLinkClass = `nav-link dropdown-toggle${pathname.startsWith('/anamnese') ? ' nav-link-active' : ''}`;
+    const agendaLinkClass = `nav-link${pathname.startsWith('/personal/agenda') ? ' nav-link-active' : ''}`;
+    const agendamentosLinkClass = `nav-link${pathname.startsWith('/agendamentos') ? ' nav-link-active' : ''}`;
 
     return (
+        <>
+        {linkStatus === 'pending' && (
+            <div
+                className="d-flex flex-wrap align-items-center justify-content-between gap-2 px-3 py-2"
+                style={{ background: '#f3a928', color: '#1a1a1a' }}
+            >
+                <span>
+                    Seu personal quer reativar seu vínculo. Confirmar?
+                    {linkError && (
+                        <strong style={{ marginLeft: 8 }}>{linkError}</strong>
+                    )}
+                </span>
+                <div className="d-flex gap-2">
+                    <button
+                        className="btn btn-sm btn-dark"
+                        onClick={handleAcceptLink}
+                        disabled={linkResponding}
+                    >
+                        {linkResponding ? 'Aguarde...' : 'Aceitar'}
+                    </button>
+                    <button
+                        className="btn btn-sm btn-outline-dark"
+                        onClick={handleDeclineLink}
+                        disabled={linkResponding}
+                    >
+                        Recusar
+                    </button>
+                </div>
+            </div>
+        )}
         <nav className="navbar navbar-expand-lg navbar-dark bg-header">
             <div className="container-fluid">
-                <a className="navbar-brand" href="#">
+                <a
+                    className="navbar-brand d-flex align-items-center gap-2"
+                    href="#"
+                >
+                    <AvatarUpload
+                        current={user.avatar}
+                        name={user.name ?? '?'}
+                        size={36}
+                        editable
+                        onUploaded={(uri) => {
+                            setUser((prev) => ({ ...prev, avatar: uri }));
+                            const stored = localStorage.getItem('user');
+                            if (stored) {
+                                const parsed = JSON.parse(stored);
+                                parsed.avatar = uri;
+                                localStorage.setItem(
+                                    'user',
+                                    JSON.stringify(parsed),
+                                );
+                            }
+                        }}
+                    />
+                    {branding?.logo_base64 && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                            src={branding.logo_base64}
+                            alt="Logo"
+                            style={{
+                                height: 32,
+                                width: 'auto',
+                                objectFit: 'contain',
+                                borderRadius: 6,
+                            }}
+                        />
+                    )}
                     Olá, {user.name}
                 </a>
                 <button
@@ -49,31 +214,171 @@ const Header: React.FC = () => {
                     id="navbarSupportedContent"
                 >
                     <ul className="navbar-nav me-auto mb-2 mb-lg-0">
-                        <li className="nav-item dropdown">
-                            <a
-                                className="nav-link dropdown-toggle"
-                                href="#"
-                                role="button"
-                                data-bs-toggle="dropdown"
-                                aria-expanded="false"
-                            >
-                                Anaminese
-                            </a>
-                            <ul className="dropdown-menu">
-                                <li>
-                                    <Link
-                                        className="dropdown-item"
-                                        href="/anaminese"
-                                    >
-                                        Refazer anaminese
-                                    </Link>
-                                </li>
-                            </ul>
-                        </li>
+                        {!user.has_personal && (
+                            <li className="nav-item dropdown">
+                                <a
+                                    className={anamineseLinkClass}
+                                    href="#"
+                                    role="button"
+                                    data-bs-toggle="dropdown"
+                                    aria-expanded="false"
+                                >
+                                    Anaminese
+                                </a>
+                                <ul className="dropdown-menu">
+                                    <li>
+                                        <Link
+                                            className="dropdown-item"
+                                            href="/anamnese"
+                                        >
+                                            Refazer anaminese
+                                        </Link>
+                                    </li>
+                                </ul>
+                            </li>
+                        )}
+                        {user.role === 'personal' && (
+                            <li className="nav-item">
+                                <Link
+                                    className={agendaLinkClass}
+                                    href="/personal/agenda"
+                                >
+                                    Agenda
+                                </Link>
+                            </li>
+                        )}
+                        {user.role === 'personal' && (
+                            <li className="nav-item">
+                                <Link
+                                    className={`nav-link${pathname === '/minha-conta' ? ' nav-link-active' : ''}`}
+                                    href="/minha-conta"
+                                >
+                                    Minha Conta
+                                </Link>
+                            </li>
+                        )}
+                        {user.role === 'student' && (
+                            <li className="nav-item">
+                                <Link
+                                    className={agendamentosLinkClass}
+                                    href="/agendamentos"
+                                >
+                                    Agendamentos
+                                </Link>
+                            </li>
+                        )}
+                        {user.role === 'student' && (
+                            <li className="nav-item">
+                                <Link
+                                    className={`nav-link${pathname === '/minha-conta' ? ' nav-link-active' : ''}`}
+                                    href="/minha-conta"
+                                >
+                                    Minha Conta
+                                </Link>
+                            </li>
+                        )}
                     </ul>
-                    <div className="d-flex" role="search">
+                    <div
+                        className="d-flex align-items-center gap-3"
+                        role="search"
+                    >
+                        <div
+                            className="notif-wrapper"
+                            style={{ position: 'relative' }}
+                        >
+                            <button
+                                className="btn-icon-luxe"
+                                style={{
+                                    fontSize: '1.3rem',
+                                    position: 'relative',
+                                }}
+                                onClick={() => setShowNotif(!showNotif)}
+                                aria-label="Notificações"
+                            >
+                                🔔
+                                {unreadCount > 0 && (
+                                    <span className="notif-badge">
+                                        {unreadCount}
+                                    </span>
+                                )}
+                            </button>
+                            {showNotif && (
+                                <div className="notif-dropdown">
+                                    <div className="notif-dropdown-header">
+                                        <strong>Notificações</strong>
+                                    </div>
+                                    {notifications.length === 0 ? (
+                                        <p className="notif-empty">
+                                            Nenhuma notificação
+                                        </p>
+                                    ) : (
+                                        <ul className="notif-list">
+                                            {notifications
+                                                .slice(0, 10)
+                                                .map((n) => (
+                                                    <li
+                                                        key={n.id}
+                                                        className={`notif-item ${!n.read ? 'notif-unread' : ''}`}
+                                                        onClick={() =>
+                                                            !n.read &&
+                                                            handleMarkRead(n.id)
+                                                        }
+                                                    >
+                                                        <strong className="notif-item-title">
+                                                            {n.title}
+                                                        </strong>
+                                                        <p className="notif-item-msg">
+                                                            {n.message}
+                                                        </p>
+                                                        <span className="notif-item-date">
+                                                            {new Date(
+                                                                n.created_at,
+                                                            ).toLocaleDateString(
+                                                                'pt-BR',
+                                                            )}
+                                                        </span>
+                                                    </li>
+                                                ))}
+                                        </ul>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                        {showProfileSwitcher && (
+                            <Link
+                                href={
+                                    isOnStudentArea
+                                        ? user.role === 'admin' ||
+                                          user.role === 'content_editor'
+                                            ? '/admin'
+                                            : '/personal'
+                                        : '/meus-treinos'
+                                }
+                                className="btn-luxe"
+                            >
+                                {isOnStudentArea
+                                    ? '← Voltar ao Painel'
+                                    : 'Ver como Aluno'}
+                            </Link>
+                        )}
+                        <Link
+                            href="/ajuda"
+                            className="btn-icon-luxe"
+                            aria-label="Central de Ajuda"
+                            title="Central de Ajuda"
+                        >
+                            ❓
+                        </Link>
                         <button
-                            className="btn btn-gold"
+                            className="btn-icon-luxe"
+                            type="button"
+                            onClick={toggleTheme}
+                            aria-label="Alternar tema"
+                        >
+                            {theme === 'light' ? '🌙' : '☀️'}
+                        </button>
+                        <button
+                            className="btn-luxe"
                             type="submit"
                             onClick={logout}
                         >
@@ -83,6 +388,7 @@ const Header: React.FC = () => {
                 </div>
             </div>
         </nav>
+        </>
     );
 };
 
