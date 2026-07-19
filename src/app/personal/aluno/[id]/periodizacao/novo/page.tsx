@@ -7,12 +7,23 @@ import { z } from 'zod';
 import { createMacrocycle } from '@/libs/planningService';
 import s from './novo.module.css';
 
-const schema = z.object({
-    name: z.string().min(1, 'Nome obrigatório'),
-    goal: z.string().min(1, 'Objetivo obrigatório'),
-    start_date: z.string().optional(),
-    end_date: z.string().optional(),
-});
+const schema = z
+    .object({
+        name: z.string().min(1, 'Nome obrigatório'),
+        goal: z.string().min(1, 'Objetivo obrigatório'),
+        start_date: z.string().optional(),
+        end_date: z.string().optional(),
+    })
+    .refine(
+        (data) =>
+            !data.start_date ||
+            !data.end_date ||
+            data.end_date > data.start_date,
+        {
+            message: 'Data de término deve ser depois da data de início',
+            path: ['end_date'],
+        },
+    );
 type FormValues = z.infer<typeof schema>;
 
 type PlanningMode = 'periodized' | 'simple';
@@ -123,6 +134,11 @@ export default function NovoPeriodizacaoPage() {
                                     {...register('end_date')}
                                     className={s.formInput}
                                 />
+                                {errors.end_date && (
+                                    <small className="text-danger">
+                                        {errors.end_date.message}
+                                    </small>
+                                )}
                             </div>
                         </div>
                     </div>

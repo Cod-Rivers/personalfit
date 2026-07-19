@@ -229,36 +229,6 @@ export default function CiclosTab({ view, students, onBack }: Props) {
                         </div>
                         <div className={s.formGroup}>
                             <label className={s.formLabel}>
-                                Data de Início
-                            </label>
-                            <input
-                                type="date"
-                                value={tplForm.start_date || ''}
-                                onChange={(e) =>
-                                    setTplForm({
-                                        ...tplForm,
-                                        start_date: e.target.value,
-                                    })
-                                }
-                                className={s.formInput}
-                            />
-                        </div>
-                        <div className={s.formGroup}>
-                            <label className={s.formLabel}>Data de Fim</label>
-                            <input
-                                type="date"
-                                value={tplForm.end_date || ''}
-                                onChange={(e) =>
-                                    setTplForm({
-                                        ...tplForm,
-                                        end_date: e.target.value,
-                                    })
-                                }
-                                className={s.formInput}
-                            />
-                        </div>
-                        <div className={s.formGroup}>
-                            <label className={s.formLabel}>
                                 Visibilidade
                             </label>
                             <select

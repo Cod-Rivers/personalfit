@@ -730,6 +730,23 @@ export default function MeusTreinosExercisesPage({
                     mesocycle={currentMeso}
                     microcycle={currentMicro}
                     training={currentTraining}
+                    autoregulation={{
+                        targetRPE: Math.max(
+                            1,
+                            Math.min(
+                                10,
+                                (currentMicro.target_rpe ?? 7) +
+                                    (decision.zone === 'fadiga'
+                                        ? -1
+                                        : decision.zone === 'supercompensacao'
+                                          ? 0.5
+                                          : 0),
+                            ),
+                        ),
+                        intraSessionLoadAdjustPct:
+                            decision.intraSessionLoadAdjustPct,
+                        message: decision.message,
+                    }}
                     onClose={() => setShowWorkoutLogger(false)}
                     onComplete={() => {
                         setShowWorkoutLogger(false);

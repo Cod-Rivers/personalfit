@@ -22,6 +22,14 @@ import s from './WorkoutLogger.module.css';
 const OFFLINE_NO_PRECREATED_LOG_MESSAGE =
     'Sem conexão e este treino não foi baixado para uso offline. Baixe o plano em "Meus Treinos" enquanto estiver online para poder completá-lo sem internet.';
 
+/** Recomendação do painel de autorregulação (ver microcycleAutoregulation.ts)
+ * repassada para pré-preencher o log em vez de ficar só como texto acima. */
+interface AutoregulationHint {
+    targetRPE: number;
+    intraSessionLoadAdjustPct: number;
+    message: string;
+}
+
 interface WorkoutLoggerProps {
     studentId: string;
     planningId: string;
@@ -33,6 +41,7 @@ interface WorkoutLoggerProps {
     /** Chamado quando a conclusão/skip não pôde ir ao servidor (offline) mas
      * foi enfileirada localmente para sincronizar depois. */
     onQueued: () => void;
+    autoregulation?: AutoregulationHint;
 }
 
 interface ExerciseLog {
@@ -57,20 +66,35 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
     onClose,
     onComplete,
     onQueued,
+    autoregulation,
 }) => {
     const [logs, setLogs] = useState<ExerciseLog[]>(
-        training.exercises.map((ex) => ({
-            exerciseId: ex.id,
-            name: ex.name,
-            plannedSeries: ex.series,
-            series: ex.series.map((_, i) => ({
-                seriesNum: i + 1,
-                reps: 0,
-                loadKg: ex.load_kg ?? 0,
-                rpe: 7,
-                notes: '',
-            })),
-        })),
+        training.exercises.map((ex) => {
+            // Pré-preenche RPE alvo e ajuste de carga sugeridos pelo painel
+            // de autorregulação em vez de deixá-los só como texto acima —
+            // sem isso a recomendação nunca chegava a influenciar o que
+            // efetivamente era registrado.
+            const suggestedRPE = autoregulation
+                ? Math.round(autoregulation.targetRPE)
+                : 7;
+            const loadAdjust = autoregulation
+                ? 1 + autoregulation.intraSessionLoadAdjustPct / 100
+                : 1;
+            return {
+                exerciseId: ex.id,
+                name: ex.name,
+                plannedSeries: ex.series,
+                series: ex.series.map((_, i) => ({
+                    seriesNum: i + 1,
+                    reps: 0,
+                    loadKg: ex.load_kg
+                        ? Math.round(ex.load_kg * loadAdjust * 2) / 2
+                        : 0,
+                    rpe: suggestedRPE,
+                    notes: '',
+                })),
+            };
+        }),
     );
 
     const [duration, setDuration] = useState<number | null>(null);
@@ -299,6 +323,16 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                         <div className={s.errorBanner}>
                             <FiAlertCircle /> {error}
                         </div>
+                    )}
+
+                    {autoregulation && (
+                        <p
+                            className="small text-muted"
+                            style={{ marginTop: -4, marginBottom: 12 }}
+                        >
+                            Sugestão de hoje: {autoregulation.message} (RPE e
+                            carga já pré-preenchidos abaixo — ajuste livremente).
+                        </p>
                     )}
 
                     {logs.map((ex, exIdx) => (

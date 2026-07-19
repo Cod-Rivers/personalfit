@@ -254,12 +254,21 @@ export default function MesocycleFormModal({
         [],
     );
 
+    // Aviso leve (não bloqueia salvar): fases longas sem nenhuma semana de
+    // deload marcada são um sinal comum de risco de overtraining/estagnação —
+    // ver diretrizes de periodização (Bompa/Fleck: deload a cada 4-6 semanas).
+    const suggestDeloadWarning =
+        !simpleMode &&
+        durationWeeksWatch >= 5 &&
+        !localMicrocycles.some((m) => m.is_deload);
+
     const onSubmit = (data: MesoFormData) => {
         const req = localToMesoRequest(
             data,
             localTrainings,
             localMicrocycles,
             order,
+            meso?.id,
         );
         onSave(req);
     };
@@ -486,6 +495,19 @@ export default function MesocycleFormModal({
                                 )}
                             </div>
                         </>
+                    )}
+
+                    {suggestDeloadWarning && (
+                        <div
+                            className="alert alert-warning py-2 mb-3"
+                            style={{ fontSize: '0.8rem' }}
+                        >
+                            ⚠️ Fase com {durationWeeksWatch} semanas e nenhuma
+                            marcada como deload. Blocos longos sem semana de
+                            descarga aumentam o risco de overtraining —
+                            considere marcar uma semana como deload (ex: a
+                            última) abaixo.
+                        </div>
                     )}
 
                     <MicrocycleEditor

@@ -20,8 +20,6 @@ export type TemplateModalMode =
 export interface TplFormData {
     name?: string;
     goal?: string;
-    start_date?: string;
-    end_date?: string;
     is_public?: boolean;
 }
 

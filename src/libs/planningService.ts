@@ -43,6 +43,9 @@ export interface MicrocycleResponse {
 }
 
 export interface MicrocycleRequest {
+    /** ID do microciclo já existente (preservar para não invalidar workout logs
+     * registrados contra ele). Omitir/undefined para um microciclo novo. */
+    id?: string;
     week_number: number;
     status: string;
     focus?: string;
@@ -114,6 +117,9 @@ export interface TrainingRequest {
 }
 
 export interface MesocycleRequest {
+    /** ID do mesociclo já existente (preservar para não perder as datas do
+     * Gantt nem o vínculo com PeriodizedWorkoutLogs). Omitir para uma fase nova. */
+    id?: string;
     order: number;
     name: string;
     phase: string;
@@ -199,9 +205,17 @@ export function macroToGanttPhases(
     let cursor = new Date(macroStart);
 
     for (const m of mesos) {
+        if (m.duration_weeks <= 0) {
+            // duration_weeks inválido (0) — não inventa uma duração fictícia
+            // para não esconder dado corrompido; melhor pular a fase no Gantt
+            // do que desenhar um bloco de tamanho arbitrário e enganoso.
+            console.warn(
+                `Mesociclo "${m.name}" (${m.id}) tem duration_weeks=0 — ignorado no Gantt.`,
+            );
+            continue;
+        }
         const start = new Date(cursor);
-        const weeks = m.duration_weeks > 0 ? m.duration_weeks : 4;
-        const end = addWeeks(start, weeks);
+        const end = addWeeks(start, m.duration_weeks);
         phases.push({
             id: m.id,
             name: m.name,

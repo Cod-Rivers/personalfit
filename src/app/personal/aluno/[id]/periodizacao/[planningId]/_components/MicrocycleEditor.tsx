@@ -2,6 +2,12 @@
 
 import type { LocalMicrocycle } from '../_lib/mesocycleTransforms';
 
+const MICRO_STATUS_LABEL: Record<string, string> = {
+    pending: 'Pendente',
+    in_progress: 'Em progresso',
+    completed: 'Concluído',
+};
+
 interface Props {
     microcycles: LocalMicrocycle[];
     onUpdate: (
@@ -96,23 +102,44 @@ export default function MicrocycleEditor({ microcycles, onUpdate, simpleMode }: 
                                 <label className="form-label small mb-1">
                                     Status
                                 </label>
-                                <select
-                                    className="form-control form-control-sm"
-                                    value={micro.status}
-                                    onChange={(e) =>
-                                        onUpdate(
-                                            micro._id,
-                                            'status',
-                                            e.target.value,
-                                        )
-                                    }
-                                >
-                                    <option value="pending">Pendente</option>
-                                    <option value="in_progress">
-                                        Em progresso
-                                    </option>
-                                    <option value="completed">Concluído</option>
-                                </select>
+                                {micro.id ? (
+                                    // Semana já existente: status é calculado
+                                    // automaticamente a partir dos treinos
+                                    // registrados pelo aluno, não editável aqui.
+                                    <div
+                                        className="form-control form-control-sm"
+                                        style={{
+                                            background: 'transparent',
+                                            color: 'var(--text-muted)',
+                                        }}
+                                        title="Definido automaticamente pelos treinos registrados nesta semana"
+                                    >
+                                        {MICRO_STATUS_LABEL[micro.status] ??
+                                            micro.status}
+                                    </div>
+                                ) : (
+                                    <select
+                                        className="form-control form-control-sm"
+                                        value={micro.status}
+                                        onChange={(e) =>
+                                            onUpdate(
+                                                micro._id,
+                                                'status',
+                                                e.target.value,
+                                            )
+                                        }
+                                    >
+                                        <option value="pending">
+                                            Pendente
+                                        </option>
+                                        <option value="in_progress">
+                                            Em progresso
+                                        </option>
+                                        <option value="completed">
+                                            Concluído
+                                        </option>
+                                    </select>
+                                )}
                             </div>
                         )}
                         <div className="col-md-3">

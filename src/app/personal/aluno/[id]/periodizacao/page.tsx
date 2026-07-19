@@ -135,6 +135,14 @@ export default function PeriodizacaoPage() {
 
     const handleEditSubmit = useCallback(async () => {
         if (!editing) return;
+        if (
+            editForm.start_date &&
+            editForm.end_date &&
+            editForm.end_date <= editForm.start_date
+        ) {
+            setEditError('Data de término deve ser depois da data de início.');
+            return;
+        }
         setSavingEdit(true);
         setEditError('');
         try {

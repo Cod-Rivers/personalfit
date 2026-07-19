@@ -101,6 +101,9 @@ export interface LocalTraining {
 
 export interface LocalMicrocycle {
     _id: string;
+    /** ID real do microciclo no backend, presente só quando carregado de uma
+     * resposta da API (undefined para linhas novas criadas no cliente). */
+    id?: string;
     week_number: number;
     status: string;
     focus: string;
@@ -161,6 +164,7 @@ export function responseMicroToLocal(
     }
     const mapped: LocalMicrocycle[] = microcycles.map((m, i) => ({
         _id: genId(),
+        id: m.id,
         week_number: m.week_number || i + 1,
         status: m.status || 'pending',
         focus: m.focus ?? '',
@@ -236,8 +240,10 @@ export function localToMesoRequest(
     trainings: LocalTraining[],
     microcycles: LocalMicrocycle[],
     order: number,
+    mesoId?: string,
 ): MesocycleRequest {
     return {
+        id: mesoId,
         order,
         name: data.name,
         phase: data.phase,
@@ -247,6 +253,7 @@ export function localToMesoRequest(
             microcycles,
             data.duration_weeks,
         ).map((m) => ({
+            id: m.id,
             week_number: m.week_number,
             status: m.status,
             focus: m.focus || undefined,
@@ -308,12 +315,14 @@ export function localToMesoRequest(
 
 export function mesoToRequest(meso: MesocycleResponse): MesocycleRequest {
     return {
+        id: meso.id,
         order: meso.order,
         name: meso.name,
         phase: meso.phase,
         duration_weeks: meso.duration_weeks,
         methodology: meso.methodology,
         microcycles: (meso.microcycles ?? []).map((micro) => ({
+            id: micro.id,
             week_number: micro.week_number,
             status: micro.status,
             focus: micro.focus,
