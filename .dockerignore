@@ -1,0 +1,10 @@
+node_modules
+.next
+.git
+.gitignore
+*.md
+nextdev_err.log
+temp_lines.txt
+.env
+.env.local
+.env.*.local

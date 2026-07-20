@@ -1,8 +1,6 @@
 ﻿'use client';
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Image from 'next/image';
-import Link from 'next/link';
 import { Api } from '@/libs/api';
 import s from './convite.module.css';
 import { PersonalBranding } from '@/libs/brandingService';
@@ -191,7 +189,14 @@ export default function InviteRegisterPage() {
                     // Flat error object (e.g. {error: "erro de validação"})
                     else if ('error' in obj) msg = String(obj.error);
                 } else if (Array.isArray(data)) {
-                    msg = data.map((e: any) => String(e.message ?? e)).join('; ');
+                    msg = data
+                        .map((e: unknown) => {
+                            if (e && typeof e === 'object' && 'message' in e) {
+                                return String((e as Record<string, unknown>).message);
+                            }
+                            return String(e);
+                        })
+                        .join('; ');
                 }
             }
 
