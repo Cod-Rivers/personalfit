@@ -42,6 +42,7 @@ export default function VideoUploadModal({
     const [progress, setProgress] = useState(0);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
+    const [retryAttempt, setRetryAttempt] = useState(0);
 
     const isPro = planType === 'pro';
 
@@ -115,10 +116,12 @@ export default function VideoUploadModal({
                     signedUrl = res.upload_url;
                     objectPath = res.object_path;
                 }
+                setRetryAttempt(0);
                 await videoService.uploadToR2(
                     signedUrl,
                     mediaFile,
                     setProgress,
+                    setRetryAttempt,
                 );
                 if (mode === 'personal') {
                     await videoService.confirmPersonalVideo(
@@ -134,9 +137,14 @@ export default function VideoUploadModal({
         } catch (err: unknown) {
             const msg =
                 err instanceof Error ? err.message : 'Erro ao salvar mídia';
-            setError(msg);
+            setError(
+                msg.includes('Erro de rede') || msg.includes('Tempo esgotado')
+                    ? `${msg}. Verifique sua conexão e tente novamente.`
+                    : msg,
+            );
         } finally {
             setSubmitting(false);
+            setRetryAttempt(0);
         }
     };
 
@@ -284,6 +292,12 @@ export default function VideoUploadModal({
                                     s de vídeo · Formatos: MP4, WebM, JPG,
                                     PNG, WebP
                                 </small>
+                                {retryAttempt > 1 && submitting && (
+                                    <div className="alert alert-warning py-1 mt-2 mb-0 small">
+                                        Conexão instável, tentando novamente
+                                        ({retryAttempt}/3)...
+                                    </div>
+                                )}
                                 {progress > 0 && progress < 100 && (
                                     <div
                                         className="progress mt-2"

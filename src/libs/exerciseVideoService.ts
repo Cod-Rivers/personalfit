@@ -75,19 +75,29 @@ export async function setForkVideoUrl(libraryId: string, videoUrl: string) {
 // UTILITÁRIOS
 // ─────────────────────────────────────────────
 
-/**
- * Faz PUT direto ao R2 usando a presigned URL (sem Authorization header).
- * @param onProgress callback com porcentagem (0–100)
- */
-export async function uploadToR2(
+/** Timeout por tentativa de upload — generoso o bastante para ~20MB mesmo em 4G lento. */
+const UPLOAD_TIMEOUT_MS = 120_000;
+
+/** Falha de rede/timeout em conexão móvel instável (comum em upload de vídeo de
+ * câmera de celular) costuma ser transitória — vale a pena tentar de novo. */
+const UPLOAD_MAX_ATTEMPTS = 3;
+const UPLOAD_RETRY_DELAY_MS = 1500;
+
+function sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Uma única tentativa de PUT direto ao R2 via presigned URL (sem Authorization header). */
+function uploadToR2Once(
     signedUrl: string,
     file: File,
     onProgress?: (pct: number) => void,
 ): Promise<void> {
-    await new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open('PUT', signedUrl);
         xhr.setRequestHeader('Content-Type', file.type);
+        xhr.timeout = UPLOAD_TIMEOUT_MS;
         if (onProgress) {
             xhr.upload.onprogress = (e) => {
                 if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
@@ -98,8 +108,47 @@ export async function uploadToR2(
                 ? resolve()
                 : reject(new Error(`Upload R2 falhou: ${xhr.status}`));
         xhr.onerror = () => reject(new Error('Erro de rede no upload R2'));
+        xhr.ontimeout = () => reject(new Error('Tempo esgotado no upload R2 — conexão muito lenta'));
         xhr.send(file);
     });
+}
+
+/** Erros de conexão (rede/timeout) valem retry; erros de status HTTP (403/404/etc.)
+ * são definitivos (ex.: presigned URL expirada ou inválida) e não devem ser retentados. */
+function isRetryableUploadError(err: unknown): boolean {
+    return (
+        err instanceof Error &&
+        (err.message === 'Erro de rede no upload R2' ||
+            err.message.startsWith('Tempo esgotado no upload R2'))
+    );
+}
+
+/**
+ * Faz PUT direto ao R2 usando a presigned URL (sem Authorization header).
+ * Falhas de rede/timeout recebem retry automático com backoff (comuns em
+ * conexão móvel instável, ex.: upload de vídeo de câmera de celular).
+ * @param onProgress callback com porcentagem (0–100)
+ * @param onRetry callback chamado antes de cada nova tentativa, com o número da tentativa (2, 3, ...)
+ */
+export async function uploadToR2(
+    signedUrl: string,
+    file: File,
+    onProgress?: (pct: number) => void,
+    onRetry?: (attempt: number) => void,
+): Promise<void> {
+    for (let attempt = 1; attempt <= UPLOAD_MAX_ATTEMPTS; attempt++) {
+        try {
+            onProgress?.(0);
+            await uploadToR2Once(signedUrl, file, onProgress);
+            return;
+        } catch (err) {
+            if (!isRetryableUploadError(err) || attempt === UPLOAD_MAX_ATTEMPTS) {
+                throw err;
+            }
+            await sleep(UPLOAD_RETRY_DELAY_MS * attempt);
+            onRetry?.(attempt + 1);
+        }
+    }
 }
 
 /** Tamanho máximo de upload (20MB) — mantido em sincronia com storage.MaxUploadBytes no backend. */
