@@ -14,11 +14,21 @@ import { Api } from '@/libs/api';
 // EXERCÍCIOS PERSONALIZADOS (my-exercises)
 // ─────────────────────────────────────────────
 
+/** Resposta de uma solicitação de presigned URL — `thumb_*` só vem preenchido
+ * para upload de vídeo (imagem estática não precisa de thumbnail extraída). */
+export interface UploadUrlResponse {
+    upload_url: string;
+    object_path: string;
+    content_type: string;
+    thumb_upload_url?: string;
+    thumb_object_path?: string;
+}
+
 /** Solicita PUT presigned URL para upload direto ao R2 (exercício pessoal). Requer PlanPro. */
 export async function requestPersonalUploadUrl(
     exerciseId: string,
     file: File,
-): Promise<{ upload_url: string; object_path: string; content_type: string }> {
+): Promise<UploadUrlResponse> {
     const { data } = await Api.post('/my-exercises/upload-url', {
         exercise_id: exerciseId,
         content_type: file.type,
@@ -28,9 +38,14 @@ export async function requestPersonalUploadUrl(
 }
 
 /** Confirma upload e salva a key R2 no exercício pessoal. */
-export async function confirmPersonalVideo(exerciseId: string, objectPath: string) {
+export async function confirmPersonalVideo(
+    exerciseId: string,
+    objectPath: string,
+    thumbObjectPath?: string,
+) {
     const { data } = await Api.post(`/my-exercises/${exerciseId}/video-confirm`, {
         object_path: objectPath,
+        thumb_object_path: thumbObjectPath,
     });
     return data;
 }
@@ -49,7 +64,7 @@ export async function setPersonalVideoUrl(exerciseId: string, videoUrl: string) 
 export async function requestForkUploadUrl(
     libraryId: string,
     file: File,
-): Promise<{ upload_url: string; object_path: string; content_type: string; library_id: string }> {
+): Promise<UploadUrlResponse & { library_id: string }> {
     const { data } = await Api.post(`/exercises/${libraryId}/fork-upload-url`, {
         content_type: file.type,
         filename: file.name,
@@ -58,9 +73,14 @@ export async function requestForkUploadUrl(
 }
 
 /** Confirma upload de fork e cria/atualiza exercício personalizado vinculado. */
-export async function confirmFork(libraryId: string, objectPath: string) {
+export async function confirmFork(
+    libraryId: string,
+    objectPath: string,
+    thumbObjectPath?: string,
+) {
     const { data } = await Api.post(`/exercises/${libraryId}/fork-confirm`, {
         object_path: objectPath,
+        thumb_object_path: thumbObjectPath,
     });
     return data;
 }
@@ -90,7 +110,7 @@ function sleep(ms: number): Promise<void> {
 /** Uma única tentativa de PUT direto ao R2 via presigned URL (sem Authorization header). */
 function uploadToR2Once(
     signedUrl: string,
-    file: File,
+    file: Blob,
     onProgress?: (pct: number) => void,
 ): Promise<void> {
     return new Promise<void>((resolve, reject) => {
@@ -132,7 +152,7 @@ function isRetryableUploadError(err: unknown): boolean {
  */
 export async function uploadToR2(
     signedUrl: string,
-    file: File,
+    file: Blob,
     onProgress?: (pct: number) => void,
     onRetry?: (attempt: number) => void,
 ): Promise<void> {
@@ -149,6 +169,57 @@ export async function uploadToR2(
             onRetry?.(attempt + 1);
         }
     }
+}
+
+/** Segundo do vídeo usado para gerar a thumbnail automática. */
+export const THUMBNAIL_CAPTURE_SECONDS = 3;
+
+/**
+ * Gera uma thumbnail (JPEG) a partir de um frame do vídeo, capturado no
+ * segundo THUMBNAIL_CAPTURE_SECONDS (ou na metade do vídeo, se ele for mais
+ * curto que isso). Roda inteiramente no navegador via <video> + <canvas>,
+ * sem depender de nada no backend (que não tem ffmpeg/lib de vídeo).
+ * Retorna null se o navegador não conseguir capturar o frame (ex.: codec não
+ * suportado) — nesse caso o upload do vídeo segue normalmente, só sem thumb.
+ */
+export function captureVideoThumbnail(file: File): Promise<Blob | null> {
+    return new Promise((resolve) => {
+        const video = document.createElement('video');
+        video.preload = 'metadata';
+        video.muted = true;
+        video.playsInline = true;
+        const objectUrl = URL.createObjectURL(file);
+        video.src = objectUrl;
+
+        const cleanupAndResolve = (result: Blob | null) => {
+            URL.revokeObjectURL(objectUrl);
+            resolve(result);
+        };
+
+        video.onloadedmetadata = () => {
+            video.currentTime =
+                video.duration > 0
+                    ? Math.min(THUMBNAIL_CAPTURE_SECONDS, video.duration / 2)
+                    : 0;
+        };
+        video.onseeked = () => {
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const context = canvas.getContext('2d');
+                if (!context || canvas.width === 0 || canvas.height === 0) {
+                    cleanupAndResolve(null);
+                    return;
+                }
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                canvas.toBlob((blob) => cleanupAndResolve(blob), 'image/jpeg', 0.8);
+            } catch {
+                cleanupAndResolve(null);
+            }
+        };
+        video.onerror = () => cleanupAndResolve(null);
+    });
 }
 
 /** Tamanho máximo de upload (20MB) — mantido em sincronia com storage.MaxUploadBytes no backend. */

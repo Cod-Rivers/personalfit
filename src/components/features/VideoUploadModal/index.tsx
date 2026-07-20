@@ -43,6 +43,7 @@ export default function VideoUploadModal({
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
     const [retryAttempt, setRetryAttempt] = useState(0);
+    const [uploadDone, setUploadDone] = useState(false);
 
     const isPro = planType === 'pro';
 
@@ -101,6 +102,8 @@ export default function VideoUploadModal({
                 setProgress(1);
                 let signedUrl: string;
                 let objectPath: string;
+                let thumbUploadUrl: string | undefined;
+                let thumbObjectPath: string | undefined;
                 if (mode === 'personal') {
                     const res = await videoService.requestPersonalUploadUrl(
                         exerciseId,
@@ -108,6 +111,8 @@ export default function VideoUploadModal({
                     );
                     signedUrl = res.upload_url;
                     objectPath = res.object_path;
+                    thumbUploadUrl = res.thumb_upload_url;
+                    thumbObjectPath = res.thumb_object_path;
                 } else {
                     const res = await videoService.requestForkUploadUrl(
                         exerciseId,
@@ -115,6 +120,8 @@ export default function VideoUploadModal({
                     );
                     signedUrl = res.upload_url;
                     objectPath = res.object_path;
+                    thumbUploadUrl = res.thumb_upload_url;
+                    thumbObjectPath = res.thumb_object_path;
                 }
                 setRetryAttempt(0);
                 await videoService.uploadToR2(
@@ -123,15 +130,45 @@ export default function VideoUploadModal({
                     setProgress,
                     setRetryAttempt,
                 );
+
+                // Thumbnail (frame do segundo 3) é best-effort: se o navegador não
+                // conseguir capturar o frame ou o upload dela falhar, o vídeo em
+                // si já foi salvo normalmente — só não mostrará prévia na lista.
+                let confirmedThumbPath: string | undefined;
+                if (thumbUploadUrl && thumbObjectPath) {
+                    try {
+                        const thumbBlob =
+                            await videoService.captureVideoThumbnail(
+                                mediaFile,
+                            );
+                        if (thumbBlob) {
+                            await videoService.uploadToR2(
+                                thumbUploadUrl,
+                                thumbBlob,
+                            );
+                            confirmedThumbPath = thumbObjectPath;
+                        }
+                    } catch {
+                        confirmedThumbPath = undefined;
+                    }
+                }
+
                 if (mode === 'personal') {
                     await videoService.confirmPersonalVideo(
                         exerciseId,
                         objectPath,
+                        confirmedThumbPath,
                     );
                 } else {
-                    await videoService.confirmFork(exerciseId, objectPath);
+                    await videoService.confirmFork(
+                        exerciseId,
+                        objectPath,
+                        confirmedThumbPath,
+                    );
                 }
                 setProgress(100);
+                setUploadDone(true);
+                return;
             }
             onSuccess();
         } catch (err: unknown) {
@@ -168,52 +205,58 @@ export default function VideoUploadModal({
                     </div>
                     <div className="modal-body">
                         {/* Tabs */}
-                        <ul className="nav nav-tabs mb-3">
-                            <li className="nav-item">
-                                <button
-                                    className={`nav-link ${tab === 'link' ? 'active' : ''}`}
-                                    onClick={() => setTab('link')}
-                                >
-                                    🔗 Link
-                                </button>
-                            </li>
-                            <li className="nav-item">
-                                <button
-                                    className={`nav-link ${tab === 'tiktok' ? 'active' : ''} ${!isPro ? 'disabled text-muted' : ''}`}
-                                    onClick={() => isPro && setTab('tiktok')}
-                                    title={
-                                        !isPro
-                                            ? 'TikTok requer plano Pro'
-                                            : undefined
-                                    }
-                                >
-                                    🎵 TikTok
-                                    {!isPro && (
-                                        <span className="badge bg-warning text-dark ms-1 small">
-                                            Pro
-                                        </span>
-                                    )}
-                                </button>
-                            </li>
-                            <li className="nav-item">
-                                <button
-                                    className={`nav-link ${tab === 'upload' ? 'active' : ''} ${!isPro ? 'disabled text-muted' : ''}`}
-                                    onClick={() => isPro && setTab('upload')}
-                                    title={
-                                        !isPro
-                                            ? 'Upload requer plano Pro'
-                                            : undefined
-                                    }
-                                >
-                                    ⬆️ Upload de arquivo
-                                    {!isPro && (
-                                        <span className="badge bg-warning text-dark ms-1 small">
-                                            Pro
-                                        </span>
-                                    )}
-                                </button>
-                            </li>
-                        </ul>
+                        {!uploadDone && (
+                            <ul className="nav nav-tabs mb-3">
+                                <li className="nav-item">
+                                    <button
+                                        className={`nav-link ${tab === 'link' ? 'active' : ''}`}
+                                        onClick={() => setTab('link')}
+                                    >
+                                        🔗 Link
+                                    </button>
+                                </li>
+                                <li className="nav-item">
+                                    <button
+                                        className={`nav-link ${tab === 'tiktok' ? 'active' : ''} ${!isPro ? 'disabled text-muted' : ''}`}
+                                        onClick={() =>
+                                            isPro && setTab('tiktok')
+                                        }
+                                        title={
+                                            !isPro
+                                                ? 'TikTok requer plano Pro'
+                                                : undefined
+                                        }
+                                    >
+                                        🎵 TikTok
+                                        {!isPro && (
+                                            <span className="badge bg-warning text-dark ms-1 small">
+                                                Pro
+                                            </span>
+                                        )}
+                                    </button>
+                                </li>
+                                <li className="nav-item">
+                                    <button
+                                        className={`nav-link ${tab === 'upload' ? 'active' : ''} ${!isPro ? 'disabled text-muted' : ''}`}
+                                        onClick={() =>
+                                            isPro && setTab('upload')
+                                        }
+                                        title={
+                                            !isPro
+                                                ? 'Upload requer plano Pro'
+                                                : undefined
+                                        }
+                                    >
+                                        ⬆️ Upload de arquivo
+                                        {!isPro && (
+                                            <span className="badge bg-warning text-dark ms-1 small">
+                                                Pro
+                                            </span>
+                                        )}
+                                    </button>
+                                </li>
+                            </ul>
+                        )}
 
                         {error && (
                             <div className="alert alert-danger py-2">
@@ -221,7 +264,14 @@ export default function VideoUploadModal({
                             </div>
                         )}
 
-                        {tab === 'link' ? (
+                        {uploadDone ? (
+                            <div className="text-center py-4">
+                                <div style={{ fontSize: 40 }}>✅</div>
+                                <p className="mb-0 mt-2 fw-semibold">
+                                    Upload realizado com sucesso!
+                                </p>
+                            </div>
+                        ) : tab === 'link' ? (
                             <div>
                                 <label className="form-label">
                                     URL do YouTube, Vimeo ou Instagram
@@ -292,6 +342,11 @@ export default function VideoUploadModal({
                                     s de vídeo · Formatos: MP4, WebM, JPG,
                                     PNG, WebP
                                 </small>
+                                <small className="text-muted d-block mt-1">
+                                    📹 Grave na horizontal (paisagem) — o app
+                                    exibe as prévias de vídeo nesse formato, e
+                                    um vídeo vertical fica cortado.
+                                </small>
                                 {retryAttempt > 1 && submitting && (
                                     <div className="alert alert-warning py-1 mt-2 mb-0 small">
                                         Conexão instável, tentando novamente
@@ -311,38 +366,44 @@ export default function VideoUploadModal({
                                         </div>
                                     </div>
                                 )}
-                                {progress === 100 && (
-                                    <div className="alert alert-success py-1 mt-2 mb-0">
-                                        Upload concluído!
-                                    </div>
-                                )}
                             </div>
                         )}
                     </div>
                     <div className="modal-footer">
-                        <button
-                            className="btn btn-outline-secondary"
-                            onClick={onClose}
-                            disabled={submitting}
-                        >
-                            Cancelar
-                        </button>
-                        <button
-                            className="btn btn-primary"
-                            onClick={handleSubmit}
-                            disabled={submitting}
-                        >
-                            {submitting ? (
-                                <>
-                                    <span className="spinner-border spinner-border-sm me-2" />
-                                    {tab === 'upload'
-                                        ? 'Enviando...'
-                                        : 'Salvando...'}
-                                </>
-                            ) : (
-                                'Salvar'
-                            )}
-                        </button>
+                        {uploadDone ? (
+                            <button
+                                className="btn btn-primary"
+                                onClick={onSuccess}
+                            >
+                                Concluir
+                            </button>
+                        ) : (
+                            <>
+                                <button
+                                    className="btn btn-outline-secondary"
+                                    onClick={onClose}
+                                    disabled={submitting}
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    className="btn btn-primary"
+                                    onClick={handleSubmit}
+                                    disabled={submitting}
+                                >
+                                    {submitting ? (
+                                        <>
+                                            <span className="spinner-border spinner-border-sm me-2" />
+                                            {tab === 'upload'
+                                                ? 'Enviando...'
+                                                : 'Salvando...'}
+                                        </>
+                                    ) : (
+                                        'Salvar'
+                                    )}
+                                </button>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>
