@@ -14,7 +14,11 @@ export const signUpSchema = z
         phone: z.string().min(10, 'Telefone inválido'),
         cpf: z
             .string()
-            .regex(/^\d{11}$/, 'CPF deve conter 11 dígitos numéricos'),
+            .transform((val) => val.replace(/\D/g, ''))
+            .refine(
+                (val) => /^\d{11}$/.test(val),
+                'CPF deve conter 11 dígitos numéricos',
+            ),
         password: z.string().min(8, 'Senha deve ter pelo menos 8 caracteres'),
         confirm_password: z.string(),
     })

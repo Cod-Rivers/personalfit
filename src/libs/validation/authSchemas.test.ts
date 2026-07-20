@@ -55,16 +55,33 @@ describe('signUpSchema', () => {
         expect(result.success).toBe(false);
     });
 
-    it('rejects a CPF that is not exactly 11 digits', () => {
-        const withLetters = signUpSchema.safeParse({
+    it('accepts a CPF formatted with dots and dash, normalizing it to digits only', () => {
+        const result = signUpSchema.safeParse({
             ...validPayload,
             cpf: '123.456.789-01',
         });
+        expect(result.success).toBe(true);
+        if (result.success) {
+            expect(result.data.cpf).toBe('12345678901');
+        }
+    });
+
+    it('accepts a CPF with stray spaces, normalizing it to digits only', () => {
+        const result = signUpSchema.safeParse({
+            ...validPayload,
+            cpf: '123 456 789 01',
+        });
+        expect(result.success).toBe(true);
+        if (result.success) {
+            expect(result.data.cpf).toBe('12345678901');
+        }
+    });
+
+    it('rejects a CPF that is not exactly 11 digits', () => {
         const tooShort = signUpSchema.safeParse({
             ...validPayload,
             cpf: '123456789',
         });
-        expect(withLetters.success).toBe(false);
         expect(tooShort.success).toBe(false);
     });
 
