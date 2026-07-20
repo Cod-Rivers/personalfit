@@ -1,6 +1,6 @@
 'use client';
 
-import type { LocalMicrocycle } from '../_lib/mesocycleTransforms';
+import type { LocalMicrocycle } from '../lib/mesocycleTransforms';
 
 const MICRO_STATUS_LABEL: Record<string, string> = {
     pending: 'Pendente',

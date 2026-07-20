@@ -5,17 +5,13 @@ import { Api } from '@/libs/api';
 import {
     getMyTemplates,
     applyTemplate,
-    createNewTemplate,
+    updateTemplate,
     deleteTemplate,
+    duplicateTemplate,
     type MacrocycleResponse,
 } from '@/libs/planningService';
 
-export type TemplateModalMode =
-    | null
-    | 'tplApply'
-    | 'tplCreate'
-    | 'tplEdit'
-    | 'tplDelete';
+export type TemplateModalMode = null | 'tplApply' | 'tplEdit' | 'tplDelete';
 
 export interface TplFormData {
     name?: string;
@@ -86,10 +82,15 @@ export function usePersonalTemplates(view: 'own' | 'public') {
         setModal('tplApply');
     }, []);
 
-    const openCreate = useCallback(() => {
-        setTplForm({});
+    const openEdit = useCallback((tpl: MacrocycleResponse) => {
+        setSelectedTemplate(tpl);
+        setTplForm({
+            name: tpl.name,
+            goal: tpl.goal,
+            is_public: tpl.is_public,
+        });
         setError('');
-        setModal('tplCreate');
+        setModal('tplEdit');
     }, []);
 
     const openDelete = useCallback((tpl: MacrocycleResponse) => {
@@ -116,12 +117,12 @@ export function usePersonalTemplates(view: 'own' | 'public') {
         [selectedTemplate, closeModal, fetchTemplates],
     );
 
-    const handleTplCreateOrUpdate = useCallback(async () => {
-        if (!tplForm.name?.trim()) return;
+    const handleTplUpdate = useCallback(async () => {
+        if (!selectedTemplate || !tplForm.name?.trim()) return;
         setSubmitting(true);
         setError('');
         try {
-            await createNewTemplate({
+            await updateTemplate(selectedTemplate.id, {
                 name: tplForm.name,
                 goal: tplForm.goal || '',
                 is_public: tplForm.is_public === true,
@@ -129,11 +130,29 @@ export function usePersonalTemplates(view: 'own' | 'public') {
             closeModal();
             fetchTemplates();
         } catch (err: unknown) {
-            setError(extractErrorMessage(err, 'Erro ao criar ciclo.'));
+            setError(extractErrorMessage(err, 'Erro ao salvar ciclo.'));
         } finally {
             setSubmitting(false);
         }
-    }, [tplForm, closeModal, fetchTemplates]);
+    }, [selectedTemplate, tplForm, closeModal, fetchTemplates]);
+
+    const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
+
+    const duplicateTpl = useCallback(
+        async (tpl: MacrocycleResponse) => {
+            setDuplicatingId(tpl.id);
+            setError('');
+            try {
+                await duplicateTemplate(tpl.id);
+                fetchTemplates();
+            } catch (err: unknown) {
+                setError(extractErrorMessage(err, 'Erro ao duplicar ciclo.'));
+            } finally {
+                setDuplicatingId(null);
+            }
+        },
+        [fetchTemplates],
+    );
 
     const handleTplDelete = useCallback(async () => {
         if (!selectedTemplate) return;
@@ -161,11 +180,13 @@ export function usePersonalTemplates(view: 'own' | 'public') {
         submitting,
         error,
         openApply,
-        openCreate,
+        openEdit,
         openDelete,
         closeModal,
         applyToStudent,
-        handleTplCreateOrUpdate,
+        handleTplUpdate,
         handleTplDelete,
+        duplicateTpl,
+        duplicatingId,
     };
 }

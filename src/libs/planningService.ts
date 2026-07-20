@@ -86,6 +86,10 @@ export interface MacrocycleResponse {
     planning_mode?: 'periodized' | 'simple';
     is_template?: boolean;
     is_public?: boolean;
+    /** Quantas vezes o template foi aplicado a um aluno (o próprio ou de
+     * outros personals via biblioteca pública). Vem pronto do backend. */
+    usage_count?: number;
+    featured?: boolean;
     mesocycles: MesocycleResponse[];
     created_at: string;
     updated_at: string;
@@ -408,7 +412,12 @@ export async function saveAsTemplate(
 
 /** POST /planning/templates — cria um template diretamente */
 export async function createNewTemplate(
-    body: { name: string; goal?: string; is_public?: boolean },
+    body: {
+        name: string;
+        goal?: string;
+        is_public?: boolean;
+        planning_mode?: 'periodized' | 'simple';
+    },
 ): Promise<MacrocycleResponse> {
     const { data } = await Api.post<MacrocycleResponse>(
         '/planning/templates',
@@ -421,9 +430,43 @@ export async function getMyTemplates(): Promise<MacrocycleResponse[]> {
     return data ?? [];
 }
 
+/** GET /planning/templates/:templateId */
+export async function getTemplate(
+    templateId: string,
+): Promise<MacrocycleResponse> {
+    const { data } = await Api.get<MacrocycleResponse>(
+        `/planning/templates/${templateId}`,
+    );
+    return data;
+}
+
+/** PUT /planning/templates/:templateId */
+export async function updateTemplate(
+    templateId: string,
+    body: UpdateMacrocycleRequest & { is_public?: boolean },
+): Promise<MacrocycleResponse> {
+    const { data } = await Api.put<MacrocycleResponse>(
+        `/planning/templates/${templateId}`,
+        body,
+    );
+    return data;
+}
+
 /** DELETE /planning/templates/:templateId — remove um template */
 export async function deleteTemplate(templateId: string): Promise<void> {
     await Api.delete(`/planning/templates/${templateId}`);
+}
+
+/** POST /planning/templates/:templateId/duplicate — clona um template em um novo */
+export async function duplicateTemplate(
+    templateId: string,
+    name?: string,
+): Promise<MacrocycleResponse> {
+    const { data } = await Api.post<MacrocycleResponse>(
+        `/planning/templates/${templateId}/duplicate`,
+        name ? { name } : {},
+    );
+    return data;
 }
 
 /** POST /students/:studentId/planning/from-template/:templateId */

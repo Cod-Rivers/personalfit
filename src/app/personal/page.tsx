@@ -120,7 +120,7 @@ export default function PersonalDashboard() {
                         className={tab === 'ciclos' ? s.tabActive : s.tab}
                         onClick={() => setTab('ciclos')}
                     >
-                        🔄 Ciclos
+                        📚 Minha Periodização / Treinos
                     </button>
                     <button
                         className={
@@ -128,7 +128,7 @@ export default function PersonalDashboard() {
                         }
                         onClick={() => setTab('_publicTemplates')}
                     >
-                        🌐 Ciclos Públicos
+                        🌐 Biblioteca Pública
                     </button>
                 </div>
 

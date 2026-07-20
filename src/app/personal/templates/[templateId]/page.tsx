@@ -2,8 +2,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import {
-    getMacrocycle,
-    updateMacrocycle,
+    getTemplate,
+    updateTemplate,
     macroToGanttPhases,
     type MacrocycleResponse,
     type MesocycleRequest,
@@ -12,7 +12,6 @@ import {
 import GanttPlanning from '@/components/features/GanttPlanning';
 import {
     STATUS_LABEL,
-    formatDate,
     mesoToRequest,
     duplicateMesoRequest,
 } from '@/app/personal/_shared/periodizacao/lib/mesocycleTransforms';
@@ -20,10 +19,10 @@ import MesocycleSection from '@/app/personal/_shared/periodizacao/components/Mes
 import MesocycleFormModal from '@/app/personal/_shared/periodizacao/components/MesocycleFormModal';
 import s from '@/app/personal/_shared/periodizacao/builder.module.css';
 
-export default function PeriodizacaoDetalhePage() {
+export default function TemplateDetalhePage() {
     const router = useRouter();
-    const params = useParams<{ id: string; planningId: string }>();
-    const { id: studentId, planningId } = params;
+    const params = useParams<{ templateId: string }>();
+    const { templateId } = params;
 
     const [macro, setMacro] = useState<MacrocycleResponse | null>(null);
     const [loading, setLoading] = useState(true);
@@ -39,11 +38,11 @@ export default function PeriodizacaoDetalhePage() {
 
     /* ── Fetch ── */
     useEffect(() => {
-        getMacrocycle(studentId, planningId)
+        getTemplate(templateId)
             .then(setMacro)
             .catch((e: Error) => setPageError(e.message))
             .finally(() => setLoading(false));
-    }, [studentId, planningId]);
+    }, [templateId]);
 
     /* ── Modal open/close ── */
     const openAddModal = useCallback(() => {
@@ -78,7 +77,7 @@ export default function PeriodizacaoDetalhePage() {
                 const updatedList = (macro.mesocycles ?? [])
                     .filter((m) => m.id !== mesoId)
                     .map((m, i) => ({ ...mesoToRequest(m), order: i + 1 }));
-                const updated = await updateMacrocycle(studentId, planningId, {
+                const updated = await updateTemplate(templateId, {
                     mesocycles: updatedList,
                 });
                 setMacro(updated);
@@ -91,7 +90,7 @@ export default function PeriodizacaoDetalhePage() {
                 setSaving(false);
             }
         },
-        [macro, studentId, planningId],
+        [macro, templateId],
     );
 
     /* ── Duplicar mesociclo ── */
@@ -105,7 +104,7 @@ export default function PeriodizacaoDetalhePage() {
                     ...allMesos.map(mesoToRequest),
                     duplicateMesoRequest(meso, allMesos.length + 1),
                 ];
-                const updated = await updateMacrocycle(studentId, planningId, {
+                const updated = await updateTemplate(templateId, {
                     mesocycles: updatedList,
                 });
                 setMacro(updated);
@@ -118,7 +117,7 @@ export default function PeriodizacaoDetalhePage() {
                 setSaving(false);
             }
         },
-        [macro, studentId, planningId],
+        [macro, templateId],
     );
 
     /* ── Save (add ou edit) ── */
@@ -136,7 +135,7 @@ export default function PeriodizacaoDetalhePage() {
                               m.id === editingMeso?.id ? req : mesoToRequest(m),
                           );
 
-                const updated = await updateMacrocycle(studentId, planningId, {
+                const updated = await updateTemplate(templateId, {
                     mesocycles: updatedList,
                 });
                 setMacro(updated);
@@ -150,7 +149,7 @@ export default function PeriodizacaoDetalhePage() {
                 setSaving(false);
             }
         },
-        [macro, modalMode, editingMeso, studentId, planningId, closeModal],
+        [macro, modalMode, editingMeso, templateId, closeModal],
     );
 
     /* ── Loading / error states ── */
@@ -175,6 +174,8 @@ export default function PeriodizacaoDetalhePage() {
     if (!macro) return null;
 
     const isSimpleMode = macro.planning_mode === 'simple';
+    // Templates raramente têm start_date, então o Gantt normalmente fica
+    // vazio aqui — sem tratamento especial, macroToGanttPhases já retorna [].
     const ganttPhases = isSimpleMode
         ? []
         : macroToGanttPhases(macro, { preferDuration: true });
@@ -212,15 +213,9 @@ export default function PeriodizacaoDetalhePage() {
                             </p>
                         </div>
                         <div className={s.infoItem}>
-                            <p className={s.infoLabel}>Início</p>
+                            <p className={s.infoLabel}>Visibilidade</p>
                             <p className={s.infoValue}>
-                                {formatDate(macro.start_date)}
-                            </p>
-                        </div>
-                        <div className={s.infoItem}>
-                            <p className={s.infoLabel}>Término</p>
-                            <p className={s.infoValue}>
-                                {formatDate(macro.end_date)}
+                                {macro.is_public ? 'Público' : 'Privado'}
                             </p>
                         </div>
                         <div className={s.infoItem}>

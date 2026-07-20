@@ -7,14 +7,15 @@ import {
     weekdayLabel,
     type LocalExercise,
     type LocalTraining,
-} from '../_lib/mesocycleTransforms';
+} from '../lib/mesocycleTransforms';
 import ExercisePicker from './ExercisePicker';
-import s from '../detalhe.module.css';
+import s from '../builder.module.css';
 
 interface Props {
     trainings: LocalTraining[];
     onAddTraining: () => void;
     onRemoveTraining: (tid: string) => void;
+    onDuplicateTraining: (tid: string) => void;
     onUpdateTrainingRef: (tid: string, ref: string) => void;
     onAddExercise: (tid: string) => void;
     /** No modo simples, troca o campo de referência (A/B/C) por um seletor de dia da semana. */
@@ -37,6 +38,7 @@ export default function TrainingsEditor({
     trainings,
     onAddTraining,
     onRemoveTraining,
+    onDuplicateTraining,
     onUpdateTrainingRef,
     onAddExercise,
     onRemoveExercise,
@@ -151,6 +153,14 @@ export default function TrainingsEditor({
                                 : `Treino ${t.reference}`}{' '}
                             — {t.exercises.length} exercício(s)
                         </span>
+                        <button
+                            type="button"
+                            className={s.btnTiny}
+                            title="Duplicar treino"
+                            onClick={() => onDuplicateTraining(t._id)}
+                        >
+                            🧬
+                        </button>
                         <button
                             type="button"
                             className={s.btnTiny}

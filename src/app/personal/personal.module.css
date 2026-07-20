@@ -619,6 +619,22 @@
     color: #fff;
 }
 
+.btnEdit {
+    background: transparent;
+    border: 1px solid var(--mint);
+    color: var(--mint-text);
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+.btnEdit:hover {
+    background: var(--mint);
+    color: var(--btn-text);
+}
+
 /* ─── Template Selection Modal (student picker) ─── */
 .studentPickerList {
     max-height: 300px;

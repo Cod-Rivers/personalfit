@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { usePersonalTemplates } from '@/hooks/usePersonalTemplates';
 import type { Student } from '@/hooks/usePersonalStudents';
 import type { MacrocycleResponse } from '@/libs/planningService';
@@ -12,7 +13,10 @@ interface Props {
     onBack?: () => void;
 }
 
+type SortMode = 'recent' | 'usage';
+
 export default function CiclosTab({ view, students, onBack }: Props) {
+    const router = useRouter();
     const {
         templates,
         tplLoading,
@@ -23,21 +27,54 @@ export default function CiclosTab({ view, students, onBack }: Props) {
         submitting,
         error,
         openApply,
-        openCreate,
+        openEdit,
         openDelete,
         closeModal,
         applyToStudent,
-        handleTplCreateOrUpdate,
+        handleTplUpdate,
         handleTplDelete,
+        duplicateTpl,
+        duplicatingId,
     } = usePersonalTemplates(view);
 
     const isPublic = view === 'public';
+
+    const [search, setSearch] = useState('');
+    const [sortMode, setSortMode] = useState<SortMode>('recent');
+
+    const visibleTemplates = useMemo(() => {
+        const q = search.trim().toLowerCase();
+        const filtered = q
+            ? templates.filter(
+                  (t) =>
+                      t.name?.toLowerCase().includes(q) ||
+                      t.goal?.toLowerCase().includes(q),
+              )
+            : templates;
+        if (sortMode === 'usage') {
+            return [...filtered].sort(
+                (a, b) => (b.usage_count ?? 0) - (a.usage_count ?? 0),
+            );
+        }
+        return filtered;
+    }, [templates, search, sortMode]);
 
     const renderTemplateCard = useCallback(
         (tpl: MacrocycleResponse) => (
             <div key={tpl.id} className={s.templateCard}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                    <p className={s.templateName}>
+                    <p
+                        className={s.templateName}
+                        style={!isPublic ? { cursor: 'pointer' } : undefined}
+                        onClick={
+                            !isPublic
+                                ? () =>
+                                      router.push(
+                                          `/personal/templates/${tpl.id}`,
+                                      )
+                                : undefined
+                        }
+                    >
                         {tpl.name || 'Ciclo sem nome'}
                         <span
                             className={`${s.badgeMesocycles} ${
@@ -56,9 +93,37 @@ export default function CiclosTab({ view, students, onBack }: Props) {
                                 🌐
                             </span>
                         )}
+                        {tpl.featured && (
+                            <span className={s.badgePublic} title="Destaque">
+                                ⭐
+                            </span>
+                        )}
+                        {(tpl.usage_count ?? 0) > 0 && (
+                            <span
+                                className={s.badgeMesocycles}
+                                style={{
+                                    background: 'rgba(124,92,252,0.15)',
+                                    color: '#7c5cfc',
+                                }}
+                                title="Vezes aplicado a alunos"
+                            >
+                                {tpl.usage_count} uso
+                                {tpl.usage_count === 1 ? '' : 's'}
+                            </span>
+                        )}
                     </p>
                 </div>
                 <div className={s.studentActions}>
+                    {!isPublic && (
+                        <button
+                            onClick={() =>
+                                router.push(`/personal/templates/${tpl.id}`)
+                            }
+                            className={s.btnEdit}
+                        >
+                            🛠 Configurar treinos
+                        </button>
+                    )}
                     <button
                         onClick={() => openApply(tpl)}
                         className={s.btnApply}
@@ -66,35 +131,78 @@ export default function CiclosTab({ view, students, onBack }: Props) {
                         📋 Aplicar
                     </button>
                     {!isPublic && (
-                        <button
-                            onClick={() => openDelete(tpl)}
-                            className={s.btnCancel}
-                        >
-                            🗑 Remover
-                        </button>
+                        <>
+                            <button
+                                onClick={() => openEdit(tpl)}
+                                className={s.btnCancel}
+                            >
+                                ✏️ Editar
+                            </button>
+                            <button
+                                onClick={() => duplicateTpl(tpl)}
+                                disabled={duplicatingId === tpl.id}
+                                className={s.btnCancel}
+                            >
+                                {duplicatingId === tpl.id
+                                    ? 'Duplicando...'
+                                    : '🧬 Duplicar'}
+                            </button>
+                            <button
+                                onClick={() => openDelete(tpl)}
+                                className={s.btnCancel}
+                            >
+                                🗑 Remover
+                            </button>
+                        </>
                     )}
                 </div>
             </div>
         ),
-        [isPublic, openApply, openDelete],
+        [isPublic, openApply, openEdit, openDelete, duplicateTpl, duplicatingId, router],
     );
 
     return (
         <>
             <div className={s.toolbar}>
                 <h2 className={s.sectionTitle}>
-                    {isPublic ? '🌐 Ciclos Públicos' : 'Ciclos Próprios'}
+                    {isPublic
+                        ? '🌐 Biblioteca Pública'
+                        : 'Minha Periodização / Treinos'}
                 </h2>
                 {isPublic ? (
                     <button onClick={onBack} className={s.btnCancel}>
                         ← Voltar aos Próprios
                     </button>
                 ) : (
-                    <button onClick={openCreate} className={s.btnAdd}>
+                    <button
+                        onClick={() => router.push('/personal/templates/novo')}
+                        className={s.btnAdd}
+                    >
                         + Novo Ciclo
                     </button>
                 )}
             </div>
+
+            {!tplLoading && templates.length > 0 && (
+                <div className={s.exSearch}>
+                    <input
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Buscar por nome ou objetivo..."
+                        className={s.exInput}
+                    />
+                    <select
+                        value={sortMode}
+                        onChange={(e) =>
+                            setSortMode(e.target.value as SortMode)
+                        }
+                        className={s.exSelect}
+                    >
+                        <option value="recent">Mais recentes</option>
+                        <option value="usage">Mais usados primeiro</option>
+                    </select>
+                </div>
+            )}
 
             {tplLoading ? (
                 <p className={s.loading}>
@@ -102,21 +210,25 @@ export default function CiclosTab({ view, students, onBack }: Props) {
                 </p>
             ) : templates.length === 0 ? (
                 <div className={s.empty}>
-                    <div className={s.emptyIcon}>{isPublic ? '🌐' : '🔄'}</div>
+                    <div className={s.emptyIcon}>{isPublic ? '🌐' : '📚'}</div>
                     <h3 className={s.emptyTitle}>
                         {isPublic
                             ? 'Nenhum ciclo público disponível'
-                            : 'Nenhum ciclo criado'}
+                            : 'Nenhuma periodização criada ainda'}
                     </h3>
                     <p className={s.emptyText}>
                         {isPublic
                             ? 'Ciclos públicos ficam visíveis quando o personal escolhe compartilhar.'
-                            : 'Crie seus próprios ciclos de treino pré-prontos para aplicar rapidamente em alunos.'}
+                            : 'Monte periodizações e treinos reutilizáveis para aplicar rapidamente em alunos.'}
                     </p>
                 </div>
+            ) : visibleTemplates.length === 0 ? (
+                <p className={s.loading}>
+                    Nenhum ciclo encontrado para &quot;{search}&quot;.
+                </p>
             ) : (
                 <div className={s.studentList}>
-                    {templates.map((tpl) => renderTemplateCard(tpl))}
+                    {visibleTemplates.map((tpl) => renderTemplateCard(tpl))}
                 </div>
             )}
 
@@ -166,19 +278,15 @@ export default function CiclosTab({ view, students, onBack }: Props) {
                 </div>
             )}
 
-            {/* ── Template Create / Edit Modal ── */}
-            {(modal === 'tplCreate' || modal === 'tplEdit') && (
+            {/* ── Template Edit Modal (metadados) ── */}
+            {modal === 'tplEdit' && (
                 <div className={s.overlay} onClick={closeModal}>
                     <div
                         className={s.modal}
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className={s.modalHeader}>
-                            <h2 className={s.modalTitle}>
-                                {modal === 'tplEdit'
-                                    ? 'Editar Ciclo'
-                                    : 'Novo Ciclo'}
-                            </h2>
+                            <h2 className={s.modalTitle}>Editar Ciclo</h2>
                             <button
                                 onClick={closeModal}
                                 className={s.btnClose}
@@ -270,17 +378,11 @@ export default function CiclosTab({ view, students, onBack }: Props) {
                                 Cancelar
                             </button>
                             <button
-                                onClick={handleTplCreateOrUpdate}
+                                onClick={handleTplUpdate}
                                 disabled={submitting || !tplForm.name?.trim()}
                                 className={s.btnSubmit}
                             >
-                                {modal === 'tplEdit'
-                                    ? submitting
-                                        ? 'Salvando...'
-                                        : 'Salvar'
-                                    : submitting
-                                      ? 'Criando...'
-                                      : 'Criar'}
+                                {submitting ? 'Salvando...' : 'Salvar'}
                             </button>
                         </div>
                     </div>

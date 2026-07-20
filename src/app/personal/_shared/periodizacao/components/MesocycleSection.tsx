@@ -2,13 +2,15 @@
 
 import { useState } from 'react';
 import type { MesocycleResponse } from '@/libs/planningService';
-import { formatDate, weekdayLabel } from '../_lib/mesocycleTransforms';
-import s from '../detalhe.module.css';
+import { formatDate, weekdayLabel } from '../lib/mesocycleTransforms';
+import s from '../builder.module.css';
 
 interface Props {
     meso: MesocycleResponse;
     onEdit: () => void;
     onDelete: () => void;
+    /** Ausente no modo simples — o mesociclo único e oculto não faz sentido duplicar. */
+    onDuplicate?: () => void;
     /** Mostra o dia da semana no lugar de "Treino {reference}". */
     simpleMode?: boolean;
 }
@@ -17,6 +19,7 @@ export default function MesocycleSection({
     meso,
     onEdit,
     onDelete,
+    onDuplicate,
     simpleMode,
 }: Props) {
     const [open, setOpen] = useState(false);
@@ -65,6 +68,17 @@ export default function MesocycleSection({
                     >
                         ✏️ Editar
                     </button>
+                    {onDuplicate && (
+                        <button
+                            className={s.btnSmall}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onDuplicate();
+                            }}
+                        >
+                            🧬 Duplicar
+                        </button>
+                    )}
                     <button
                         className={s.btnSmall}
                         style={{

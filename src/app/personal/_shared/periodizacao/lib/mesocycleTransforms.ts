@@ -355,4 +355,28 @@ export function mesoToRequest(meso: MesocycleResponse): MesocycleRequest {
     };
 }
 
+/**
+ * Constrói o payload para duplicar um mesociclo já salvo como uma nova fase
+ * independente. Precisa zerar o id do mesociclo e de cada microciclo — se
+ * reaproveitasse os ids originais, UpdatePlanningHandler (que casa por id
+ * global no macrociclo, não por mesociclo) faria a "cópia" apontar para os
+ * MESMOS microciclos/logs do original em vez de criar novos.
+ */
+export function duplicateMesoRequest(
+    meso: MesocycleResponse,
+    order: number,
+): MesocycleRequest {
+    const req = mesoToRequest(meso);
+    return {
+        ...req,
+        id: undefined,
+        order,
+        name: `${meso.name} (cópia)`,
+        microcycles: (req.microcycles ?? []).map((m) => ({
+            ...m,
+            id: undefined,
+        })),
+    };
+}
+
 export type { MacrocycleResponse, MesocycleResponse, MesocycleRequest };

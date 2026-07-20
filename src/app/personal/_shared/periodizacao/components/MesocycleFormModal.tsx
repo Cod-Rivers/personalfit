@@ -24,10 +24,10 @@ import {
     type LocalExercise,
     type LocalMicrocycle,
     type LocalTraining,
-} from '../_lib/mesocycleTransforms';
+} from '../lib/mesocycleTransforms';
 import MicrocycleEditor from './MicrocycleEditor';
 import TrainingsEditor from './TrainingsEditor';
-import s from '../detalhe.module.css';
+import s from '../builder.module.css';
 
 const mesoSchema = z.object({
     name: z.string().min(1, 'Nome obrigatório'),
@@ -167,6 +167,29 @@ export default function MesocycleFormModal({
             setLocalTrainings((prev) => prev.filter((t) => t._id !== tid)),
         [],
     );
+
+    const duplicateTraining = useCallback((tid: string) => {
+        setLocalTrainings((prev) => {
+            const source = prev.find((t) => t._id === tid);
+            if (!source) return prev;
+            const usedRefs = prev.map((t) => t.reference);
+            const nextRef =
+                NEXT_REF.find((r) => !usedRefs.includes(r)) ??
+                String(prev.length + 1);
+            return [
+                ...prev,
+                {
+                    _id: genId(),
+                    reference: nextRef,
+                    weekday: source.weekday,
+                    exercises: source.exercises.map((ex) => ({
+                        ...ex,
+                        _id: genId(),
+                    })),
+                },
+            ];
+        });
+    }, []);
 
     const updateTrainingRef = useCallback(
         (tid: string, ref: string) =>
@@ -520,6 +543,7 @@ export default function MesocycleFormModal({
                         trainings={localTrainings}
                         onAddTraining={addTraining}
                         onRemoveTraining={removeTraining}
+                        onDuplicateTraining={duplicateTraining}
                         onUpdateTrainingRef={updateTrainingRef}
                         onAddExercise={addExercise}
                         onRemoveExercise={removeExercise}
