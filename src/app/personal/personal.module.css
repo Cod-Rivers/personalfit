@@ -3,6 +3,7 @@
     background: var(--mil-blue);
     color: var(--text-primary);
     padding: 40px 24px;
+    overflow-x: hidden;
 }
 
 .container {
@@ -433,10 +434,18 @@
 /* ── Tabs ── */
 .tabBar {
     display: flex;
+    flex-wrap: nowrap;
     gap: 0;
     border-bottom: 2px solid var(--border-subtle);
     margin-bottom: 24px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x;
+    scrollbar-width: none;
 }
+.tabBar::-webkit-scrollbar { display: none; }
 
 .tab {
     padding: 10px 22px;
@@ -448,6 +457,8 @@
     cursor: pointer;
     border-bottom: 2px solid transparent;
     margin-bottom: -2px;
+    white-space: nowrap;
+    flex-shrink: 0;
     transition: color 0.2s, border-color 0.2s;
 }
 .tab:hover { color: var(--text-primary); }

@@ -3,6 +3,7 @@
     background: var(--mil-blue);
     color: var(--text-primary);
     padding: 40px 24px;
+    overflow-x: hidden;
 }
 
 .container {
@@ -225,6 +226,13 @@
 }
 
 /* ── Exercise Table ── */
+.exerciseTableWrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x;
+}
+
 .exerciseTable {
     width: 100%;
     border-collapse: collapse;

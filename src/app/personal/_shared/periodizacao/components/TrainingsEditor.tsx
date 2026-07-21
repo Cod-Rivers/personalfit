@@ -191,6 +191,7 @@ export default function TrainingsEditor({
 
                     {/* Exercises table */}
                     {t.exercises.length > 0 && (
+                        <div className={s.exerciseTableWrap}>
                         <table
                             style={{
                                 width: '100%',
@@ -513,6 +514,7 @@ export default function TrainingsEditor({
                                 ))}
                             </tbody>
                         </table>
+                        </div>
                     )}
 
                     <div className="d-flex gap-2">

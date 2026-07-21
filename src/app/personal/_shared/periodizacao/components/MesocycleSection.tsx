@@ -136,6 +136,7 @@ export default function MesocycleSection({
                                     </span>
                                 </div>
                                 {t.exercises.length > 0 && (
+                                    <div className={s.exerciseTableWrap}>
                                     <table className={s.exerciseTable}>
                                         <thead>
                                             <tr>
@@ -233,6 +234,7 @@ export default function MesocycleSection({
                                             ))}
                                         </tbody>
                                     </table>
+                                    </div>
                                 )}
                             </div>
                         ))
