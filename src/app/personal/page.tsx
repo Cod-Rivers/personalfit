@@ -152,6 +152,7 @@ export default function PersonalDashboard() {
                     <CiclosTab
                         view="own"
                         students={studentsState.students}
+                        planType={planType === 'pro' ? 'pro' : 'free'}
                     />
                 )}
 
@@ -159,6 +160,7 @@ export default function PersonalDashboard() {
                     <CiclosTab
                         view="public"
                         students={studentsState.students}
+                        planType={planType === 'pro' ? 'pro' : 'free'}
                         onBack={() => setTab('ciclos')}
                     />
                 )}

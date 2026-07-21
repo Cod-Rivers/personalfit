@@ -10,6 +10,7 @@ import * as studentLinkService from '@/libs/studentLinkService';
 import { useTheme } from '@/context/ThemeContext';
 import { useBranding } from '@/context/BrandingContext';
 import AvatarUpload from '@/components/molecules/AvatarUpload';
+import { clearSession } from '@/libs/session';
 
 const Header: React.FC = () => {
     const { theme, toggleTheme } = useTheme();
@@ -29,7 +30,6 @@ const Header: React.FC = () => {
         const user = localStorage.getItem('user');
         const token = localStorage.getItem('token');
         if (user && token) {
-            console.log(user);
             setUser(JSON.parse(user));
             return;
         }
@@ -118,9 +118,10 @@ const Header: React.FC = () => {
         }
     };
 
-    const logout = () => {
-        localStorage.removeItem('user');
-        localStorage.removeItem('token');
+    const logout = async () => {
+        // Limpa localStorage, cookies e os dados sensíveis de saúde/treino em
+        // cache local (IndexedDB offline + Cache Storage) — ver libs/session.ts.
+        await clearSession();
         window.location.href = '/';
     };
 

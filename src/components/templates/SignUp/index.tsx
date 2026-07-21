@@ -16,6 +16,7 @@ const TSignUp: FC = () => {
     const [error, setError] = useState<string>('');
     const [cpfConflict, setCpfConflict] = useState<boolean>(false);
     const [role, setRole] = useState<'personal' | 'student'>('student');
+    const [acceptedTerms, setAcceptedTerms] = useState<boolean>(false);
 
     const {
         register,
@@ -24,6 +25,10 @@ const TSignUp: FC = () => {
     } = useForm<SignUpFormData>({ resolver: zodResolver(signUpSchema) });
 
     const submit = async (form: SignUpFormData) => {
+        if (!acceptedTerms) {
+            setError('É necessário aceitar a Política de Privacidade para continuar.');
+            return;
+        }
         setLoading(true);
         setError('');
         setCpfConflict(false);
@@ -182,6 +187,23 @@ const TSignUp: FC = () => {
                         </strong>
                     </p>
 
+                    <div className="form-check">
+                        <input
+                            className="form-check-input"
+                            type="checkbox"
+                            id="accept-terms"
+                            checked={acceptedTerms}
+                            onChange={(e) => setAcceptedTerms(e.target.checked)}
+                        />
+                        <label className="form-check-label" htmlFor="accept-terms" style={{ fontSize: 13 }}>
+                            Li e aceito a{' '}
+                            <Link href="/politica-privacidade" target="_blank">
+                                Política de Privacidade
+                            </Link>{' '}
+                            e autorizo o tratamento dos meus dados pessoais.
+                        </label>
+                    </div>
+
                     {error && (
                         <span className="alert-danger">
                             {error}
@@ -198,7 +220,7 @@ const TSignUp: FC = () => {
                     {loading && (
                         <span className="spinner-border spinner-border-sm"></span>
                     )}
-                    <button className="btn btn-gold" disabled={loading}>
+                    <button className="btn btn-gold" disabled={loading || !acceptedTerms}>
                         {t('btn.signup')}
                     </button>
                 </form>

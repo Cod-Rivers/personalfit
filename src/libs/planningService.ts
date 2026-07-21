@@ -84,8 +84,15 @@ export interface MacrocycleResponse {
     category?: string;
     /** "periodized" (padrão) ou "simple" — definido só na criação do macrociclo. */
     planning_mode?: 'periodized' | 'simple';
+    /** "weekday" (padrão) ou "number" — só relevante quando planning_mode=simple. */
+    simple_day_label?: 'weekday' | 'number';
     is_template?: boolean;
     is_public?: boolean;
+    /** Status de revisão da equipe Venafit — só relevante quando is_public=true.
+     * "pending": aguardando revisão; "approved": liberado na biblioteca pública;
+     * "rejected": recusado (ver rejection_reason). */
+    approval_status?: 'pending' | 'approved' | 'rejected' | '';
+    rejection_reason?: string;
     /** Quantas vezes o template foi aplicado a um aluno (o próprio ou de
      * outros personals via biblioteca pública). Vem pronto do backend. */
     usage_count?: number;
@@ -139,6 +146,7 @@ export interface CreateMacrocycleRequest {
     start_date?: string;
     end_date?: string;
     planning_mode?: 'periodized' | 'simple';
+    simple_day_label?: 'weekday' | 'number';
     mesocycles: MesocycleRequest[];
 }
 
@@ -417,6 +425,7 @@ export async function createNewTemplate(
         goal?: string;
         is_public?: boolean;
         planning_mode?: 'periodized' | 'simple';
+        simple_day_label?: 'weekday' | 'number';
     },
 ): Promise<MacrocycleResponse> {
     const { data } = await Api.post<MacrocycleResponse>(

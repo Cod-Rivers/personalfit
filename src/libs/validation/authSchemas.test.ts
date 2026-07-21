@@ -21,17 +21,20 @@ describe('loginSchema', () => {
         }
     });
 
-    it('rejects a password shorter than 6 characters', () => {
-        const result = loginSchema.safeParse({
+    it('exige que a senha seja informada, mas não aplica política de complexidade no login', () => {
+        // A política de complexidade é do cadastro; no login validamos apenas
+        // presença para não bloquear senhas antigas. Uma senha curta é aceita.
+        const short = loginSchema.safeParse({
             email: 'aluno@venafit.com',
             password: '123',
         });
-        expect(result.success).toBe(false);
-        if (!result.success) {
-            expect(result.error.issues[0].message).toBe(
-                'Senha deve ter pelo menos 6 caracteres',
-            );
-        }
+        expect(short.success).toBe(true);
+
+        const empty = loginSchema.safeParse({
+            email: 'aluno@venafit.com',
+            password: '',
+        });
+        expect(empty.success).toBe(false);
     });
 });
 

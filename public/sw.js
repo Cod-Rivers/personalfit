@@ -18,6 +18,16 @@ const GIF_CACHE = 'venafit-gifs-v1';
 const SHELL_CACHE = 'venafit-shell-v1';
 const MEDIA_HOSTS = ['midia.venafit.codriverslabs.com'];
 
+// Caminhos que nunca devem ser cacheados pelo SW: dados de conta/autenticação e
+// qualquer coisa sob /api. Mesmo hoje a API vivendo em outra origem (portanto já
+// fora do cache same-origin), esta lista é defesa em profundidade caso a API
+// passe a ser servida no mesmo domínio via proxy reverso.
+const NO_CACHE_PATHS = ['/api', '/minha-conta', '/anamnese', '/admin'];
+
+function isSensitivePath(pathname) {
+    return NO_CACHE_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'));
+}
+
 self.addEventListener('install', () => {
     self.skipWaiting();
 });
@@ -58,6 +68,11 @@ self.addEventListener('fetch', (event) => {
     }
 
     if (url.origin === self.location.origin) {
+        // Nunca cachear dados de conta/autenticação nem chamadas de dados
+        // (destination vazio = fetch/XHR). Passam direto pela rede.
+        if (isSensitivePath(url.pathname) || request.destination === 'empty') {
+            return;
+        }
         // Network-first with a runtime-cache fallback: lets a previously
         // visited page (app shell, data-less navigation) still render
         // offline without hand-maintaining a precache manifest against

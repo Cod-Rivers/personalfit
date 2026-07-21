@@ -199,6 +199,11 @@ export async function getOfflineMacrocycle(id: string): Promise<StoredMacrocycle
     return db.get('macrocycles', id);
 }
 
+export async function getAllOfflineMacrocycles(): Promise<StoredMacrocycle[]> {
+    const db = await getOfflineDB();
+    return db.getAll('macrocycles');
+}
+
 export async function hasOfflineMacrocycle(id: string): Promise<boolean> {
     return Boolean(await getOfflineMacrocycle(id));
 }

@@ -285,9 +285,7 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
     };
 
     const handleSaveAnnotations = () => {
-        console.log('Anotações a serem salvas:', userAnnotations);
-        // Aqui você adicionará a lógica para salvar 'userAnnotations' no banco de dados MongoDB
-        // No momento, apenas estamos exibindo um log.
+        // TODO: persistir 'userAnnotations' no backend.
         alert('Anotações salvas!');
     };
 
@@ -309,8 +307,7 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
 
     const handleWeightEditEnd = () => {
         setIsWeightEditing(false);
-        // Aqui você pode adicionar a lógica para salvar o novo valor do peso
-        console.log('Peso atualizado para:', weightValue);
+        // TODO: persistir o novo valor do peso no backend.
     };
 
     const handleWeightKeyDown = (

@@ -20,6 +20,8 @@ interface Props {
     onAddExercise: (tid: string) => void;
     /** No modo simples, troca o campo de referência (A/B/C) por um seletor de dia da semana. */
     simpleMode?: boolean;
+    /** "weekday" (padrão, seletor de dia) ou "number" (Treino 1, Treino 2... pela ordem da lista). */
+    dayLabelStyle?: 'weekday' | 'number';
     onUpdateTrainingWeekday?: (tid: string, weekday: number | undefined) => void;
     onRemoveExercise: (tid: string, eid: string) => void;
     onUpdateExercise: (
@@ -48,8 +50,10 @@ export default function TrainingsEditor({
     onClosePicker,
     onPickExercise,
     simpleMode,
+    dayLabelStyle = 'weekday',
     onUpdateTrainingWeekday,
 }: Props) {
+    const isNumbered = simpleMode && dayLabelStyle === 'number';
     return (
         <div
             style={{
@@ -85,7 +89,7 @@ export default function TrainingsEditor({
                 </p>
             )}
 
-            {trainings.map((t) => (
+            {trainings.map((t, index) => (
                 <div
                     key={t._id}
                     style={{
@@ -105,7 +109,18 @@ export default function TrainingsEditor({
                             marginBottom: 10,
                         }}
                     >
-                        {simpleMode ? (
+                        {isNumbered ? (
+                            <span
+                                style={{
+                                    width: 80,
+                                    textAlign: 'center',
+                                    fontWeight: 700,
+                                    fontSize: '0.85rem',
+                                }}
+                            >
+                                Treino {index + 1}
+                            </span>
+                        ) : simpleMode ? (
                             <select
                                 value={t.weekday ?? ''}
                                 onChange={(e) =>
@@ -148,9 +163,12 @@ export default function TrainingsEditor({
                                 flex: 1,
                             }}
                         >
-                            {simpleMode
-                                ? weekdayLabel(t.weekday) ?? 'Sem dia definido'
-                                : `Treino ${t.reference}`}{' '}
+                            {isNumbered
+                                ? `Treino ${index + 1}`
+                                : simpleMode
+                                  ? (weekdayLabel(t.weekday) ??
+                                    'Sem dia definido')
+                                  : `Treino ${t.reference}`}{' '}
                             — {t.exercises.length} exercício(s)
                         </span>
                         <button

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { usePersonalTemplates } from '@/hooks/usePersonalTemplates';
 import type { Student } from '@/hooks/usePersonalStudents';
@@ -10,12 +10,14 @@ import s from '../personal.module.css';
 interface Props {
     view: 'own' | 'public';
     students: Student[];
+    planType?: 'free' | 'pro';
     onBack?: () => void;
 }
 
 type SortMode = 'recent' | 'usage';
 
-export default function CiclosTab({ view, students, onBack }: Props) {
+export default function CiclosTab({ view, students, planType = 'free', onBack }: Props) {
+    const isPro = planType === 'pro';
     const router = useRouter();
     const {
         templates,
@@ -38,6 +40,15 @@ export default function CiclosTab({ view, students, onBack }: Props) {
     } = usePersonalTemplates(view);
 
     const isPublic = view === 'public';
+
+    // No plano free, ciclos nunca podem ficar privados — força o valor mesmo
+    // para registros legados criados antes dessa regra existir, já que o
+    // dropdown de "Privado" fica oculto e o personal não tem como escolhê-lo.
+    useEffect(() => {
+        if (modal === 'tplEdit' && !isPro) {
+            setTplForm((prev) => ({ ...prev, is_public: true }));
+        }
+    }, [modal, isPro, setTplForm]);
 
     const [search, setSearch] = useState('');
     const [sortMode, setSortMode] = useState<SortMode>('recent');
@@ -96,6 +107,29 @@ export default function CiclosTab({ view, students, onBack }: Props) {
                         {tpl.featured && (
                             <span className={s.badgePublic} title="Destaque">
                                 ⭐
+                            </span>
+                        )}
+                        {!isPublic && tpl.is_public && (
+                            <span
+                                className={s.badgeMesocycles}
+                                style={
+                                    tpl.approval_status === 'approved'
+                                        ? { background: 'rgba(34,197,94,0.15)', color: '#22c55e' }
+                                        : tpl.approval_status === 'rejected'
+                                          ? { background: 'rgba(239,68,68,0.15)', color: '#ef4444' }
+                                          : { background: 'rgba(234,179,8,0.15)', color: '#eab308' }
+                                }
+                                title={
+                                    tpl.approval_status === 'rejected'
+                                        ? tpl.rejection_reason || 'Rejeitado pela equipe Venafit'
+                                        : undefined
+                                }
+                            >
+                                {tpl.approval_status === 'approved'
+                                    ? 'Aprovado'
+                                    : tpl.approval_status === 'rejected'
+                                      ? 'Rejeitado'
+                                      : 'Pendente de revisão'}
                             </span>
                         )}
                         {(tpl.usage_count ?? 0) > 0 && (
@@ -339,24 +373,46 @@ export default function CiclosTab({ view, students, onBack }: Props) {
                             <label className={s.formLabel}>
                                 Visibilidade
                             </label>
-                            <select
-                                value={String(tplForm.is_public || false)}
-                                onChange={(e) =>
-                                    setTplForm({
-                                        ...tplForm,
-                                        is_public: e.target.value === 'true',
-                                    })
-                                }
-                                className={s.formInput}
-                            >
-                                <option value="false">
-                                    Privado — apenas você
-                                </option>
-                                <option value="true">
-                                    Público (plano PRO) — acessível por
-                                    outros personals e pela equipe Venafit
-                                </option>
-                            </select>
+                            {isPro ? (
+                                <select
+                                    value={String(tplForm.is_public || false)}
+                                    onChange={(e) =>
+                                        setTplForm({
+                                            ...tplForm,
+                                            is_public:
+                                                e.target.value === 'true',
+                                        })
+                                    }
+                                    className={s.formInput}
+                                >
+                                    <option value="false">
+                                        Privado — apenas você
+                                    </option>
+                                    <option value="true">
+                                        Público — acessível por outros
+                                        personals e pela equipe Venafit
+                                    </option>
+                                </select>
+                            ) : (
+                                <p
+                                    style={{
+                                        fontSize: '0.85rem',
+                                        color: '#8892b0',
+                                        margin: 0,
+                                    }}
+                                >
+                                    No plano gratuito, os ciclos ficam
+                                    disponíveis para revisão da equipe
+                                    Venafit e podem entrar na biblioteca
+                                    pública. Quer manter seus ciclos privados?{' '}
+                                    <a
+                                        href="/pagamento?produto=pro"
+                                        style={{ color: '#d4af37' }}
+                                    >
+                                        Assine o plano PRO.
+                                    </a>
+                                </p>
+                            )}
                             {error && error.toLowerCase().includes('pro') && (
                                 <p
                                     style={{
@@ -365,8 +421,8 @@ export default function CiclosTab({ view, students, onBack }: Props) {
                                         marginTop: 4,
                                     }}
                                 >
-                                    Divulgar ciclos na biblioteca pública é
-                                    exclusivo do plano PRO.
+                                    Manter ciclos privados é exclusivo do
+                                    plano PRO.
                                 </p>
                             )}
                         </div>

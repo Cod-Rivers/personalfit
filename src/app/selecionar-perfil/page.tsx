@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { saveSession } from '@/libs/session';
 
 interface UserData {
     id: string;
@@ -31,8 +32,7 @@ export default function SelecionarPerfil() {
     }, [router]);
 
     const choose = (user: UserData, token: string, refreshToken: string) => {
-        localStorage.setItem('user', JSON.stringify(user));
-        localStorage.setItem('token', token);
+        saveSession(token, user);
         localStorage.setItem('refresh_token', refreshToken);
         sessionStorage.removeItem('pending_auth');
         window.location.href =

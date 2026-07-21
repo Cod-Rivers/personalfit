@@ -1,4 +1,5 @@
 import axios from "axios";
+import { clearSession } from "@/libs/session";
 
 const normalizeBaseUrl = (value?: string): string => {
     const raw = (value ?? '').trim().replace(/^['"]|['"]$/g, '');
@@ -31,9 +32,9 @@ Api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (typeof window !== 'undefined' && error.response?.status === 401) {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            window.location.href = '/?reason=session_expired';
+            void clearSession().finally(() => {
+                window.location.href = '/?reason=session_expired';
+            });
         }
         return Promise.reject(error);
     }

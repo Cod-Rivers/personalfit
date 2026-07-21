@@ -47,6 +47,8 @@ interface Props {
     onSave: (req: MesocycleRequest) => void;
     /** Modo simples: esconde nome/fase/duração/metodologia e usa valores fixos (SIMPLE_MODE_DEFAULTS). */
     simpleMode?: boolean;
+    /** "weekday" (padrão) ou "number" — só relevante quando simpleMode=true. */
+    dayLabelStyle?: 'weekday' | 'number';
 }
 
 export default function MesocycleFormModal({
@@ -58,6 +60,7 @@ export default function MesocycleFormModal({
     onClose,
     onSave,
     simpleMode,
+    dayLabelStyle,
 }: Props) {
     const [localTrainings, setLocalTrainings] = useState<LocalTraining[]>(
         () => (meso ? responseToLocal(meso.trainings) : []),
@@ -553,6 +556,7 @@ export default function MesocycleFormModal({
                         onClosePicker={closePicker}
                         onPickExercise={pickExercise}
                         simpleMode={simpleMode}
+                        dayLabelStyle={dayLabelStyle}
                         onUpdateTrainingWeekday={updateTrainingWeekday}
                     />
 

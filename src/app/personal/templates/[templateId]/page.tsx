@@ -186,6 +186,8 @@ export default function TemplateDetalhePage() {
               ? s.badgeCompleted
               : s.badgeDraft;
     const simpleMeso = isSimpleMode ? (macro.mesocycles ?? [])[0] : undefined;
+    const dayLabelStyle =
+        macro.simple_day_label === 'number' ? 'number' : 'weekday';
 
     return (
         <div className={s.page}>
@@ -269,6 +271,7 @@ export default function TemplateDetalhePage() {
                             onEdit={() => openEditModal(simpleMeso)}
                             onDelete={() => deleteMeso(simpleMeso.id)}
                             simpleMode
+                            dayLabelStyle={dayLabelStyle}
                         />
                     )
                 ) : (macro.mesocycles?.length ?? 0) === 0 ? (
@@ -305,6 +308,7 @@ export default function TemplateDetalhePage() {
                     onClose={closeModal}
                     onSave={onSaveMeso}
                     simpleMode={isSimpleMode}
+                    dayLabelStyle={dayLabelStyle}
                 />
             )}
         </div>

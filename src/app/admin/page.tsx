@@ -306,13 +306,21 @@ function TemplatesSection({ canManageUsers }: { canManageUsers: boolean }) {
         setBusyId(id);
         try {
             await adminService.rejectTemplate(id, reason);
-            await fetchPending();
+            await Promise.all([fetchPending(), fetchTemplates()]);
         } catch {
             alert('Erro ao rejeitar template.');
         } finally {
             setBusyId(null);
         }
     };
+
+    // Dias desde a submissão de um template pendente — só um indicador visual
+    // para o admin priorizar revisões antigas; não há rejeição automática.
+    const daysPending = (createdAt: string) =>
+        Math.floor(
+            (Date.now() - new Date(createdAt).getTime()) /
+                (1000 * 60 * 60 * 24),
+        );
 
     const handleToggleFeatured = async (
         id: string,
@@ -488,6 +496,16 @@ function TemplatesSection({ canManageUsers }: { canManageUsers: boolean }) {
                                             ? '⭐ Destacado'
                                             : '☆ Destacar'}
                                     </button>
+                                    {!t.created_by_admin && (
+                                        <button
+                                            onClick={() => handleReject(t.id)}
+                                            disabled={busyId === t.id}
+                                            className={`${s.btnDanger} ${s.btnSmall}`}
+                                            title="Remove o ciclo da biblioteca pública; o personal pode reenviar para revisão editando-o novamente"
+                                        >
+                                            ✕ Revogar
+                                        </button>
+                                    )}
                                     {canManageUsers && (
                                         <button
                                             onClick={() =>
@@ -530,6 +548,15 @@ function TemplatesSection({ canManageUsers }: { canManageUsers: boolean }) {
                                     <span className={s.badgeWarning}>
                                         pendente
                                     </span>
+                                    {daysPending(t.created_at) > 60 && (
+                                        <span
+                                            className={s.badgeDanger}
+                                            title="Pendente há mais de 60 dias"
+                                        >
+                                            {' '}
+                                            {daysPending(t.created_at)} dias
+                                        </span>
+                                    )}
                                 </h3>
                                 <p className={s.cardMeta}>
                                     {t.goal || 'Sem objetivo definido'} ·{' '}

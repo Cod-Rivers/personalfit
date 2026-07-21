@@ -9,6 +9,7 @@ import { Api } from '@/libs/api';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, LoginFormData } from '@/libs/validation/authSchemas';
+import { saveSession } from '@/libs/session';
 
 const TLogin: FC = () => {
     const t = useTranslations('LoginPage');
@@ -41,8 +42,7 @@ const TLogin: FC = () => {
                     window.location.href = '/selecionar-perfil';
                     return;
                 }
-                localStorage.setItem('user', JSON.stringify(data.user));
-                localStorage.setItem('token', data.token);
+                saveSession(data.token, data.user);
                 window.location.href =
                     data.user.role === 'admin' ||
                     data.user.role === 'content_editor'
@@ -146,6 +146,11 @@ const TLogin: FC = () => {
                 </span>
                 <span className="mt-2">
                     <Link href="/esqueceu-senha">Esqueceu a senha?</Link>
+                </span>
+                <span className="mt-2">
+                    <Link href="/recuperar-cadastro">
+                        Já tem cadastro com esse CPF?
+                    </Link>
                 </span>
             </div>
         </div>

@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import axios from 'axios';
 import Link from 'next/link';
 import TrainingCard from '../../components/features/TrainingCard';
 import { useRouter } from 'next/navigation';
@@ -37,12 +38,36 @@ import {
     MacrocycleResponse,
 } from '@/libs/planningService';
 import DownloadOfflineButton from '../../components/features/DownloadOfflineButton';
+import {
+    getAllOfflineMacrocycles,
+    getOfflineMacrocycle,
+} from '@/libs/offline/downloadManager';
 import SyncPendingBadge from '../../components/features/SyncPendingBadge';
 import GanttPlanning from '../../components/features/GanttPlanning';
 import { GanttPhase } from '../../components/features/GanttPlanning';
 import { BsClipboardData } from 'react-icons/bs';
 import { FiChevronDown } from 'react-icons/fi';
 import styles from '../../components/features/TrainingProtocolList.module.css';
+
+function buildMesoGroups(detail: MacrocycleResponse): MesoGroup[] {
+    const isSimple = detail.planning_mode === 'simple';
+    const isNumbered = detail.simple_day_label === 'number';
+    return (detail.mesocycles ?? []).map((meso) => ({
+        mesoId: meso.id,
+        mesoName: meso.name,
+        phase: meso.phase,
+        durationWeeks: meso.duration_weeks,
+        trainings: (meso.trainings ?? []).map((tr, i) => ({
+            id: tr.id,
+            label: isNumbered
+                ? `Treino ${i + 1}`
+                : isSimple
+                  ? (WEEKDAY_LABELS[tr.weekday ?? -1] ?? 'Sem dia definido')
+                  : `Treino ${tr.reference}`,
+            phase: isSimple ? undefined : meso.name,
+        })),
+    }));
+}
 
 export default function MeusTreinosPage() {
     const { currentTopAd, currentBottomAd, canShowAds } = useAds();
@@ -57,6 +82,7 @@ export default function MeusTreinosPage() {
     const [ganttEnabled, setGanttEnabled] = useState(true);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [isOfflineData, setIsOfflineData] = useState(false);
     const [selectorOpen, setSelectorOpen] = useState(false);
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [isMounted, setIsMounted] = useState(false);
@@ -111,33 +137,41 @@ export default function MeusTreinosPage() {
                 const detail = await getMyMacrocycle(first.id);
                 setSelectedMacro(detail);
                 setStudentId(detail.student_id ?? '');
-
-                const isSimple = detail.planning_mode === 'simple';
-                const groups: MesoGroup[] = (detail.mesocycles ?? []).map(
-                    (meso) => ({
-                        mesoId: meso.id,
-                        mesoName: meso.name,
-                        phase: meso.phase,
-                        durationWeeks: meso.duration_weeks,
-                        trainings: (meso.trainings ?? []).map((tr) => ({
-                            id: tr.id,
-                            label: isSimple
-                                ? (WEEKDAY_LABELS[tr.weekday ?? -1] ??
-                                  'Sem dia definido')
-                                : `Treino ${tr.reference}`,
-                            phase: isSimple ? undefined : meso.name,
-                        })),
-                    }),
-                );
-                setMesoGroups(groups);
+                setMesoGroups(buildMesoGroups(detail));
                 setGanttPhases(
                     macroToGanttPhases(detail, { preferDuration: true }),
                 );
             } catch (e) {
-                const err = e as Error;
-                setError(
-                    `Não foi possível carregar seus treinos: ${err.message}`,
-                );
+                // Sem resposta = sem conexão com a API: tentar os planos
+                // baixados para offline (IndexedDB) antes de mostrar erro.
+                if (axios.isAxiosError(e) && !e.response) {
+                    const stored = await getAllOfflineMacrocycles().catch(
+                        () => [],
+                    );
+                    if (stored.length > 0) {
+                        setIsOfflineData(true);
+                        setMacrocycles(stored.map((s) => s.data));
+                        const detail = stored[0].data;
+                        setSelectedMacro(detail);
+                        setStudentId(detail.student_id ?? '');
+                        setMesoGroups(buildMesoGroups(detail));
+                        setGanttPhases(
+                            macroToGanttPhases(detail, {
+                                preferDuration: true,
+                            }),
+                        );
+                        setLoading(false);
+                        return;
+                    }
+                    setError(
+                        'Sem conexão e nenhum plano foi baixado para uso offline. Conecte-se à internet e use o botão de download para salvar seu treino no aparelho.',
+                    );
+                } else {
+                    const err = e as Error;
+                    setError(
+                        `Não foi possível carregar seus treinos: ${err.message}`,
+                    );
+                }
             } finally {
                 setLoading(false);
             }
@@ -151,33 +185,38 @@ export default function MeusTreinosPage() {
         setLoading(true);
         try {
             const detail = await getMyMacrocycle(macro.id);
+            setIsOfflineData(false);
             setSelectedMacro(detail);
             setStudentId(detail.student_id ?? '');
-
-            const isSimple = detail.planning_mode === 'simple';
-            const groups: MesoGroup[] = (detail.mesocycles ?? []).map(
-                (meso) => ({
-                    mesoId: meso.id,
-                    mesoName: meso.name,
-                    phase: meso.phase,
-                    durationWeeks: meso.duration_weeks,
-                    trainings: (meso.trainings ?? []).map((tr) => ({
-                        id: tr.id,
-                        label: isSimple
-                            ? (WEEKDAY_LABELS[tr.weekday ?? -1] ??
-                              'Sem dia definido')
-                            : `Treino ${tr.reference}`,
-                        phase: isSimple ? undefined : meso.name,
-                    })),
-                }),
-            );
-            setMesoGroups(groups);
+            setMesoGroups(buildMesoGroups(detail));
             setGanttPhases(
                 macroToGanttPhases(detail, { preferDuration: true }),
             );
         } catch (e) {
-            const err = e as Error;
-            setError(`Erro ao carregar macrociclo: ${err.message}`);
+            if (axios.isAxiosError(e) && !e.response) {
+                const stored = await getOfflineMacrocycle(macro.id).catch(
+                    () => undefined,
+                );
+                if (stored) {
+                    setIsOfflineData(true);
+                    setSelectedMacro(stored.data);
+                    setStudentId(stored.data.student_id ?? '');
+                    setMesoGroups(buildMesoGroups(stored.data));
+                    setGanttPhases(
+                        macroToGanttPhases(stored.data, {
+                            preferDuration: true,
+                        }),
+                    );
+                    setLoading(false);
+                    return;
+                }
+                setError(
+                    'Sem conexão e este plano não foi baixado para uso offline.',
+                );
+            } else {
+                const err = e as Error;
+                setError(`Erro ao carregar macrociclo: ${err.message}`);
+            }
         } finally {
             setLoading(false);
         }
@@ -258,6 +297,15 @@ export default function MeusTreinosPage() {
             )}
 
             <div className="container mx-auto p-4 min-h-screen relative">
+                {isOfflineData && (
+                    <div
+                        className="alert alert-warning py-2 px-3 mb-3"
+                        style={{ fontSize: '0.85rem' }}
+                    >
+                        📴 Exibindo plano salvo offline (sem conexão no
+                        momento).
+                    </div>
+                )}
                 {/* Card do Personal Trainer */}
                 <PersonalTrainerCard
                     branding={branding}

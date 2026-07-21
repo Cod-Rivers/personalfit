@@ -11,8 +11,10 @@ interface Props {
     onDelete: () => void;
     /** Ausente no modo simples — o mesociclo único e oculto não faz sentido duplicar. */
     onDuplicate?: () => void;
-    /** Mostra o dia da semana no lugar de "Treino {reference}". */
+    /** Mostra o dia da semana (ou número) no lugar de "Treino {reference}". */
     simpleMode?: boolean;
+    /** "weekday" (padrão) ou "number" — só relevante quando simpleMode=true. */
+    dayLabelStyle?: 'weekday' | 'number';
 }
 
 export default function MesocycleSection({
@@ -21,7 +23,9 @@ export default function MesocycleSection({
     onDelete,
     onDuplicate,
     simpleMode,
+    dayLabelStyle,
 }: Props) {
+    const isNumbered = simpleMode && dayLabelStyle === 'number';
     const [open, setOpen] = useState(false);
 
     return (
@@ -111,14 +115,16 @@ export default function MesocycleSection({
                             adicionar.
                         </p>
                     ) : (
-                        meso.trainings.map((t) => (
+                        meso.trainings.map((t, index) => (
                             <div key={t.id} className={s.trainingBlock}>
                                 <div className={s.trainingHeader}>
                                     <p className={s.trainingLabel}>
-                                        {simpleMode
-                                            ? (weekdayLabel(t.weekday) ??
-                                              'Sem dia definido')
-                                            : `Treino ${t.reference}`}
+                                        {isNumbered
+                                            ? `Treino ${index + 1}`
+                                            : simpleMode
+                                              ? (weekdayLabel(t.weekday) ??
+                                                'Sem dia definido')
+                                              : `Treino ${t.reference}`}
                                     </p>
                                     <span
                                         style={{
