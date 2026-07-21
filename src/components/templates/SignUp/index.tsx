@@ -14,6 +14,7 @@ const TSignUp: FC = () => {
     const t = useTranslations('SignUpPage');
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string>('');
+    const [cpfConflict, setCpfConflict] = useState<boolean>(false);
     const [role, setRole] = useState<'personal' | 'student'>('student');
 
     const {
@@ -25,6 +26,7 @@ const TSignUp: FC = () => {
     const submit = async (form: SignUpFormData) => {
         setLoading(true);
         setError('');
+        setCpfConflict(false);
         const payload = {
             name: form.name,
             email: form.email,
@@ -36,16 +38,21 @@ const TSignUp: FC = () => {
         };
 
         try {
-            const { data } = await Api.post('/users', payload);
-
-            if (data.error) {
-                setError(data.error);
-                return;
-            }
-
+            await Api.post('/users', payload);
             window.location.href = '/';
-        } catch (error) {
-            console.error(error);
+        } catch (error: unknown) {
+            const responseData = (
+                error as {
+                    response?: { data?: { code?: string; error?: string } };
+                }
+            )?.response?.data;
+            if (responseData?.code === 'cpf_already_registered') {
+                setCpfConflict(true);
+            }
+            setError(
+                responseData?.error ||
+                    'Não foi possível concluir o cadastro. Tente novamente.',
+            );
         } finally {
             setLoading(false);
         }
@@ -175,7 +182,19 @@ const TSignUp: FC = () => {
                         </strong>
                     </p>
 
-                    <span className="alert-danger">{error}</span>
+                    {error && (
+                        <span className="alert-danger">
+                            {error}
+                            {cpfConflict && (
+                                <>
+                                    {' '}
+                                    <Link href="/recuperar-cadastro">
+                                        Recuperar cadastro
+                                    </Link>
+                                </>
+                            )}
+                        </span>
+                    )}
                     {loading && (
                         <span className="spinner-border spinner-border-sm"></span>
                     )}
