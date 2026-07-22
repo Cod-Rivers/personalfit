@@ -37,4 +37,4 @@ options:
 substitutions:
   _SERVICE: venafit-frontend
   _REGION: us-east1
-  _IMAGE: 'us-east1-docker.pkg.dev/venafit-78329/cloud-run-source-deploy/venafit-frontend:$SHORT_SHA'
+  _IMAGE: 'us-east1-docker.pkg.dev/venafit-78329/cloud-run-source-deploy/venafit-frontend:latest'
