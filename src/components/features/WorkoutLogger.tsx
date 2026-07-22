@@ -17,6 +17,7 @@ import {
 } from '@/libs/workoutLogService';
 import { getPendingWorkoutLogId } from '@/libs/offline/downloadManager';
 import { enqueueCompletion, enqueueSkip } from '@/libs/offline/syncQueue';
+import Modal from '@/components/system/Modal';
 import s from './WorkoutLogger.module.css';
 
 const OFFLINE_NO_PRECREATED_LOG_MESSAGE =
@@ -301,25 +302,45 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
         onQueued,
     ]);
 
-    return (
-        <div className={s.overlay} onClick={onClose}>
-            <div className={s.modal} onClick={(e) => e.stopPropagation()}>
-                <div className={s.header}>
-                    <h2>
-                        Registrar Treino{' '}
-                        <span className={s.ref}>{training.reference}</span>
-                    </h2>
-                    <button
-                        className={s.closeBtn}
-                        onClick={onClose}
-                        disabled={loading}
-                    >
-                        <FiX size={24} />
-                    </button>
-                </div>
+    const footer = (
+        <div className={s.actions}>
+            <button
+                className={s.btnSkip}
+                onClick={handleSkip}
+                disabled={loading}
+            >
+                {loading ? <FiLoader className={s.spin} /> : <FiX />}{' '}
+                Pular Treino
+            </button>
+            <button
+                className={s.btnComplete}
+                onClick={handleComplete}
+                disabled={loading}
+            >
+                {loading ? (
+                    <FiLoader className={s.spin} />
+                ) : (
+                    <FiCheck />
+                )}{' '}
+                Completar Treino
+            </button>
+        </div>
+    );
 
-                <div className={s.content}>
-                    {error && (
+    return (
+        <Modal
+            open
+            onClose={onClose}
+            title={
+                <>
+                    Registrar Treino{' '}
+                    <span className={s.ref}>{training.reference}</span>
+                </>
+            }
+            footer={footer}
+        >
+            <div className={s.content}>
+                {error && (
                         <div className={s.errorBanner}>
                             <FiAlertCircle /> {error}
                         </div>
@@ -451,31 +472,7 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                         </label>
                     </div>
                 </div>
-
-                <div className={s.actions}>
-                    <button
-                        className={s.btnSkip}
-                        onClick={handleSkip}
-                        disabled={loading}
-                    >
-                        {loading ? <FiLoader className={s.spin} /> : <FiX />}{' '}
-                        Pular Treino
-                    </button>
-                    <button
-                        className={s.btnComplete}
-                        onClick={handleComplete}
-                        disabled={loading}
-                    >
-                        {loading ? (
-                            <FiLoader className={s.spin} />
-                        ) : (
-                            <FiCheck />
-                        )}{' '}
-                        Completar Treino
-                    </button>
-                </div>
-            </div>
-        </div>
+        </Modal>
     );
 };
 

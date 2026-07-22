@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ExerciseLog } from './types';
 import styles from './ExerciseDetailCard.module.css';
+import Modal from '@/components/system/Modal';
 import {
     isVideoExtension,
     isInstagramUrl,
@@ -129,7 +130,7 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
         setUserAnnotations(e.target.value);
     };
 
-    const renderVideoModal = () => {
+    const renderVideoModalContent = () => {
         if (!isVideoPlayerOpen) return null;
 
         // video_url já vem resolvido pela API como URL final pronta para tocar
@@ -145,34 +146,18 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                 ? 'Instagram'
                 : 'TikTok';
             return (
-                <div
-                    className={styles.videoModalOverlay}
-                    onClick={handleCloseVideoPlayer}
-                >
-                    <div
-                        className={styles.videoModalCard}
-                        onClick={(e) => e.stopPropagation()}
-                        style={{ padding: '2rem', textAlign: 'center' }}
+                <div style={{ padding: '2rem', textAlign: 'center' }}>
+                    <p style={{ color: '#ccc', marginBottom: '1rem' }}>
+                        Este vídeo está hospedado no {platform}.
+                    </p>
+                    <a
+                        href={exercise.video_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-primary"
                     >
-                        <button
-                            onClick={handleCloseVideoPlayer}
-                            className={`${styles.closeButton || ''} ${styles.videoModalCloseButton || ''}`}
-                            aria-label="Fechar player de vídeo"
-                        >
-                            ×
-                        </button>
-                        <p style={{ color: '#ccc', marginBottom: '1rem' }}>
-                            Este vídeo está hospedado no {platform}.
-                        </p>
-                        <a
-                            href={exercise.video_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn btn-primary"
-                        >
-                            Ver no {platform} ↗
-                        </a>
-                    </div>
+                        Ver no {platform} ↗
+                    </a>
                 </div>
             );
         }
@@ -180,104 +165,70 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
         if (playUrl) {
             return (
                 <div
-                    className={styles.videoModalOverlay}
-                    onClick={handleCloseVideoPlayer}
+                    className={styles.videoPlayerContainer}
+                    style={
+                        videoAspectRatio != null
+                            ? {
+                                  paddingBottom: 0,
+                                  height: 'auto',
+                              }
+                            : undefined
+                    }
                 >
-                    <div
-                        className={styles.videoModalCard}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <button
-                            onClick={handleCloseVideoPlayer}
-                            className={`${styles.closeButton || ''} ${styles.videoModalCloseButton || ''}`}
-                            aria-label="Fechar player de vídeo"
-                        >
-                            ×
-                        </button>
-                        <div
-                            className={styles.videoPlayerContainer}
+                    {isVideoExtension(playUrl) ? (
+                        <video
+                            src={playUrl}
+                            controls
+                            autoPlay
+                            muted
+                            loop
+                            playsInline
+                            className={styles.videoIframe}
+                            onLoadedMetadata={(e) => {
+                                const { videoWidth, videoHeight } =
+                                    e.currentTarget;
+                                if (videoWidth && videoHeight) {
+                                    setVideoAspectRatio(
+                                        videoWidth / videoHeight,
+                                    );
+                                }
+                            }}
                             style={
                                 videoAspectRatio != null
                                     ? {
-                                          paddingBottom: 0,
+                                          position: 'static',
+                                          width: '100%',
                                           height: 'auto',
+                                          maxHeight: '72vh',
+                                          objectFit: 'contain',
+                                          display: 'block',
                                       }
                                     : undefined
                             }
-                        >
-                            {isVideoExtension(playUrl) ? (
-                                <video
-                                    src={playUrl}
-                                    controls
-                                    autoPlay
-                                    muted
-                                    loop
-                                    playsInline
-                                    className={styles.videoIframe}
-                                    onLoadedMetadata={(e) => {
-                                        const { videoWidth, videoHeight } =
-                                            e.currentTarget;
-                                        if (videoWidth && videoHeight) {
-                                            setVideoAspectRatio(
-                                                videoWidth / videoHeight,
-                                            );
-                                        }
-                                    }}
-                                    style={
-                                        videoAspectRatio != null
-                                            ? {
-                                                  position: 'static',
-                                                  width: '100%',
-                                                  height: 'auto',
-                                                  maxHeight: '72vh',
-                                                  objectFit: 'contain',
-                                                  display: 'block',
-                                              }
-                                            : undefined
-                                    }
-                                />
-                            ) : (
-                                <img
-                                    src={playUrl}
-                                    alt={exercise.name}
-                                    className={styles.videoIframe}
-                                    style={{ objectFit: 'contain' }}
-                                />
-                            )}
-                        </div>
-                    </div>
+                        />
+                    ) : (
+                        <img
+                            src={playUrl}
+                            alt={exercise.name}
+                            className={styles.videoIframe}
+                            style={{ objectFit: 'contain' }}
+                        />
+                    )}
                 </div>
             );
         }
         // Caso 2: YouTube / Vimeo
         if (embedUrl) {
             return (
-                <div
-                    className={styles.videoModalOverlay}
-                    onClick={handleCloseVideoPlayer}
-                >
-                    <div
-                        className={styles.videoModalCard}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <button
-                            onClick={handleCloseVideoPlayer}
-                            className={`${styles.closeButton || ''} ${styles.videoModalCloseButton || ''}`}
-                            aria-label="Fechar player de vídeo"
-                        >
-                            ×
-                        </button>
-                        <div className={styles.videoPlayerContainer}>
-                            <iframe
-                                src={embedUrl}
-                                title={`Vídeo para ${exercise.name}`}
-                                frameBorder="0"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                allowFullScreen
-                                className={styles.videoIframe}
-                            ></iframe>
-                        </div>
-                    </div>
+                <div className={styles.videoPlayerContainer}>
+                    <iframe
+                        src={embedUrl}
+                        title={`Vídeo para ${exercise.name}`}
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        className={styles.videoIframe}
+                    ></iframe>
                 </div>
             );
         }
@@ -320,8 +271,12 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
 
     return (
         <>
-            {/* Overlay e Card Principal do Exercício */}
-            <div className={styles.modalOverlay}>
+            {/* Modal Principal do Exercício */}
+            <Modal
+                open={!!exercise}
+                onClose={onClose ?? (() => {})}
+                title={exercise.name}
+            >
                 <div>
                     <div className={styles.thumbnailImage}>
                         {exercise.video_thumb ? (
@@ -428,18 +383,6 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                         ) : null}
                     </div>
                     <div className={styles.modalCard}>
-                        {onClose && (
-                            <button
-                                onClick={onClose}
-                                className={`${styles.closeButton || styles.closeButtonBottom} ${styles.closeButtonTopRight}`}
-                                aria-label="Fechar detalhes do exercício"
-                            >
-                                ×
-                            </button>
-                        )}
-                        <h2 className={styles.exerciseTitle}>
-                            {exercise.name}
-                        </h2>
                         <div className={styles.contentLayout}>
                             <div className={styles.detailsSection}>
                                 <div className={styles.detailRow}>
@@ -616,10 +559,12 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                         </div>
                     </div>
                 </div>
-            </div>
+            </Modal>
 
             {/* Modal do Player de Vídeo */}
-            {renderVideoModal()}
+            <Modal open={isVideoPlayerOpen} onClose={handleCloseVideoPlayer}>
+                {renderVideoModalContent()}
+            </Modal>
         </>
     );
 };

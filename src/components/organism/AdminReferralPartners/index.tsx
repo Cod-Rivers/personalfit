@@ -9,6 +9,7 @@ import {
     updateReferralPartner,
     deleteReferralPartner,
 } from '@/libs/referralPartnerService';
+import Modal from '@/components/system/Modal';
 import styles from './AdminReferralPartners.module.css';
 
 const emptyForm: CreateReferralPartnerRequest = {
@@ -187,218 +188,206 @@ export default function AdminReferralPartners() {
                 </table>
             )}
 
-            {showForm && (
-                <div
-                    className={styles.overlay}
-                    onClick={() => setShowForm(false)}
+            <Modal
+                open={showForm}
+                onClose={() => setShowForm(false)}
+                title={
+                    editTarget
+                        ? 'Editar Parceiro'
+                        : 'Novo Parceiro de Indicação'
+                }
+                footer={
+                    <>
+                        <button
+                            type="button"
+                            onClick={() => setShowForm(false)}
+                            className={styles.btnCancel}
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            type="submit"
+                            form="referralPartnerForm"
+                            className={styles.btnSave}
+                            disabled={submitting}
+                        >
+                            {submitting
+                                ? 'Salvando...'
+                                : editTarget
+                                  ? 'Atualizar'
+                                  : 'Criar'}
+                        </button>
+                    </>
+                }
+            >
+                {error && <div className={styles.errorMsg}>{error}</div>}
+
+                <form
+                    id="referralPartnerForm"
+                    onSubmit={handleSubmit}
+                    className={styles.form}
                 >
-                    <div
-                        className={styles.modal}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className={styles.modalHeader}>
-                            <h3>
-                                {editTarget
-                                    ? 'Editar Parceiro'
-                                    : 'Novo Parceiro de Indicação'}
-                            </h3>
-                            <button
-                                onClick={() => setShowForm(false)}
-                                className={styles.btnClose}
-                            >
-                                ×
-                            </button>
-                        </div>
-
-                        {error && (
-                            <div className={styles.errorMsg}>{error}</div>
-                        )}
-
-                        <form onSubmit={handleSubmit} className={styles.form}>
-                            <div className={styles.row}>
-                                <label className={styles.label}>Nome *</label>
-                                <input
-                                    type="text"
-                                    className={styles.input}
-                                    placeholder="Nome do parceiro"
-                                    value={form.name}
-                                    onChange={(e) =>
-                                        setForm({
-                                            ...form,
-                                            name: e.target.value,
-                                        })
-                                    }
-                                    required
-                                />
-                            </div>
-
-                            <div className={styles.row}>
-                                <label className={styles.label}>Email</label>
-                                <input
-                                    type="email"
-                                    className={styles.input}
-                                    placeholder="email@exemplo.com"
-                                    value={form.email}
-                                    onChange={(e) =>
-                                        setForm({
-                                            ...form,
-                                            email: e.target.value,
-                                        })
-                                    }
-                                />
-                            </div>
-
-                            <div className={styles.row}>
-                                <label className={styles.label}>
-                                    Telefone
-                                </label>
-                                <input
-                                    type="text"
-                                    className={styles.input}
-                                    placeholder="(00) 00000-0000"
-                                    value={form.phone}
-                                    onChange={(e) =>
-                                        setForm({
-                                            ...form,
-                                            phone: e.target.value,
-                                        })
-                                    }
-                                />
-                            </div>
-
-                            <div className={styles.row}>
-                                <label className={styles.label}>
-                                    Código de indicação *
-                                </label>
-                                <input
-                                    type="text"
-                                    className={styles.input}
-                                    placeholder="Ex: JOAO10"
-                                    value={form.code}
-                                    onChange={(e) =>
-                                        setForm({
-                                            ...form,
-                                            code: e.target.value,
-                                        })
-                                    }
-                                    required
-                                />
-                                <small className={styles.smallHint}>
-                                    Apenas letras, números, hífen ou underline.
-                                    Deve ser único.
-                                </small>
-                            </div>
-
-                            <div className={styles.row}>
-                                <label className={styles.label}>
-                                    Tipo de comissão
-                                </label>
-                                <select
-                                    className={styles.input}
-                                    value={form.commission_type}
-                                    onChange={(e) =>
-                                        setForm({
-                                            ...form,
-                                            commission_type: e.target
-                                                .value as
-                                                | 'percentage'
-                                                | 'fixed',
-                                        })
-                                    }
-                                >
-                                    <option value="percentage">
-                                        Percentual (%)
-                                    </option>
-                                    <option value="fixed">
-                                        Valor fixo (R$)
-                                    </option>
-                                </select>
-                            </div>
-
-                            <div className={styles.row}>
-                                <label className={styles.label}>
-                                    Valor da comissão
-                                </label>
-                                <input
-                                    type="number"
-                                    min={0}
-                                    max={
-                                        form.commission_type === 'percentage'
-                                            ? 100
-                                            : undefined
-                                    }
-                                    step="0.01"
-                                    className={styles.input}
-                                    value={form.commission_value}
-                                    onChange={(e) =>
-                                        setForm({
-                                            ...form,
-                                            commission_value:
-                                                Number(e.target.value) || 0,
-                                        })
-                                    }
-                                />
-                            </div>
-
-                            <div className={styles.row}>
-                                <label className={styles.label}>
-                                    Observações
-                                </label>
-                                <textarea
-                                    className={styles.input}
-                                    placeholder="Opcional"
-                                    value={form.notes}
-                                    onChange={(e) =>
-                                        setForm({
-                                            ...form,
-                                            notes: e.target.value,
-                                        })
-                                    }
-                                    rows={3}
-                                />
-                            </div>
-
-                            <div className={styles.checkRow}>
-                                <input
-                                    type="checkbox"
-                                    id="rp_is_active"
-                                    checked={form.is_active}
-                                    onChange={(e) =>
-                                        setForm({
-                                            ...form,
-                                            is_active: e.target.checked,
-                                        })
-                                    }
-                                />
-                                <label htmlFor="rp_is_active">
-                                    Parceiro ativo
-                                </label>
-                            </div>
-
-                            <div className={styles.modalFooter}>
-                                <button
-                                    type="button"
-                                    onClick={() => setShowForm(false)}
-                                    className={styles.btnCancel}
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="submit"
-                                    className={styles.btnSave}
-                                    disabled={submitting}
-                                >
-                                    {submitting
-                                        ? 'Salvando...'
-                                        : editTarget
-                                          ? 'Atualizar'
-                                          : 'Criar'}
-                                </button>
-                            </div>
-                        </form>
+                    <div className={styles.row}>
+                        <label className={styles.label}>Nome *</label>
+                        <input
+                            type="text"
+                            className={styles.input}
+                            placeholder="Nome do parceiro"
+                            value={form.name}
+                            onChange={(e) =>
+                                setForm({
+                                    ...form,
+                                    name: e.target.value,
+                                })
+                            }
+                            required
+                        />
                     </div>
-                </div>
-            )}
+
+                    <div className={styles.row}>
+                        <label className={styles.label}>Email</label>
+                        <input
+                            type="email"
+                            className={styles.input}
+                            placeholder="email@exemplo.com"
+                            value={form.email}
+                            onChange={(e) =>
+                                setForm({
+                                    ...form,
+                                    email: e.target.value,
+                                })
+                            }
+                        />
+                    </div>
+
+                    <div className={styles.row}>
+                        <label className={styles.label}>
+                            Telefone
+                        </label>
+                        <input
+                            type="text"
+                            className={styles.input}
+                            placeholder="(00) 00000-0000"
+                            value={form.phone}
+                            onChange={(e) =>
+                                setForm({
+                                    ...form,
+                                    phone: e.target.value,
+                                })
+                            }
+                        />
+                    </div>
+
+                    <div className={styles.row}>
+                        <label className={styles.label}>
+                            Código de indicação *
+                        </label>
+                        <input
+                            type="text"
+                            className={styles.input}
+                            placeholder="Ex: JOAO10"
+                            value={form.code}
+                            onChange={(e) =>
+                                setForm({
+                                    ...form,
+                                    code: e.target.value,
+                                })
+                            }
+                            required
+                        />
+                        <small className={styles.smallHint}>
+                            Apenas letras, números, hífen ou underline.
+                            Deve ser único.
+                        </small>
+                    </div>
+
+                    <div className={styles.row}>
+                        <label className={styles.label}>
+                            Tipo de comissão
+                        </label>
+                        <select
+                            className={styles.input}
+                            value={form.commission_type}
+                            onChange={(e) =>
+                                setForm({
+                                    ...form,
+                                    commission_type: e.target
+                                        .value as
+                                        | 'percentage'
+                                        | 'fixed',
+                                })
+                            }
+                        >
+                            <option value="percentage">
+                                Percentual (%)
+                            </option>
+                            <option value="fixed">
+                                Valor fixo (R$)
+                            </option>
+                        </select>
+                    </div>
+
+                    <div className={styles.row}>
+                        <label className={styles.label}>
+                            Valor da comissão
+                        </label>
+                        <input
+                            type="number"
+                            min={0}
+                            max={
+                                form.commission_type === 'percentage'
+                                    ? 100
+                                    : undefined
+                            }
+                            step="0.01"
+                            className={styles.input}
+                            value={form.commission_value}
+                            onChange={(e) =>
+                                setForm({
+                                    ...form,
+                                    commission_value:
+                                        Number(e.target.value) || 0,
+                                })
+                            }
+                        />
+                    </div>
+
+                    <div className={styles.row}>
+                        <label className={styles.label}>
+                            Observações
+                        </label>
+                        <textarea
+                            className={styles.input}
+                            placeholder="Opcional"
+                            value={form.notes}
+                            onChange={(e) =>
+                                setForm({
+                                    ...form,
+                                    notes: e.target.value,
+                                })
+                            }
+                            rows={3}
+                        />
+                    </div>
+
+                    <div className={styles.checkRow}>
+                        <input
+                            type="checkbox"
+                            id="rp_is_active"
+                            checked={form.is_active}
+                            onChange={(e) =>
+                                setForm({
+                                    ...form,
+                                    is_active: e.target.checked,
+                                })
+                            }
+                        />
+                        <label htmlFor="rp_is_active">
+                            Parceiro ativo
+                        </label>
+                    </div>
+                </form>
+            </Modal>
         </div>
     );
 }

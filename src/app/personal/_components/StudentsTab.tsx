@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import AvatarUpload from '@/components/molecules/AvatarUpload';
+import Modal from '@/components/system/Modal';
 import { usePersonalStudents } from '@/hooks/usePersonalStudents';
 import s from '../personal.module.css';
 
@@ -149,186 +150,133 @@ export default function StudentsTab({ state }: Props) {
             )}
 
             {/* ── Invite Modal ── */}
-            {modal === 'invite' && (
-                <div
-                    className={s.overlay}
-                    onClick={(e) =>
-                        e.target === e.currentTarget &&
-                        !submitting &&
-                        closeModal()
-                    }
-                >
-                    <div
-                        className={s.modal}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className={s.modalHeader}>
-                            <h2 className={s.modalTitle}>Convidar Aluno</h2>
-                            <button
-                                onClick={closeModal}
-                                className={s.btnClose}
-                            >
-                                ×
+            <Modal
+                open={modal === 'invite'}
+                onClose={closeModal}
+                title="Convidar Aluno"
+                footer={
+                    submitting ? undefined : inviteLink ? (
+                        <>
+                            <button onClick={closeModal} className={s.btnCancel}>
+                                Fechar
                             </button>
+                            <button onClick={copyLink} className={s.btnSubmit}>
+                                {copied ? '✓ Copiado!' : 'Copiar Link'}
+                            </button>
+                        </>
+                    ) : undefined
+                }
+            >
+                {error && <div className={s.errorMsg}>{error}</div>}
+                {submitting ? (
+                    <p className={s.loading}>Gerando link...</p>
+                ) : inviteLink ? (
+                    <>
+                        <p className={s.confirmText}>
+                            Envie este link para o aluno se cadastrar:
+                        </p>
+                        <div className={s.inviteLinkBox}>
+                            <input
+                                readOnly
+                                value={inviteLink}
+                                className={s.formInput}
+                            />
                         </div>
-                        {error && <div className={s.errorMsg}>{error}</div>}
-                        {submitting ? (
-                            <p className={s.loading}>Gerando link...</p>
-                        ) : inviteLink ? (
-                            <>
-                                <p className={s.confirmText}>
-                                    Envie este link para o aluno se cadastrar:
-                                </p>
-                                <div className={s.inviteLinkBox}>
-                                    <input
-                                        readOnly
-                                        value={inviteLink}
-                                        className={s.formInput}
-                                    />
-                                </div>
-                                <div className={s.formActions}>
-                                    <button
-                                        onClick={closeModal}
-                                        className={s.btnCancel}
-                                    >
-                                        Fechar
-                                    </button>
-                                    <button
-                                        onClick={copyLink}
-                                        className={s.btnSubmit}
-                                    >
-                                        {copied ? '✓ Copiado!' : 'Copiar Link'}
-                                    </button>
-                                </div>
-                            </>
-                        ) : (
-                            <>
-                                <p className={s.confirmText}>
-                                    Tente gerar o link novamente.
-                                </p>
-                                <button
-                                    onClick={retryInvite}
-                                    className={s.btnSubmit}
-                                >
-                                    Tentar Novamente
-                                </button>
-                            </>
-                        )}
-                    </div>
-                </div>
-            )}
+                    </>
+                ) : (
+                    <>
+                        <p className={s.confirmText}>
+                            Tente gerar o link novamente.
+                        </p>
+                        <button onClick={retryInvite} className={s.btnSubmit}>
+                            Tentar Novamente
+                        </button>
+                    </>
+                )}
+            </Modal>
 
             {/* ── Edit Student Modal ── */}
-            {modal === 'edit' && (
-                <div className={s.overlay} onClick={closeModal}>
-                    <div
-                        className={s.modal}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className={s.modalHeader}>
-                            <h2 className={s.modalTitle}>Editar Aluno</h2>
-                            <button
-                                onClick={closeModal}
-                                className={s.btnClose}
-                            >
-                                ×
-                            </button>
-                        </div>
-                        {error && <div className={s.errorMsg}>{error}</div>}
-                        <div className={s.formGroup}>
-                            <label className={s.formLabel}>Nome</label>
-                            <input
-                                name="name"
-                                value={editForm.name}
-                                onChange={handleEditInput}
-                                className={s.formInput}
-                            />
-                        </div>
-                        <div className={s.formGroup}>
-                            <label className={s.formLabel}>Telefone</label>
-                            <input
-                                name="phone"
-                                value={editForm.phone}
-                                onChange={handleEditInput}
-                                className={s.formInput}
-                            />
-                        </div>
-                        <div className={s.formGroup}>
-                            <label className={s.formLabel}>Celular</label>
-                            <input
-                                name="mobile_phone"
-                                value={editForm.mobile_phone}
-                                onChange={handleEditInput}
-                                className={s.formInput}
-                            />
-                        </div>
-                        <div className={s.formActions}>
-                            <button
-                                onClick={closeModal}
-                                className={s.btnCancel}
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                onClick={handleUpdate}
-                                disabled={submitting}
-                                className={s.btnSubmit}
-                            >
-                                {submitting ? 'Salvando...' : 'Salvar'}
-                            </button>
-                        </div>
-                    </div>
+            <Modal open={modal === 'edit'} onClose={closeModal} title="Editar Aluno"
+                footer={
+                    <>
+                        <button onClick={closeModal} className={s.btnCancel}>
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={handleUpdate}
+                            disabled={submitting}
+                            className={s.btnSubmit}
+                        >
+                            {submitting ? 'Salvando...' : 'Salvar'}
+                        </button>
+                    </>
+                }
+            >
+                {error && <div className={s.errorMsg}>{error}</div>}
+                <div className={s.formGroup}>
+                    <label className={s.formLabel}>Nome</label>
+                    <input
+                        name="name"
+                        value={editForm.name}
+                        onChange={handleEditInput}
+                        className={s.formInput}
+                    />
                 </div>
-            )}
+                <div className={s.formGroup}>
+                    <label className={s.formLabel}>Telefone</label>
+                    <input
+                        name="phone"
+                        value={editForm.phone}
+                        onChange={handleEditInput}
+                        className={s.formInput}
+                    />
+                </div>
+                <div className={s.formGroup}>
+                    <label className={s.formLabel}>Celular</label>
+                    <input
+                        name="mobile_phone"
+                        value={editForm.mobile_phone}
+                        onChange={handleEditInput}
+                        className={s.formInput}
+                    />
+                </div>
+            </Modal>
 
             {/* ── Unlink Student Modal ── */}
-            {modal === 'unlink' && unlinkTarget && (
-                <div className={s.overlay} onClick={closeModal}>
-                    <div
-                        className={s.modal}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className={s.modalHeader}>
-                            <h2 className={s.modalTitle}>Desvincular Aluno</h2>
-                            <button
-                                onClick={closeModal}
-                                className={s.btnClose}
-                            >
-                                ×
-                            </button>
-                        </div>
-                        {error && <div className={s.errorMsg}>{error}</div>}
-                        <p className={s.confirmText}>
-                            Tem certeza que deseja desvincular{' '}
-                            <span className={s.confirmName}>
-                                {unlinkTarget.name}
-                            </span>
-                            ?
-                        </p>
-                        <p className={s.confirmText}>
-                            A conta do aluno não é excluída — apenas o vínculo
-                            com você. Sem um personal, o aluno passa a poder
-                            gerar um treino próprio pela anamnese automática.
-                        </p>
-                        <div className={s.formActions}>
-                            <button
-                                onClick={closeModal}
-                                className={s.btnCancel}
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                onClick={handleUnlink}
-                                disabled={submitting}
-                                className={s.btnSubmit}
-                                style={{ background: '#e74c3c', color: '#fff' }}
-                            >
-                                {submitting ? 'Desvinculando...' : 'Desvincular'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <Modal
+                open={modal === 'unlink' && !!unlinkTarget}
+                onClose={closeModal}
+                title="Desvincular Aluno"
+                footer={
+                    <>
+                        <button onClick={closeModal} className={s.btnCancel}>
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={handleUnlink}
+                            disabled={submitting}
+                            className={s.btnSubmit}
+                            style={{ background: '#e74c3c', color: '#fff' }}
+                        >
+                            {submitting ? 'Desvinculando...' : 'Desvincular'}
+                        </button>
+                    </>
+                }
+            >
+                {error && <div className={s.errorMsg}>{error}</div>}
+                <p className={s.confirmText}>
+                    Tem certeza que deseja desvincular{' '}
+                    <span className={s.confirmName}>
+                        {unlinkTarget?.name}
+                    </span>
+                    ?
+                </p>
+                <p className={s.confirmText}>
+                    A conta do aluno não é excluída — apenas o vínculo
+                    com você. Sem um personal, o aluno passa a poder
+                    gerar um treino próprio pela anamnese automática.
+                </p>
+            </Modal>
         </>
     );
 }

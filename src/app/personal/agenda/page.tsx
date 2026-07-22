@@ -28,6 +28,7 @@ import {
     type CreateRecurrenceRequest,
 } from '@/libs/appointmentService';
 import { Api } from '@/libs/api';
+import Modal from '@/components/system/Modal';
 import s from './agenda.module.css';
 
 interface UserData {
@@ -829,467 +830,457 @@ export default function AgendaPage() {
             </div>
 
             {/* ── Modal: Novo Agendamento ── */}
-            {showApptModal && (
-                <div
-                    className={s.modalOverlay}
-                    onClick={() => setShowApptModal(false)}
-                >
-                    <div
-                        className={s.modalCard}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <h2 className={s.modalTitle}>Novo Agendamento</h2>
-                        <form
-                            onSubmit={handleCreateAppointment}
-                            className={s.form}
+            <Modal
+                open={showApptModal}
+                onClose={() => setShowApptModal(false)}
+                title="Novo Agendamento"
+                footer={
+                    <>
+                        <button
+                            type="button"
+                            className={s.btnSecondary}
+                            onClick={() => setShowApptModal(false)}
                         >
-                            <label className={s.label}>
-                                Aluno
-                                <select
-                                    className={s.input}
-                                    value={apptForm.student_id}
-                                    onChange={(e) =>
-                                        setApptForm((f) => ({
-                                            ...f,
-                                            student_id: e.target.value,
-                                        }))
+                            Cancelar
+                        </button>
+                        <button
+                            type="submit"
+                            form="apptForm"
+                            className={s.btnPrimary}
+                            disabled={submitting}
+                        >
+                            {submitting ? 'Salvando...' : 'Salvar'}
+                        </button>
+                    </>
+                }
+            >
+                <form
+                    id="apptForm"
+                    onSubmit={handleCreateAppointment}
+                    className={s.form}
+                >
+                    <label className={s.label}>
+                        Aluno
+                        <select
+                            className={s.input}
+                            value={apptForm.student_id}
+                            onChange={(e) =>
+                                setApptForm((f) => ({
+                                    ...f,
+                                    student_id: e.target.value,
+                                }))
+                            }
+                            required
+                        >
+                            <option value="">Selecione...</option>
+                            {students.map((st) => (
+                                <option key={st.id} value={st.id}>
+                                    {st.name}
+                                </option>
+                            ))}
+                        </select>
+                    </label>
+                    <label className={s.label}>
+                        Tipo
+                        <select
+                            className={s.input}
+                            value={apptForm.type}
+                            onChange={(e) =>
+                                setApptForm((f) => ({
+                                    ...f,
+                                    type: e.target
+                                        .value as AppointmentType,
+                                }))
+                            }
+                            required
+                        >
+                            <option value="presencial">
+                                Presencial
+                            </option>
+                            <option value="online">Online</option>
+                            <option value="consultoria">
+                                Consultoria
+                            </option>
+                        </select>
+                    </label>
+                    <label className={s.label}>
+                        Início
+                        <input
+                            type="datetime-local"
+                            className={s.input}
+                            value={apptForm.start_at}
+                            onChange={(e) => {
+                                const start = e.target.value;
+                                setApptForm((f) => {
+                                    let end = f.end_at;
+                                    if (start) {
+                                        const d = new Date(start);
+                                        d.setHours(d.getHours() + 1);
+                                        const pad = (n: number) =>
+                                            String(n).padStart(2, '0');
+                                        end = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
                                     }
-                                    required
-                                >
-                                    <option value="">Selecione...</option>
-                                    {students.map((s) => (
-                                        <option key={s.id} value={s.id}>
-                                            {s.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </label>
-                            <label className={s.label}>
-                                Tipo
-                                <select
-                                    className={s.input}
-                                    value={apptForm.type}
-                                    onChange={(e) =>
-                                        setApptForm((f) => ({
-                                            ...f,
-                                            type: e.target
-                                                .value as AppointmentType,
-                                        }))
-                                    }
-                                    required
-                                >
-                                    <option value="presencial">
-                                        Presencial
-                                    </option>
-                                    <option value="online">Online</option>
-                                    <option value="consultoria">
-                                        Consultoria
-                                    </option>
-                                </select>
-                            </label>
-                            <label className={s.label}>
-                                Início
-                                <input
-                                    type="datetime-local"
-                                    className={s.input}
-                                    value={apptForm.start_at}
-                                    onChange={(e) => {
-                                        const start = e.target.value;
-                                        setApptForm((f) => {
-                                            let end = f.end_at;
-                                            if (start) {
-                                                const d = new Date(start);
-                                                d.setHours(d.getHours() + 1);
-                                                const pad = (n: number) =>
-                                                    String(n).padStart(2, '0');
-                                                end = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-                                            }
-                                            return {
-                                                ...f,
-                                                start_at: start,
-                                                end_at: end,
-                                            };
-                                        });
-                                    }}
-                                    required
-                                />
-                            </label>
-                            <label className={s.label}>
-                                Fim
-                                <input
-                                    type="datetime-local"
-                                    className={s.input}
-                                    value={apptForm.end_at}
-                                    min={apptForm.start_at || undefined}
-                                    onChange={(e) =>
-                                        setApptForm((f) => ({
-                                            ...f,
-                                            end_at: e.target.value,
-                                        }))
-                                    }
-                                    required
-                                />
-                            </label>
-                            {apptForm.type === 'online' && (
-                                <label className={s.label}>
-                                    Link da reunião
-                                    <input
-                                        type="url"
-                                        className={s.input}
-                                        placeholder="https://..."
-                                        value={apptForm.meeting_link}
-                                        onChange={(e) =>
-                                            setApptForm((f) => ({
-                                                ...f,
-                                                meeting_link: e.target.value,
-                                            }))
-                                        }
-                                    />
-                                </label>
-                            )}
-                            <label className={s.label}>
-                                Observações
-                                <textarea
-                                    className={s.input}
-                                    rows={2}
-                                    value={apptForm.notes}
-                                    onChange={(e) =>
-                                        setApptForm((f) => ({
-                                            ...f,
-                                            notes: e.target.value,
-                                        }))
-                                    }
-                                />
-                            </label>
-                            <div className={s.modalActions}>
-                                <button
-                                    type="button"
-                                    className={s.btnSecondary}
-                                    onClick={() => setShowApptModal(false)}
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="submit"
-                                    className={s.btnPrimary}
-                                    disabled={submitting}
-                                >
-                                    {submitting ? 'Salvando...' : 'Salvar'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
+                                    return {
+                                        ...f,
+                                        start_at: start,
+                                        end_at: end,
+                                    };
+                                });
+                            }}
+                            required
+                        />
+                    </label>
+                    <label className={s.label}>
+                        Fim
+                        <input
+                            type="datetime-local"
+                            className={s.input}
+                            value={apptForm.end_at}
+                            min={apptForm.start_at || undefined}
+                            onChange={(e) =>
+                                setApptForm((f) => ({
+                                    ...f,
+                                    end_at: e.target.value,
+                                }))
+                            }
+                            required
+                        />
+                    </label>
+                    {apptForm.type === 'online' && (
+                        <label className={s.label}>
+                            Link da reunião
+                            <input
+                                type="url"
+                                className={s.input}
+                                placeholder="https://..."
+                                value={apptForm.meeting_link}
+                                onChange={(e) =>
+                                    setApptForm((f) => ({
+                                        ...f,
+                                        meeting_link: e.target.value,
+                                    }))
+                                }
+                            />
+                        </label>
+                    )}
+                    <label className={s.label}>
+                        Observações
+                        <textarea
+                            className={s.input}
+                            rows={2}
+                            value={apptForm.notes}
+                            onChange={(e) =>
+                                setApptForm((f) => ({
+                                    ...f,
+                                    notes: e.target.value,
+                                }))
+                            }
+                        />
+                    </label>
+                </form>
+            </Modal>
 
             {/* ── Modal: Nova Recorrência ── */}
-            {showRecModal && (
-                <div
-                    className={s.modalOverlay}
-                    onClick={() => setShowRecModal(false)}
-                >
-                    <div
-                        className={s.modalCard}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <h2 className={s.modalTitle}>Nova Recorrência</h2>
-                        <form
-                            onSubmit={handleCreateRecurrence}
-                            className={s.form}
+            <Modal
+                open={showRecModal}
+                onClose={() => setShowRecModal(false)}
+                title="Nova Recorrência"
+                footer={
+                    <>
+                        <button
+                            type="button"
+                            className={s.btnSecondary}
+                            onClick={() => setShowRecModal(false)}
                         >
-                            <label className={s.label}>
-                                Aluno
-                                <select
-                                    className={s.input}
-                                    value={recForm.student_id}
-                                    onChange={(e) =>
-                                        setRecForm((f) => ({
-                                            ...f,
-                                            student_id: e.target.value,
-                                        }))
-                                    }
-                                    required
-                                >
-                                    <option value="">Selecione...</option>
-                                    {students.map((st) => (
-                                        <option key={st.id} value={st.id}>
-                                            {st.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </label>
-                            <label className={s.label}>
-                                Tipo
-                                <select
-                                    className={s.input}
-                                    value={recForm.type}
-                                    onChange={(e) =>
-                                        setRecForm((f) => ({
-                                            ...f,
-                                            type: e.target
-                                                .value as AppointmentType,
-                                        }))
-                                    }
-                                    required
-                                >
-                                    <option value="presencial">
-                                        Presencial
-                                    </option>
-                                    <option value="online">Online</option>
-                                    <option value="consultoria">
-                                        Consultoria
-                                    </option>
-                                </select>
-                            </label>
-                            <label className={s.label}>
-                                Dias da semana
-                                <div className={s.dayCheckboxes}>
-                                    {DAY_OF_WEEK_LABEL.map((d, i) => {
-                                        const active =
-                                            recForm.days_of_week.includes(i);
-                                        return (
-                                            <label
-                                                key={i}
-                                                className={`${s.dayCheckbox} ${active ? s.dayCheckboxActive : ''}`}
-                                            >
-                                                <input
-                                                    type="checkbox"
-                                                    checked={active}
-                                                    onChange={() =>
-                                                        setRecForm((f) => ({
-                                                            ...f,
-                                                            days_of_week: active
-                                                                ? f.days_of_week.filter(
-                                                                      (x) =>
-                                                                          x !==
-                                                                          i,
-                                                                  )
-                                                                : [
-                                                                      ...f.days_of_week,
-                                                                      i,
-                                                                  ].sort(),
-                                                        }))
-                                                    }
-                                                />
-                                                {d}
-                                            </label>
-                                        );
-                                    })}
-                                </div>
-                            </label>
-                            <div className={s.row}>
-                                <label className={s.label}>
-                                    Início
-                                    <input
-                                        type="time"
-                                        className={s.input}
-                                        value={recForm.start_time}
-                                        onChange={(e) =>
-                                            setRecForm((f) => ({
-                                                ...f,
-                                                start_time: e.target.value,
-                                            }))
-                                        }
-                                        required
-                                    />
-                                </label>
-                                <label className={s.label}>
-                                    Fim
-                                    <input
-                                        type="time"
-                                        className={s.input}
-                                        value={recForm.end_time}
-                                        onChange={(e) =>
-                                            setRecForm((f) => ({
-                                                ...f,
-                                                end_time: e.target.value,
-                                            }))
-                                        }
-                                        required
-                                    />
-                                </label>
-                            </div>
-                            {recForm.type === 'online' && (
-                                <label className={s.label}>
-                                    Link da reunião
-                                    <input
-                                        type="url"
-                                        className={s.input}
-                                        placeholder="https://..."
-                                        value={recForm.meeting_link}
-                                        onChange={(e) =>
-                                            setRecForm((f) => ({
-                                                ...f,
-                                                meeting_link: e.target.value,
-                                            }))
-                                        }
-                                    />
-                                </label>
-                            )}
-                            <label className={s.label}>
-                                Ativo até (opcional)
-                                <input
-                                    type="date"
-                                    className={s.input}
-                                    value={recForm.active_until}
-                                    onChange={(e) =>
-                                        setRecForm((f) => ({
-                                            ...f,
-                                            active_until: e.target.value,
-                                        }))
-                                    }
-                                />
-                            </label>
-                            <label className={s.label}>
-                                Observações
-                                <textarea
-                                    className={s.input}
-                                    rows={2}
-                                    value={recForm.notes}
-                                    onChange={(e) =>
-                                        setRecForm((f) => ({
-                                            ...f,
-                                            notes: e.target.value,
-                                        }))
-                                    }
-                                />
-                            </label>
-                            <div className={s.modalActions}>
-                                <button
-                                    type="button"
-                                    className={s.btnSecondary}
-                                    onClick={() => setShowRecModal(false)}
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="submit"
-                                    className={s.btnPrimary}
-                                    disabled={submitting}
-                                >
-                                    {submitting ? 'Salvando...' : 'Salvar'}
-                                </button>
-                            </div>
-                        </form>
+                            Cancelar
+                        </button>
+                        <button
+                            type="submit"
+                            form="recForm"
+                            className={s.btnPrimary}
+                            disabled={submitting}
+                        >
+                            {submitting ? 'Salvando...' : 'Salvar'}
+                        </button>
+                    </>
+                }
+            >
+                <form
+                    id="recForm"
+                    onSubmit={handleCreateRecurrence}
+                    className={s.form}
+                >
+                    <label className={s.label}>
+                        Aluno
+                        <select
+                            className={s.input}
+                            value={recForm.student_id}
+                            onChange={(e) =>
+                                setRecForm((f) => ({
+                                    ...f,
+                                    student_id: e.target.value,
+                                }))
+                            }
+                            required
+                        >
+                            <option value="">Selecione...</option>
+                            {students.map((st) => (
+                                <option key={st.id} value={st.id}>
+                                    {st.name}
+                                </option>
+                            ))}
+                        </select>
+                    </label>
+                    <label className={s.label}>
+                        Tipo
+                        <select
+                            className={s.input}
+                            value={recForm.type}
+                            onChange={(e) =>
+                                setRecForm((f) => ({
+                                    ...f,
+                                    type: e.target
+                                        .value as AppointmentType,
+                                }))
+                            }
+                            required
+                        >
+                            <option value="presencial">
+                                Presencial
+                            </option>
+                            <option value="online">Online</option>
+                            <option value="consultoria">
+                                Consultoria
+                            </option>
+                        </select>
+                    </label>
+                    <label className={s.label}>
+                        Dias da semana
+                        <div className={s.dayCheckboxes}>
+                            {DAY_OF_WEEK_LABEL.map((d, i) => {
+                                const active =
+                                    recForm.days_of_week.includes(i);
+                                return (
+                                    <label
+                                        key={i}
+                                        className={`${s.dayCheckbox} ${active ? s.dayCheckboxActive : ''}`}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={active}
+                                            onChange={() =>
+                                                setRecForm((f) => ({
+                                                    ...f,
+                                                    days_of_week: active
+                                                        ? f.days_of_week.filter(
+                                                              (x) =>
+                                                                  x !==
+                                                                  i,
+                                                          )
+                                                        : [
+                                                              ...f.days_of_week,
+                                                              i,
+                                                          ].sort(),
+                                                }))
+                                            }
+                                        />
+                                        {d}
+                                    </label>
+                                );
+                            })}
+                        </div>
+                    </label>
+                    <div className={s.row}>
+                        <label className={s.label}>
+                            Início
+                            <input
+                                type="time"
+                                className={s.input}
+                                value={recForm.start_time}
+                                onChange={(e) =>
+                                    setRecForm((f) => ({
+                                        ...f,
+                                        start_time: e.target.value,
+                                    }))
+                                }
+                                required
+                            />
+                        </label>
+                        <label className={s.label}>
+                            Fim
+                            <input
+                                type="time"
+                                className={s.input}
+                                value={recForm.end_time}
+                                onChange={(e) =>
+                                    setRecForm((f) => ({
+                                        ...f,
+                                        end_time: e.target.value,
+                                    }))
+                                }
+                                required
+                            />
+                        </label>
                     </div>
-                </div>
-            )}
+                    {recForm.type === 'online' && (
+                        <label className={s.label}>
+                            Link da reunião
+                            <input
+                                type="url"
+                                className={s.input}
+                                placeholder="https://..."
+                                value={recForm.meeting_link}
+                                onChange={(e) =>
+                                    setRecForm((f) => ({
+                                        ...f,
+                                        meeting_link: e.target.value,
+                                    }))
+                                }
+                            />
+                        </label>
+                    )}
+                    <label className={s.label}>
+                        Ativo até (opcional)
+                        <input
+                            type="date"
+                            className={s.input}
+                            value={recForm.active_until}
+                            onChange={(e) =>
+                                setRecForm((f) => ({
+                                    ...f,
+                                    active_until: e.target.value,
+                                }))
+                            }
+                        />
+                    </label>
+                    <label className={s.label}>
+                        Observações
+                        <textarea
+                            className={s.input}
+                            rows={2}
+                            value={recForm.notes}
+                            onChange={(e) =>
+                                setRecForm((f) => ({
+                                    ...f,
+                                    notes: e.target.value,
+                                }))
+                            }
+                        />
+                    </label>
+                </form>
+            </Modal>
 
             {/* ── Modal: Nova Exceção ── */}
-            {showExcModal && (
-                <div
-                    className={s.modalOverlay}
-                    onClick={() => setShowExcModal(null)}
-                >
-                    <div
-                        className={s.modalCard}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <h2 className={s.modalTitle}>Nova Exceção</h2>
-                        <div className={s.form}>
-                            <label className={s.label}>
-                                Data original
-                                <input
-                                    type="date"
-                                    className={s.input}
-                                    value={excForm.original_date}
-                                    onChange={(e) =>
-                                        setExcForm((f) => ({
-                                            ...f,
-                                            original_date: e.target.value,
-                                        }))
-                                    }
-                                    required
-                                />
-                            </label>
-                            <label className={s.label}>
-                                Novo dia (opcional)
-                                <select
-                                    className={s.input}
-                                    value={excForm.new_day_of_week ?? ''}
-                                    onChange={(e) =>
-                                        setExcForm((f) => ({
-                                            ...f,
-                                            new_day_of_week: e.target.value
-                                                ? Number(e.target.value)
-                                                : undefined,
-                                        }))
-                                    }
-                                >
-                                    <option value="">Manter o mesmo</option>
-                                    {DAY_OF_WEEK_LABEL.map((d, i) => (
-                                        <option key={i} value={i}>
-                                            {d}
-                                        </option>
-                                    ))}
-                                </select>
-                            </label>
-                            <div className={s.row}>
-                                <label className={s.label}>
-                                    Novo início
-                                    <input
-                                        type="time"
-                                        className={s.input}
-                                        value={excForm.new_start_time}
-                                        onChange={(e) =>
-                                            setExcForm((f) => ({
-                                                ...f,
-                                                new_start_time: e.target.value,
-                                            }))
-                                        }
-                                    />
-                                </label>
-                                <label className={s.label}>
-                                    Novo fim
-                                    <input
-                                        type="time"
-                                        className={s.input}
-                                        value={excForm.new_end_time}
-                                        onChange={(e) =>
-                                            setExcForm((f) => ({
-                                                ...f,
-                                                new_end_time: e.target.value,
-                                            }))
-                                        }
-                                    />
-                                </label>
-                            </div>
-                            <label className={s.label}>
-                                Motivo
-                                <textarea
-                                    className={s.input}
-                                    rows={2}
-                                    value={excForm.reason}
-                                    onChange={(e) =>
-                                        setExcForm((f) => ({
-                                            ...f,
-                                            reason: e.target.value,
-                                        }))
-                                    }
-                                />
-                            </label>
-                            <div className={s.modalActions}>
-                                <button
-                                    type="button"
-                                    className={s.btnSecondary}
-                                    onClick={() => setShowExcModal(null)}
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    className={s.btnPrimary}
-                                    onClick={() =>
-                                        handleCreateException(showExcModal)
-                                    }
-                                    disabled={!excForm.original_date}
-                                >
-                                    Criar Exceção
-                                </button>
-                            </div>
-                        </div>
+            <Modal
+                open={!!showExcModal}
+                onClose={() => setShowExcModal(null)}
+                title="Nova Exceção"
+                footer={
+                    <>
+                        <button
+                            type="button"
+                            className={s.btnSecondary}
+                            onClick={() => setShowExcModal(null)}
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            className={s.btnPrimary}
+                            onClick={() =>
+                                showExcModal &&
+                                handleCreateException(showExcModal)
+                            }
+                            disabled={!excForm.original_date}
+                        >
+                            Criar Exceção
+                        </button>
+                    </>
+                }
+            >
+                <div className={s.form}>
+                    <label className={s.label}>
+                        Data original
+                        <input
+                            type="date"
+                            className={s.input}
+                            value={excForm.original_date}
+                            onChange={(e) =>
+                                setExcForm((f) => ({
+                                    ...f,
+                                    original_date: e.target.value,
+                                }))
+                            }
+                            required
+                        />
+                    </label>
+                    <label className={s.label}>
+                        Novo dia (opcional)
+                        <select
+                            className={s.input}
+                            value={excForm.new_day_of_week ?? ''}
+                            onChange={(e) =>
+                                setExcForm((f) => ({
+                                    ...f,
+                                    new_day_of_week: e.target.value
+                                        ? Number(e.target.value)
+                                        : undefined,
+                                }))
+                            }
+                        >
+                            <option value="">Manter o mesmo</option>
+                            {DAY_OF_WEEK_LABEL.map((d, i) => (
+                                <option key={i} value={i}>
+                                    {d}
+                                </option>
+                            ))}
+                        </select>
+                    </label>
+                    <div className={s.row}>
+                        <label className={s.label}>
+                            Novo início
+                            <input
+                                type="time"
+                                className={s.input}
+                                value={excForm.new_start_time}
+                                onChange={(e) =>
+                                    setExcForm((f) => ({
+                                        ...f,
+                                        new_start_time: e.target.value,
+                                    }))
+                                }
+                            />
+                        </label>
+                        <label className={s.label}>
+                            Novo fim
+                            <input
+                                type="time"
+                                className={s.input}
+                                value={excForm.new_end_time}
+                                onChange={(e) =>
+                                    setExcForm((f) => ({
+                                        ...f,
+                                        new_end_time: e.target.value,
+                                    }))
+                                }
+                            />
+                        </label>
                     </div>
+                    <label className={s.label}>
+                        Motivo
+                        <textarea
+                            className={s.input}
+                            rows={2}
+                            value={excForm.reason}
+                            onChange={(e) =>
+                                setExcForm((f) => ({
+                                    ...f,
+                                    reason: e.target.value,
+                                }))
+                            }
+                        />
+                    </label>
                 </div>
-            )}
+            </Modal>
         </div>
     );
 }

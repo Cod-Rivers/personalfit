@@ -27,7 +27,10 @@ import {
 } from '../lib/mesocycleTransforms';
 import MicrocycleEditor from './MicrocycleEditor';
 import TrainingsEditor from './TrainingsEditor';
+import Modal from '@/components/system/Modal';
 import s from '../builder.module.css';
+
+const MESOCYCLE_FORM_ID = 'mesocycle-form-modal';
 
 const mesoSchema = z.object({
     name: z.string().min(1, 'Nome obrigatório'),
@@ -299,44 +302,51 @@ export default function MesocycleFormModal({
         onSave(req);
     };
 
-    return (
-        <div
-            style={{
-                position: 'fixed',
-                inset: 0,
-                background: 'rgba(0,0,0,0.7)',
-                display: 'flex',
-                alignItems: 'flex-start',
-                justifyContent: 'center',
-                zIndex: 1000,
-                padding: '24px',
-                overflowY: 'auto',
-            }}
-            onClick={(e) => {
-                if (e.target === e.currentTarget) onClose();
-            }}
-        >
-            <div
-                style={{
-                    background: 'var(--surface-1)',
-                    border: '1px solid var(--border-subtle)',
-                    borderRadius: 12,
-                    padding: '28px 32px',
-                    width: '100%',
-                    maxWidth: 640,
-                    marginTop: 40,
-                    marginBottom: 40,
-                }}
-            >
-                <h3 style={{ margin: '0 0 20px', fontSize: '1.15rem' }}>
-                    {simpleMode
-                        ? 'Treinos da Semana'
-                        : mode === 'add'
-                          ? 'Nova Fase (Mesociclo)'
-                          : `Editar: ${meso?.name}`}
-                </h3>
+    const modalTitle = simpleMode
+        ? 'Treinos da Semana'
+        : mode === 'add'
+          ? 'Nova Fase (Mesociclo)'
+          : `Editar: ${meso?.name}`;
 
-                <form onSubmit={handleSubmit(onSubmit)}>
+    return (
+        <Modal
+            open
+            onClose={onClose}
+            title={modalTitle}
+            footer={
+                <>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        style={{
+                            background: 'transparent',
+                            border: '1px solid var(--border-subtle)',
+                            color: 'var(--text-muted)',
+                            padding: '8px 18px',
+                            borderRadius: 8,
+                            cursor: 'pointer',
+                            fontSize: '0.9rem',
+                        }}
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        type="submit"
+                        form={MESOCYCLE_FORM_ID}
+                        className={s.btnEdit}
+                        disabled={saving}
+                        style={{ padding: '8px 24px', fontSize: '0.9rem' }}
+                    >
+                        {saving
+                            ? 'Salvando...'
+                            : mode === 'add'
+                              ? 'Adicionar'
+                              : 'Salvar'}
+                    </button>
+                </>
+            }
+        >
+                <form id={MESOCYCLE_FORM_ID} onSubmit={handleSubmit(onSubmit)}>
                     {!simpleMode && (
                         <>
                             {/* ── Phase info ── */}
@@ -568,44 +578,7 @@ export default function MesocycleFormModal({
                             {saveError}
                         </div>
                     )}
-
-                    <div
-                        style={{
-                            display: 'flex',
-                            gap: 10,
-                            justifyContent: 'flex-end',
-                        }}
-                    >
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            style={{
-                                background: 'transparent',
-                                border: '1px solid var(--border-subtle)',
-                                color: 'var(--text-muted)',
-                                padding: '8px 18px',
-                                borderRadius: 8,
-                                cursor: 'pointer',
-                                fontSize: '0.9rem',
-                            }}
-                        >
-                            Cancelar
-                        </button>
-                        <button
-                            type="submit"
-                            className={s.btnEdit}
-                            disabled={saving}
-                            style={{ padding: '8px 24px', fontSize: '0.9rem' }}
-                        >
-                            {saving
-                                ? 'Salvando...'
-                                : mode === 'add'
-                                  ? 'Adicionar'
-                                  : 'Salvar'}
-                        </button>
-                    </div>
                 </form>
-            </div>
-        </div>
+        </Modal>
     );
 }

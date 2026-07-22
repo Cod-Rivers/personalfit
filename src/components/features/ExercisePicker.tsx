@@ -8,6 +8,7 @@ import {
     type ExerciseLibraryItem,
 } from '@/libs/planningService';
 import VideoUploadModal from '@/components/features/VideoUploadModal';
+import Modal from '@/components/system/Modal';
 
 interface ExercisePickerProps {
     onSelect: (exercise: ExerciseLibraryItem) => void;
@@ -117,62 +118,7 @@ export default function ExercisePicker({
                     onClose={() => setVideoModalExercise(null)}
                 />
             )}
-            <div
-                style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: 'rgba(0,0,0,0.6)',
-                    zIndex: 1000,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                }}
-                onClick={onClose}
-            >
-                <div
-                    style={{
-                        background: '#1e1e2f',
-                        borderRadius: 12,
-                        width: '95%',
-                        maxWidth: 600,
-                        maxHeight: '80vh',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        color: '#fff',
-                        overflow: 'hidden',
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    {/* Header */}
-                    <div
-                        style={{
-                            padding: '16px 20px',
-                            borderBottom: '1px solid #333',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                        }}
-                    >
-                        <h3 style={{ margin: 0, fontSize: 18 }}>
-                            Catálogo de Exercícios
-                        </h3>
-                        <button
-                            onClick={onClose}
-                            style={{
-                                background: 'none',
-                                border: 'none',
-                                color: '#aaa',
-                                fontSize: 22,
-                                cursor: 'pointer',
-                            }}
-                        >
-                            ✕
-                        </button>
-                    </div>
-
+            <Modal open onClose={onClose} title="Catálogo de Exercícios">
                     {/* Filters */}
                     <div
                         style={{
@@ -513,8 +459,7 @@ export default function ExercisePicker({
                             ))
                         )}
                     </div>
-                </div>
-            </div>
+            </Modal>
         </>
     );
 }

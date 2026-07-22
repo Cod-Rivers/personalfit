@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { usePersonalTemplates } from '@/hooks/usePersonalTemplates';
 import type { Student } from '@/hooks/usePersonalStudents';
 import type { MacrocycleResponse } from '@/libs/planningService';
+import Modal from '@/components/system/Modal';
 import s from '../personal.module.css';
 
 interface Props {
@@ -267,231 +268,193 @@ export default function CiclosTab({ view, students, planType = 'free', onBack }:
             )}
 
             {/* ── Template Apply Modal ── */}
-            {modal === 'tplApply' && selectedTemplate && (
-                <div className={s.overlay} onClick={closeModal}>
-                    <div
-                        className={s.modal}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className={s.modalHeader}>
-                            <h2 className={s.modalTitle}>
-                                Aplicar ciclo em aluno
-                            </h2>
-                            <button
-                                onClick={closeModal}
-                                className={s.btnClose}
-                            >
-                                ×
-                            </button>
-                        </div>
-                        {error && <div className={s.errorMsg}>{error}</div>}
-                        <p className={s.applyConfirmText}>
-                            Ciclo:{' '}
-                            <strong>
-                                {selectedTemplate.name || 'Ciclo sem nome'}
-                            </strong>
-                            <br />
-                            Objetivo: {selectedTemplate.goal || 'Não definido'}
-                        </p>
-                        <select
-                            value=""
-                            onChange={(e) => applyToStudent(e.target.value)}
-                            className={s.formInput}
-                        >
-                            <option value="">Selecione o aluno</option>
-                            {students.map((st) => (
-                                <option key={st.id} value={st.id}>
-                                    {st.name} — {st.email}
-                                </option>
-                            ))}
-                        </select>
-                        {submitting && (
-                            <p className={s.loading}>Aplicando ciclo...</p>
-                        )}
-                    </div>
-                </div>
-            )}
+            <Modal
+                open={modal === 'tplApply' && !!selectedTemplate}
+                onClose={closeModal}
+                title="Aplicar ciclo em aluno"
+            >
+                {error && <div className={s.errorMsg}>{error}</div>}
+                {selectedTemplate && (
+                    <p className={s.applyConfirmText}>
+                        Ciclo:{' '}
+                        <strong>
+                            {selectedTemplate.name || 'Ciclo sem nome'}
+                        </strong>
+                        <br />
+                        Objetivo: {selectedTemplate.goal || 'Não definido'}
+                    </p>
+                )}
+                <select
+                    value=""
+                    onChange={(e) => applyToStudent(e.target.value)}
+                    className={s.formInput}
+                >
+                    <option value="">Selecione o aluno</option>
+                    {students.map((st) => (
+                        <option key={st.id} value={st.id}>
+                            {st.name} — {st.email}
+                        </option>
+                    ))}
+                </select>
+                {submitting && (
+                    <p className={s.loading}>Aplicando ciclo...</p>
+                )}
+            </Modal>
 
             {/* ── Template Edit Modal (metadados) ── */}
-            {modal === 'tplEdit' && (
-                <div className={s.overlay} onClick={closeModal}>
-                    <div
-                        className={s.modal}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className={s.modalHeader}>
-                            <h2 className={s.modalTitle}>Editar Ciclo</h2>
-                            <button
-                                onClick={closeModal}
-                                className={s.btnClose}
-                            >
-                                ×
-                            </button>
-                        </div>
-                        {error && <div className={s.errorMsg}>{error}</div>}
-                        <div className={s.formGroup}>
-                            <label className={s.formLabel}>Nome *</label>
-                            <input
-                                value={tplForm.name || ''}
-                                onChange={(e) =>
-                                    setTplForm({
-                                        ...tplForm,
-                                        name: e.target.value,
-                                    })
-                                }
-                                className={s.formInput}
-                                placeholder="Ex: Hipertrofia 12 semanas"
-                            />
-                        </div>
-                        <div className={s.formGroup}>
-                            <label className={s.formLabel}>Objetivo</label>
-                            <select
-                                value={tplForm.goal || ''}
-                                onChange={(e) =>
-                                    setTplForm({
-                                        ...tplForm,
-                                        goal: e.target.value,
-                                    })
-                                }
-                                className={s.formInput}
-                            >
-                                <option value="">Selecione o objetivo</option>
-                                {[
-                                    'Hipertrofia',
-                                    'Força',
-                                    'Resistência',
-                                    'Condicionamento',
-                                    'Reabilitação',
-                                ].map((g) => (
-                                    <option key={g} value={g}>
-                                        {g}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className={s.formGroup}>
-                            <label className={s.formLabel}>
-                                Visibilidade
-                            </label>
-                            {isPro ? (
-                                <select
-                                    value={String(tplForm.is_public || false)}
-                                    onChange={(e) =>
-                                        setTplForm({
-                                            ...tplForm,
-                                            is_public:
-                                                e.target.value === 'true',
-                                        })
-                                    }
-                                    className={s.formInput}
-                                >
-                                    <option value="false">
-                                        Privado — apenas você
-                                    </option>
-                                    <option value="true">
-                                        Público — acessível por outros
-                                        personals e pela equipe Venafit
-                                    </option>
-                                </select>
-                            ) : (
-                                <p
-                                    style={{
-                                        fontSize: '0.85rem',
-                                        color: '#8892b0',
-                                        margin: 0,
-                                    }}
-                                >
-                                    No plano gratuito, os ciclos ficam
-                                    disponíveis para revisão da equipe
-                                    Venafit e podem entrar na biblioteca
-                                    pública. Quer manter seus ciclos privados?{' '}
-                                    <a
-                                        href="/pagamento?produto=pro"
-                                        style={{ color: '#d4af37' }}
-                                    >
-                                        Assine o plano PRO.
-                                    </a>
-                                </p>
-                            )}
-                            {error && error.toLowerCase().includes('pro') && (
-                                <p
-                                    style={{
-                                        fontSize: '0.8rem',
-                                        color: '#8892b0',
-                                        marginTop: 4,
-                                    }}
-                                >
-                                    Manter ciclos privados é exclusivo do
-                                    plano PRO.
-                                </p>
-                            )}
-                        </div>
-                        <div className={s.formActions}>
-                            <button
-                                onClick={closeModal}
-                                className={s.btnCancel}
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                onClick={handleTplUpdate}
-                                disabled={submitting || !tplForm.name?.trim()}
-                                className={s.btnSubmit}
-                            >
-                                {submitting ? 'Salvando...' : 'Salvar'}
-                            </button>
-                        </div>
-                    </div>
+            <Modal
+                open={modal === 'tplEdit'}
+                onClose={closeModal}
+                title="Editar Ciclo"
+                footer={
+                    <>
+                        <button onClick={closeModal} className={s.btnCancel}>
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={handleTplUpdate}
+                            disabled={submitting || !tplForm.name?.trim()}
+                            className={s.btnSubmit}
+                        >
+                            {submitting ? 'Salvando...' : 'Salvar'}
+                        </button>
+                    </>
+                }
+            >
+                {error && <div className={s.errorMsg}>{error}</div>}
+                <div className={s.formGroup}>
+                    <label className={s.formLabel}>Nome *</label>
+                    <input
+                        value={tplForm.name || ''}
+                        onChange={(e) =>
+                            setTplForm({
+                                ...tplForm,
+                                name: e.target.value,
+                            })
+                        }
+                        className={s.formInput}
+                        placeholder="Ex: Hipertrofia 12 semanas"
+                    />
                 </div>
-            )}
+                <div className={s.formGroup}>
+                    <label className={s.formLabel}>Objetivo</label>
+                    <select
+                        value={tplForm.goal || ''}
+                        onChange={(e) =>
+                            setTplForm({
+                                ...tplForm,
+                                goal: e.target.value,
+                            })
+                        }
+                        className={s.formInput}
+                    >
+                        <option value="">Selecione o objetivo</option>
+                        {[
+                            'Hipertrofia',
+                            'Força',
+                            'Resistência',
+                            'Condicionamento',
+                            'Reabilitação',
+                        ].map((g) => (
+                            <option key={g} value={g}>
+                                {g}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+                <div className={s.formGroup}>
+                    <label className={s.formLabel}>
+                        Visibilidade
+                    </label>
+                    {isPro ? (
+                        <select
+                            value={String(tplForm.is_public || false)}
+                            onChange={(e) =>
+                                setTplForm({
+                                    ...tplForm,
+                                    is_public:
+                                        e.target.value === 'true',
+                                })
+                            }
+                            className={s.formInput}
+                        >
+                            <option value="false">
+                                Privado — apenas você
+                            </option>
+                            <option value="true">
+                                Público — acessível por outros
+                                personals e pela equipe Venafit
+                            </option>
+                        </select>
+                    ) : (
+                        <p
+                            style={{
+                                fontSize: '0.85rem',
+                                color: '#8892b0',
+                                margin: 0,
+                            }}
+                        >
+                            No plano gratuito, os ciclos ficam
+                            disponíveis para revisão da equipe
+                            Venafit e podem entrar na biblioteca
+                            pública. Quer manter seus ciclos privados?{' '}
+                            <a
+                                href="/pagamento?produto=pro"
+                                style={{ color: '#d4af37' }}
+                            >
+                                Assine o plano PRO.
+                            </a>
+                        </p>
+                    )}
+                    {error && error.toLowerCase().includes('pro') && (
+                        <p
+                            style={{
+                                fontSize: '0.8rem',
+                                color: '#8892b0',
+                                marginTop: 4,
+                            }}
+                        >
+                            Manter ciclos privados é exclusivo do
+                            plano PRO.
+                        </p>
+                    )}
+                </div>
+            </Modal>
 
             {/* ── Template Delete Modal ── */}
-            {modal === 'tplDelete' && selectedTemplate && (
-                <div className={s.overlay} onClick={closeModal}>
-                    <div
-                        className={s.modal}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className={s.modalHeader}>
-                            <h2 className={s.modalTitle}>Remover Ciclo</h2>
-                            <button
-                                onClick={closeModal}
-                                className={s.btnClose}
-                            >
-                                ×
-                            </button>
-                        </div>
-                        {error && <div className={s.errorMsg}>{error}</div>}
-                        <p className={s.confirmText}>
-                            Tem certeza que deseja remover o ciclo{' '}
-                            <span className={s.confirmName}>
-                                {selectedTemplate.name || 'Ciclo sem nome'}
-                            </span>
-                            ?
-                        </p>
-                        <p className={s.confirmText}>
-                            Esta ação não pode ser desfeita. Templates
-                            aplicados a alunos serão removidos permanentemente.
-                        </p>
-                        <div className={s.formActions}>
-                            <button
-                                onClick={closeModal}
-                                className={s.btnCancel}
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                onClick={handleTplDelete}
-                                disabled={submitting}
-                                className={s.btnSubmit}
-                                style={{ background: '#e74c3c', color: '#fff' }}
-                            >
-                                {submitting ? 'Removendo...' : 'Remover'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <Modal
+                open={modal === 'tplDelete' && !!selectedTemplate}
+                onClose={closeModal}
+                title="Remover Ciclo"
+                footer={
+                    <>
+                        <button onClick={closeModal} className={s.btnCancel}>
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={handleTplDelete}
+                            disabled={submitting}
+                            className={s.btnSubmit}
+                            style={{ background: '#e74c3c', color: '#fff' }}
+                        >
+                            {submitting ? 'Removendo...' : 'Remover'}
+                        </button>
+                    </>
+                }
+            >
+                {error && <div className={s.errorMsg}>{error}</div>}
+                <p className={s.confirmText}>
+                    Tem certeza que deseja remover o ciclo{' '}
+                    <span className={s.confirmName}>
+                        {selectedTemplate?.name || 'Ciclo sem nome'}
+                    </span>
+                    ?
+                </p>
+                <p className={s.confirmText}>
+                    Esta ação não pode ser desfeita. Templates
+                    aplicados a alunos serão removidos permanentemente.
+                </p>
+            </Modal>
         </>
     );
 }

@@ -14,6 +14,7 @@ import {
     type AppointmentType,
     type StudentCreateAppointmentRequest,
 } from '@/libs/appointmentService';
+import Modal from '@/components/system/Modal';
 import s from './agendamentos.module.css';
 
 interface UserData {
@@ -364,17 +365,35 @@ export default function AgendamentosPage() {
             </div>
 
             {/* Modal: Solicitar Agendamento */}
-            {showModal && (
-                <div
-                    className={s.modalOverlay}
-                    onClick={() => setShowModal(false)}
-                >
-                    <div
-                        className={s.modalCard}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <h2 className={s.modalTitle}>Solicitar Agendamento</h2>
-                        <form onSubmit={handleRequest} className={s.form}>
+            <Modal
+                open={showModal}
+                onClose={() => setShowModal(false)}
+                title="Solicitar Agendamento"
+                footer={
+                    <>
+                        <button
+                            type="button"
+                            className={s.btnSecondary}
+                            onClick={() => setShowModal(false)}
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            type="submit"
+                            form="solicitar-agendamento-form"
+                            className={s.btnPrimary}
+                            disabled={submitting}
+                        >
+                            {submitting ? 'Enviando...' : 'Solicitar'}
+                        </button>
+                    </>
+                }
+            >
+                        <form
+                            id="solicitar-agendamento-form"
+                            onSubmit={handleRequest}
+                            className={s.form}
+                        >
                             <label className={s.label}>
                                 Tipo
                                 <select
@@ -472,26 +491,8 @@ export default function AgendamentosPage() {
                                     }
                                 />
                             </label>
-                            <div className={s.modalActions}>
-                                <button
-                                    type="button"
-                                    className={s.btnSecondary}
-                                    onClick={() => setShowModal(false)}
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="submit"
-                                    className={s.btnPrimary}
-                                    disabled={submitting}
-                                >
-                                    {submitting ? 'Enviando...' : 'Solicitar'}
-                                </button>
-                            </div>
                         </form>
-                    </div>
-                </div>
-            )}
+            </Modal>
         </div>
     );
 }

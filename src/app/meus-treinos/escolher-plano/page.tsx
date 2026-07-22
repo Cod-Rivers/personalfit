@@ -7,6 +7,7 @@ import {
     applyCelebrityTemplate,
     MacrocycleResponse,
 } from '@/libs/planningService';
+import Modal from '@/components/system/Modal';
 import s from './escolher-plano.module.css';
 
 function extractErrorMessage(err: unknown, fallback: string): string {
@@ -150,54 +151,42 @@ export default function EscolherPlanoPage() {
                 </div>
             )}
 
-            {selected && (
-                <div
-                    className={s.overlay}
-                    onClick={() => !applying && setSelected(null)}
-                >
-                    <div
-                        className={s.modal}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className={s.modalHeader}>
-                            <h2 className={s.modalTitle}>Aplicar plano</h2>
-                            <button
-                                className={s.btnClose}
-                                onClick={() => setSelected(null)}
-                                disabled={applying}
-                            >
-                                ×
-                            </button>
-                        </div>
-                        {applyError && (
-                            <div className={s.errorMsg}>{applyError}</div>
-                        )}
-                        <p className={s.confirmText}>
-                            Plano: <strong>{selected.name}</strong>
-                            <br />
-                            Este plano passará a ser o seu treino ativo. Se
-                            você já tiver um plano em andamento, ele será
-                            marcado como concluído.
-                        </p>
-                        <div className={s.formActions}>
-                            <button
-                                className={s.btnCancel}
-                                onClick={() => setSelected(null)}
-                                disabled={applying}
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                className={s.btnSubmit}
-                                onClick={handleApply}
-                                disabled={applying}
-                            >
-                                {applying ? 'Aplicando...' : 'Confirmar'}
-                            </button>
-                        </div>
+            <Modal
+                open={!!selected}
+                onClose={() => !applying && setSelected(null)}
+                title="Aplicar plano"
+                footer={
+                    <div className={s.formActions}>
+                        <button
+                            className={s.btnCancel}
+                            onClick={() => setSelected(null)}
+                            disabled={applying}
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            className={s.btnSubmit}
+                            onClick={handleApply}
+                            disabled={applying}
+                        >
+                            {applying ? 'Aplicando...' : 'Confirmar'}
+                        </button>
                     </div>
-                </div>
-            )}
+                }
+            >
+                {applyError && (
+                    <div className={s.errorMsg}>{applyError}</div>
+                )}
+                {selected && (
+                    <p className={s.confirmText}>
+                        Plano: <strong>{selected.name}</strong>
+                        <br />
+                        Este plano passará a ser o seu treino ativo. Se
+                        você já tiver um plano em andamento, ele será
+                        marcado como concluído.
+                    </p>
+                )}
+            </Modal>
         </div>
     );
 }

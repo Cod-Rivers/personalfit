@@ -11,6 +11,7 @@ import {
     updateMacrocycle,
     type MacrocycleResponse,
 } from '@/libs/planningService';
+import Modal from '@/components/system/Modal';
 import s from './periodizacao.module.css';
 
 const STATUS_LABEL: Record<string, string> = {
@@ -376,209 +377,178 @@ export default function PeriodizacaoPage() {
             </div>
 
             {/* Modal de edição do macrociclo */}
-            {editing && (
-                <div className={s.overlay} onClick={closeEditModal}>
-                    <div
-                        className={s.modal}
-                        onClick={(e) => e.stopPropagation()}
+            <Modal
+                open={!!editing}
+                onClose={closeEditModal}
+                title="Editar Macrociclo"
+                footer={
+                    <>
+                        <button
+                            onClick={closeEditModal}
+                            className={s.btnCancel}
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={handleEditSubmit}
+                            disabled={savingEdit}
+                            className={s.btnSubmit}
+                        >
+                            {savingEdit ? 'Salvando...' : 'Salvar'}
+                        </button>
+                    </>
+                }
+            >
+                {editError && (
+                    <div className={s.errorMsg}>{editError}</div>
+                )}
+                <div className={s.formGroup}>
+                    <label className={s.formLabel}>Nome</label>
+                    <input
+                        name="name"
+                        value={editForm.name}
+                        onChange={handleEditInput}
+                        className={s.formInput}
+                    />
+                </div>
+                <div className={s.formGroup}>
+                    <label className={s.formLabel}>Objetivo</label>
+                    <input
+                        name="goal"
+                        value={editForm.goal}
+                        onChange={handleEditInput}
+                        className={s.formInput}
+                    />
+                </div>
+                <div className={s.formGroup}>
+                    <label className={s.formLabel}>Status</label>
+                    <select
+                        name="status"
+                        value={editForm.status}
+                        onChange={handleEditInput}
+                        className={s.formInput}
                     >
-                        <div className={s.modalHeader}>
-                            <h2 className={s.modalTitle}>Editar Macrociclo</h2>
-                            <button
-                                onClick={closeEditModal}
-                                className={s.btnClose}
-                            >
-                                ×
-                            </button>
-                        </div>
-                        {editError && (
-                            <div className={s.errorMsg}>{editError}</div>
-                        )}
-                        <div className={s.formGroup}>
-                            <label className={s.formLabel}>Nome</label>
-                            <input
-                                name="name"
-                                value={editForm.name}
-                                onChange={handleEditInput}
-                                className={s.formInput}
-                            />
-                        </div>
-                        <div className={s.formGroup}>
-                            <label className={s.formLabel}>Objetivo</label>
-                            <input
-                                name="goal"
-                                value={editForm.goal}
-                                onChange={handleEditInput}
-                                className={s.formInput}
-                            />
-                        </div>
-                        <div className={s.formGroup}>
-                            <label className={s.formLabel}>Status</label>
-                            <select
-                                name="status"
-                                value={editForm.status}
-                                onChange={handleEditInput}
-                                className={s.formInput}
-                            >
-                                <option value="draft">Rascunho</option>
-                                <option value="active">Ativo</option>
-                                <option value="completed">Concluído</option>
-                            </select>
-                        </div>
-                        <div className={s.formRow}>
-                            <div className={s.formGroup}>
-                                <label className={s.formLabel}>
-                                    Data de início
-                                </label>
-                                <input
-                                    type="date"
-                                    name="start_date"
-                                    value={editForm.start_date}
-                                    onChange={handleEditInput}
-                                    className={s.formInput}
-                                />
-                            </div>
-                            <div className={s.formGroup}>
-                                <label className={s.formLabel}>
-                                    Data de término
-                                </label>
-                                <input
-                                    type="date"
-                                    name="end_date"
-                                    value={editForm.end_date}
-                                    onChange={handleEditInput}
-                                    className={s.formInput}
-                                />
-                            </div>
-                        </div>
-                        <div className={s.formActions}>
-                            <button
-                                onClick={closeEditModal}
-                                className={s.btnCancel}
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                onClick={handleEditSubmit}
-                                disabled={savingEdit}
-                                className={s.btnSubmit}
-                            >
-                                {savingEdit ? 'Salvando...' : 'Salvar'}
-                            </button>
-                        </div>
+                        <option value="draft">Rascunho</option>
+                        <option value="active">Ativo</option>
+                        <option value="completed">Concluído</option>
+                    </select>
+                </div>
+                <div className={s.formRow}>
+                    <div className={s.formGroup}>
+                        <label className={s.formLabel}>
+                            Data de início
+                        </label>
+                        <input
+                            type="date"
+                            name="start_date"
+                            value={editForm.start_date}
+                            onChange={handleEditInput}
+                            className={s.formInput}
+                        />
+                    </div>
+                    <div className={s.formGroup}>
+                        <label className={s.formLabel}>
+                            Data de término
+                        </label>
+                        <input
+                            type="date"
+                            name="end_date"
+                            value={editForm.end_date}
+                            onChange={handleEditInput}
+                            className={s.formInput}
+                        />
                     </div>
                 </div>
-            )}
+            </Modal>
 
             {/* Modal de templates */}
-            {showTemplateModal && (
-                <div
-                    className="modal d-block"
-                    style={{ background: 'rgba(0,0,0,0.5)' }}
-                    onClick={() => setShowTemplateModal(false)}
-                >
-                    <div
-                        className="modal-dialog modal-dialog-centered modal-dialog-scrollable"
-                        onClick={(e) => e.stopPropagation()}
+            <Modal
+                open={showTemplateModal}
+                onClose={() => setShowTemplateModal(false)}
+                title="📂 Aplicar Modelo de Macrociclo"
+                footer={
+                    <button
+                        className="btn btn-secondary"
+                        onClick={() => setShowTemplateModal(false)}
                     >
-                        <div className="modal-content">
-                            <div className="modal-header">
-                                <h5 className="modal-title">
-                                    📂 Aplicar Modelo de Macrociclo
-                                </h5>
-                                <button
-                                    type="button"
-                                    className="btn-close"
-                                    onClick={() => setShowTemplateModal(false)}
-                                />
-                            </div>
-                            <div className="modal-body">
-                                {loadingTemplates && (
-                                    <div className="text-center py-3">
-                                        <div
-                                            className="spinner-border spinner-border-sm"
-                                            role="status"
-                                        />
-                                    </div>
-                                )}
-                                {!loadingTemplates &&
-                                    templates.length === 0 && (
-                                        <p className="text-muted text-center py-3">
-                                            Nenhum modelo salvo ainda. Use o
-                                            botão &quot;📋 Modelo&quot; em um
-                                            macrociclo para criar o primeiro.
-                                        </p>
-                                    )}
-                                {!loadingTemplates && templates.length > 0 && (
-                                    <ul className="list-group">
-                                        {templates.map((t) => (
-                                            <li
-                                                key={t.id}
-                                                className="list-group-item d-flex justify-content-between align-items-center"
-                                            >
-                                                <div>
-                                                    <strong>{t.name}</strong>
-                                                    <br />
-                                                    <small className="text-muted">
-                                                        {t.mesocycles?.length ??
-                                                            0}{' '}
-                                                        mesociclo(s)
-                                                    </small>
-                                                </div>
-                                                <div className="d-flex gap-2">
-                                                    <button
-                                                        className="btn btn-sm btn-primary"
-                                                        disabled={
-                                                            applyingTemplate ===
-                                                            t.id
-                                                        }
-                                                        onClick={() =>
-                                                            handleApplyTemplate(
-                                                                t.id,
-                                                            )
-                                                        }
-                                                    >
-                                                        {applyingTemplate ===
-                                                        t.id
-                                                            ? '...'
-                                                            : 'Aplicar'}
-                                                    </button>
-                                                    <button
-                                                        className="btn btn-sm btn-outline-danger"
-                                                        disabled={
-                                                            deletingTemplate ===
-                                                            t.id
-                                                        }
-                                                        onClick={(e) =>
-                                                            handleDeleteTemplate(
-                                                                e,
-                                                                t.id,
-                                                            )
-                                                        }
-                                                    >
-                                                        {deletingTemplate ===
-                                                        t.id
-                                                            ? '...'
-                                                            : '🗑️'}
-                                                    </button>
-                                                </div>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                )}
-                            </div>
-                            <div className="modal-footer">
-                                <button
-                                    className="btn btn-secondary"
-                                    onClick={() => setShowTemplateModal(false)}
-                                >
-                                    Fechar
-                                </button>
-                            </div>
-                        </div>
+                        Fechar
+                    </button>
+                }
+            >
+                {loadingTemplates && (
+                    <div className="text-center py-3">
+                        <div
+                            className="spinner-border spinner-border-sm"
+                            role="status"
+                        />
                     </div>
-                </div>
-            )}
+                )}
+                {!loadingTemplates &&
+                    templates.length === 0 && (
+                        <p className="text-muted text-center py-3">
+                            Nenhum modelo salvo ainda. Use o
+                            botão &quot;📋 Modelo&quot; em um
+                            macrociclo para criar o primeiro.
+                        </p>
+                    )}
+                {!loadingTemplates && templates.length > 0 && (
+                    <ul className="list-group">
+                        {templates.map((t) => (
+                            <li
+                                key={t.id}
+                                className="list-group-item d-flex justify-content-between align-items-center"
+                            >
+                                <div>
+                                    <strong>{t.name}</strong>
+                                    <br />
+                                    <small className="text-muted">
+                                        {t.mesocycles?.length ??
+                                            0}{' '}
+                                        mesociclo(s)
+                                    </small>
+                                </div>
+                                <div className="d-flex gap-2">
+                                    <button
+                                        className="btn btn-sm btn-primary"
+                                        disabled={
+                                            applyingTemplate ===
+                                            t.id
+                                        }
+                                        onClick={() =>
+                                            handleApplyTemplate(
+                                                t.id,
+                                            )
+                                        }
+                                    >
+                                        {applyingTemplate ===
+                                        t.id
+                                            ? '...'
+                                            : 'Aplicar'}
+                                    </button>
+                                    <button
+                                        className="btn btn-sm btn-outline-danger"
+                                        disabled={
+                                            deletingTemplate ===
+                                            t.id
+                                        }
+                                        onClick={(e) =>
+                                            handleDeleteTemplate(
+                                                e,
+                                                t.id,
+                                            )
+                                        }
+                                    >
+                                        {deletingTemplate ===
+                                        t.id
+                                            ? '...'
+                                            : '🗑️'}
+                                    </button>
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </Modal>
         </>
     );
 }

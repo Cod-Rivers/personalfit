@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import * as videoService from '@/libs/exerciseVideoService';
+import Modal from '@/components/system/Modal';
 
 interface VideoUploadModalProps {
     /** ID do exercício (pessoal ou fork via libraryId) ao qual a mídia será vinculada */
@@ -186,227 +187,220 @@ export default function VideoUploadModal({
     };
 
     return (
-        <div
-            className="modal d-block"
-            style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
-            onClick={(e) => e.target === e.currentTarget && onClose()}
-        >
-            <div className="modal-dialog modal-dialog-centered">
-                <div className="modal-content">
-                    <div className="modal-header">
-                        <h5 className="modal-title">
-                            Definir mídia do exercício
-                        </h5>
+        <Modal
+            open
+            onClose={onClose}
+            footer={
+                uploadDone ? (
+                    <button
+                        className="btn btn-primary"
+                        onClick={onSuccess}
+                    >
+                        Concluir
+                    </button>
+                ) : (
+                    <>
                         <button
-                            type="button"
-                            className="btn-close"
+                            className="btn btn-outline-secondary"
                             onClick={onClose}
-                        />
-                    </div>
-                    <div className="modal-body">
-                        {/* Tabs */}
-                        {!uploadDone && (
-                            <ul className="nav nav-tabs mb-3">
-                                <li className="nav-item">
-                                    <button
-                                        className={`nav-link ${tab === 'link' ? 'active' : ''}`}
-                                        onClick={() => setTab('link')}
-                                    >
-                                        🔗 Link
-                                    </button>
-                                </li>
-                                <li className="nav-item">
-                                    <button
-                                        className={`nav-link ${tab === 'tiktok' ? 'active' : ''} ${!isPro ? 'disabled text-muted' : ''}`}
-                                        onClick={() =>
-                                            isPro && setTab('tiktok')
-                                        }
-                                        title={
-                                            !isPro
-                                                ? 'TikTok requer plano Pro'
-                                                : undefined
-                                        }
-                                    >
-                                        🎵 TikTok
-                                        {!isPro && (
-                                            <span className="badge bg-warning text-dark ms-1 small">
-                                                Pro
-                                            </span>
-                                        )}
-                                    </button>
-                                </li>
-                                <li className="nav-item">
-                                    <button
-                                        className={`nav-link ${tab === 'upload' ? 'active' : ''} ${!isPro ? 'disabled text-muted' : ''}`}
-                                        onClick={() =>
-                                            isPro && setTab('upload')
-                                        }
-                                        title={
-                                            !isPro
-                                                ? 'Upload requer plano Pro'
-                                                : undefined
-                                        }
-                                    >
-                                        ⬆️ Upload de arquivo
-                                        {!isPro && (
-                                            <span className="badge bg-warning text-dark ms-1 small">
-                                                Pro
-                                            </span>
-                                        )}
-                                    </button>
-                                </li>
-                            </ul>
-                        )}
-
-                        {error && (
-                            <div className="alert alert-danger py-2">
-                                {error}
-                            </div>
-                        )}
-
-                        {uploadDone ? (
-                            <div className="text-center py-4">
-                                <div style={{ fontSize: 40 }}>✅</div>
-                                <p className="mb-0 mt-2 fw-semibold">
-                                    Upload realizado com sucesso!
-                                </p>
-                            </div>
-                        ) : tab === 'link' ? (
-                            <div>
-                                <label className="form-label">
-                                    URL do YouTube, Vimeo ou Instagram
-                                </label>
-                                <input
-                                    className="form-control"
-                                    value={linkUrl}
-                                    onChange={(e) =>
-                                        setLinkUrl(e.target.value)
-                                    }
-                                    placeholder="https://youtube.com/watch?v=..."
-                                />
-                                <small className="text-muted d-block mt-1">
-                                    Links do Instagram abrem em uma nova aba
-                                    (não é possível embutir o player).
-                                </small>
-                            </div>
-                        ) : tab === 'tiktok' ? (
-                            <div>
-                                <label className="form-label">
-                                    URL do TikTok
-                                </label>
-                                <input
-                                    className="form-control"
-                                    value={linkUrl}
-                                    onChange={(e) =>
-                                        setLinkUrl(e.target.value)
-                                    }
-                                    placeholder="https://www.tiktok.com/@usuario/video/..."
-                                />
-                            </div>
-                        ) : (
-                            <div>
-                                {mediaPreview &&
-                                    (videoService.isVideoExtension(
-                                        mediaPreview,
-                                    ) ? (
-                                        <video
-                                            src={mediaPreview}
-                                            controls
-                                            className="w-100 mb-3 rounded"
-                                            style={{ maxHeight: 200 }}
-                                        />
-                                    ) : (
-                                        <Image
-                                            src={mediaPreview}
-                                            alt="Preview"
-                                            className="w-100 mb-3 rounded"
-                                            width={200}
-                                            height={150}
-                                        />
-                                    ))}
-                                <input
-                                    type="file"
-                                    className="form-control"
-                                    accept={
-                                        videoService.ACCEPTED_UPLOAD_EXTENSIONS
-                                    }
-                                    onChange={handleFileChange}
-                                />
-                                <small className="text-muted d-block mt-1">
-                                    Máximo:{' '}
-                                    {videoService.MAX_UPLOAD_BYTES /
-                                        1024 /
-                                        1024}
-                                    MB · Até{' '}
-                                    {videoService.MAX_UPLOAD_DURATION_SECONDS}
-                                    s de vídeo · Formatos: MP4, WebM, JPG,
-                                    PNG, WebP
-                                </small>
-                                <small className="text-muted d-block mt-1">
-                                    📹 Grave na horizontal (paisagem) — o app
-                                    exibe as prévias de vídeo nesse formato, e
-                                    um vídeo vertical fica cortado.
-                                </small>
-                                {retryAttempt > 1 && submitting && (
-                                    <div className="alert alert-warning py-1 mt-2 mb-0 small">
-                                        Conexão instável, tentando novamente
-                                        ({retryAttempt}/3)...
-                                    </div>
-                                )}
-                                {progress > 0 && progress < 100 && (
-                                    <div
-                                        className="progress mt-2"
-                                        style={{ height: 20 }}
-                                    >
-                                        <div
-                                            className="progress-bar progress-bar-striped progress-bar-animated"
-                                            style={{ width: `${progress}%` }}
-                                        >
-                                            {progress}%
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                    <div className="modal-footer">
-                        {uploadDone ? (
-                            <button
-                                className="btn btn-primary"
-                                onClick={onSuccess}
-                            >
-                                Concluir
-                            </button>
-                        ) : (
-                            <>
-                                <button
-                                    className="btn btn-outline-secondary"
-                                    onClick={onClose}
-                                    disabled={submitting}
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    className="btn btn-primary"
-                                    onClick={handleSubmit}
-                                    disabled={submitting}
-                                >
-                                    {submitting ? (
-                                        <>
-                                            <span className="spinner-border spinner-border-sm me-2" />
-                                            {tab === 'upload'
-                                                ? 'Enviando...'
-                                                : 'Salvando...'}
-                                        </>
-                                    ) : (
-                                        'Salvar'
-                                    )}
-                                </button>
-                            </>
-                        )}
-                    </div>
-                </div>
+                            disabled={submitting}
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            className="btn btn-primary"
+                            onClick={handleSubmit}
+                            disabled={submitting}
+                        >
+                            {submitting ? (
+                                <>
+                                    <span className="spinner-border spinner-border-sm me-2" />
+                                    {tab === 'upload'
+                                        ? 'Enviando...'
+                                        : 'Salvando...'}
+                                </>
+                            ) : (
+                                'Salvar'
+                            )}
+                        </button>
+                    </>
+                )
+            }
+        >
+            {/* Cabeçalho customizado com abas — não usa a prop `title` do Modal */}
+            <div className="d-flex justify-content-between align-items-center mb-3">
+                <h5 className="mb-0">Definir mídia do exercício</h5>
+                <button
+                    type="button"
+                    className="btn-close"
+                    onClick={onClose}
+                />
             </div>
-        </div>
+
+            {/* Tabs */}
+            {!uploadDone && (
+                <ul className="nav nav-tabs mb-3">
+                    <li className="nav-item">
+                        <button
+                            className={`nav-link ${tab === 'link' ? 'active' : ''}`}
+                            onClick={() => setTab('link')}
+                        >
+                            🔗 Link
+                        </button>
+                    </li>
+                    <li className="nav-item">
+                        <button
+                            className={`nav-link ${tab === 'tiktok' ? 'active' : ''} ${!isPro ? 'disabled text-muted' : ''}`}
+                            onClick={() =>
+                                isPro && setTab('tiktok')
+                            }
+                            title={
+                                !isPro
+                                    ? 'TikTok requer plano Pro'
+                                    : undefined
+                            }
+                        >
+                            🎵 TikTok
+                            {!isPro && (
+                                <span className="badge bg-warning text-dark ms-1 small">
+                                    Pro
+                                </span>
+                            )}
+                        </button>
+                    </li>
+                    <li className="nav-item">
+                        <button
+                            className={`nav-link ${tab === 'upload' ? 'active' : ''} ${!isPro ? 'disabled text-muted' : ''}`}
+                            onClick={() =>
+                                isPro && setTab('upload')
+                            }
+                            title={
+                                !isPro
+                                    ? 'Upload requer plano Pro'
+                                    : undefined
+                            }
+                        >
+                            ⬆️ Upload de arquivo
+                            {!isPro && (
+                                <span className="badge bg-warning text-dark ms-1 small">
+                                    Pro
+                                </span>
+                            )}
+                        </button>
+                    </li>
+                </ul>
+            )}
+
+            {error && (
+                <div className="alert alert-danger py-2">
+                    {error}
+                </div>
+            )}
+
+            {uploadDone ? (
+                <div className="text-center py-4">
+                    <div style={{ fontSize: 40 }}>✅</div>
+                    <p className="mb-0 mt-2 fw-semibold">
+                        Upload realizado com sucesso!
+                    </p>
+                </div>
+            ) : tab === 'link' ? (
+                <div>
+                    <label className="form-label">
+                        URL do YouTube, Vimeo ou Instagram
+                    </label>
+                    <input
+                        className="form-control"
+                        value={linkUrl}
+                        onChange={(e) =>
+                            setLinkUrl(e.target.value)
+                        }
+                        placeholder="https://youtube.com/watch?v=..."
+                    />
+                    <small className="text-muted d-block mt-1">
+                        Links do Instagram abrem em uma nova aba
+                        (não é possível embutir o player).
+                    </small>
+                </div>
+            ) : tab === 'tiktok' ? (
+                <div>
+                    <label className="form-label">
+                        URL do TikTok
+                    </label>
+                    <input
+                        className="form-control"
+                        value={linkUrl}
+                        onChange={(e) =>
+                            setLinkUrl(e.target.value)
+                        }
+                        placeholder="https://www.tiktok.com/@usuario/video/..."
+                    />
+                </div>
+            ) : (
+                <div>
+                    {mediaPreview &&
+                        (videoService.isVideoExtension(
+                            mediaPreview,
+                        ) ? (
+                            <video
+                                src={mediaPreview}
+                                controls
+                                className="w-100 mb-3 rounded"
+                                style={{ maxHeight: 200 }}
+                            />
+                        ) : (
+                            <Image
+                                src={mediaPreview}
+                                alt="Preview"
+                                className="w-100 mb-3 rounded"
+                                width={200}
+                                height={150}
+                            />
+                        ))}
+                    <input
+                        type="file"
+                        className="form-control"
+                        accept={
+                            videoService.ACCEPTED_UPLOAD_EXTENSIONS
+                        }
+                        onChange={handleFileChange}
+                    />
+                    <small className="text-muted d-block mt-1">
+                        Máximo:{' '}
+                        {videoService.MAX_UPLOAD_BYTES /
+                            1024 /
+                            1024}
+                        MB · Até{' '}
+                        {videoService.MAX_UPLOAD_DURATION_SECONDS}
+                        s de vídeo · Formatos: MP4, WebM, JPG,
+                        PNG, WebP
+                    </small>
+                    <small className="text-muted d-block mt-1">
+                        📹 Grave na horizontal (paisagem) — o app
+                        exibe as prévias de vídeo nesse formato, e
+                        um vídeo vertical fica cortado.
+                    </small>
+                    {retryAttempt > 1 && submitting && (
+                        <div className="alert alert-warning py-1 mt-2 mb-0 small">
+                            Conexão instável, tentando novamente
+                            ({retryAttempt}/3)...
+                        </div>
+                    )}
+                    {progress > 0 && progress < 100 && (
+                        <div
+                            className="progress mt-2"
+                            style={{ height: 20 }}
+                        >
+                            <div
+                                className="progress-bar progress-bar-striped progress-bar-animated"
+                                style={{ width: `${progress}%` }}
+                            >
+                                {progress}%
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+        </Modal>
     );
 }

@@ -8,6 +8,7 @@ import * as adminService from '@/libs/adminService';
 import * as videoService from '@/libs/exerciseVideoService';
 import AdminAdvertisements from '@/components/organism/AdminAdvertisements';
 import AdminReferralPartners from '@/components/organism/AdminReferralPartners';
+import Modal from '@/components/system/Modal';
 import {
     ResponsiveContainer,
     BarChart,
@@ -604,140 +605,124 @@ function TemplatesSection({ canManageUsers }: { canManageUsers: boolean }) {
                 ))
             )}
 
-            {showCreate && (
-                <div className={s.overlay}>
-                    <div className={s.modal}>
-                        <div className={s.modalHeader}>
-                            <h2 className={s.modalTitle}>Novo Template</h2>
-                            <button
-                                onClick={() => setShowCreate(false)}
-                                className={s.btnClose}
-                            >
-                                &times;
-                            </button>
-                        </div>
-                        {error && <p className={s.errorMsg}>{error}</p>}
-                        <div className={s.formGroup}>
-                            <label className={s.formLabel}>Nome</label>
-                            <input
-                                className={s.formInput}
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                placeholder="Nome do template"
-                            />
-                        </div>
-                        <div className={s.formGroup}>
-                            <label className={s.formLabel}>Objetivo</label>
-                            <input
-                                className={s.formInput}
-                                value={goal}
-                                onChange={(e) => setGoal(e.target.value)}
-                                placeholder="Objetivo do macrociclo"
-                            />
-                        </div>
-                        <div className={s.formGroup}>
-                            <label
-                                className={s.formLabel}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 8,
-                                    cursor: 'pointer',
-                                }}
-                            >
-                                <input
-                                    type="checkbox"
-                                    checked={isPublic}
-                                    onChange={(e) =>
-                                        setIsPublic(e.target.checked)
-                                    }
-                                />
-                                Visível na biblioteca pública de templates
-                                (personal trainers podem usá-lo)
-                            </label>
-                        </div>
-                        <div className={s.formActions}>
-                            <button
-                                onClick={() => setShowCreate(false)}
-                                className={s.btnOutline}
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                onClick={handleCreate}
-                                className={s.btnPrimary}
-                                disabled={submitting}
-                            >
-                                {submitting ? 'Criando...' : 'Criar'}
-                            </button>
-                        </div>
-                    </div>
+            <Modal
+                open={showCreate}
+                onClose={() => setShowCreate(false)}
+                title="Novo Template"
+                footer={
+                    <>
+                        <button
+                            onClick={() => setShowCreate(false)}
+                            className={s.btnOutline}
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={handleCreate}
+                            className={s.btnPrimary}
+                            disabled={submitting}
+                        >
+                            {submitting ? 'Criando...' : 'Criar'}
+                        </button>
+                    </>
+                }
+            >
+                {error && <p className={s.errorMsg}>{error}</p>}
+                <div className={s.formGroup}>
+                    <label className={s.formLabel}>Nome</label>
+                    <input
+                        className={s.formInput}
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="Nome do template"
+                    />
                 </div>
-            )}
+                <div className={s.formGroup}>
+                    <label className={s.formLabel}>Objetivo</label>
+                    <input
+                        className={s.formInput}
+                        value={goal}
+                        onChange={(e) => setGoal(e.target.value)}
+                        placeholder="Objetivo do macrociclo"
+                    />
+                </div>
+                <div className={s.formGroup}>
+                    <label
+                        className={s.formLabel}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 8,
+                            cursor: 'pointer',
+                        }}
+                    >
+                        <input
+                            type="checkbox"
+                            checked={isPublic}
+                            onChange={(e) =>
+                                setIsPublic(e.target.checked)
+                            }
+                        />
+                        Visível na biblioteca pública de templates
+                        (personal trainers podem usá-lo)
+                    </label>
+                </div>
+            </Modal>
 
-            {showAssign && (
-                <div className={s.overlay}>
-                    <div className={s.modal}>
-                        <div className={s.modalHeader}>
-                            <h2 className={s.modalTitle}>
-                                Atribuir Template a Aluno
-                            </h2>
-                            <button
-                                onClick={() => setShowAssign(null)}
-                                className={s.btnClose}
-                            >
-                                &times;
-                            </button>
-                        </div>
-                        {error && <p className={s.errorMsg}>{error}</p>}
-                        <div className={s.formGroup}>
-                            <label className={s.formLabel}>Personal</label>
-                            <select
-                                className={s.formSelect}
-                                value={personalId}
-                                onChange={(e) => setPersonalId(e.target.value)}
-                            >
-                                <option value="">Selecione um personal...</option>
-                                {personals.map((p) => (
-                                    <option key={p.id} value={p.id}>
-                                        {p.name} ({p.email})
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className={s.formGroup}>
-                            <label className={s.formLabel}>Aluno</label>
-                            <select
-                                className={s.formSelect}
-                                value={studentId}
-                                onChange={(e) => setStudentId(e.target.value)}
-                            >
-                                <option value="">Selecione um aluno...</option>
-                                {students.map((st) => (
-                                    <option key={st.id} value={st.id}>
-                                        {st.name} ({st.email})
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className={s.formActions}>
-                            <button
-                                onClick={() => setShowAssign(null)}
-                                className={s.btnOutline}
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                onClick={handleAssign}
-                                className={s.btnPrimary}
-                                disabled={submitting}
-                            >
-                                {submitting ? 'Atribuindo...' : 'Atribuir'}
-                            </button>
-                        </div>
-                    </div>
+            <Modal
+                open={!!showAssign}
+                onClose={() => setShowAssign(null)}
+                title="Atribuir Template a Aluno"
+                footer={
+                    <>
+                        <button
+                            onClick={() => setShowAssign(null)}
+                            className={s.btnOutline}
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={handleAssign}
+                            className={s.btnPrimary}
+                            disabled={submitting}
+                        >
+                            {submitting ? 'Atribuindo...' : 'Atribuir'}
+                        </button>
+                    </>
+                }
+            >
+                {error && <p className={s.errorMsg}>{error}</p>}
+                <div className={s.formGroup}>
+                    <label className={s.formLabel}>Personal</label>
+                    <select
+                        className={s.formSelect}
+                        value={personalId}
+                        onChange={(e) => setPersonalId(e.target.value)}
+                    >
+                        <option value="">Selecione um personal...</option>
+                        {personals.map((p) => (
+                            <option key={p.id} value={p.id}>
+                                {p.name} ({p.email})
+                            </option>
+                        ))}
+                    </select>
                 </div>
-            )}
+                <div className={s.formGroup}>
+                    <label className={s.formLabel}>Aluno</label>
+                    <select
+                        className={s.formSelect}
+                        value={studentId}
+                        onChange={(e) => setStudentId(e.target.value)}
+                    >
+                        <option value="">Selecione um aluno...</option>
+                        {students.map((st) => (
+                            <option key={st.id} value={st.id}>
+                                {st.name} ({st.email})
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            </Modal>
         </>
     );
 }
@@ -1188,226 +1173,219 @@ function ExercisesSection() {
                 ))
             )}
 
-            {modalMode !== 'none' && (
-                <div className={s.overlay}>
-                    <div className={s.modal}>
-                        <div className={s.modalHeader}>
-                            <h2 className={s.modalTitle}>
-                                {modalMode === 'create'
-                                    ? 'Novo Exercício'
-                                    : 'Editar Exercício'}
-                            </h2>
-                            <button
-                                onClick={closeModal}
-                                className={s.btnClose}
-                            >
-                                &times;
-                            </button>
-                        </div>
-                        {error && <p className={s.errorMsg}>{error}</p>}
-                        <div className={s.formGroup}>
-                            <label className={s.formLabel}>Nome</label>
-                            <input
-                                className={s.formInput}
-                                value={form.name}
-                                onChange={(e) =>
-                                    setForm({ ...form, name: e.target.value })
-                                }
-                                placeholder="Nome do exercício"
-                            />
-                        </div>
-                        <div className={s.formGroup}>
-                            <label className={s.formLabel}>
-                                Grupo Muscular
-                            </label>
-                            <input
-                                className={s.formInput}
-                                value={form.muscle_group}
-                                onChange={(e) =>
-                                    setForm({
-                                        ...form,
-                                        muscle_group: e.target.value,
-                                    })
-                                }
-                                placeholder="Ex: Peito, Costas, Pernas..."
-                            />
-                        </div>
-                        <div className={s.formGroup}>
-                            <label className={s.formLabel}>Categoria</label>
-                            <input
-                                className={s.formInput}
-                                value={form.category}
-                                onChange={(e) =>
-                                    setForm({
-                                        ...form,
-                                        category: e.target.value,
-                                    })
-                                }
-                                placeholder="Ex: Isolador, Composto..."
-                            />
-                        </div>
-                        <div className={s.formGroup}>
-                            <label className={s.formLabel}>Mídia</label>
-                            <div className={s.btnGroup} style={{ marginBottom: 8 }}>
-                                <button
-                                    type="button"
-                                    onClick={() => setUploadMode('youtube')}
-                                    className={
-                                        uploadMode === 'youtube'
-                                            ? s.btnPrimary
-                                            : s.btnOutline
-                                    }
-                                >
-                                    🔗 Link (YouTube/Vimeo/TikTok/Instagram)
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setUploadMode('upload')}
-                                    className={
-                                        uploadMode === 'upload'
-                                            ? s.btnPrimary
-                                            : s.btnOutline
-                                    }
-                                >
-                                    ⬆️ Upload de arquivo
-                                </button>
-                            </div>
-                            {uploadMode === 'youtube' ? (
-                                <>
-                                    <input
-                                        className={s.formInput}
-                                        value={form.video_url}
-                                        onChange={(e) =>
-                                            setForm({
-                                                ...form,
-                                                video_url: e.target.value,
-                                            })
-                                        }
-                                        placeholder="https://youtube.com/watch?v=..."
-                                    />
-                                    <small className="text-muted d-block mt-1">
-                                        Links do Instagram abrem em uma nova
-                                        aba (não é possível embutir o
-                                        player).
-                                    </small>
-                                </>
-                            ) : (
-                                <>
-                                    {mediaPreview &&
-                                        (mediaPreview
-                                            .split('?')[0]
-                                            .match(/\.(mp4|webm|mov|avi)$/i) ? (
-                                            <video
-                                                src={mediaPreview}
-                                                controls
-                                                className="w-100 mb-2"
-                                                style={{
-                                                    maxHeight: 180,
-                                                    borderRadius: 6,
-                                                }}
-                                            />
-                                        ) : (
-                                            <Image
-                                                src={mediaPreview}
-                                                alt="Preview"
-                                                className={
-                                                    s.exerciseThumbPreview
-                                                }
-                                                width={120}
-                                                height={90}
-                                            />
-                                        ))}
-                                    <input
-                                        type="file"
-                                        accept={
-                                            videoService.ACCEPTED_UPLOAD_EXTENSIONS
-                                        }
-                                        className={s.formInput}
-                                        onChange={handleMediaChange}
-                                        style={{ paddingTop: 8 }}
-                                    />
-                                    <small className="text-muted">
-                                        Máximo:{' '}
-                                        {videoService.MAX_UPLOAD_BYTES /
-                                            1024 /
-                                            1024}
-                                        MB. Até{' '}
-                                        {
-                                            videoService.MAX_UPLOAD_DURATION_SECONDS
-                                        }
-                                        s de vídeo. Formatos: MP4, WebM, JPG,
-                                        PNG, WebP
-                                    </small>
-                                    {uploadProgress > 0 &&
-                                        uploadProgress < 100 && (
-                                            <div className="progress mt-2">
-                                                <div
-                                                    className="progress-bar progress-bar-striped progress-bar-animated"
-                                                    style={{
-                                                        width: `${uploadProgress}%`,
-                                                    }}
-                                                >
-                                                    {uploadProgress}%
-                                                </div>
-                                            </div>
-                                        )}
-                                </>
-                            )}
-                        </div>
-                        <div className={s.formGroup}>
-                            <label className={s.formLabel}>Descrição</label>
-                            <textarea
-                                className={s.formTextarea}
-                                value={form.description}
-                                onChange={(e) =>
-                                    setForm({
-                                        ...form,
-                                        description: e.target.value,
-                                    })
-                                }
-                            />
-                        </div>
-                        <div className={s.formGroup}>
-                            <label className={s.formLabel}>
-                                Tags (separadas por vírgula)
-                            </label>
-                            <input
-                                className={s.formInput}
-                                value={form.tags}
-                                onChange={(e) =>
-                                    setForm({ ...form, tags: e.target.value })
-                                }
-                                placeholder="força, equilíbrio, cardio"
-                            />
-                        </div>
-                        <div className={s.formActions}>
-                            <button
-                                onClick={closeModal}
-                                className={s.btnOutline}
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                onClick={
-                                    modalMode === 'create'
-                                        ? handleCreate
-                                        : handleUpdate
-                                }
-                                className={s.btnPrimary}
-                                disabled={submitting}
-                            >
-                                {submitting
-                                    ? modalMode === 'create'
-                                        ? 'Criando...'
-                                        : 'Salvando...'
-                                    : modalMode === 'create'
-                                      ? 'Criar'
-                                      : 'Salvar'}
-                            </button>
-                        </div>
-                    </div>
+            <Modal
+                open={modalMode !== 'none'}
+                onClose={closeModal}
+                title={
+                    modalMode === 'create'
+                        ? 'Novo Exercício'
+                        : 'Editar Exercício'
+                }
+                footer={
+                    <>
+                        <button
+                            onClick={closeModal}
+                            className={s.btnOutline}
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={
+                                modalMode === 'create'
+                                    ? handleCreate
+                                    : handleUpdate
+                            }
+                            className={s.btnPrimary}
+                            disabled={submitting}
+                        >
+                            {submitting
+                                ? modalMode === 'create'
+                                    ? 'Criando...'
+                                    : 'Salvando...'
+                                : modalMode === 'create'
+                                  ? 'Criar'
+                                  : 'Salvar'}
+                        </button>
+                    </>
+                }
+            >
+                {error && <p className={s.errorMsg}>{error}</p>}
+                <div className={s.formGroup}>
+                    <label className={s.formLabel}>Nome</label>
+                    <input
+                        className={s.formInput}
+                        value={form.name}
+                        onChange={(e) =>
+                            setForm({ ...form, name: e.target.value })
+                        }
+                        placeholder="Nome do exercício"
+                    />
                 </div>
-            )}
+                <div className={s.formGroup}>
+                    <label className={s.formLabel}>
+                        Grupo Muscular
+                    </label>
+                    <input
+                        className={s.formInput}
+                        value={form.muscle_group}
+                        onChange={(e) =>
+                            setForm({
+                                ...form,
+                                muscle_group: e.target.value,
+                            })
+                        }
+                        placeholder="Ex: Peito, Costas, Pernas..."
+                    />
+                </div>
+                <div className={s.formGroup}>
+                    <label className={s.formLabel}>Categoria</label>
+                    <input
+                        className={s.formInput}
+                        value={form.category}
+                        onChange={(e) =>
+                            setForm({
+                                ...form,
+                                category: e.target.value,
+                            })
+                        }
+                        placeholder="Ex: Isolador, Composto..."
+                    />
+                </div>
+                <div className={s.formGroup}>
+                    <label className={s.formLabel}>Mídia</label>
+                    <div className={s.btnGroup} style={{ marginBottom: 8 }}>
+                        <button
+                            type="button"
+                            onClick={() => setUploadMode('youtube')}
+                            className={
+                                uploadMode === 'youtube'
+                                    ? s.btnPrimary
+                                    : s.btnOutline
+                            }
+                        >
+                            🔗 Link (YouTube/Vimeo/TikTok/Instagram)
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setUploadMode('upload')}
+                            className={
+                                uploadMode === 'upload'
+                                    ? s.btnPrimary
+                                    : s.btnOutline
+                            }
+                        >
+                            ⬆️ Upload de arquivo
+                        </button>
+                    </div>
+                    {uploadMode === 'youtube' ? (
+                        <>
+                            <input
+                                className={s.formInput}
+                                value={form.video_url}
+                                onChange={(e) =>
+                                    setForm({
+                                        ...form,
+                                        video_url: e.target.value,
+                                    })
+                                }
+                                placeholder="https://youtube.com/watch?v=..."
+                            />
+                            <small className="text-muted d-block mt-1">
+                                Links do Instagram abrem em uma nova
+                                aba (não é possível embutir o
+                                player).
+                            </small>
+                        </>
+                    ) : (
+                        <>
+                            {mediaPreview &&
+                                (mediaPreview
+                                    .split('?')[0]
+                                    .match(/\.(mp4|webm|mov|avi)$/i) ? (
+                                    <video
+                                        src={mediaPreview}
+                                        controls
+                                        className="w-100 mb-2"
+                                        style={{
+                                            maxHeight: 180,
+                                            borderRadius: 6,
+                                        }}
+                                    />
+                                ) : (
+                                    <Image
+                                        src={mediaPreview}
+                                        alt="Preview"
+                                        className={
+                                            s.exerciseThumbPreview
+                                        }
+                                        width={120}
+                                        height={90}
+                                    />
+                                ))}
+                            <input
+                                type="file"
+                                accept={
+                                    videoService.ACCEPTED_UPLOAD_EXTENSIONS
+                                }
+                                className={s.formInput}
+                                onChange={handleMediaChange}
+                                style={{ paddingTop: 8 }}
+                            />
+                            <small className="text-muted">
+                                Máximo:{' '}
+                                {videoService.MAX_UPLOAD_BYTES /
+                                    1024 /
+                                    1024}
+                                MB. Até{' '}
+                                {
+                                    videoService.MAX_UPLOAD_DURATION_SECONDS
+                                }
+                                s de vídeo. Formatos: MP4, WebM, JPG,
+                                PNG, WebP
+                            </small>
+                            {uploadProgress > 0 &&
+                                uploadProgress < 100 && (
+                                    <div className="progress mt-2">
+                                        <div
+                                            className="progress-bar progress-bar-striped progress-bar-animated"
+                                            style={{
+                                                width: `${uploadProgress}%`,
+                                            }}
+                                        >
+                                            {uploadProgress}%
+                                        </div>
+                                    </div>
+                                )}
+                        </>
+                    )}
+                </div>
+                <div className={s.formGroup}>
+                    <label className={s.formLabel}>Descrição</label>
+                    <textarea
+                        className={s.formTextarea}
+                        value={form.description}
+                        onChange={(e) =>
+                            setForm({
+                                ...form,
+                                description: e.target.value,
+                            })
+                        }
+                    />
+                </div>
+                <div className={s.formGroup}>
+                    <label className={s.formLabel}>
+                        Tags (separadas por vírgula)
+                    </label>
+                    <input
+                        className={s.formInput}
+                        value={form.tags}
+                        onChange={(e) =>
+                            setForm({ ...form, tags: e.target.value })
+                        }
+                        placeholder="força, equilíbrio, cardio"
+                    />
+                </div>
+            </Modal>
         </>
     );
 }
@@ -1526,95 +1504,88 @@ function NotificationsSection() {
                 ))
             )}
 
-            {showForm && (
-                <div className={s.overlay}>
-                    <div className={s.modal}>
-                        <div className={s.modalHeader}>
-                            <h2 className={s.modalTitle}>Enviar Notificação</h2>
-                            <button
-                                onClick={() => setShowForm(false)}
-                                className={s.btnClose}
-                            >
-                                &times;
-                            </button>
-                        </div>
-                        {error && <p className={s.errorMsg}>{error}</p>}
-                        <div className={s.formGroup}>
-                            <label className={s.formLabel}>Título *</label>
-                            <input
-                                className={s.formInput}
-                                value={form.title}
-                                onChange={(e) =>
-                                    setForm({ ...form, title: e.target.value })
-                                }
-                            />
-                        </div>
-                        <div className={s.formGroup}>
-                            <label className={s.formLabel}>Mensagem *</label>
-                            <textarea
-                                className={s.formTextarea}
-                                value={form.message}
-                                onChange={(e) =>
-                                    setForm({
-                                        ...form,
-                                        message: e.target.value,
-                                    })
-                                }
-                            />
-                        </div>
-                        <div className={s.formRow}>
-                            <div className={s.formGroup}>
-                                <label className={s.formLabel}>Tipo</label>
-                                <select
-                                    className={s.formSelect}
-                                    value={form.type}
-                                    onChange={(e) =>
-                                        setForm({
-                                            ...form,
-                                            type: e.target.value,
-                                        })
-                                    }
-                                >
-                                    <option value="info">Info</option>
-                                    <option value="warning">Aviso</option>
-                                    <option value="success">Sucesso</option>
-                                </select>
-                            </div>
-                            <div className={s.formGroup}>
-                                <label className={s.formLabel}>
-                                    User ID (vazio = broadcast)
-                                </label>
-                                <input
-                                    className={s.formInput}
-                                    value={form.user_id}
-                                    onChange={(e) =>
-                                        setForm({
-                                            ...form,
-                                            user_id: e.target.value,
-                                        })
-                                    }
-                                    placeholder="Deixe vazio para todos"
-                                />
-                            </div>
-                        </div>
-                        <div className={s.formActions}>
-                            <button
-                                onClick={() => setShowForm(false)}
-                                className={s.btnOutline}
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                onClick={handleSend}
-                                className={s.btnPrimary}
-                                disabled={submitting}
-                            >
-                                {submitting ? 'Enviando...' : 'Enviar'}
-                            </button>
-                        </div>
+            <Modal
+                open={showForm}
+                onClose={() => setShowForm(false)}
+                title="Enviar Notificação"
+                footer={
+                    <>
+                        <button
+                            onClick={() => setShowForm(false)}
+                            className={s.btnOutline}
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={handleSend}
+                            className={s.btnPrimary}
+                            disabled={submitting}
+                        >
+                            {submitting ? 'Enviando...' : 'Enviar'}
+                        </button>
+                    </>
+                }
+            >
+                {error && <p className={s.errorMsg}>{error}</p>}
+                <div className={s.formGroup}>
+                    <label className={s.formLabel}>Título *</label>
+                    <input
+                        className={s.formInput}
+                        value={form.title}
+                        onChange={(e) =>
+                            setForm({ ...form, title: e.target.value })
+                        }
+                    />
+                </div>
+                <div className={s.formGroup}>
+                    <label className={s.formLabel}>Mensagem *</label>
+                    <textarea
+                        className={s.formTextarea}
+                        value={form.message}
+                        onChange={(e) =>
+                            setForm({
+                                ...form,
+                                message: e.target.value,
+                            })
+                        }
+                    />
+                </div>
+                <div className={s.formRow}>
+                    <div className={s.formGroup}>
+                        <label className={s.formLabel}>Tipo</label>
+                        <select
+                            className={s.formSelect}
+                            value={form.type}
+                            onChange={(e) =>
+                                setForm({
+                                    ...form,
+                                    type: e.target.value,
+                                })
+                            }
+                        >
+                            <option value="info">Info</option>
+                            <option value="warning">Aviso</option>
+                            <option value="success">Sucesso</option>
+                        </select>
+                    </div>
+                    <div className={s.formGroup}>
+                        <label className={s.formLabel}>
+                            User ID (vazio = broadcast)
+                        </label>
+                        <input
+                            className={s.formInput}
+                            value={form.user_id}
+                            onChange={(e) =>
+                                setForm({
+                                    ...form,
+                                    user_id: e.target.value,
+                                })
+                            }
+                            placeholder="Deixe vazio para todos"
+                        />
                     </div>
                 </div>
-            )}
+            </Modal>
         </>
     );
 }

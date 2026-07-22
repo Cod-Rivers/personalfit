@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Api } from '@/libs/api';
 import { useRouter } from 'next/navigation';
+import Modal from '@/components/system/Modal';
 
 interface UserData {
     id?: string;
@@ -319,70 +320,53 @@ export default function MinhaContaPage() {
             </div>
 
             {/* Modal de confirmação */}
-            {showConfirm && (
-                <div
-                    className="modal d-block"
-                    tabIndex={-1}
-                    style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+            <Modal
+                open={showConfirm}
+                onClose={() => !loading && setShowConfirm(false)}
+                title={<span className="text-danger">Confirmar exclusão</span>}
+                footer={
+                    <>
+                        <button
+                            className="btn btn-secondary"
+                            onClick={() => setShowConfirm(false)}
+                            disabled={loading}
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            className="btn btn-danger"
+                            onClick={handleDeleteAccount}
+                            disabled={loading}
+                        >
+                            {loading ? (
+                                <>
+                                    <span className="spinner-border spinner-border-sm me-2" />
+                                    Excluindo...
+                                </>
+                            ) : (
+                                'Sim, excluir minha conta'
+                            )}
+                        </button>
+                    </>
+                }
+            >
+                <p>
+                    Tem certeza que deseja excluir sua conta?{' '}
+                    <strong>Esta ação é irreversível.</strong>
+                </p>
+                <p
+                    className="text-secondary"
+                    style={{ fontSize: '0.875rem' }}
                 >
-                    <div className="modal-dialog modal-dialog-centered">
-                        <div className="modal-content">
-                            <div className="modal-header border-danger">
-                                <h5 className="modal-title text-danger">
-                                    Confirmar exclusão
-                                </h5>
-                                <button
-                                    type="button"
-                                    className="btn-close"
-                                    onClick={() => setShowConfirm(false)}
-                                    disabled={loading}
-                                />
-                            </div>
-                            <div className="modal-body">
-                                <p>
-                                    Tem certeza que deseja excluir sua conta?{' '}
-                                    <strong>Esta ação é irreversível.</strong>
-                                </p>
-                                <p
-                                    className="text-secondary"
-                                    style={{ fontSize: '0.875rem' }}
-                                >
-                                    Seus dados pessoais serão anonimizados
-                                    conforme a LGPD.
-                                </p>
-                                {error && (
-                                    <div className="alert alert-danger py-2">
-                                        {error}
-                                    </div>
-                                )}
-                            </div>
-                            <div className="modal-footer">
-                                <button
-                                    className="btn btn-secondary"
-                                    onClick={() => setShowConfirm(false)}
-                                    disabled={loading}
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    className="btn btn-danger"
-                                    onClick={handleDeleteAccount}
-                                    disabled={loading}
-                                >
-                                    {loading ? (
-                                        <>
-                                            <span className="spinner-border spinner-border-sm me-2" />
-                                            Excluindo...
-                                        </>
-                                    ) : (
-                                        'Sim, excluir minha conta'
-                                    )}
-                                </button>
-                            </div>
-                        </div>
+                    Seus dados pessoais serão anonimizados
+                    conforme a LGPD.
+                </p>
+                {error && (
+                    <div className="alert alert-danger py-2">
+                        {error}
                     </div>
-                </div>
-            )}
+                )}
+            </Modal>
         </>
     );
 }

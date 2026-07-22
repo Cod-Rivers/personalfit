@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { MUSCLE_GROUPS, type ExerciseLibraryItem } from '@/libs/planningService';
 import { usePersonalExercises } from '@/hooks/usePersonalExercises';
 import VideoUploadModal from '@/components/features/VideoUploadModal';
+import Modal from '@/components/system/Modal';
 import s from '../personal.module.css';
 
 interface ExercisesTabProps {
@@ -125,282 +126,243 @@ export default function ExercisesTab({ planType = 'free' }: ExercisesTabProps) {
             )}
 
             {/* ── Exercise Create Modal ── */}
-            {modal === 'exCreate' && (
-                <div className={s.overlay} onClick={closeModal}>
-                    <div
-                        className={s.modal}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className={s.modalHeader}>
-                            <h2 className={s.modalTitle}>Novo Exercício</h2>
-                            <button
-                                onClick={closeModal}
-                                className={s.btnClose}
-                            >
-                                ×
-                            </button>
-                        </div>
-                        {error && <div className={s.errorMsg}>{error}</div>}
-                        <div className={s.formGroup}>
-                            <label className={s.formLabel}>Nome *</label>
-                            <input
-                                value={exForm.name}
-                                onChange={(e) =>
-                                    setExForm({
-                                        ...exForm,
-                                        name: e.target.value,
-                                    })
-                                }
-                                className={s.formInput}
-                                placeholder="Nome do exercício"
-                            />
-                        </div>
-                        <div className={s.formGroup}>
-                            <label className={s.formLabel}>
-                                Grupo Muscular *
-                            </label>
-                            <select
-                                value={exForm.muscle_group}
-                                onChange={(e) =>
-                                    setExForm({
-                                        ...exForm,
-                                        muscle_group: e.target.value,
-                                    })
-                                }
-                                className={s.formInput}
-                            >
-                                <option value="">Selecione</option>
-                                {MUSCLE_GROUPS.map((mg) => (
-                                    <option key={mg} value={mg}>
-                                        {mg}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className={s.formGroup}>
-                            <label className={s.formLabel}>Categoria</label>
-                            <input
-                                value={exForm.category || ''}
-                                onChange={(e) =>
-                                    setExForm({
-                                        ...exForm,
-                                        category: e.target.value || undefined,
-                                    })
-                                }
-                                className={s.formInput}
-                                placeholder="Ex: Isolador, Composto..."
-                            />
-                        </div>
-                        <div className={s.formGroup}>
-                            <label className={s.formLabel}>URL do Vídeo</label>
-                            <input
-                                value={exForm.video_url || ''}
-                                onChange={(e) =>
-                                    setExForm({
-                                        ...exForm,
-                                        video_url: e.target.value || undefined,
-                                    })
-                                }
-                                className={s.formInput}
-                                placeholder="https://..."
-                            />
-                        </div>
-                        <div className={s.formGroup}>
-                            <label className={s.formLabel}>Descrição</label>
-                            <input
-                                value={exForm.description || ''}
-                                onChange={(e) =>
-                                    setExForm({
-                                        ...exForm,
-                                        description:
-                                            e.target.value || undefined,
-                                    })
-                                }
-                                className={s.formInput}
-                                placeholder="Descrição do exercício"
-                            />
-                        </div>
-                        <div className={s.formActions}>
-                            <button
-                                onClick={closeModal}
-                                className={s.btnCancel}
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                onClick={handleExCreate}
-                                disabled={
-                                    submitting ||
-                                    !exForm.name.trim() ||
-                                    !exForm.muscle_group
-                                }
-                                className={s.btnSubmit}
-                            >
-                                {submitting ? 'Criando...' : 'Criar'}
-                            </button>
-                        </div>
-                    </div>
+            <Modal
+                open={modal === 'exCreate'}
+                onClose={closeModal}
+                title="Novo Exercício"
+                footer={
+                    <>
+                        <button onClick={closeModal} className={s.btnCancel}>
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={handleExCreate}
+                            disabled={
+                                submitting ||
+                                !exForm.name.trim() ||
+                                !exForm.muscle_group
+                            }
+                            className={s.btnSubmit}
+                        >
+                            {submitting ? 'Criando...' : 'Criar'}
+                        </button>
+                    </>
+                }
+            >
+                {error && <div className={s.errorMsg}>{error}</div>}
+                <div className={s.formGroup}>
+                    <label className={s.formLabel}>Nome *</label>
+                    <input
+                        value={exForm.name}
+                        onChange={(e) =>
+                            setExForm({
+                                ...exForm,
+                                name: e.target.value,
+                            })
+                        }
+                        className={s.formInput}
+                        placeholder="Nome do exercício"
+                    />
                 </div>
-            )}
+                <div className={s.formGroup}>
+                    <label className={s.formLabel}>
+                        Grupo Muscular *
+                    </label>
+                    <select
+                        value={exForm.muscle_group}
+                        onChange={(e) =>
+                            setExForm({
+                                ...exForm,
+                                muscle_group: e.target.value,
+                            })
+                        }
+                        className={s.formInput}
+                    >
+                        <option value="">Selecione</option>
+                        {MUSCLE_GROUPS.map((mg) => (
+                            <option key={mg} value={mg}>
+                                {mg}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+                <div className={s.formGroup}>
+                    <label className={s.formLabel}>Categoria</label>
+                    <input
+                        value={exForm.category || ''}
+                        onChange={(e) =>
+                            setExForm({
+                                ...exForm,
+                                category: e.target.value || undefined,
+                            })
+                        }
+                        className={s.formInput}
+                        placeholder="Ex: Isolador, Composto..."
+                    />
+                </div>
+                <div className={s.formGroup}>
+                    <label className={s.formLabel}>URL do Vídeo</label>
+                    <input
+                        value={exForm.video_url || ''}
+                        onChange={(e) =>
+                            setExForm({
+                                ...exForm,
+                                video_url: e.target.value || undefined,
+                            })
+                        }
+                        className={s.formInput}
+                        placeholder="https://..."
+                    />
+                </div>
+                <div className={s.formGroup}>
+                    <label className={s.formLabel}>Descrição</label>
+                    <input
+                        value={exForm.description || ''}
+                        onChange={(e) =>
+                            setExForm({
+                                ...exForm,
+                                description:
+                                    e.target.value || undefined,
+                            })
+                        }
+                        className={s.formInput}
+                        placeholder="Descrição do exercício"
+                    />
+                </div>
+            </Modal>
 
             {/* ── Exercise Edit Modal ── */}
-            {modal === 'exEdit' && (
-                <div className={s.overlay} onClick={closeModal}>
-                    <div
-                        className={s.modal}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className={s.modalHeader}>
-                            <h2 className={s.modalTitle}>Editar Exercício</h2>
-                            <button
-                                onClick={closeModal}
-                                className={s.btnClose}
-                            >
-                                ×
-                            </button>
-                        </div>
-                        {error && <div className={s.errorMsg}>{error}</div>}
-                        <div className={s.formGroup}>
-                            <label className={s.formLabel}>Nome *</label>
-                            <input
-                                value={exForm.name}
-                                onChange={(e) =>
-                                    setExForm({
-                                        ...exForm,
-                                        name: e.target.value,
-                                    })
-                                }
-                                className={s.formInput}
-                            />
-                        </div>
-                        <div className={s.formGroup}>
-                            <label className={s.formLabel}>
-                                Grupo Muscular *
-                            </label>
-                            <select
-                                value={exForm.muscle_group}
-                                onChange={(e) =>
-                                    setExForm({
-                                        ...exForm,
-                                        muscle_group: e.target.value,
-                                    })
-                                }
-                                className={s.formInput}
-                            >
-                                <option value="">Selecione</option>
-                                {MUSCLE_GROUPS.map((mg) => (
-                                    <option key={mg} value={mg}>
-                                        {mg}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className={s.formGroup}>
-                            <label className={s.formLabel}>Categoria</label>
-                            <input
-                                value={exForm.category || ''}
-                                onChange={(e) =>
-                                    setExForm({
-                                        ...exForm,
-                                        category: e.target.value || undefined,
-                                    })
-                                }
-                                className={s.formInput}
-                            />
-                        </div>
-                        <div className={s.formGroup}>
-                            <label className={s.formLabel}>URL do Vídeo</label>
-                            <input
-                                value={exForm.video_url || ''}
-                                onChange={(e) =>
-                                    setExForm({
-                                        ...exForm,
-                                        video_url: e.target.value || undefined,
-                                    })
-                                }
-                                className={s.formInput}
-                            />
-                        </div>
-                        <div className={s.formGroup}>
-                            <label className={s.formLabel}>Descrição</label>
-                            <input
-                                value={exForm.description || ''}
-                                onChange={(e) =>
-                                    setExForm({
-                                        ...exForm,
-                                        description:
-                                            e.target.value || undefined,
-                                    })
-                                }
-                                className={s.formInput}
-                            />
-                        </div>
-                        <div className={s.formActions}>
-                            <button
-                                onClick={closeModal}
-                                className={s.btnCancel}
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                onClick={handleExUpdate}
-                                disabled={
-                                    submitting ||
-                                    !exForm.name.trim() ||
-                                    !exForm.muscle_group
-                                }
-                                className={s.btnSubmit}
-                            >
-                                {submitting ? 'Salvando...' : 'Salvar'}
-                            </button>
-                        </div>
-                    </div>
+            <Modal
+                open={modal === 'exEdit'}
+                onClose={closeModal}
+                title="Editar Exercício"
+                footer={
+                    <>
+                        <button onClick={closeModal} className={s.btnCancel}>
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={handleExUpdate}
+                            disabled={
+                                submitting ||
+                                !exForm.name.trim() ||
+                                !exForm.muscle_group
+                            }
+                            className={s.btnSubmit}
+                        >
+                            {submitting ? 'Salvando...' : 'Salvar'}
+                        </button>
+                    </>
+                }
+            >
+                {error && <div className={s.errorMsg}>{error}</div>}
+                <div className={s.formGroup}>
+                    <label className={s.formLabel}>Nome *</label>
+                    <input
+                        value={exForm.name}
+                        onChange={(e) =>
+                            setExForm({
+                                ...exForm,
+                                name: e.target.value,
+                            })
+                        }
+                        className={s.formInput}
+                    />
                 </div>
-            )}
+                <div className={s.formGroup}>
+                    <label className={s.formLabel}>
+                        Grupo Muscular *
+                    </label>
+                    <select
+                        value={exForm.muscle_group}
+                        onChange={(e) =>
+                            setExForm({
+                                ...exForm,
+                                muscle_group: e.target.value,
+                            })
+                        }
+                        className={s.formInput}
+                    >
+                        <option value="">Selecione</option>
+                        {MUSCLE_GROUPS.map((mg) => (
+                            <option key={mg} value={mg}>
+                                {mg}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+                <div className={s.formGroup}>
+                    <label className={s.formLabel}>Categoria</label>
+                    <input
+                        value={exForm.category || ''}
+                        onChange={(e) =>
+                            setExForm({
+                                ...exForm,
+                                category: e.target.value || undefined,
+                            })
+                        }
+                        className={s.formInput}
+                    />
+                </div>
+                <div className={s.formGroup}>
+                    <label className={s.formLabel}>URL do Vídeo</label>
+                    <input
+                        value={exForm.video_url || ''}
+                        onChange={(e) =>
+                            setExForm({
+                                ...exForm,
+                                video_url: e.target.value || undefined,
+                            })
+                        }
+                        className={s.formInput}
+                    />
+                </div>
+                <div className={s.formGroup}>
+                    <label className={s.formLabel}>Descrição</label>
+                    <input
+                        value={exForm.description || ''}
+                        onChange={(e) =>
+                            setExForm({
+                                ...exForm,
+                                description:
+                                    e.target.value || undefined,
+                            })
+                        }
+                        className={s.formInput}
+                    />
+                </div>
+            </Modal>
 
             {/* ── Exercise Delete Modal ── */}
-            {modal === 'exDelete' && exDeleteTarget && (
-                <div className={s.overlay} onClick={closeModal}>
-                    <div
-                        className={s.modal}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className={s.modalHeader}>
-                            <h2 className={s.modalTitle}>Remover Exercício</h2>
-                            <button
-                                onClick={closeModal}
-                                className={s.btnClose}
-                            >
-                                ×
-                            </button>
-                        </div>
-                        {error && <div className={s.errorMsg}>{error}</div>}
-                        <p className={s.confirmText}>
-                            Tem certeza que deseja remover{' '}
-                            <span className={s.confirmName}>
-                                {exDeleteTarget.name}
-                            </span>
-                            ?
-                        </p>
-                        <div className={s.formActions}>
-                            <button
-                                onClick={closeModal}
-                                className={s.btnCancel}
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                onClick={handleExDelete}
-                                disabled={submitting}
-                                className={s.btnSubmit}
-                                style={{ background: '#e74c3c', color: '#fff' }}
-                            >
-                                {submitting ? 'Removendo...' : 'Remover'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <Modal
+                open={modal === 'exDelete' && !!exDeleteTarget}
+                onClose={closeModal}
+                title="Remover Exercício"
+                footer={
+                    <>
+                        <button onClick={closeModal} className={s.btnCancel}>
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={handleExDelete}
+                            disabled={submitting}
+                            className={s.btnSubmit}
+                            style={{ background: '#e74c3c', color: '#fff' }}
+                        >
+                            {submitting ? 'Removendo...' : 'Remover'}
+                        </button>
+                    </>
+                }
+            >
+                {error && <div className={s.errorMsg}>{error}</div>}
+                <p className={s.confirmText}>
+                    Tem certeza que deseja remover{' '}
+                    <span className={s.confirmName}>
+                        {exDeleteTarget?.name}
+                    </span>
+                    ?
+                </p>
+            </Modal>
 
             {/* ── Vídeo/mídia do exercício ── */}
             {videoModalExercise && (
