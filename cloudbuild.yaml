@@ -21,7 +21,20 @@ steps:
       - '-t'
       - '${_IMAGE}'
       - '.'
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - '${_SERVICE}'
+      - '--image=${_IMAGE}'
+      - '--region=${_REGION}'
+      - '--quiet'
 images:
   - '${_IMAGE}'
 options:
   logging: CLOUD_LOGGING_ONLY
+substitutions:
+  _SERVICE: venafit-frontend
+  _REGION: us-east1
+  _IMAGE: 'us-east1-docker.pkg.dev/venafit-78329/cloud-run-source-deploy/venafit-frontend:$SHORT_SHA'

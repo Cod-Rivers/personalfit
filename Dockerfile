@@ -23,6 +23,16 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
     NEXT_PUBLIC_FIREBASE_APP_ID=$NEXT_PUBLIC_FIREBASE_APP_ID \
     NEXT_PUBLIC_FIREBASE_VAPID_KEY=$NEXT_PUBLIC_FIREBASE_VAPID_KEY
 
+# Falha o build em vez de publicar silenciosamente um bundle apontando para
+# localhost (incidente 2026-07-22: `gcloud run deploy --source .` builda sem
+# passar os --build-arg acima, e o fallback do libs/api.ts virou o app inteiro
+# inacessível em produção sem nenhum erro de build).
+RUN if [ -z "$NEXT_PUBLIC_API_URL" ]; then \
+      echo "ERRO FATAL: NEXT_PUBLIC_API_URL nao foi definido no build (--build-arg ausente)." >&2; \
+      echo "Use 'gcloud builds submit --config=cloudbuild.yaml --substitutions=...' — nunca 'gcloud run deploy --source .'." >&2; \
+      exit 1; \
+    fi
+
 COPY package.json package-lock.json ./
 RUN npm ci
 
