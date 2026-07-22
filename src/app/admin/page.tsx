@@ -7,6 +7,7 @@ import s from './admin.module.css';
 import * as adminService from '@/libs/adminService';
 import * as videoService from '@/libs/exerciseVideoService';
 import AdminAdvertisements from '@/components/organism/AdminAdvertisements';
+import AdminReferralPartners from '@/components/organism/AdminReferralPartners';
 import {
     ResponsiveContainer,
     BarChart,
@@ -27,6 +28,7 @@ type Section =
     | 'logs'
     | 'users'
     | 'ads'
+    | 'referral-partners'
     | 'relatorios'
     | 'diagnostics';
 
@@ -91,6 +93,12 @@ export default function AdminDashboard() {
         { key: 'users', label: 'Usuários', icon: '👥', fullAdminOnly: true },
         { key: 'ads', label: 'Anúncios', icon: '📢', fullAdminOnly: true },
         {
+            key: 'referral-partners',
+            label: 'Parceiros de Indicação',
+            icon: '🤝',
+            fullAdminOnly: true,
+        },
+        {
             key: 'relatorios',
             label: 'Relatórios BI',
             icon: '📈',
@@ -150,6 +158,9 @@ export default function AdminDashboard() {
                 {section === 'logs' && <LogsSection />}
                 {section === 'users' && <UsersSection currentUserId={user.id} />}
                 {section === 'ads' && <AdminAdvertisements />}
+                {section === 'referral-partners' && (
+                    <AdminReferralPartners />
+                )}
                 {section === 'relatorios' && <RelatoriosSection />}
                 {section === 'diagnostics' && <DiagnosticsSection />}
             </main>
