@@ -197,6 +197,7 @@
     top: 40px;
     right: 0;
     width: 320px;
+    max-width: calc(100vw - 24px);
     max-height: 400px;
     background: var(--surface-1);
     border: 1px solid var(--border-subtle);
@@ -205,6 +206,20 @@
     z-index: 1050;
     overflow-y: auto;
     animation: fadeInUp 0.18s ease-out both;
+}
+
+/* Em telas estreitas o botão do sino não fica na borda da tela: ancorar
+   o dropdown à viewport (position: fixed) evita que ele estoure para fora
+   da área visível e escapa do overflow:hidden do container (.main_back). */
+@media (max-width: 576px) {
+    .notif-dropdown {
+        position: fixed;
+        top: 64px;
+        left: 12px;
+        right: 12px;
+        width: auto;
+        max-width: none;
+    }
 }
 
 @keyframes fadeInUp {
