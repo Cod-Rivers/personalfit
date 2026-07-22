@@ -1,9 +1,12 @@
-﻿'use client';
+'use client';
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Image from 'next/image';
+import Link from 'next/link';
 import { Api } from '@/libs/api';
 import s from './convite.module.css';
 import { PersonalBranding } from '@/libs/brandingService';
+import { ANDROID_APP_LIVE, ANDROID_PLAY_STORE_URL, isAndroidBrowser } from '@/libs/androidApp';
 
 interface InviteInfo {
     personal_name: string;
@@ -15,6 +18,19 @@ interface InviteInfo {
 export default function InviteRegisterPage() {
     const { token } = useParams<{ token: string }>();
     const router = useRouter();
+
+    const [redirectingToStore, setRedirectingToStore] = useState(false);
+
+    // Chegar nesta página pelo navegador do Android (não pelo WebView do
+    // app) só acontece quando o App Link não abriu o app — ou seja, o app
+    // não está instalado. Manda direto para a Play Store em vez de mostrar
+    // o formulário de cadastro no navegador.
+    useEffect(() => {
+        if (ANDROID_APP_LIVE && isAndroidBrowser()) {
+            setRedirectingToStore(true);
+            window.location.replace(ANDROID_PLAY_STORE_URL);
+        }
+    }, []);
 
     const [checking, setChecking] = useState(true);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -41,6 +57,9 @@ export default function InviteRegisterPage() {
     const [linkPassword, setLinkPassword] = useState('');
 
     useEffect(() => {
+        // Já indo para a Play Store — não precisa buscar dados do convite.
+        if (ANDROID_APP_LIVE && isAndroidBrowser()) return;
+
         let cancelled = false;
 
         const fetchData = async () => {
@@ -65,7 +84,7 @@ export default function InviteRegisterPage() {
                 if (token) {
                     try {
                         const res = await Api.get(`/invite/${token}`);
-                        
+
                         let inviteData;
                         if (typeof res.data === 'object') {
                             inviteData = res.data;
@@ -264,131 +283,208 @@ export default function InviteRegisterPage() {
         }
     };
 
-    if (checking) return <div className={s.container}>Carregando...</div>;
+    // Link "já tem cadastro" leva ao login e volta pra cá depois — sem
+    // isso o usuário perde o convite ao tentar entrar com a conta existente.
+    const loginHref = `/?redirect=${encodeURIComponent(`/cadastro/convite/${token}`)}`;
+
+    if (redirectingToStore) {
+        return (
+            <div className={s.page}>
+                <p className={s.loading}>Abrindo na Play Store...</p>
+            </div>
+        );
+    }
+
+    if (checking) {
+        return (
+            <div className={s.page}>
+                <p className={s.loading}>Carregando...</p>
+            </div>
+        );
+    }
+
+    if (info && !info.valid) {
+        return (
+            <div className={s.page}>
+                <div className={`${s.card} ${s.invalidCard}`}>
+                    <div className={s.invalidIcon}>⚠️</div>
+                    <h1 className={s.invalidTitle}>Convite inválido ou expirado</h1>
+                    <p className={s.invalidText}>
+                        Peça um novo link de convite ao seu personal trainer.
+                    </p>
+                    <Link href="/" className={s.linkLogin}>Ir para o login</Link>
+                </div>
+            </div>
+        );
+    }
 
     // If already logged in, show link confirmation UI — WITH password field
     if (isLoggedIn && userData) {
         const isNonStudentAccount = !!userData.role && userData.role !== 'student';
         return (
-            <div className={s.container}>
-                <h1>Vincular à conta existente</h1>
-                <p>Bem-vindo(a), {userData.name}!</p>
+            <div className={s.page}>
+                <div className={s.card}>
+                    <div className={s.logo}>
+                        <Image src="/assets/images/logo.png" alt="logo" width={200} height={95} />
+                    </div>
+                    <h1 className={s.title}>Vincular à conta existente</h1>
+                    {info?.personal_name && (
+                        <p className={s.personalBadge}>Convite de {info.personal_name}</p>
+                    )}
 
-                {/* Password field required for linking — backend validates password */}
-                <input
-                    type="password"
-                    name="_link_password_"
-                    placeholder="Digite sua senha para confirmar a vinculação"
-                    value={linkPassword}
-                    onChange={(e) => setLinkPassword(e.target.value)}
-                    id="link-password"
-                />
+                    {!success ? (
+                        <>
+                            <p className={s.welcomeBanner}>Bem-vindo(a), {userData.name}!</p>
 
-                {isNonStudentAccount && (
-                    <label
-                        style={{
-                            display: 'flex',
-                            alignItems: 'flex-start',
-                            gap: 8,
-                            fontSize: '0.85rem',
-                            margin: '12px 0',
-                        }}
-                    >
-                        <input
-                            type="checkbox"
-                            checked={confirmNonStudent}
-                            onChange={(e) =>
-                                setConfirmNonStudent(e.target.checked)
-                            }
-                        />
-                        <span>
-                            Esta é uma conta de {userData.role}. Ao confirmar,
-                            ela também passa a ter um perfil de aluno
-                            vinculado a{' '}
-                            {info?.personal_name || 'este personal'}, sem
-                            deixar de ser {userData.role}.
-                        </span>
-                    </label>
-                )}
+                            <div className={s.form}>
+                                <div className={s.formGroup}>
+                                    <label className={s.formLabel} htmlFor="link-password">
+                                        Confirme sua senha para vincular
+                                    </label>
+                                    <input
+                                        type="password"
+                                        name="_link_password_"
+                                        className={s.formInput}
+                                        placeholder="Sua senha"
+                                        value={linkPassword}
+                                        onChange={(e) => setLinkPassword(e.target.value)}
+                                        id="link-password"
+                                    />
+                                </div>
 
-                {error && <p className={s.error}>{error}</p>}
-                <button
-                    onClick={handleConfirmLink}
-                    disabled={
-                        submitting ||
-                        (isNonStudentAccount && !confirmNonStudent)
-                    }
-                >
-                    {submitting
-                        ? 'Vinculando...'
-                        : `Vincular ${info?.personal_name || 'Personal'} ao seu perfil`}
-                </button>
+                                {isNonStudentAccount && (
+                                    <label
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'flex-start',
+                                            gap: 8,
+                                            fontSize: '0.85rem',
+                                            color: 'var(--text-muted)',
+                                        }}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={confirmNonStudent}
+                                            onChange={(e) =>
+                                                setConfirmNonStudent(e.target.checked)
+                                            }
+                                        />
+                                        <span>
+                                            Esta é uma conta de {userData.role}. Ao confirmar,
+                                            ela também passa a ter um perfil de aluno
+                                            vinculado a{' '}
+                                            {info?.personal_name || 'este personal'}, sem
+                                            deixar de ser {userData.role}.
+                                        </span>
+                                    </label>
+                                )}
+
+                                {error && <p className={s.errorMsg}>{error}</p>}
+                                <button
+                                    className={s.btnSubmit}
+                                    onClick={handleConfirmLink}
+                                    disabled={
+                                        submitting ||
+                                        (isNonStudentAccount && !confirmNonStudent)
+                                    }
+                                >
+                                    {submitting
+                                        ? 'Vinculando...'
+                                        : `Vincular ${info?.personal_name || 'Personal'} ao seu perfil`}
+                                </button>
+                            </div>
+                        </>
+                    ) : (
+                        <p className={s.successMsg}>Vínculo realizado com sucesso!</p>
+                    )}
+                </div>
             </div>
         );
     }
 
     // Show registration form
     return (
-        <form className={s.container} onSubmit={handleSubmit}>
-            <h1>Cadastro - {info?.personal_name}</h1>
-            {!success ? (
-                <>
-                    <input
-                        type="text"
-                        name="name"
-                        placeholder="Nome completo"
-                        onChange={handleChange}
-                        required
-                    />
-                    <input
-                        type="email"
-                        name="email"
-                        placeholder="Email"
-                        onChange={handleChange}
-                        required
-                    />
-                    <input
-                        type="text"
-                        name="cpf"
-                        placeholder="CPF (apenas números)"
-                        onChange={handleChange}
-                        pattern="[0-9]{11}"
-                        maxLength={11}
-                    />
-                    <input
-                        type="tel"
-                        name="phone"
-                        placeholder="Telefone fixo"
-                        onChange={handleChange}
-                    />
-                    <input
-                        type="tel"
-                        name="mobile_phone"
-                        placeholder="Celular (WhatsApp)"
-                        onChange={handleChange}
-                    />
-                    <input
-                        type="password"
-                        name="password"
-                        placeholder="Senha"
-                        onChange={handleChange}
-                        required
-                    />
-                    <input
-                        type="password"
-                        name="confirm_password"
-                        placeholder="Confirme a senha"
-                        onChange={handleChange}
-                        required
-                    />
-                    {error && <p className={s.error}>{error}</p>}
-                    <button type="submit" disabled={submitting}>
-                        {submitting ? 'Cadastrando...' : 'Cadastrar'}
-                    </button>
-                </>
-            ) : (
-                <p>Cadastro realizado com sucesso!</p>
-            )}
-        </form>
+        <div className={s.page}>
+            <form className={s.card} onSubmit={handleSubmit}>
+                <div className={s.logo}>
+                    <Image src="/assets/images/logo.png" alt="logo" width={200} height={95} />
+                </div>
+                <h1 className={s.title}>Criar conta</h1>
+                {info?.personal_name && (
+                    <p className={s.personalBadge}>Convite de {info.personal_name}</p>
+                )}
+                {!success ? (
+                    <>
+                        <div className={s.form}>
+                            <input
+                                type="text"
+                                name="name"
+                                className={s.formInput}
+                                placeholder="Nome completo"
+                                onChange={handleChange}
+                                required
+                            />
+                            <input
+                                type="email"
+                                name="email"
+                                className={s.formInput}
+                                placeholder="Email"
+                                onChange={handleChange}
+                                required
+                            />
+                            <input
+                                type="text"
+                                name="cpf"
+                                className={s.formInput}
+                                placeholder="CPF (apenas números)"
+                                onChange={handleChange}
+                                pattern="[0-9]{11}"
+                                maxLength={11}
+                            />
+                            <input
+                                type="tel"
+                                name="phone"
+                                className={s.formInput}
+                                placeholder="Telefone fixo"
+                                onChange={handleChange}
+                            />
+                            <input
+                                type="tel"
+                                name="mobile_phone"
+                                className={s.formInput}
+                                placeholder="Celular (WhatsApp)"
+                                onChange={handleChange}
+                            />
+                            <input
+                                type="password"
+                                name="password"
+                                className={s.formInput}
+                                placeholder="Senha"
+                                onChange={handleChange}
+                                required
+                            />
+                            <input
+                                type="password"
+                                name="confirm_password"
+                                className={s.formInput}
+                                placeholder="Confirme a senha"
+                                onChange={handleChange}
+                                required
+                            />
+                            {error && <p className={s.errorMsg}>{error}</p>}
+                            <button type="submit" className={s.btnSubmit} disabled={submitting}>
+                                {submitting ? 'Cadastrando...' : 'Cadastrar'}
+                            </button>
+                        </div>
+                        <p style={{ textAlign: 'center', marginTop: 16 }}>
+                            Já tem cadastro?{' '}
+                            <Link href={loginHref} className={s.linkLogin}>Faça login.</Link>
+                        </p>
+                    </>
+                ) : (
+                    <p className={s.successMsg}>Cadastro realizado com sucesso!</p>
+                )}
+            </form>
+        </div>
     );
 }

@@ -16,6 +16,9 @@ const TLogin: FC = () => {
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string>('');
     const [info, setInfo] = useState<string>('');
+    // Preserva para onde voltar após o login (ex.: convite de personal
+    // pendente de vínculo) — só aceita caminhos internos (evita open redirect).
+    const [redirectTarget, setRedirectTarget] = useState<string | null>(null);
 
     const {
         register,
@@ -44,12 +47,13 @@ const TLogin: FC = () => {
                 }
                 saveSession(data.token, data.user);
                 window.location.href =
-                    data.user.role === 'admin' ||
+                    redirectTarget ||
+                    (data.user.role === 'admin' ||
                     data.user.role === 'content_editor'
                         ? '/admin'
                         : data.user.role === 'personal'
                           ? '/personal'
-                          : '/app';
+                          : '/app');
             }
         } catch {
             setError('Erro ao realizar login');
@@ -71,16 +75,24 @@ const TLogin: FC = () => {
             );
         }
 
+        const redirectParam = params.get('redirect');
+        const safeRedirect =
+            redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//')
+                ? redirectParam
+                : null;
+        if (safeRedirect) setRedirectTarget(safeRedirect);
+
         const token = localStorage.getItem('token');
         const stored = localStorage.getItem('user');
         if (token && stored) {
             const parsed = JSON.parse(stored);
             window.location.href =
-                parsed.role === 'admin' || parsed.role === 'content_editor'
+                safeRedirect ||
+                (parsed.role === 'admin' || parsed.role === 'content_editor'
                     ? '/admin'
                     : parsed.role === 'personal'
                       ? '/personal'
-                      : '/app';
+                      : '/app');
         }
     }, []);
 
