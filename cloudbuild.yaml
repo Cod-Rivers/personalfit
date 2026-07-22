@@ -21,6 +21,15 @@ steps:
       - '-t'
       - '${_IMAGE}'
       - '.'
+  # Push explícito ANTES do deploy: o campo `images:` no fim deste arquivo só
+  # empurra a imagem depois que TODOS os steps terminam, então sem isso o
+  # `gcloud run deploy` abaixo pegaria a tag antiga em cache (foi o que causou
+  # o incidente de login em 2026-07-22: o deploy "novo" continuava publicando
+  # a imagem quebrada anterior, sem erro nenhum).
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '${_IMAGE}'
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
