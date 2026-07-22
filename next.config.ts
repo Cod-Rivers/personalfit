@@ -8,20 +8,27 @@ import createNextIntlPlugin from "next-intl/plugin";
 // Firebase/FCM e embeds de vídeo. 'unsafe-inline' em script-src ainda é
 // necessário por causa do script anti-flash de tema e do bootstrap do Next;
 // migrar para nonce é o próximo passo para endurecer.
+// Em dev, o backend local roda em HTTP puro (sem TLS), então connect-src
+// precisa aceitar http(s)/ws(s) e upgrade-insecure-requests fica de fora —
+// senão o browser bloqueia ou reescreve as chamadas à API local para https,
+// e o login local para de funcionar.
+const isDev = process.env.NODE_ENV !== "production";
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://kit.fontawesome.com https://cdn.jsdelivr.net https://*.fontawesome.com",
+  isDev
+    ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://kit.fontawesome.com https://cdn.jsdelivr.net https://*.fontawesome.com https://www.gstatic.com"
+    : "script-src 'self' 'unsafe-inline' https://kit.fontawesome.com https://cdn.jsdelivr.net https://*.fontawesome.com https://www.gstatic.com",
   "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://*.fontawesome.com",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data: https://*.fontawesome.com https://cdn.jsdelivr.net",
-  "connect-src 'self' https: wss:",
+  isDev ? "connect-src 'self' http: https: ws: wss:" : "connect-src 'self' https: wss:",
   "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://www.instagram.com https://www.tiktok.com",
   "media-src 'self' https: blob:",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
   "frame-ancestors 'none'",
-  "upgrade-insecure-requests",
+  ...(isDev ? [] : ["upgrade-insecure-requests"]),
 ].join("; ");
 
 const securityHeaders = [
@@ -30,10 +37,14 @@ const securityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(self)" },
-  {
-    key: "Strict-Transport-Security",
-    value: "max-age=63072000; includeSubDomains; preload",
-  },
+  ...(isDev
+    ? []
+    : [
+        {
+          key: "Strict-Transport-Security",
+          value: "max-age=63072000; includeSubDomains; preload",
+        },
+      ]),
 ];
 
 const nextConfig: NextConfig = {
