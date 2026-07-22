@@ -596,8 +596,9 @@
 
 .templateActions {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
-    flex-shrink: 0;
+    max-width: 100%;
 }
 
 .badgeMesocycles {

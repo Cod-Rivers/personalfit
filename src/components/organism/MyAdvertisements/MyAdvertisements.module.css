@@ -56,6 +56,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
     background: var(--surface-1);
     border: 1px solid var(--border-mid);
     border-radius: 10px;
@@ -104,8 +105,9 @@
 
 .adActions {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
-    flex-shrink: 0;
+    max-width: 100%;
 }
 
 .btnEdit {
