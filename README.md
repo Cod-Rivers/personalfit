@@ -54,8 +54,8 @@ nenhum erro aparecer no build ou no deploy.
 
 ### Deploy automático (recomendado)
 
-Push/merge na branch `main` do repo `Cod-Rivers/personalfit` dispara o Cloud
-Build Trigger `venafit-frontend-main`, que builda com as variáveis corretas e
+Push/merge na branch `master` do repo `Cod-Rivers/personalfit` dispara o Cloud
+Build Trigger `venafit-frontend-master`, que builda com as variáveis corretas e
 já publica no Cloud Run. Não precisa fazer nada manualmente.
 
 ### Deploy manual (só se o trigger estiver fora do ar)
