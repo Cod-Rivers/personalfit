@@ -44,6 +44,7 @@ export default function AdminDashboard() {
     const router = useRouter();
     const [user, setUser] = useState<UserData | null>(null);
     const [section, setSection] = useState<Section>('metrics');
+    const [menuOpen, setMenuOpen] = useState(false);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -118,7 +119,29 @@ export default function AdminDashboard() {
 
     return (
         <div className={s.page}>
-            <nav className={s.sidebar}>
+            <header className={s.mobileTopbar}>
+                <button
+                    className={s.mobileMenuBtn}
+                    onClick={() => setMenuOpen(true)}
+                    aria-label="Abrir menu"
+                    aria-expanded={menuOpen}
+                >
+                    ☰
+                </button>
+                <h1 className={s.mobileTopbarTitle}>⚙️ Admin</h1>
+            </header>
+
+            {menuOpen && (
+                <div
+                    className={s.backdrop}
+                    onClick={() => setMenuOpen(false)}
+                    aria-hidden="true"
+                />
+            )}
+
+            <nav
+                className={`${s.sidebar} ${menuOpen ? s.sidebarOpen : ''}`}
+            >
                 <div className={s.sidebarHeader}>
                     <h2 className={s.sidebarTitle}>⚙️ Admin</h2>
                     <p className={s.sidebarSub}>
@@ -135,7 +158,10 @@ export default function AdminDashboard() {
                                     ? s.navItemActive
                                     : s.navItem
                             }
-                            onClick={() => setSection(item.key)}
+                            onClick={() => {
+                                setSection(item.key);
+                                setMenuOpen(false);
+                            }}
                         >
                             {item.icon} {item.label}
                         </li>
