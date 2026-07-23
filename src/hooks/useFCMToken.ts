@@ -25,6 +25,13 @@ export function useFCMToken() {
         const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
         if (!vapidKey) return;
 
+        // Dentro do app Android (WebView) o push é nativo (Firebase Android SDK),
+        // não via Web Notifications API — e o WebView nunca concede essa permissão
+        // web, então pedir aqui só geraria o aviso de "bloqueado" pra sempre.
+        // Presença da bridge nativa (injetada via addJavascriptInterface) indica
+        // que estamos rodando dentro do wrapper Android.
+        if (typeof window !== 'undefined' && 'VenafitBilling' in window) return;
+
         (async () => {
             try {
                 const messaging = await getFirebaseMessaging();
