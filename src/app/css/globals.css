@@ -85,7 +85,7 @@ strong, b { font-weight: 700; }
     width: 100%;
     max-width: 600px;
     margin: auto;
-    padding: 16px;
+    padding: 28px 16px 16px;
     box-sizing: border-box;
 }
 
