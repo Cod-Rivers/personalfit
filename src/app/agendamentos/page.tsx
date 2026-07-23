@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import {
     listMyAppointments,
     requestAppointment,
+    isPendingProResponse,
     confirmMyAppointment,
     cancelMyAppointment,
     cancelMyAppointmentAdvance,
@@ -55,6 +56,7 @@ export default function AgendamentosPage() {
     const [appointments, setAppointments] = useState<AppointmentResponse[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [notice, setNotice] = useState('');
 
     const [filterFrom, setFilterFrom] = useState(() => {
         const d = new Date();
@@ -118,8 +120,10 @@ export default function AgendamentosPage() {
     async function handleRequest(e: React.FormEvent) {
         e.preventDefault();
         setSubmitting(true);
+        setError('');
+        setNotice('');
         try {
-            await requestAppointment({
+            const result = await requestAppointment({
                 ...form,
                 start_at: new Date(form.start_at).toISOString(),
                 end_at: new Date(form.end_at).toISOString(),
@@ -132,7 +136,13 @@ export default function AgendamentosPage() {
                 meeting_link: '',
                 notes: '',
             });
-            fetchAppointments();
+            // Personal ainda não é PRO: nenhum agendamento foi criado, mas ele
+            // foi avisado do interesse. Informamos o aluno em vez de recarregar.
+            if (isPendingProResponse(result)) {
+                setNotice(result.message);
+            } else {
+                fetchAppointments();
+            }
         } catch {
             setError('Erro ao solicitar agendamento.');
         } finally {
@@ -236,6 +246,11 @@ export default function AgendamentosPage() {
                 </div>
 
                 {error && <p className={s.errorMsg}>{error}</p>}
+                {notice && (
+                    <div className="alert alert-info" role="status">
+                        {notice}
+                    </div>
+                )}
 
                 <div className={s.toolbar}>
                     <div className={s.dateRange}>

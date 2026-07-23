@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import styles from './styles.module.css';
 
@@ -24,18 +25,30 @@ export default function HelpTooltip({
     label = 'Ajuda',
 }: HelpTooltipProps) {
     const [open, setOpen] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
     const wrapperRef = useRef<HTMLSpanElement>(null);
+    const bubbleRef = useRef<HTMLSpanElement>(null);
+
+    useEffect(() => {
+        const mql = window.matchMedia('(max-width: 640px)');
+        const update = () => setIsMobile(mql.matches);
+        update();
+        mql.addEventListener('change', update);
+        return () => mql.removeEventListener('change', update);
+    }, []);
 
     useEffect(() => {
         if (!open) return;
 
         function handleOutside(event: MouseEvent | TouchEvent) {
+            const target = event.target as Node;
             if (
-                wrapperRef.current &&
-                !wrapperRef.current.contains(event.target as Node)
+                wrapperRef.current?.contains(target) ||
+                bubbleRef.current?.contains(target)
             ) {
-                setOpen(false);
+                return;
             }
+            setOpen(false);
         }
 
         document.addEventListener('mousedown', handleOutside);
@@ -45,6 +58,27 @@ export default function HelpTooltip({
             document.removeEventListener('touchstart', handleOutside);
         };
     }, [open]);
+
+    const bubbleContent = (
+        <>
+            <span
+                className={styles.backdrop}
+                aria-hidden="true"
+                onClick={() => setOpen(false)}
+            />
+            <span className={styles.bubble} role="tooltip" ref={bubbleRef}>
+                <span className={styles.bubbleText}>{text}</span>
+                <Link
+                    href={href}
+                    className={styles.bubbleLink}
+                    onClick={() => setOpen(false)}
+                >
+                    {linkLabel} →
+                </Link>
+                <span className={styles.bubbleTail} aria-hidden="true" />
+            </span>
+        </>
+    );
 
     return (
         <span
@@ -65,29 +99,10 @@ export default function HelpTooltip({
             >
                 ?
             </button>
-            {open && (
-                <>
-                    <span
-                        className={styles.backdrop}
-                        aria-hidden="true"
-                        onClick={() => setOpen(false)}
-                    />
-                    <span className={styles.bubble} role="tooltip">
-                        <span className={styles.bubbleText}>{text}</span>
-                        <Link
-                            href={href}
-                            className={styles.bubbleLink}
-                            onClick={() => setOpen(false)}
-                        >
-                            {linkLabel} →
-                        </Link>
-                        <span
-                            className={styles.bubbleTail}
-                            aria-hidden="true"
-                        />
-                    </span>
-                </>
-            )}
+            {open &&
+                (isMobile && typeof document !== 'undefined'
+                    ? createPortal(bubbleContent, document.body)
+                    : bubbleContent)}
         </span>
     );
 }

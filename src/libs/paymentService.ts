@@ -17,6 +17,7 @@ export interface PlanCatalogItem {
 export interface PlanCatalog {
     pro: PlanCatalogItem[];
     early_anamnesis: PlanCatalogItem;
+    library_plan: PlanCatalogItem;
 }
 
 export async function getPlans(): Promise<PlanCatalog> {
@@ -98,6 +99,44 @@ export async function purchaseEarlyAnamnesisPix(): Promise<EarlyAnamnesisPixResp
     return res.data;
 }
 
+/* ── Compra avulsa de um plano da biblioteca "estilo-famosos" ── */
+
+export interface PurchaseLibraryPlanResponse {
+    success: boolean;
+    message: string;
+    method: string; // PIX | CREDIT_CARD
+    applied: boolean; // true quando o cartão já aprovou e o plano foi aplicado
+    macrocycle_id?: string;
+    payment_id?: string;
+    qr_image_url?: string;
+    qr_code_payload?: string;
+    expires_at?: string;
+    value?: number;
+}
+
+/** Compra um plano da biblioteca via PIX. O plano é aplicado no webhook. */
+export async function purchaseLibraryPlanPix(
+    templateId: string,
+): Promise<PurchaseLibraryPlanResponse> {
+    const res = await Api.post<PurchaseLibraryPlanResponse>(
+        `/my-planning/celebrity-templates/${templateId}/purchase`,
+        { payment_method: 'PIX' },
+    );
+    return res.data;
+}
+
+/** Compra um plano da biblioteca via cartão (síncrono). Se aprovado, applied=true. */
+export async function purchaseLibraryPlanCard(
+    templateId: string,
+    card: CardSubscriptionForm,
+): Promise<PurchaseLibraryPlanResponse> {
+    const res = await Api.post<PurchaseLibraryPlanResponse>(
+        `/my-planning/celebrity-templates/${templateId}/purchase`,
+        { payment_method: 'CREDIT_CARD', ...card },
+    );
+    return res.data;
+}
+
 /* ── Google Play Billing (bridge nativa do app Android) ── */
 
 export interface GooglePlayVerifyResponse {
@@ -110,11 +149,13 @@ export async function verifyGooglePlayPurchase(
     productId: string,
     purchaseToken: string,
     productType: 'subs' | 'inapp',
+    templateId?: string,
 ): Promise<GooglePlayVerifyResponse> {
     const res = await Api.post<GooglePlayVerifyResponse>('/billing/google/verify', {
         product_id: productId,
         purchase_token: purchaseToken,
         product_type: productType,
+        ...(templateId ? { template_id: templateId } : {}),
     });
     return res.data;
 }

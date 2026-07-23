@@ -531,25 +531,13 @@ export async function getMyActiveMacrocycle(): Promise<MacrocycleResponse | null
 }
 
 /**
- * GET /my-planning/celebrity-templates — biblioteca de planos estilo-famosos,
- * exclusiva para alunos do plano PRO (backend responde 403 caso contrário).
+ * GET /my-planning/celebrity-templates — vitrine da loja de planos
+ * estilo-famosos. Qualquer aluno pode navegar; a compra/aplicação de um plano
+ * é paga (avulsa) via pagamento?produto=plano&templateId=... .
  */
 export async function getCelebrityTemplates(): Promise<MacrocycleResponse[]> {
     const { data } = await Api.get<MacrocycleResponse[]>(
         '/my-planning/celebrity-templates',
     );
     return data ?? [];
-}
-
-/**
- * POST /my-planning/celebrity-templates/:templateId/apply — autoaplica um
- * plano estilo-famosos como o novo macrociclo ativo do aluno logado.
- */
-export async function applyCelebrityTemplate(
-    templateId: string,
-): Promise<MacrocycleResponse> {
-    const { data } = await Api.post<MacrocycleResponse>(
-        `/my-planning/celebrity-templates/${templateId}/apply`,
-    );
-    return data;
 }

@@ -4,10 +4,9 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
     getCelebrityTemplates,
-    applyCelebrityTemplate,
     MacrocycleResponse,
 } from '@/libs/planningService';
-import Modal from '@/components/system/Modal';
+import { getPlans } from '@/libs/paymentService';
 import s from './escolher-plano.module.css';
 
 function extractErrorMessage(err: unknown, fallback: string): string {
@@ -17,16 +16,17 @@ function extractErrorMessage(err: unknown, fallback: string): string {
     return data?.error || data?.message || fallback;
 }
 
+function formatBRL(value: number): string {
+    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
 export default function EscolherPlanoPage() {
     const router = useRouter();
     const [isMounted, setIsMounted] = useState(false);
-    const [isPro, setIsPro] = useState(false);
     const [templates, setTemplates] = useState<MacrocycleResponse[]>([]);
+    const [price, setPrice] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [selected, setSelected] = useState<MacrocycleResponse | null>(null);
-    const [applying, setApplying] = useState(false);
-    const [applyError, setApplyError] = useState('');
 
     useEffect(() => {
         setIsMounted(true);
@@ -39,25 +39,17 @@ export default function EscolherPlanoPage() {
             setLoading(true);
             setError(null);
             try {
-                const userString = localStorage.getItem('user');
-                if (!userString || !localStorage.getItem('token')) {
+                if (!localStorage.getItem('user') || !localStorage.getItem('token')) {
                     router.push('/app');
                     return;
                 }
 
-                let planType = '';
-                try {
-                    planType = JSON.parse(userString)?.plan_type || '';
-                } catch {}
-                setIsPro(planType === 'pro');
-
-                if (planType !== 'pro') {
-                    setLoading(false);
-                    return;
-                }
-
-                const list = await getCelebrityTemplates();
+                const [list, catalog] = await Promise.all([
+                    getCelebrityTemplates(),
+                    getPlans().catch(() => null),
+                ]);
                 setTemplates(list);
+                if (catalog) setPrice(catalog.library_plan.value);
             } catch (e) {
                 setError(extractErrorMessage(e, 'Não foi possível carregar os planos.'));
             } finally {
@@ -68,20 +60,8 @@ export default function EscolherPlanoPage() {
         fetchData();
     }, [isMounted, router]);
 
-    async function handleApply() {
-        if (!selected) return;
-        setApplying(true);
-        setApplyError('');
-        try {
-            await applyCelebrityTemplate(selected.id);
-            router.push('/meus-treinos');
-        } catch (e) {
-            setApplyError(
-                extractErrorMessage(e, 'Erro ao aplicar plano.'),
-            );
-        } finally {
-            setApplying(false);
-        }
+    function handleBuy(tpl: MacrocycleResponse) {
+        router.push(`/pagamento?produto=plano&templateId=${tpl.id}`);
     }
 
     if (!isMounted || loading) {
@@ -95,26 +75,15 @@ export default function EscolherPlanoPage() {
                     <h1 className={s.title}>Planos estilo famosos</h1>
                     <p className={s.subtitle}>
                         Escolha um plano pronto, inspirado no estilo de treino
-                        de grandes atletas, e comece agora mesmo.
+                        de grandes atletas, e comece agora mesmo
+                        {price != null ? ` por ${formatBRL(price)}` : ''}.
                     </p>
                 </div>
             </div>
 
             {error && <div className={s.errorMsg}>{error}</div>}
 
-            {!isPro ? (
-                <div className={s.proGate}>
-                    <div className={s.proGateIcon}>🔒</div>
-                    <h3 className={s.proGateTitle}>
-                        Recurso exclusivo do plano PRO
-                    </h3>
-                    <p className={s.proGateText}>
-                        A biblioteca de planos estilo famosos está disponível
-                        apenas para alunos do plano PRO. Fale com seu personal
-                        trainer ou com o suporte para fazer o upgrade.
-                    </p>
-                </div>
-            ) : templates.length === 0 ? (
+            {templates.length === 0 ? (
                 <p className={s.subtitle}>
                     Nenhum plano disponível no momento.
                 </p>
@@ -142,51 +111,16 @@ export default function EscolherPlanoPage() {
                             )}
                             <button
                                 className={s.btnApply}
-                                onClick={() => setSelected(tpl)}
+                                onClick={() => handleBuy(tpl)}
                             >
-                                Aplicar este plano
+                                {price != null
+                                    ? `Comprar por ${formatBRL(price)}`
+                                    : 'Comprar este plano'}
                             </button>
                         </div>
                     ))}
                 </div>
             )}
-
-            <Modal
-                open={!!selected}
-                onClose={() => !applying && setSelected(null)}
-                title="Aplicar plano"
-                footer={
-                    <div className={s.formActions}>
-                        <button
-                            className={s.btnCancel}
-                            onClick={() => setSelected(null)}
-                            disabled={applying}
-                        >
-                            Cancelar
-                        </button>
-                        <button
-                            className={s.btnSubmit}
-                            onClick={handleApply}
-                            disabled={applying}
-                        >
-                            {applying ? 'Aplicando...' : 'Confirmar'}
-                        </button>
-                    </div>
-                }
-            >
-                {applyError && (
-                    <div className={s.errorMsg}>{applyError}</div>
-                )}
-                {selected && (
-                    <p className={s.confirmText}>
-                        Plano: <strong>{selected.name}</strong>
-                        <br />
-                        Este plano passará a ser o seu treino ativo. Se
-                        você já tiver um plano em andamento, ele será
-                        marcado como concluído.
-                    </p>
-                )}
-            </Modal>
         </div>
     );
 }

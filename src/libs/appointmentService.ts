@@ -176,8 +176,30 @@ export async function listMyExceptions(recurrenceId: string): Promise<Recurrence
 
 // ── Student API ──
 
-export async function requestAppointment(data: StudentCreateAppointmentRequest): Promise<AppointmentResponse> {
-    const res = await Api.post<AppointmentResponse>('/my-appointments', data);
+/** Aviso retornado quando o personal vinculado ainda não é PRO: a Agenda é um
+ *  recurso PRO, então nenhum agendamento é criado — o personal é apenas avisado. */
+export interface AppointmentPendingProResponse {
+    pending_pro: true;
+    message: string;
+}
+
+export type RequestAppointmentResult =
+    | AppointmentResponse
+    | AppointmentPendingProResponse;
+
+export function isPendingProResponse(
+    r: RequestAppointmentResult,
+): r is AppointmentPendingProResponse {
+    return (r as AppointmentPendingProResponse).pending_pro === true;
+}
+
+export async function requestAppointment(
+    data: StudentCreateAppointmentRequest,
+): Promise<RequestAppointmentResult> {
+    const res = await Api.post<RequestAppointmentResult>(
+        '/my-appointments',
+        data,
+    );
     return res.data;
 }
 

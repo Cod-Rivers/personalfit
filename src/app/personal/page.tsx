@@ -112,9 +112,20 @@ export default function PersonalDashboard() {
                     )}
                     <button
                         className={s.tab}
-                        onClick={() => router.push('/personal/agenda')}
+                        onClick={() =>
+                            router.push(
+                                planType === 'pro'
+                                    ? '/personal/agenda'
+                                    : '/pagamento?produto=pro',
+                            )
+                        }
+                        title={
+                            planType === 'pro'
+                                ? undefined
+                                : 'Recurso exclusivo do plano PRO'
+                        }
                     >
-                        📅 Agenda
+                        📅 Agenda{planType === 'pro' ? '' : ' 🔒'}
                     </button>
                     <button
                         className={tab === 'ciclos' ? s.tabActive : s.tab}

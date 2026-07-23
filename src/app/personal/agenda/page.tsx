@@ -35,6 +35,7 @@ interface UserData {
     id: string;
     name: string;
     role: string;
+    plan_type?: string;
     cancel_advance_hours?: number;
 }
 interface Student {
@@ -141,6 +142,11 @@ export default function AgendaPage() {
         const parsed: UserData = JSON.parse(stored);
         if (parsed.role !== 'personal') {
             router.replace('/app');
+            return;
+        }
+        // Agenda é exclusiva do plano PRO — free vai para o upgrade.
+        if (parsed.plan_type !== 'pro') {
+            router.replace('/pagamento?produto=pro');
             return;
         }
         setUser(parsed);
