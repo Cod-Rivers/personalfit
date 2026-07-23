@@ -1,5 +1,11 @@
 import { Api } from '@/libs/api';
 
+/** Deve espelhar storage.MaxMealPlanPdfBytes no backend (r2.go). */
+export const MAX_MEAL_PLAN_PDF_MB = 10;
+
+/** Deve espelhar nutrition.MaxPdfVersions no backend (meal-plan.go). */
+export const MAX_MEAL_PLAN_PDFS = 12;
+
 export interface MealItem {
     name: string;
     time?: string;
@@ -84,6 +90,14 @@ export async function createMealPlanVersion(
         payload,
     );
     return data;
+}
+
+/** Apaga uma versão do histórico (ex.: a mais antiga, para liberar espaço sob o limite de MAX_MEAL_PLAN_PDFS). */
+export async function deleteMealPlanVersion(
+    versionId: string,
+    studentId?: string,
+): Promise<void> {
+    await Api.delete(`${basePath(studentId)}/${versionId}`);
 }
 
 /** Só o personal chama — liga/desliga a permissão do aluno editar o próprio plano. */

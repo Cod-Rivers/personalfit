@@ -6,6 +6,9 @@ import {
     createMealPlanVersion,
     setMealPlanPermission,
     uploadMealPlanPdf,
+    deleteMealPlanVersion,
+    MAX_MEAL_PLAN_PDF_MB,
+    MAX_MEAL_PLAN_PDFS,
     type MealItem,
     type MealPlanResponse,
     type MealPlanVersion,
@@ -106,6 +109,20 @@ export default function MealPlanEditor({ studentId }: Props) {
 
     const addMeal = () => setMeals((prev) => [...prev, { ...emptyMeal }]);
 
+    const handlePdfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0] ?? null;
+        if (file && file.size > MAX_MEAL_PLAN_PDF_MB * 1024 * 1024) {
+            setError(
+                `O PDF excede o limite de ${MAX_MEAL_PLAN_PDF_MB}MB. Escolha um arquivo menor.`,
+            );
+            setPdfFile(null);
+            e.target.value = '';
+            return;
+        }
+        setError('');
+        setPdfFile(file);
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
@@ -145,6 +162,25 @@ export default function MealPlanEditor({ studentId }: Props) {
             setError(extractErrorMessage(err, 'Erro ao salvar plano alimentar.'));
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleDeleteVersion = async (versionId: string) => {
+        if (
+            !window.confirm(
+                'Apagar esta versão do histórico? Essa ação não pode ser desfeita.',
+            )
+        ) {
+            return;
+        }
+        setError('');
+        try {
+            await deleteMealPlanVersion(versionId, studentId);
+            setHistory((prev) =>
+                prev ? prev.filter((v) => v.id !== versionId) : prev,
+            );
+        } catch (err) {
+            setError(extractErrorMessage(err, 'Erro ao apagar versão do plano.'));
         }
     };
 
@@ -265,6 +301,16 @@ export default function MealPlanEditor({ studentId }: Props) {
                                                 {v.pdf_file_name || 'plano.pdf'}
                                             </a>
                                         )}
+                                        {canEdit && (
+                                            <button
+                                                type="button"
+                                                className={s.btnDeleteVersion}
+                                                onClick={() => handleDeleteVersion(v.id)}
+                                                title="Apagar esta versão do histórico"
+                                            >
+                                                Apagar versão
+                                            </button>
+                                        )}
                                     </div>
                                 ))}
                             </div>
@@ -340,14 +386,13 @@ export default function MealPlanEditor({ studentId }: Props) {
 
                     <div className={s.formGroup}>
                         <label className={s.formLabel}>
-                            Ou anexar PDF do plano
+                            Ou anexar PDF do plano (máx. {MAX_MEAL_PLAN_PDF_MB}MB,
+                            limite de {MAX_MEAL_PLAN_PDFS} PDFs no histórico)
                         </label>
                         <input
                             type="file"
                             accept="application/pdf"
-                            onChange={(e) =>
-                                setPdfFile(e.target.files?.[0] ?? null)
-                            }
+                            onChange={handlePdfChange}
                         />
                     </div>
 
