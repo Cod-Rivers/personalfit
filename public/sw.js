@@ -18,6 +18,15 @@ const GIF_CACHE = 'venafit-gifs-v1';
 const SHELL_CACHE = 'venafit-shell-v1';
 const MEDIA_HOSTS = ['midia.venafit.codriverslabs.com'];
 
+// URLs assinadas (GET presigned) contra o endpoint direto do R2 servem mídia
+// sensível (fotos de evolução do aluno, PDF de plano alimentar) — cada URL
+// expira e é única por requisição (assinatura na query string), então nunca
+// deve ser cacheada: um cache-first aqui nunca daria hit (URL sempre nova) e
+// só acumularia cópias duplicadas do mesmo arquivo no Cache Storage.
+function isSignedR2Request(url) {
+    return url.hostname.endsWith('.r2.cloudflarestorage.com') || url.searchParams.has('X-Amz-Signature');
+}
+
 // Caminhos que nunca devem ser cacheados pelo SW: dados de conta/autenticação e
 // qualquer coisa sob /api. Mesmo hoje a API vivendo em outra origem (portanto já
 // fora do cache same-origin), esta lista é defesa em profundidade caso a API
@@ -46,6 +55,10 @@ self.addEventListener('fetch', (event) => {
     if (request.method !== 'GET') return;
 
     const url = new URL(request.url);
+
+    // Mídia sensível assinada: deixa passar direto pela rede, sem
+    // interceptar (nem cache-first, nem o fallback de shell abaixo).
+    if (isSignedR2Request(url)) return;
 
     if (isMediaRequest(request, url)) {
         // Cache-first: GIFs/videos are immutable-ish once uploaded, so prefer
