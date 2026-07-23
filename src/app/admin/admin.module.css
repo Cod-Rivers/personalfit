@@ -116,20 +116,17 @@
     .statsGrid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 600px) {
-    /* Fixed top bar with hamburger to open the nav drawer */
+    /* In-flow top bar with hamburger to open the nav drawer — sits below
+       the site's global sticky header, does not cover it */
     .mobileTopbar {
         display: flex;
         align-items: center;
         gap: 12px;
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
+        width: 100%;
         height: 56px;
         padding: 0 16px;
         background: var(--surface-1);
         border-bottom: 1px solid var(--border-subtle);
-        z-index: 1050;
     }
     .mobileMenuBtn {
         background: transparent;
@@ -165,5 +162,8 @@
         z-index: 1090;
     }
 
-    .main { margin-left: 0; padding-top: 72px; }
+    /* mobileTopbar e main agora ficam em fluxo normal — empilhar
+       verticalmente em vez do row padrão de .page */
+    .page { flex-direction: column; }
+    .main { margin-left: 0; }
 }
