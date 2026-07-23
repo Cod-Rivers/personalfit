@@ -1,0 +1,204 @@
+.section {
+    max-width: 720px;
+    margin: 0 auto;
+}
+
+.toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 16px;
+}
+
+.btnAdd {
+    background: var(--grad-mint);
+    color: var(--btn-text);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.card {
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 16px;
+}
+
+.entryHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.entryDate {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.entryMeta {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+.photoGrid {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+.photoThumb {
+    width: 110px;
+    height: 140px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--border-subtle);
+}
+
+.statRow {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.measurementsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 6px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+
+.btnDanger {
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    color: var(--coral);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    cursor: pointer;
+}
+
+.formGroup {
+    margin-bottom: 14px;
+}
+
+.formLabel {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.formInput,
+.formTextarea,
+.formSelect {
+    width: 100%;
+    padding: 10px 14px;
+    background: var(--mil-blue);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.formTextarea {
+    resize: vertical;
+    min-height: 60px;
+}
+
+.formRow {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.formRow > div {
+    flex: 1;
+    min-width: 140px;
+}
+
+.measurementsInputGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.formActions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.btnCancel {
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    color: var(--text-muted);
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.btnSubmit {
+    background: var(--grad-mint);
+    color: var(--btn-text);
+    border: none;
+    padding: 10px 22px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.btnSubmit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.empty {
+    text-align: center;
+    padding: 40px 20px;
+    background: var(--surface-1);
+    border: 1px dashed var(--border-mid);
+    border-radius: 12px;
+    color: var(--text-muted);
+}
+
+.errorMsg {
+    background: rgba(255, 107, 107, 0.1);
+    border: 1px solid rgba(255, 107, 107, 0.25);
+    color: var(--coral);
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    margin-bottom: 16px;
+}
+
+.loading {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+}
+
+.proBanner {
+    text-align: center;
+    padding: 50px 24px;
+    background: var(--surface-1);
+    border: 1px dashed var(--amber);
+    border-radius: 12px;
+    color: var(--text-muted);
+}
+.proBanner strong {
+    color: var(--amber);
+}

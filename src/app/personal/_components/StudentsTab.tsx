@@ -113,6 +113,26 @@ export default function StudentsTab({ state }: Props) {
                                 </button>
                                 <button
                                     onClick={() =>
+                                        router.push(
+                                            `/personal/aluno/${st.id}/plano-alimentar`,
+                                        )
+                                    }
+                                    className={s.btnAction}
+                                >
+                                    🍽️ Plano Alimentar
+                                </button>
+                                <button
+                                    onClick={() =>
+                                        router.push(
+                                            `/personal/aluno/${st.id}/evolucao`,
+                                        )
+                                    }
+                                    className={s.btnAction}
+                                >
+                                    📈 Evolução
+                                </button>
+                                <button
+                                    onClick={() =>
                                         st.link_status === 'active'
                                             ? deactivate(st)
                                             : requestActivation(st)
