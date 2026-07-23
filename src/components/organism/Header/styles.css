@@ -233,6 +233,36 @@
     color: var(--text-primary);
     font-size: 0.9rem;
     font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.notif-dropdown-close {
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 20px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    transition:
+        background 0.15s,
+        color 0.15s;
+}
+
+.notif-dropdown-close:hover,
+.notif-dropdown-close:focus-visible {
+    background: var(--border-subtle);
+    color: var(--text-primary);
 }
 
 .notif-empty {

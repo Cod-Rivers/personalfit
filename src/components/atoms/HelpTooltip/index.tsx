@@ -67,6 +67,17 @@ export default function HelpTooltip({
                 onClick={() => setOpen(false)}
             />
             <span className={styles.bubble} role="tooltip" ref={bubbleRef}>
+                <button
+                    type="button"
+                    className={styles.bubbleClose}
+                    aria-label="Fechar ajuda"
+                    onClick={(event) => {
+                        event.stopPropagation();
+                        setOpen(false);
+                    }}
+                >
+                    ×
+                </button>
                 <span className={styles.bubbleText}>{text}</span>
                 <Link
                     href={href}

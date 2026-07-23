@@ -296,7 +296,14 @@ export default function MeusTreinosPage() {
                 <AdBanner ad={currentTopAd} placement="top" />
             )}
 
-            <div className="container mx-auto p-4 min-h-screen relative">
+            <div
+                className="container mx-auto p-4 min-h-screen relative"
+                style={
+                    canShowAds && currentBottomAd
+                        ? { paddingBottom: 140 }
+                        : undefined
+                }
+            >
                 {isOfflineData && (
                     <div
                         className="alert alert-warning py-2 px-3 mb-3"

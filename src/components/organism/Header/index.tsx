@@ -25,6 +25,7 @@ const Header: React.FC = () => {
         useState<studentLinkService.LinkStatus | null>(null);
     const [linkResponding, setLinkResponding] = useState(false);
     const [linkError, setLinkError] = useState('');
+    const [linkBannerDismissed, setLinkBannerDismissed] = useState(false);
 
     const checkUser = () => {
         const user = localStorage.getItem('user');
@@ -131,7 +132,7 @@ const Header: React.FC = () => {
 
     return (
         <>
-        {linkStatus === 'pending' && (
+        {linkStatus === 'pending' && !linkBannerDismissed && (
             <div
                 className="d-flex flex-wrap align-items-center justify-content-between gap-2 px-3 py-2"
                 style={{ background: '#f3a928', color: '#1a1a1a' }}
@@ -142,7 +143,7 @@ const Header: React.FC = () => {
                         <strong style={{ marginLeft: 8 }}>{linkError}</strong>
                     )}
                 </span>
-                <div className="d-flex gap-2">
+                <div className="d-flex align-items-center gap-2">
                     <button
                         className="btn btn-sm btn-dark"
                         onClick={handleAcceptLink}
@@ -157,6 +158,12 @@ const Header: React.FC = () => {
                     >
                         Recusar
                     </button>
+                    <button
+                        type="button"
+                        className="btn-close"
+                        aria-label="Fechar"
+                        onClick={() => setLinkBannerDismissed(true)}
+                    />
                 </div>
             </div>
         )}
@@ -327,6 +334,14 @@ const Header: React.FC = () => {
                                 <div className="notif-dropdown">
                                     <div className="notif-dropdown-header">
                                         <strong>Notificações</strong>
+                                        <button
+                                            type="button"
+                                            className="notif-dropdown-close"
+                                            aria-label="Fechar notificações"
+                                            onClick={() => setShowNotif(false)}
+                                        >
+                                            ×
+                                        </button>
                                     </div>
                                     {notifications.length === 0 ? (
                                         <p className="notif-empty">
