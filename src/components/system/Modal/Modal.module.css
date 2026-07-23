@@ -79,3 +79,22 @@
     from { transform: translateY(12px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
 }
+
+/* Tablet/desktop: em vez de folha full-screen (que sobra vazio em telas
+   altas), vira um diálogo centralizado com altura de acordo com o conteúdo. */
+@media (min-width: 768px) {
+    .backdrop {
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+    }
+
+    .sheet {
+        width: 100%;
+        max-width: 640px;
+        height: auto;
+        max-height: min(85vh, 820px);
+        border-radius: 16px;
+        box-shadow: var(--shadow-lg);
+    }
+}
