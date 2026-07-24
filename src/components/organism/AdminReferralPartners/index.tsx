@@ -4,10 +4,12 @@ import React, { useEffect, useState } from 'react';
 import {
     ReferralPartner,
     CreateReferralPartnerRequest,
+    IndicationStatEntry,
     getAllReferralPartners,
     createReferralPartner,
     updateReferralPartner,
     deleteReferralPartner,
+    getIndicationStats,
 } from '@/libs/referralPartnerService';
 import Modal from '@/components/system/Modal';
 import styles from './AdminReferralPartners.module.css';
@@ -24,6 +26,7 @@ const emptyForm: CreateReferralPartnerRequest = {
 };
 
 export default function AdminReferralPartners() {
+    const [tab, setTab] = useState<'list' | 'stats'>('list');
     const [partners, setPartners] = useState<ReferralPartner[]>([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
@@ -110,9 +113,11 @@ export default function AdminReferralPartners() {
         <div className={styles.container}>
             <div className={styles.header}>
                 <h2 className={styles.title}>🤝 Parceiros de Indicação</h2>
-                <button onClick={openCreate} className={styles.btnAdd}>
-                    + Novo Parceiro
-                </button>
+                {tab === 'list' && (
+                    <button onClick={openCreate} className={styles.btnAdd}>
+                        + Novo Parceiro
+                    </button>
+                )}
             </div>
 
             <p className={styles.hint}>
@@ -121,7 +126,24 @@ export default function AdminReferralPartners() {
                 indicação.
             </p>
 
-            {loading ? (
+            <div className={styles.tabs}>
+                <button
+                    onClick={() => setTab('list')}
+                    className={tab === 'list' ? styles.tabActive : styles.tab}
+                >
+                    Parceiros
+                </button>
+                <button
+                    onClick={() => setTab('stats')}
+                    className={tab === 'stats' ? styles.tabActive : styles.tab}
+                >
+                    Estatísticas de Indicação
+                </button>
+            </div>
+
+            {tab === 'stats' ? (
+                <IndicationStatsPanel />
+            ) : loading ? (
                 <p className={styles.loading}>Carregando...</p>
             ) : partners.length === 0 ? (
                 <p className={styles.empty}>
@@ -388,6 +410,80 @@ export default function AdminReferralPartners() {
                     </div>
                 </form>
             </Modal>
+        </div>
+    );
+}
+
+/**
+ * Painel de estatísticas de indicação (item 4 da tarefa): contagens
+ * aninhadas hoje ⊆ semana ⊆ mês ⊆ ano ⊆ total, por parceiro/canal fixo/nenhum,
+ * com filtro por nome para localizar rapidamente um parceiro específico.
+ */
+function IndicationStatsPanel() {
+    const [entries, setEntries] = useState<IndicationStatEntry[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [nameFilter, setNameFilter] = useState('');
+
+    useEffect(() => {
+        getIndicationStats()
+            .then(setEntries)
+            .catch(() => setError('Não foi possível carregar as estatísticas.'))
+            .finally(() => setLoading(false));
+    }, []);
+
+    const filtered = entries
+        .filter((e) =>
+            e.label.toLowerCase().includes(nameFilter.trim().toLowerCase()),
+        )
+        .sort((a, b) => b.counts.total - a.counts.total);
+
+    if (loading) return <p className={styles.loading}>Carregando...</p>;
+    if (error) return <p className={styles.errorMsg}>{error}</p>;
+
+    return (
+        <div>
+            <input
+                type="text"
+                className={styles.input}
+                placeholder="Filtrar por nome do parceiro/canal..."
+                value={nameFilter}
+                onChange={(e) => setNameFilter(e.target.value)}
+                style={{ maxWidth: 320, marginBottom: 16 }}
+            />
+
+            {filtered.length === 0 ? (
+                <p className={styles.empty}>
+                    Nenhuma indicação encontrada para esse filtro.
+                </p>
+            ) : (
+                <table className={styles.table}>
+                    <thead>
+                        <tr>
+                            <th>Origem</th>
+                            <th>Hoje</th>
+                            <th>Semana</th>
+                            <th>Mês</th>
+                            <th>Ano</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {filtered.map((e) => (
+                            <tr key={e.key}>
+                                <td>{e.label}</td>
+                                <td>{e.counts.today}</td>
+                                <td>{e.counts.week}</td>
+                                <td>{e.counts.month}</td>
+                                <td>{e.counts.year}</td>
+                                <td>
+                                    <strong>{e.counts.total}</strong>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            )}
         </div>
     );
 }

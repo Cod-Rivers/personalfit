@@ -42,10 +42,14 @@ export interface SubscribeCardResponse {
     subscription_id?: string;
 }
 
-export async function subscribeProPix(cycle: string): Promise<SubscribePixResponse> {
+export async function subscribeProPix(
+    cycle: string,
+    indicationReceiver?: string,
+): Promise<SubscribePixResponse> {
     const res = await Api.post<SubscribePixResponse>('/user/subscribe', {
         payment_method: 'PIX',
         plan_cycle: cycle,
+        ...(indicationReceiver ? { indication_receiver: indicationReceiver } : {}),
     });
     return res.data;
 }
@@ -67,10 +71,12 @@ export interface CardSubscriptionForm {
 export async function subscribeProCard(
     cycle: string,
     card: CardSubscriptionForm,
+    indicationReceiver?: string,
 ): Promise<SubscribeCardResponse> {
     const res = await Api.post<SubscribeCardResponse>('/user/subscribe', {
         payment_method: 'CREDIT_CARD',
         plan_cycle: cycle,
+        ...(indicationReceiver ? { indication_receiver: indicationReceiver } : {}),
         ...card,
     });
     return res.data;

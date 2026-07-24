@@ -20,6 +20,14 @@ import {
     subscribeProPix,
     verifyGooglePlayPurchase,
 } from '@/libs/paymentService';
+import {
+    ReferralPartnerPublic,
+    getActiveReferralPartners,
+} from '@/libs/referralPartnerService';
+
+// Valor fixo para "sem indicação" — usado tanto aqui quanto interpretado no
+// backend/estatísticas (ver ReferralPartnerController.GetIndicationStats).
+const INDICATION_NONE = 'none';
 
 type Produto = 'pro' | 'anamnese' | 'plano';
 type Metodo = 'pix' | 'card' | 'google';
@@ -87,6 +95,8 @@ function PaymentPageInner() {
     const [cycle, setCycle] = useState('MONTHLY');
     const [metodo, setMetodo] = useState<Metodo>('pix');
     const [googleAvailable, setGoogleAvailable] = useState(false);
+    const [partners, setPartners] = useState<ReferralPartnerPublic[]>([]);
+    const [indicationReceiver, setIndicationReceiver] = useState(INDICATION_NONE);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [pix, setPix] = useState<PixData | null>(null);
@@ -99,6 +109,11 @@ function PaymentPageInner() {
             .then(setCatalog)
             .catch(() => setError('Não foi possível carregar os planos. Tente novamente.'));
         setGoogleAvailable(isGooglePlayBillingAvailable());
+        // Lista de parceiros é só um complemento do seletor de indicação — se
+        // falhar, o checkout continua normalmente com apenas as opções fixas.
+        getActiveReferralPartners()
+            .then(setPartners)
+            .catch(() => setPartners([]));
         return () => {
             if (pollingRef.current) clearInterval(pollingRef.current);
         };
@@ -173,7 +188,10 @@ function PaymentPageInner() {
         setLoading(true);
         try {
             if (produto === 'pro') {
-                const res: SubscribePixResponse = await subscribeProPix(cycle);
+                const res: SubscribePixResponse = await subscribeProPix(
+                    cycle,
+                    indicationReceiver,
+                );
                 setPix({
                     qrImageUrl: res.qr_image_url,
                     payload: res.qr_code_payload,
@@ -361,6 +379,38 @@ function PaymentPageInner() {
                                         </select>
                                     </div>
                                 )}
+
+                                {produto === 'pro' && (
+                                    <div className="mb-3">
+                                        <label
+                                            htmlFor="indicationSelect"
+                                            className="form-label"
+                                        >
+                                            Como você conheceu a plataforma?
+                                        </label>
+                                        <select
+                                            id="indicationSelect"
+                                            className="form-select"
+                                            value={indicationReceiver}
+                                            disabled={!!pix}
+                                            onChange={(e) =>
+                                                setIndicationReceiver(e.target.value)
+                                            }
+                                        >
+                                            <option value={INDICATION_NONE}>
+                                                Nenhuma Indicação
+                                            </option>
+                                            <option value="instagram">Instagram</option>
+                                            <option value="facebook">Facebook</option>
+                                            <option value="youtube">YouTube</option>
+                                            {partners.map((p) => (
+                                                <option key={p.id} value={p.code}>
+                                                    {p.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
                                 <p className="card-text fw-bold">
                                     Total: {price != null ? formatBRL(price) : '—'}
                                 </p>
@@ -467,7 +517,11 @@ function PaymentPageInner() {
                                     setError('');
                                     setLoading(true);
                                     try {
-                                        const res = await subscribeProCard(cycle, form);
+                                        const res = await subscribeProCard(
+                                            cycle,
+                                            form,
+                                            indicationReceiver,
+                                        );
                                         setLoading(false);
                                         if (res.status === 'ACTIVE') {
                                             setConfirmed(true);

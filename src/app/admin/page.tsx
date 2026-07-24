@@ -8,6 +8,7 @@ import * as adminService from '@/libs/adminService';
 import * as videoService from '@/libs/exerciseVideoService';
 import AdminAdvertisements from '@/components/organism/AdminAdvertisements';
 import AdminReferralPartners from '@/components/organism/AdminReferralPartners';
+import AdminProtocols from '@/components/organism/AdminProtocols';
 import Modal from '@/components/system/Modal';
 import {
     ResponsiveContainer,
@@ -30,6 +31,7 @@ type Section =
     | 'users'
     | 'ads'
     | 'referral-partners'
+    | 'protocols'
     | 'relatorios'
     | 'diagnostics';
 
@@ -98,6 +100,12 @@ export default function AdminDashboard() {
             key: 'referral-partners',
             label: 'Parceiros de Indicação',
             icon: '🤝',
+            fullAdminOnly: true,
+        },
+        {
+            key: 'protocols',
+            label: 'Protocolos de Treino',
+            icon: '🏋️‍♂️',
             fullAdminOnly: true,
         },
         {
@@ -188,6 +196,7 @@ export default function AdminDashboard() {
                 {section === 'referral-partners' && (
                     <AdminReferralPartners />
                 )}
+                {section === 'protocols' && <AdminProtocols />}
                 {section === 'relatorios' && <RelatoriosSection />}
                 {section === 'diagnostics' && <DiagnosticsSection />}
             </main>

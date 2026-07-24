@@ -33,6 +33,44 @@ export async function getAllReferralPartners(): Promise<ReferralPartner[]> {
     return res.data;
 }
 
+export interface ReferralPartnerPublic {
+    id: string;
+    name: string;
+    code: string;
+}
+
+/**
+ * Qualquer usuário autenticado: lista enxuta (id/name/code) dos parceiros de
+ * indicação ATIVOS, usada no seletor de indicação da tela de checkout
+ * (/pagamento). Não requer role admin — endpoint separado do CRUD completo.
+ */
+export async function getActiveReferralPartners(): Promise<ReferralPartnerPublic[]> {
+    const res = await Api.get<ReferralPartnerPublic[]>('/referral-partners/active');
+    return res.data;
+}
+
+export interface IndicationBucketCounts {
+    today: number;
+    week: number;
+    month: number;
+    year: number;
+    total: number;
+}
+
+export interface IndicationStatEntry {
+    key: string;
+    label: string;
+    counts: IndicationBucketCounts;
+}
+
+/** Admin: estatísticas de indicação (contagens aninhadas por parceiro/canal). */
+export async function getIndicationStats(): Promise<IndicationStatEntry[]> {
+    const res = await Api.get<{ entries: IndicationStatEntry[] }>(
+        '/referral-partners/stats',
+    );
+    return res.data.entries ?? [];
+}
+
 /** Admin: cria parceiro de indicação */
 export async function createReferralPartner(
     data: CreateReferralPartnerRequest,
