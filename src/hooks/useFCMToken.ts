@@ -12,51 +12,75 @@ async function registerFCMToken(fcmToken: string) {
     await Api.post('/me/fcm-token', { token: fcmToken });
 }
 
+function isInAndroidApp() {
+    // Dentro do app Android (WebView) o push é nativo (Firebase Android SDK),
+    // não via Web Notifications API — e o WebView não implementa o prompt de
+    // permissão dessa API, então pedir aqui nunca teria efeito. Presença da
+    // bridge nativa (injetada via addJavascriptInterface) indica o wrapper.
+    return typeof window !== 'undefined' && 'VenafitBilling' in window;
+}
+
+async function fetchAndRegisterToken(vapidKey: string) {
+    const messaging = await getFirebaseMessaging();
+    if (!messaging) return;
+
+    const registration = await registerOfflineServiceWorker();
+    const fcmToken = await getToken(messaging, {
+        vapidKey,
+        ...(registration ? { serviceWorkerRegistration: registration } : {}),
+    });
+    if (!fcmToken) return;
+
+    await registerFCMToken(fcmToken);
+}
+
 export function useFCMToken() {
     const registered = useRef(false);
-    const [permissionDenied, setPermissionDenied] = useState(false);
+    const [permissionState, setPermissionState] = useState<NotificationPermission | null>(null);
 
     useEffect(() => {
-        if (registered.current) return;
+        if (isInAndroidApp()) return;
+        if (typeof Notification === 'undefined') return;
+        setPermissionState(Notification.permission);
+
+        // Se a permissão já foi concedida antes, busca o token silenciosamente
+        // (sem precisar de gesto do usuário, já que não há prompt a mostrar).
+        if (Notification.permission !== 'granted' || registered.current) return;
 
         const token = localStorage.getItem('token');
         if (!token) return;
-
         const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
         if (!vapidKey) return;
 
-        // Dentro do app Android (WebView) o push é nativo (Firebase Android SDK),
-        // não via Web Notifications API — e o WebView nunca concede essa permissão
-        // web, então pedir aqui só geraria o aviso de "bloqueado" pra sempre.
-        // Presença da bridge nativa (injetada via addJavascriptInterface) indica
-        // que estamos rodando dentro do wrapper Android.
-        if (typeof window !== 'undefined' && 'VenafitBilling' in window) return;
-
-        (async () => {
-            try {
-                const messaging = await getFirebaseMessaging();
-                if (!messaging) return;
-
-                const permission = await Notification.requestPermission();
-                if (permission !== 'granted') {
-                    setPermissionDenied(true);
-                    return;
-                }
-
-                const registration = await registerOfflineServiceWorker();
-                const fcmToken = await getToken(messaging, {
-                    vapidKey,
-                    ...(registration ? { serviceWorkerRegistration: registration } : {}),
-                });
-                if (!fcmToken) return;
-
-                await registerFCMToken(fcmToken);
+        fetchAndRegisterToken(vapidKey)
+            .then(() => {
                 registered.current = true;
-            } catch (err) {
-                console.error('[FCM] Erro ao registrar token:', err);
-            }
-        })();
+            })
+            .catch((err) => console.error('[FCM] Erro ao registrar token:', err));
     }, []);
 
-    return { permissionDenied };
+    // Só deve ser chamado a partir de um gesto do usuário (ex.: clique em um
+    // botão) — pedir permissão de notificação sem gesto costuma ser negado
+    // silenciosamente pelo navegador, sem nunca mostrar o pop-up ao usuário.
+    async function requestPermission() {
+        if (typeof Notification === 'undefined') return;
+
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
+        if (!vapidKey) return;
+
+        try {
+            const permission = await Notification.requestPermission();
+            setPermissionState(permission);
+            if (permission !== 'granted') return;
+
+            await fetchAndRegisterToken(vapidKey);
+            registered.current = true;
+        } catch (err) {
+            console.error('[FCM] Erro ao registrar token:', err);
+        }
+    }
+
+    return { permissionState, requestPermission };
 }
