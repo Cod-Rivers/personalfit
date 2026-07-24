@@ -280,13 +280,30 @@
 }
 
 .notif-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
     padding: 10px 16px;
     border-bottom: 1px solid rgba(61,255,208,0.06);
-    cursor: pointer;
     transition: background 0.15s;
 }
 .notif-item:hover { background: var(--mint-glow); }
 .notif-item:last-child { border-bottom: none; }
+
+.notif-item-check {
+    flex-shrink: 0;
+    margin-top: 3px;
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+    accent-color: var(--mint);
+}
+
+.notif-item-body {
+    flex: 1;
+    min-width: 0;
+    cursor: pointer;
+}
 
 .notif-unread {
     border-left: 3px solid var(--mint);

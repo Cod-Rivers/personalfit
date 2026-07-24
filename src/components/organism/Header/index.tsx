@@ -21,6 +21,16 @@ const Header: React.FC = () => {
         notifService.Notification[]
     >([]);
     const [showNotif, setShowNotif] = useState(false);
+    const [dismissedIds, setDismissedIds] = useState<string[]>(() => {
+        if (typeof window === 'undefined') return [];
+        try {
+            return JSON.parse(
+                localStorage.getItem('dismissedNotifications') ?? '[]',
+            );
+        } catch {
+            return [];
+        }
+    });
     const [linkStatus, setLinkStatus] =
         useState<studentLinkService.LinkStatus | null>(null);
     const [linkResponding, setLinkResponding] = useState(false);
@@ -106,7 +116,10 @@ const Header: React.FC = () => {
         }
     };
 
-    const unreadCount = notifications.filter((n) => !n.read).length;
+    const visibleNotifications = notifications.filter(
+        (n) => !dismissedIds.includes(n.id),
+    );
+    const unreadCount = visibleNotifications.filter((n) => !n.read).length;
 
     const handleMarkRead = async (id: string) => {
         try {
@@ -117,6 +130,18 @@ const Header: React.FC = () => {
         } catch {
             /* silent */
         }
+    };
+
+    const handleDismiss = (id: string) => {
+        setDismissedIds((prev) => {
+            const next = [...prev, id];
+            localStorage.setItem(
+                'dismissedNotifications',
+                JSON.stringify(next),
+            );
+            return next;
+        });
+        handleMarkRead(id);
     };
 
     const logout = async () => {
@@ -343,36 +368,53 @@ const Header: React.FC = () => {
                                             ×
                                         </button>
                                     </div>
-                                    {notifications.length === 0 ? (
+                                    {visibleNotifications.length === 0 ? (
                                         <p className="notif-empty">
                                             Nenhuma notificação
                                         </p>
                                     ) : (
                                         <ul className="notif-list">
-                                            {notifications
+                                            {visibleNotifications
                                                 .slice(0, 10)
                                                 .map((n) => (
                                                     <li
                                                         key={n.id}
                                                         className={`notif-item ${!n.read ? 'notif-unread' : ''}`}
-                                                        onClick={() =>
-                                                            !n.read &&
-                                                            handleMarkRead(n.id)
-                                                        }
                                                     >
-                                                        <strong className="notif-item-title">
-                                                            {n.title}
-                                                        </strong>
-                                                        <p className="notif-item-msg">
-                                                            {n.message}
-                                                        </p>
-                                                        <span className="notif-item-date">
-                                                            {new Date(
-                                                                n.created_at,
-                                                            ).toLocaleDateString(
-                                                                'pt-BR',
-                                                            )}
-                                                        </span>
+                                                        <input
+                                                            type="checkbox"
+                                                            className="notif-item-check"
+                                                            aria-label="Marcar como vista"
+                                                            title="Marcar como vista"
+                                                            onChange={() =>
+                                                                handleDismiss(
+                                                                    n.id,
+                                                                )
+                                                            }
+                                                        />
+                                                        <div
+                                                            className="notif-item-body"
+                                                            onClick={() =>
+                                                                !n.read &&
+                                                                handleMarkRead(
+                                                                    n.id,
+                                                                )
+                                                            }
+                                                        >
+                                                            <strong className="notif-item-title">
+                                                                {n.title}
+                                                            </strong>
+                                                            <p className="notif-item-msg">
+                                                                {n.message}
+                                                            </p>
+                                                            <span className="notif-item-date">
+                                                                {new Date(
+                                                                    n.created_at,
+                                                                ).toLocaleDateString(
+                                                                    'pt-BR',
+                                                                )}
+                                                            </span>
+                                                        </div>
                                                     </li>
                                                 ))}
                                         </ul>

@@ -122,6 +122,14 @@ strong, b { font-weight: 700; }
     z-index: 1;
 }
 
+/* O header precisa ficar acima do conteúdo da página (main-content) para que
+   seu dropdown de notificações (absolute, filho do header) não fique preso
+   atrás de cards da página — sem isto ambos empatam em z-index:1 e o main,
+   por vir depois no DOM, é pintado por cima (e captura os cliques). */
+.main_back > .header-shell {
+    z-index: 20;
+}
+
 /* ── Global link ── */
 a { color: var(--mint-text); text-decoration: none; transition: color 0.2s; }
 a:hover { color: var(--mint-text-dim); }

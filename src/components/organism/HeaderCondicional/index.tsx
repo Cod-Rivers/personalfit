@@ -39,7 +39,7 @@ export default function HeaderCondicional() {
     if (isPublic) return null;
 
     return (
-        <div ref={ref}>
+        <div ref={ref} className="header-shell">
             <Header />
         </div>
     );
