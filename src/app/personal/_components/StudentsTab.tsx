@@ -100,6 +100,20 @@ export default function StudentsTab({ state }: Props) {
                                 <button
                                     onClick={() =>
                                         router.push(
+                                            `/personal/aluno/${st.id}/treino`,
+                                        )
+                                    }
+                                    className={s.btnAction}
+                                    style={{
+                                        borderColor: '#f0a500',
+                                        color: '#f0a500',
+                                    }}
+                                >
+                                    👁️ Ver Treino
+                                </button>
+                                <button
+                                    onClick={() =>
+                                        router.push(
                                             `/personal/aluno/${st.id}/periodizacao`,
                                         )
                                     }

@@ -213,7 +213,10 @@ const personalSections: HelpSection[] = [
                     <strong>Ativo</strong>,{' '}
                     <strong>Aguardando confirmação</strong> (o aluno ainda
                     precisa aceitar a reativação) ou <strong>Inativo</strong>.
-                    Nos cartões você acessa a{' '}
+                    Nos cartões você acessa{' '}
+                    <strong>👁️ Ver Treino</strong>, que leva direto para o
+                    treino ativo do aluno (com todo o CRUD de mesociclos e
+                    treinos), a{' '}
                     <Link href="#periodizacao-aluno">Periodização</Link>, o{' '}
                     <Link href="#plano-alimentar-personal">
                         Plano Alimentar
@@ -306,6 +309,14 @@ const personalSections: HelpSection[] = [
         title: 'Periodização do aluno',
         body: (
             <>
+                <p className="mb-2">
+                    O botão <strong>👁️ Ver Treino</strong> no cartão do aluno é
+                    um atalho: ele pula direto para o macrociclo ativo do
+                    aluno (ou o mais recente, se nenhum estiver ativo) já na
+                    tela de edição de mesociclos e treinos. Se o aluno ainda
+                    não tiver nenhum macrociclo, você cai na lista abaixo para
+                    criar o primeiro.
+                </p>
                 <p className="mb-2">
                     Pelo cartão do aluno em <strong>📋 Periodização</strong>{' '}
                     você vê os macrociclos dele. Crie um do zero em{' '}
