@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import EvolutionTimeline from '@/components/features/EvolutionTimeline';
+import TrainingZonesCalculator from '@/components/features/TrainingZonesCalculator';
 import s from '../agendamentos/agendamentos.module.css';
 
 interface UserData {
@@ -47,6 +48,7 @@ export default function MyEvolutionPage() {
                     </div>
                 </div>
 
+                <TrainingZonesCalculator />
                 <EvolutionTimeline />
             </div>
         </div>

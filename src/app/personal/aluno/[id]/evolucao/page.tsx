@@ -1,6 +1,7 @@
 'use client';
 import { useRouter, useParams } from 'next/navigation';
 import EvolutionTimeline from '@/components/features/EvolutionTimeline';
+import TrainingZonesCalculator from '@/components/features/TrainingZonesCalculator';
 import s from '../periodizacao/periodizacao.module.css';
 
 export default function PersonalEvolutionPage() {
@@ -21,6 +22,7 @@ export default function PersonalEvolutionPage() {
                     </button>
                 </div>
 
+                <TrainingZonesCalculator />
                 <EvolutionTimeline studentId={studentId} />
             </div>
         </div>

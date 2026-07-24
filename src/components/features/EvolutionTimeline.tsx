@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     listEvolutionEntries,
     createEvolutionEntry,
@@ -73,6 +73,35 @@ export default function EvolutionTimeline({ studentId }: Props) {
     const [notes, setNotes] = useState('');
     const [photos, setPhotos] = useState<File[]>([]);
     const [saving, setSaving] = useState(false);
+
+    // Comparação postural A/B (antes × depois)
+    const [compareMode, setCompareMode] = useState(false);
+    const [compareAId, setCompareAId] = useState('');
+    const [compareBId, setCompareBId] = useState('');
+
+    // Entradas com foto, ordenadas por data crescente (antigas → recentes).
+    const entriesWithPhotos = useMemo(
+        () =>
+            entries
+                .filter((e) => e.photo_urls && e.photo_urls.length > 0)
+                .slice()
+                .sort((a, b) => a.date.localeCompare(b.date)),
+        [entries],
+    );
+
+    const entryA = entriesWithPhotos.find((e) => e.id === compareAId);
+    const entryB = entriesWithPhotos.find((e) => e.id === compareBId);
+
+    const toggleCompare = () => {
+        if (!compareMode) {
+            // Padrão: A = mais antiga com foto, B = mais recente com foto.
+            const first = entriesWithPhotos[0];
+            const last = entriesWithPhotos[entriesWithPhotos.length - 1];
+            setCompareAId(first?.id ?? '');
+            setCompareBId(last?.id ?? '');
+        }
+        setCompareMode((v) => !v);
+    };
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -201,7 +230,98 @@ export default function EvolutionTimeline({ studentId }: Props) {
                 >
                     {showForm ? 'Cancelar' : '+ Nova avaliação'}
                 </button>
+                {entriesWithPhotos.length >= 2 && (
+                    <button
+                        type="button"
+                        className={compareMode ? s.btnCompareActive : s.btnCompare}
+                        onClick={toggleCompare}
+                    >
+                        {compareMode ? '✕ Fechar comparação' : '🔀 Comparar fotos'}
+                    </button>
+                )}
             </div>
+
+            {compareMode && entriesWithPhotos.length >= 2 && (
+                <div className={s.card}>
+                    <div className={s.compareSelects}>
+                        <div className={s.formGroup}>
+                            <label className={s.formLabel}>Antes</label>
+                            <select
+                                className={s.formSelect}
+                                value={compareAId}
+                                onChange={(e) => setCompareAId(e.target.value)}
+                            >
+                                {entriesWithPhotos.map((e) => (
+                                    <option key={e.id} value={e.id}>
+                                        {formatDate(e.date)}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className={s.formGroup}>
+                            <label className={s.formLabel}>Depois</label>
+                            <select
+                                className={s.formSelect}
+                                value={compareBId}
+                                onChange={(e) => setCompareBId(e.target.value)}
+                            >
+                                {entriesWithPhotos.map((e) => (
+                                    <option key={e.id} value={e.id}>
+                                        {formatDate(e.date)}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className={s.compareGrid}>
+                        {[entryA, entryB].map((entry, col) => (
+                            <div key={col} className={s.compareCol}>
+                                <div className={s.compareColHeader}>
+                                    <strong>{col === 0 ? 'Antes' : 'Depois'}</strong>
+                                    {entry && (
+                                        <span>{formatDate(entry.date)}</span>
+                                    )}
+                                </div>
+                                {entry?.photo_urls?.map((url, i) => (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img
+                                        key={i}
+                                        src={url}
+                                        alt={`Comparação ${col === 0 ? 'antes' : 'depois'} ${i + 1}`}
+                                        className={s.comparePhoto}
+                                    />
+                                ))}
+                                <div className={s.compareStats}>
+                                    {entry?.weight_kg != null && (
+                                        <span>{entry.weight_kg} kg</span>
+                                    )}
+                                    {entry?.body_fat_percent != null && (
+                                        <span>
+                                            {entry.body_fat_percent}% gordura
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {entryA &&
+                        entryB &&
+                        entryA.weight_kg != null &&
+                        entryB.weight_kg != null && (
+                            <p className={s.compareDelta}>
+                                Variação de peso:{' '}
+                                <strong>
+                                    {(
+                                        entryB.weight_kg - entryA.weight_kg
+                                    ).toFixed(1)}{' '}
+                                    kg
+                                </strong>
+                            </p>
+                        )}
+                </div>
+            )}
 
             {showForm && (
                 <form className={s.card} onSubmit={handleSubmit}>
