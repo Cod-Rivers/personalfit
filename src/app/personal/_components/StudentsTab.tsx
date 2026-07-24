@@ -147,6 +147,34 @@ export default function StudentsTab({ state }: Props) {
                                 </button>
                                 <button
                                     onClick={() =>
+                                        router.push(
+                                            `/personal/aluno/${st.id}/feedback`,
+                                        )
+                                    }
+                                    className={s.btnAction}
+                                    style={{
+                                        borderColor: '#8b5cf6',
+                                        color: '#8b5cf6',
+                                    }}
+                                >
+                                    💬 Feedback
+                                </button>
+                                <button
+                                    onClick={() =>
+                                        router.push(
+                                            `/personal/aluno/${st.id}/financeiro`,
+                                        )
+                                    }
+                                    className={s.btnAction}
+                                    style={{
+                                        borderColor: '#2e9e77',
+                                        color: '#2e9e77',
+                                    }}
+                                >
+                                    💰 Financeiro
+                                </button>
+                                <button
+                                    onClick={() =>
                                         st.link_status === 'active'
                                             ? deactivate(st)
                                             : requestActivation(st)

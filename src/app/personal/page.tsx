@@ -9,6 +9,7 @@ import MyAdvertisements from '@/components/organism/MyAdvertisements';
 import StudentsTab from './_components/StudentsTab';
 import ExercisesTab from './_components/ExercisesTab';
 import CiclosTab from './_components/CiclosTab';
+import RetentionTab from './_components/RetentionTab';
 
 interface UserData {
     id: string;
@@ -20,6 +21,7 @@ interface UserData {
 
 type Tab =
     | 'students'
+    | 'retention'
     | 'exercises'
     | 'branding'
     | 'ads'
@@ -91,6 +93,12 @@ export default function PersonalDashboard() {
                         Meus Alunos
                     </button>
                     <button
+                        className={tab === 'retention' ? s.tabActive : s.tab}
+                        onClick={() => setTab('retention')}
+                    >
+                        📊 Retenção
+                    </button>
+                    <button
                         className={tab === 'exercises' ? s.tabActive : s.tab}
                         onClick={() => setTab('exercises')}
                     >
@@ -128,6 +136,12 @@ export default function PersonalDashboard() {
                         📅 Agenda{planType === 'pro' ? '' : ' 🔒'}
                     </button>
                     <button
+                        className={s.tab}
+                        onClick={() => router.push('/personal/desafios')}
+                    >
+                        🏆 Desafios
+                    </button>
+                    <button
                         className={tab === 'ciclos' ? s.tabActive : s.tab}
                         onClick={() => setTab('ciclos')}
                     >
@@ -146,6 +160,8 @@ export default function PersonalDashboard() {
                 {tab === 'students' && (
                     <StudentsTab state={studentsState} />
                 )}
+
+                {tab === 'retention' && <RetentionTab />}
 
                 {tab === 'exercises' && (
                     <ExercisesTab

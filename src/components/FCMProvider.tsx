@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useFCMToken } from '@/hooks/useFCMToken';
+import { listenNativePushToken } from '@/libs/nativePush';
 
 export default function FCMProvider({
     children,
@@ -10,6 +11,10 @@ export default function FCMProvider({
 }) {
     const { permissionState, requestPermission } = useFCMToken();
     const [dismissed, setDismissed] = useState(false);
+
+    // Registra o token de push nativo (app Android) quando presente. No web
+    // comum é no-op — o push do navegador continua vindo do useFCMToken acima.
+    useEffect(() => listenNativePushToken(), []);
 
     const showBlocked = permissionState === 'denied' && !dismissed;
     const showOptIn = permissionState === 'default' && !dismissed;

@@ -38,6 +38,7 @@ import {
     MacrocycleResponse,
 } from '@/libs/planningService';
 import DownloadOfflineButton from '../../components/features/DownloadOfflineButton';
+import GamificationBanner from '../../components/features/GamificationBanner';
 import {
     getAllOfflineMacrocycles,
     getOfflineMacrocycle,
@@ -318,6 +319,8 @@ export default function MeusTreinosPage() {
                     branding={branding}
                     trainerName={personalName ?? undefined}
                 />
+                {/* Gamificação: streak + conquistas (some se ainda não treinou) */}
+                <GamificationBanner />
                 {/* Macro selector header */}
                 <div className={styles.header}>
                     <BsClipboardData size={20} color="var(--amber)" />

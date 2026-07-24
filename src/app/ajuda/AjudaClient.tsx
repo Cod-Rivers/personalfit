@@ -335,6 +335,331 @@ const personalSections: HelpSection[] = [
                     </Link>
                     .
                 </p>
+                <p className="mb-0">
+                    Para tirar o máximo das semanas, veja o manual de{' '}
+                    <Link href="#autorregulacao-rpe-rir">
+                        Periodização + Autorregulação por RPE/RIR
+                    </Link>{' '}
+                    — como definir RPE alvo, ajustar carga e programar deloads.
+                </p>
+            </>
+        ),
+    },
+    {
+        id: 'autorregulacao-rpe-rir',
+        title: 'Periodização + Autorregulação por RPE/RIR',
+        body: (
+            <>
+                <p className="mb-3">
+                    Este é o recurso avançado que diferencia o Venafit: unir a{' '}
+                    <strong>periodização estruturada</strong> (macro → meso →
+                    microciclos) com a{' '}
+                    <strong>autorregulação por esforço percebido</strong>. Em
+                    vez de uma planilha fixa, a carga do aluno se ajusta ao
+                    estado real de recuperação dele, dia a dia — sem que você
+                    precise refazer o plano toda semana. Este manual mostra
+                    como usar tudo isso na prática.
+                </p>
+
+                <h3 className="h6 mt-3 mb-2">1. RPE e RIR: a mesma escala</h3>
+                <p className="mb-2">
+                    O <strong>RPE</strong> (Rate of Perceived Exertion, ou
+                    Esforço Percebido) mede o quão puxada foi uma série, de 1 a
+                    10. O <strong>RIR</strong> (Reps in Reserve, ou Repetições
+                    em Reserva) é a leitura inversa: quantas repetições ainda
+                    dariam para fazer antes de falhar. São a mesma régua — basta
+                    converter:
+                </p>
+                <div className="table-responsive mb-2">
+                    <table className="table table-sm table-bordered align-middle mb-1">
+                        <thead>
+                            <tr>
+                                <th>RPE</th>
+                                <th>RIR</th>
+                                <th>O que significa na série</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>10</td>
+                                <td>0</td>
+                                <td>Falha total — nenhuma rep sobrando</td>
+                            </tr>
+                            <tr>
+                                <td>9</td>
+                                <td>1</td>
+                                <td>Sobrou 1 repetição</td>
+                            </tr>
+                            <tr>
+                                <td>8</td>
+                                <td>2</td>
+                                <td>Sobraram 2 repetições (zona de hipertrofia)</td>
+                            </tr>
+                            <tr>
+                                <td>7</td>
+                                <td>3</td>
+                                <td>Sobraram 3 (técnica/volume seguro)</td>
+                            </tr>
+                            <tr>
+                                <td>5–6</td>
+                                <td>4–5</td>
+                                <td>Trabalho leve, deload ou aquecimento</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p className="mb-3 small text-muted">
+                    Regra rápida: <strong>RIR = 10 − RPE</strong>. Explique isso
+                    ao aluno uma vez — ele registra o RPE ao completar cada
+                    série no app, e esse valor alimenta a autorregulação.
+                </p>
+
+                <h3 className="h6 mt-3 mb-2">
+                    2. A estrutura da periodização
+                </h3>
+                <p className="mb-2">
+                    Na{' '}
+                    <Link href="#periodizacao-aluno">Periodização do aluno</Link>{' '}
+                    (ou nos seus{' '}
+                    <Link href="#periodizacao-biblioteca">
+                        ciclos reutilizáveis
+                    </Link>
+                    ), o plano é montado em três níveis:
+                </p>
+                <ul className="mb-2 ps-3">
+                    <li>
+                        <strong>Macrociclo</strong> — o plano inteiro
+                        (objetivo, datas, status Rascunho/Ativo/Concluído).
+                    </li>
+                    <li>
+                        <strong>Mesociclos (Fases)</strong> — blocos de 3 a 6
+                        semanas, cada um com uma <strong>fase</strong> e uma{' '}
+                        <strong>metodologia</strong> (veja abaixo).
+                    </li>
+                    <li>
+                        <strong>Microciclos</strong> — cada semana da fase. É
+                        aqui que a autorregulação vive: RPE alvo, ajustes de
+                        volume/intensidade e deload são definidos por semana.
+                    </li>
+                    <li>
+                        <strong>Treinos A/B/C/D</strong> — os treinos de cada
+                        semana, com os exercícios, séries e repetições.
+                    </li>
+                </ul>
+                <p className="mb-2">
+                    Ao criar um mesociclo você escolhe a <strong>Fase</strong>{' '}
+                    por dois modelos clássicos:
+                </p>
+                <ul className="mb-2 ps-3">
+                    <li>
+                        <strong>Clássica (Matveyev):</strong> Introdução, Base,
+                        Preparação e Controle, Pré-competição, Competição.
+                    </li>
+                    <li>
+                        <strong>Força / Bloco (Bompa/Fleck):</strong>{' '}
+                        Acumulação, Transmutação, Realização, Hipertrofia,
+                        Força, Potência, Manutenção, Deload.
+                    </li>
+                </ul>
+                <p className="mb-3">
+                    E a <strong>Metodologia</strong> de progressão: Linear,
+                    Ondulada Diária (DUP), Ondulada Semanal, Conjugada, Bloco ou
+                    Outra. Duração recomendada: <strong>3–6 semanas por
+                    fase</strong> (4 é o padrão).
+                </p>
+
+                <h3 className="h6 mt-3 mb-2">
+                    3. Definindo a autorregulação no microciclo
+                </h3>
+                <p className="mb-2">
+                    Ao configurar os treinos de um mesociclo, cada semana
+                    (microciclo) tem estes campos — é o coração do recurso:
+                </p>
+                <ul className="mb-2 ps-3">
+                    <li>
+                        <strong>RPE alvo (1–10):</strong> o esforço que você
+                        espera daquela semana. Ex.: semana de acúmulo → RPE 7
+                        (RIR 3); semana de choque/pico → RPE 9 (RIR 1).
+                    </li>
+                    <li>
+                        <strong>Ajuste de volume %:</strong> aumenta ou reduz o
+                        volume previsto da semana (ex.: +10% numa semana de
+                        acúmulo, −40% num deload).
+                    </li>
+                    <li>
+                        <strong>Ajuste de intensidade %:</strong> mesma ideia
+                        para a carga/intensidade.
+                    </li>
+                    <li>
+                        <strong>Deload:</strong> marca a semana como
+                        recuperação (tipicamente RPE mais baixo e volume
+                        reduzido).
+                    </li>
+                    <li>
+                        <strong>Foco e Notas:</strong> a estratégia da semana em
+                        texto livre — o aluno enxerga isso como orientação.
+                    </li>
+                </ul>
+                <p className="mb-3 small text-muted">
+                    Dica: o <strong>Status</strong> da semana (Pendente / Em
+                    progresso / Concluído) é calculado automaticamente pelos
+                    treinos que o aluno registra — você não precisa mexer nele.
+                </p>
+
+                <h3 className="h6 mt-3 mb-2">
+                    4. Como a carga se autorregula
+                </h3>
+                <p className="mb-2">
+                    Antes de treinar, o aluno preenche o{' '}
+                    <strong>Controle do Microciclo</strong> (prontidão, sono,
+                    estresse, dor muscular, delta de VFC e o RPE do treino
+                    anterior). O app compara esses dados com o{' '}
+                    <strong>RPE alvo</strong> que você definiu e classifica o dia
+                    em três zonas:
+                </p>
+                <div className="table-responsive mb-2">
+                    <table className="table table-sm table-bordered align-middle mb-1">
+                        <thead>
+                            <tr>
+                                <th>Zona</th>
+                                <th>Sinal</th>
+                                <th>Ajuste de carga</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <strong>Supercompensação</strong>
+                                </td>
+                                <td>Bem recuperado, RPE abaixo do alvo</td>
+                                <td>Progride levemente carga/volume</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <strong>Manutenção</strong>
+                                </td>
+                                <td>Dentro do esperado</td>
+                                <td>Segue o plano previsto do microciclo</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <strong>Fadiga</strong>
+                                </td>
+                                <td>Mal recuperado, RPE acima do alvo</td>
+                                <td>Reduz a carga total para recuperar</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p className="mb-2">Os ajustes acontecem em dois tempos:</p>
+                <ul className="mb-3 ps-3">
+                    <li>
+                        <strong>Intrassessão:</strong> durante o treino (ex.:
+                        baixar 5% a 10% da carga se o RPE estourar o alvo).
+                    </li>
+                    <li>
+                        <strong>Intersessão:</strong> para os próximos dias
+                        (ex.: cortar ~20% de volume enquanto a fadiga persistir).
+                    </li>
+                </ul>
+
+                <h3 className="h6 mt-3 mb-2">
+                    5. Progressão por RIR ao longo da fase
+                </h3>
+                <p className="mb-2">
+                    Uma forma robusta de periodizar é <strong>reduzir o RIR
+                    (subir o RPE) semana a semana</strong> dentro do mesociclo,
+                    fechando com um deload. Exemplo de uma fase de hipertrofia de
+                    4 semanas:
+                </p>
+                <div className="table-responsive mb-3">
+                    <table className="table table-sm table-bordered align-middle mb-1">
+                        <thead>
+                            <tr>
+                                <th>Semana</th>
+                                <th>RPE alvo</th>
+                                <th>RIR</th>
+                                <th>Estratégia</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1 — Acúmulo</td>
+                                <td>7</td>
+                                <td>3</td>
+                                <td>Volume alto, longe da falha</td>
+                            </tr>
+                            <tr>
+                                <td>2</td>
+                                <td>8</td>
+                                <td>2</td>
+                                <td>Mesmo volume, um pouco mais perto</td>
+                            </tr>
+                            <tr>
+                                <td>3 — Pico</td>
+                                <td>9</td>
+                                <td>1</td>
+                                <td>Intensidade máxima da fase</td>
+                            </tr>
+                            <tr>
+                                <td>4 — Deload</td>
+                                <td>5–6</td>
+                                <td>4–5</td>
+                                <td>Volume −40%, recuperar</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3 className="h6 mt-3 mb-2">6. Gatilho de deload</h3>
+                <p className="mb-3">
+                    Se a fadiga se mantiver alta por vários dias e o rendimento
+                    cair, o sistema pode sugerir um <strong>deload</strong> no
+                    próximo microciclo, protegendo a recuperação e evitando
+                    estagnação. Você pode antecipá-lo marcando a semana como
+                    Deload manualmente.
+                </p>
+
+                <h3 className="h6 mt-3 mb-2">Passo a passo resumido</h3>
+                <ol className="mb-2 ps-3">
+                    <li>
+                        Crie o macrociclo do aluno em{' '}
+                        <strong>📋 Periodização → + Novo Macrociclo</strong>{' '}
+                        (ou parta de um modelo).
+                    </li>
+                    <li>
+                        Adicione mesociclos (fases) com fase, metodologia e
+                        duração.
+                    </li>
+                    <li>
+                        Em cada semana, defina <strong>RPE alvo</strong> e os
+                        ajustes de volume/intensidade; marque deload quando fizer
+                        sentido.
+                    </li>
+                    <li>
+                        Monte os treinos A/B/C/D com os exercícios, séries e
+                        repetições.
+                    </li>
+                    <li>
+                        Oriente o aluno a preencher o Controle do Microciclo e
+                        registrar o RPE de cada série — a autorregulação faz o
+                        resto.
+                    </li>
+                    <li>
+                        Acompanhe pela{' '}
+                        <Link href="#evolucao-personal">Evolução</Link> e ajuste
+                        os alvos nas próximas fases.
+                    </li>
+                </ol>
+                <p className="mb-0 small text-muted">
+                    Bom para lembrar: a autorregulação apoia a sua decisão, não
+                    a substitui. Os alvos e ajustes finais são sempre seus.
+                    Ciclos bem calibrados podem virar{' '}
+                    <Link href="#periodizacao-biblioteca">
+                        modelos reutilizáveis
+                    </Link>{' '}
+                    para aplicar em outros alunos.
+                </p>
             </>
         ),
     },

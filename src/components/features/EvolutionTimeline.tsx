@@ -16,6 +16,7 @@ interface Props {
 }
 
 const MEASUREMENT_FIELDS: { key: string; label: string }[] = [
+    // Circunferências (morfológica)
     { key: 'cintura', label: 'Cintura (cm)' },
     { key: 'quadril', label: 'Quadril (cm)' },
     { key: 'peito', label: 'Peito (cm)' },
@@ -25,6 +26,17 @@ const MEASUREMENT_FIELDS: { key: string; label: string }[] = [
     { key: 'coxa_esquerda', label: 'Coxa esquerda (cm)' },
     { key: 'panturrilha', label: 'Panturrilha (cm)' },
     { key: 'abdomen', label: 'Abdômen (cm)' },
+    // Neuromotores (força/flexibilidade/potência) — opcionais
+    { key: 'rm_supino', label: '1RM supino (kg)' },
+    { key: 'rm_agachamento', label: '1RM agachamento (kg)' },
+    { key: 'rm_terra', label: '1RM terra (kg)' },
+    { key: 'wells', label: 'Flexibilidade — Wells (cm)' },
+    { key: 'salto_vertical', label: 'Salto vertical (cm)' },
+    { key: 'abdominais_1min', label: 'Abdominais (1 min)' },
+    // Cardio — opcionais (alimentam o cálculo de zonas de FC)
+    { key: 'fc_repouso', label: 'FC repouso (bpm)' },
+    { key: 'fc_maxima', label: 'FC máxima (bpm)' },
+    { key: 'vo2max', label: 'VO₂máx (ml/kg/min)' },
 ];
 
 function extractErrorMessage(err: unknown, fallback: string): string {
