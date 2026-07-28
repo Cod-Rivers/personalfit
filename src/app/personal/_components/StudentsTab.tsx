@@ -318,7 +318,7 @@ export default function StudentsTab({ state }: Props) {
                             onClick={handleUnlink}
                             disabled={submitting}
                             className={s.btnSubmit}
-                            style={{ background: '#e74c3c', color: '#fff' }}
+                            style={{ background: 'var(--grad-coral)', color: '#fff' }}
                         >
                             {submitting ? 'Desvinculando...' : 'Desvincular'}
                         </button>

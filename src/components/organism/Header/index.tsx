@@ -160,7 +160,7 @@ const Header: React.FC = () => {
         {linkStatus === 'pending' && !linkBannerDismissed && (
             <div
                 className="d-flex flex-wrap align-items-center justify-content-between gap-2 px-3 py-2"
-                style={{ background: '#f3a928', color: '#1a1a1a' }}
+                style={{ background: 'var(--amber)', color: 'var(--btn-text)' }}
             >
                 <span>
                     Seu personal quer reativar seu vínculo. Confirmar?

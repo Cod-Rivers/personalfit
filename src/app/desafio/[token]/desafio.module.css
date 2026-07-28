@@ -21,7 +21,7 @@
     font-weight: 700;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: #2e9e77;
+    color: var(--mint-text);
 }
 
 .title {
@@ -53,8 +53,8 @@
 }
 
 .pill {
-    background: #ecfdf5;
-    color: #047857;
+    background: rgba(15, 252, 190, 0.1);
+    color: var(--mint-text);
     font-size: 0.78rem;
     font-weight: 600;
     padding: 5px 11px;
@@ -86,13 +86,13 @@
 }
 
 .input:focus {
-    outline: 2px solid #2e9e77;
-    border-color: #2e9e77;
+    outline: 2px solid var(--mint);
+    border-color: var(--mint);
 }
 
 .btn {
-    background: #2e9e77;
-    color: #fff;
+    background: var(--grad-mint);
+    color: var(--btn-text);
     border: none;
     border-radius: 10px;
     padding: 14px;
@@ -108,8 +108,8 @@
 }
 
 .error {
-    background: #fef2f2;
-    color: #b91c1c;
+    background: rgba(255, 107, 107, 0.1);
+    color: var(--coral);
     border-radius: 10px;
     padding: 10px 12px;
     font-size: 0.88rem;
@@ -137,8 +137,8 @@
 }
 
 .closed {
-    background: #fffbeb;
-    color: #b45309;
+    background: rgba(240, 165, 0, 0.12);
+    color: var(--amber-dim);
     border-radius: 10px;
     padding: 12px;
     font-size: 0.9rem;

@@ -24,9 +24,9 @@
 }
 
 .btnCompareActive {
-    background: var(--surface-2, rgba(46, 158, 119, 0.12));
-    border-color: var(--brand, #2e9e77);
-    color: var(--brand, #2e9e77);
+    background: var(--mint-glow);
+    border-color: var(--mint);
+    color: var(--mint-text);
 }
 
 .compareSelects {
@@ -164,6 +164,10 @@
     font-size: 0.78rem;
     cursor: pointer;
 }
+.btnDanger:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
 
 .formGroup {
     margin-bottom: 14px;
@@ -187,9 +191,16 @@
     border: 1px solid var(--border-subtle);
     border-radius: 8px;
     color: var(--text-primary);
-    font-size: 0.9rem;
+    font-size: 1rem;
     outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
     box-sizing: border-box;
+}
+.formInput:focus,
+.formTextarea:focus,
+.formSelect:focus {
+    border-color: var(--mint);
+    box-shadow: 0 0 0 2px rgba(61,255,208,0.2);
 }
 
 .formTextarea {

@@ -93,13 +93,17 @@ function toExerciseLog(ex: ExerciseResponse): ExerciseLog {
         id: ex.id,
         name: ex.name,
         series: ex.series ?? [],
+        series_label: ex.series_label,
         variations: ex.variations ?? '',
         video_url: ex.video_url ?? '',
         // Só usa video_thumb se for URL http (não caminho GCS privado)
         video_thumb: ex.video_thumb?.startsWith('http') ? ex.video_thumb : '',
         weight: 0,
-        notes: ex.comments ?? '',
-        restTime: 90,
+        // notes é a anotação do próprio aluno (começa vazia); comments são as
+        // instruções do personal e vão no campo certo, não sobrescrevem notes.
+        notes: '',
+        comments: ex.comments,
+        restTime: ex.rest_seconds ?? 90,
     };
 }
 

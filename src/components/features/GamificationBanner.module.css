@@ -1,6 +1,6 @@
 .banner {
-    background: linear-gradient(135deg, #1f7a5a 0%, #2e9e77 100%);
-    color: #fff;
+    background: var(--grad-mint);
+    color: var(--btn-text);
     border-radius: 14px;
     padding: 16px 18px;
     margin-bottom: 16px;

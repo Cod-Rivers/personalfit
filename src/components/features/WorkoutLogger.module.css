@@ -309,9 +309,9 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    background: rgba(231, 76, 60, 0.1);
-    color: #e74c3c;
-    border: 1px solid #e74c3c;
+    background: rgba(255, 107, 107, 0.1);
+    color: var(--coral);
+    border: 1px solid var(--coral);
     border-radius: 4px;
     padding: 12px;
     margin-bottom: 16px;
@@ -446,21 +446,21 @@
 }
 
 .btnSkip {
-    color: #e74c3c;
-    border-color: #e74c3c;
+    color: var(--coral);
+    border-color: var(--coral);
 }
 
 .btnSkip:hover:not(:disabled) {
-    background: rgba(231, 76, 60, 0.1);
+    background: rgba(255, 107, 107, 0.1);
 }
 
 .btnComplete {
-    color: #27ae60;
-    border-color: #27ae60;
+    color: var(--mint-text);
+    border-color: var(--mint);
 }
 
 .btnComplete:hover:not(:disabled) {
-    background: rgba(39, 174, 96, 0.1);
+    background: rgba(15, 252, 190, 0.1);
 }
 
 .btnSkip:disabled,

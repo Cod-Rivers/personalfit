@@ -209,9 +209,9 @@
     font-weight: 600;
     margin-left: 8px;
     vertical-align: middle;
-    background: rgba(243, 169, 40, 0.12);
-    color: #f3a928;
-    border: 1px solid rgba(243, 169, 40, 0.25);
+    background: rgba(240, 165, 0, 0.12);
+    color: var(--amber);
+    border: 1px solid rgba(240, 165, 0, 0.25);
 }
 
 .studentActions {
@@ -340,7 +340,7 @@
     border: 1px solid var(--border-subtle);
     border-radius: 8px;
     color: var(--text-primary);
-    font-size: 0.95rem;
+    font-size: 1rem;
     outline: none;
     transition: border-color 0.2s, box-shadow 0.2s;
     box-sizing: border-box;
@@ -487,7 +487,7 @@
     border: 1px solid var(--border-subtle);
     border-radius: 8px;
     color: var(--text-primary);
-    font-size: 0.9rem;
+    font-size: 1rem;
     outline: none;
 }
 .exInput:focus {
@@ -501,8 +501,12 @@
     border: 1px solid var(--border-subtle);
     border-radius: 8px;
     color: var(--text-primary);
-    font-size: 0.9rem;
+    font-size: 1rem;
     outline: none;
+}
+.exSelect:focus {
+    border-color: var(--mint);
+    box-shadow: 0 0 0 2px rgba(61,255,208,0.15);
 }
 
 .exCard {
@@ -583,9 +587,9 @@
     padding: 2px 8px;
     border-radius: 4px;
     font-weight: 600;
-    background: rgba(91, 192, 190, 0.15);
-    color: #5bc0be;
-    border: 1px solid rgba(91, 192, 190, 0.3);
+    background: rgba(15, 252, 190, 0.12);
+    color: var(--mint-text);
+    border: 1px solid rgba(15, 252, 190, 0.3);
 }
 
 .templateMeta {
@@ -611,15 +615,15 @@
     vertical-align: middle;
 }
 
-.badgeActive { background: rgba(91,192,190,0.15); color: #5bc0be; }
+.badgeActive { background: rgba(15,252,190,0.12); color: var(--mint-text); }
 .badgeDraft { background: rgba(124,92,252,0.15); color: #7c5cfc; }
 .badgeArchived { background: rgba(168,168,168,0.2); color: var(--text-muted); }
-.badgePublic { background: rgba(243,169,40,0.15); color: #f7a92c; border: 1px solid rgba(243,169,40,0.3); }
+.badgePublic { background: rgba(240,165,0,0.15); color: var(--amber); border: 1px solid rgba(240,165,0,0.3); }
 
 .btnApply {
     background: transparent;
     border: 1px solid var(--amber);
-    color: var(--amber-text);
+    color: var(--amber);
     padding: 6px 14px;
     border-radius: 6px;
     font-size: 0.8rem;

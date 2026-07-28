@@ -435,7 +435,7 @@ export default function CiclosTab({ view, students, planType = 'free', onBack }:
                             onClick={handleTplDelete}
                             disabled={submitting}
                             className={s.btnSubmit}
-                            style={{ background: '#e74c3c', color: '#fff' }}
+                            style={{ background: 'var(--grad-coral)', color: '#fff' }}
                         >
                             {submitting ? 'Removendo...' : 'Remover'}
                         </button>

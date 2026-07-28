@@ -82,7 +82,7 @@ export default function StudentFeedbackPage() {
                             <div className={s.tile}>
                                 <div
                                     className={s.tileValue}
-                                    style={{ color: '#f59e0b' }}
+                                    style={{ color: 'var(--amber)' }}
                                 >
                                     {data.summary.ratings_count > 0
                                         ? data.summary.avg_stars.toFixed(1)

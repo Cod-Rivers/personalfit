@@ -461,8 +461,8 @@ export default function TrainingsEditor({
                                                     style={{
                                                         background:
                                                             'transparent',
-                                                        border: '1px solid #e74c3c',
-                                                        color: '#e74c3c',
+                                                        border: '1px solid var(--coral)',
+                                                        color: 'var(--coral)',
                                                         padding: '2px 7px',
                                                         borderRadius: 4,
                                                         cursor: 'pointer',

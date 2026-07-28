@@ -8,9 +8,16 @@ import Timeline from '@/components/molecules/Timeline';
 const QuestionsRenderer: FC<IquestionsRendererProps> = ({
     questions,
     submitQuestions,
+    initialAnswers,
+    initialIndex,
+    onBackBeforeFirst,
 }) => {
-    const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
-    const [answers, setAnswers] = useState<{ [key: string]: string }>({});
+    const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(
+        initialIndex ?? 0,
+    );
+    const [answers, setAnswers] = useState<{ [key: string]: string }>(
+        initialAnswers ?? {},
+    );
 
     const currentQuestion: IQuestionProps =
         questions[currentQuestionIndex ?? 0];
@@ -24,6 +31,10 @@ const QuestionsRenderer: FC<IquestionsRendererProps> = ({
     };
 
     const handlePreviousQuestion = () => {
+        if (currentQuestionIndex === 0) {
+            onBackBeforeFirst?.();
+            return;
+        }
         setCurrentQuestionIndex(currentQuestionIndex - 1);
     };
 
@@ -73,7 +84,7 @@ const QuestionsRenderer: FC<IquestionsRendererProps> = ({
                     <button
                         className="btn btn-gold"
                         onClick={handlePreviousQuestion}
-                        disabled={currentQuestionIndex === 0}
+                        disabled={currentQuestionIndex === 0 && !onBackBeforeFirst}
                     >
                         Anterior
                     </button>

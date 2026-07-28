@@ -112,8 +112,8 @@
 }
 
 .badgeCompleted {
-    background: rgba(46, 204, 113, 0.12);
-    color: #2ecc71;
+    background: rgba(15, 252, 190, 0.12);
+    color: var(--mint-text);
     border: 1px solid rgba(46, 204, 113, 0.25);
 }
 
@@ -136,6 +136,10 @@
 .btnEdit:hover {
     background: rgba(61, 255, 208, 0.1);
     box-shadow: 0 0 8px rgba(61,255,208,0.2);
+}
+.btnEdit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .btnStatusChange { composes: btnEdit; }
@@ -302,8 +306,8 @@
 }
 .microChipDone {
     composes: microChip;
-    border-color: #2ecc71;
-    color: #2ecc71;
+    border-color: var(--mint);
+    color: var(--mint-text);
 }
 
 /* ── Modal ── */
@@ -377,7 +381,7 @@
     border: 1px solid var(--border-subtle);
     border-radius: 8px;
     color: var(--text-primary);
-    font-size: 0.95rem;
+    font-size: 1rem;
     outline: none;
     transition: border-color 0.2s, box-shadow 0.2s;
     box-sizing: border-box;

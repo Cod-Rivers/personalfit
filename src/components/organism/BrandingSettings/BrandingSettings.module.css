@@ -213,16 +213,17 @@
     border: 1px solid var(--surface-3);
     border-radius: 8px;
     color: var(--text-primary);
-    font-size: 0.9rem;
+    font-size: 1rem;
     padding: 0.75rem;
     resize: vertical;
-    transition: border-color 0.15s;
+    transition: border-color 0.15s, box-shadow 0.15s;
     font-family: inherit;
 }
 
 .textarea:focus {
     outline: none;
     border-color: var(--mint);
+    box-shadow: 0 0 0 2px rgba(61,255,208,0.2);
 }
 
 .textarea:disabled {

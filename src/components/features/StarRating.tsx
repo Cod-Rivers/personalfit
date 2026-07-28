@@ -113,7 +113,7 @@ const styles: Record<string, React.CSSProperties> = {
         borderRadius: 6,
         color: '#fff',
         padding: '8px 10px',
-        fontSize: '0.85rem',
+        fontSize: '1rem',
         resize: 'vertical' as const,
         marginBottom: 10,
         boxSizing: 'border-box' as const,

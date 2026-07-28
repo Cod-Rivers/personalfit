@@ -58,8 +58,8 @@
     padding: 2px 8px;
     border-radius: 20px;
     font-weight: 600;
-    background: rgba(243, 169, 40, 0.15);
-    color: #f7a92c;
+    background: rgba(240, 165, 0, 0.15);
+    color: var(--amber);
     border: 1px solid rgba(243, 169, 40, 0.3);
 }
 

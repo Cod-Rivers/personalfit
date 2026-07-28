@@ -166,9 +166,9 @@
     font-weight: 600;
     margin-left: 8px;
     vertical-align: middle;
-    background: rgba(46, 204, 113, 0.15);
-    color: #2ecc71;
-    border: 1px solid rgba(46, 204, 113, 0.3);
+    background: rgba(15, 252, 190, 0.12);
+    color: var(--mint-text);
+    border: 1px solid rgba(15, 252, 190, 0.3);
 }
 
 .cardActions {
@@ -320,7 +320,7 @@
     border: 1px solid var(--border-subtle);
     border-radius: 8px;
     color: var(--text-primary);
-    font-size: 0.95rem;
+    font-size: 1rem;
     outline: none;
     transition: border-color 0.2s, box-shadow 0.2s;
     box-sizing: border-box;

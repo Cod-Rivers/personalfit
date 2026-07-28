@@ -77,8 +77,8 @@
 .editBtn:hover { background: var(--surface-3); }
 
 .editBtnError {
-    border-color: #e05252;
-    background: #fff0f0;
+    border-color: var(--coral);
+    background: rgba(255, 107, 107, 0.1);
 }
 
 .hiddenInput {

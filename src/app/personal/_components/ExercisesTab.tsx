@@ -347,7 +347,7 @@ export default function ExercisesTab({ planType = 'free' }: ExercisesTabProps) {
                             onClick={handleExDelete}
                             disabled={submitting}
                             className={s.btnSubmit}
-                            style={{ background: '#e74c3c', color: '#fff' }}
+                            style={{ background: 'var(--grad-coral)', color: '#fff' }}
                         >
                             {submitting ? 'Removendo...' : 'Remover'}
                         </button>

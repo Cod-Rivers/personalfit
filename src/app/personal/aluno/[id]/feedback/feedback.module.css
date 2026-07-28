@@ -27,14 +27,14 @@
 
 .headerSub {
     margin: 4px 0 0;
-    color: var(--text-secondary, #6b7280);
+    color: var(--text-secondary);
     font-size: 0.9rem;
 }
 
 .btnBack {
     flex-shrink: 0;
     background: transparent;
-    border: 1px solid var(--border, #d1d5db);
+    border: 1px solid var(--border-subtle);
     color: inherit;
     border-radius: 8px;
     padding: 8px 14px;
@@ -49,8 +49,8 @@
 }
 
 .tile {
-    background: var(--surface, #fff);
-    border: 1px solid var(--border, #e5e7eb);
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
     border-radius: 12px;
     padding: 16px;
     text-align: center;
@@ -66,7 +66,7 @@
 .tileLabel {
     margin-top: 4px;
     font-size: 0.78rem;
-    color: var(--text-secondary, #6b7280);
+    color: var(--text-secondary);
 }
 
 .sectionTitle {
@@ -82,8 +82,8 @@
 }
 
 .item {
-    background: var(--surface, #fff);
-    border: 1px solid var(--border, #e5e7eb);
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
     border-radius: 12px;
     padding: 14px 16px;
 }
@@ -103,7 +103,7 @@
 
 .itemDate {
     font-size: 0.8rem;
-    color: var(--text-secondary, #6b7280);
+    color: var(--text-secondary);
     font-variant-numeric: tabular-nums;
 }
 
@@ -112,30 +112,30 @@
     font-weight: 700;
     padding: 3px 9px;
     border-radius: 999px;
-    background: #eef2ff;
-    color: #3730a3;
+    background: rgba(15,252,190,0.1);
+    color: var(--mint-text);
     white-space: nowrap;
 }
 
 .rpeHigh {
-    background: #fef2f2;
-    color: #b91c1c;
+    background: rgba(255,107,107,0.1);
+    color: var(--coral);
 }
 
 .rpeMid {
-    background: #fffbeb;
-    color: #b45309;
+    background: rgba(240,165,0,0.12);
+    color: var(--amber);
 }
 
 .comment {
     margin: 8px 0 0;
     font-size: 0.9rem;
-    color: var(--text-primary, #374151);
+    color: var(--text-primary);
     white-space: pre-wrap;
 }
 
 .stars {
-    color: #f59e0b;
+    color: var(--amber);
     letter-spacing: 1px;
 }
 
@@ -143,22 +143,22 @@
     font-size: 0.72rem;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: var(--text-secondary, #6b7280);
+    color: var(--text-secondary);
 }
 
 .empty {
     text-align: center;
     padding: 32px 16px;
-    color: var(--text-secondary, #6b7280);
-    background: var(--surface, #fff);
-    border: 1px dashed var(--border, #d1d5db);
+    color: var(--text-secondary);
+    background: var(--surface-1);
+    border: 1px dashed var(--border-subtle);
     border-radius: 12px;
 }
 
 .loading {
     text-align: center;
     padding: 40px;
-    color: var(--text-secondary, #6b7280);
+    color: var(--text-secondary);
 }
 
 @media (max-width: 520px) {

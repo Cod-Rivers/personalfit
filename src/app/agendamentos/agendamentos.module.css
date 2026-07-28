@@ -47,7 +47,7 @@
 
 .errorMsg {
     background: rgba(255,80,80,0.12);
-    color: #ff6b6b;
+    color: var(--coral);
     border-radius: 8px;
     padding: 0.65rem 1rem;
     margin-bottom: 1rem;
@@ -97,7 +97,7 @@
 .btnPrimary {
     background: var(--grad-mint);
     border: none;
-    color: #000;
+    color: var(--btn-text);
     font-weight: 600;
     padding: 0.55rem 1.2rem;
     border-radius: 8px;
@@ -166,10 +166,10 @@
 
 .statusPending { background: rgba(150,150,150,0.15); color: var(--text-secondary); }
 .statusConfirmed { background: rgba(15,252,190,0.12); color: var(--mint); }
-.statusAttended { background: rgba(50,200,100,0.15); color: #3cc870; }
-.statusMissed { background: rgba(255,80,80,0.12); color: #ff6b6b; }
-.statusCancelled { background: rgba(120,120,120,0.12); color: #888; }
-.statusCancelledAdvance { background: rgba(255,180,0,0.12); color: #c98a00; }
+.statusAttended { background: rgba(15,252,190,0.12); color: var(--mint); }
+.statusMissed { background: rgba(255,80,80,0.12); color: var(--coral); }
+.statusCancelled { background: rgba(120,120,120,0.12); color: var(--text-secondary); }
+.statusCancelledAdvance { background: rgba(255,180,0,0.12); color: var(--amber-dim); }
 
 .apptTime {
     margin: 0 0 0.35rem;
@@ -215,8 +215,8 @@
 
 .btnCancel {
     background: rgba(120,120,120,0.1);
-    border: 1px solid #888;
-    color: #888;
+    border: 1px solid var(--text-secondary);
+    color: var(--text-secondary);
     padding: 0.35rem 0.85rem;
     border-radius: 6px;
     cursor: pointer;
@@ -227,8 +227,8 @@
 
 .btnCancelAdvance {
     background: rgba(255,180,0,0.1);
-    border: 1px solid #c98a00;
-    color: #c98a00;
+    border: 1px solid var(--amber-dim);
+    color: var(--amber-dim);
     padding: 0.3rem 0.75rem;
     border-radius: 6px;
     cursor: pointer;
@@ -288,12 +288,12 @@
     color: var(--text-primary);
     border-radius: 8px;
     padding: 0.5rem 0.75rem;
-    font-size: 0.9rem;
-    transition: border-color 0.2s;
+    font-size: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
     width: 100%;
     box-sizing: border-box;
 }
-.input:focus { outline: none; border-color: var(--mint); }
+.input:focus { outline: none; border-color: var(--mint); box-shadow: 0 0 0 2px rgba(61,255,208,0.2); }
 
 .modalActions {
     display: flex;
