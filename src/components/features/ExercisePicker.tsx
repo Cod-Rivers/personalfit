@@ -8,6 +8,7 @@ import {
     type ExerciseLibraryItem,
 } from '@/libs/planningService';
 import VideoUploadModal from '@/components/features/VideoUploadModal';
+import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
 import Modal from '@/components/system/Modal';
 
 interface ExercisePickerProps {
@@ -368,25 +369,15 @@ export default function ExercisePicker({
                                                     '#252538')
                                             }
                                         >
-                                            {ex.video_thumb && (
-                                                <img
-                                                    src={ex.video_thumb}
-                                                    alt={ex.name}
-                                                    style={{
-                                                        width: 40,
-                                                        height: 40,
-                                                        borderRadius: 6,
-                                                        objectFit: 'cover',
-                                                        flexShrink: 0,
-                                                    }}
-                                                    onError={(e) => {
-                                                        (
-                                                            e.target as HTMLImageElement
-                                                        ).style.display =
-                                                            'none';
-                                                    }}
-                                                />
-                                            )}
+                                            <ExerciseThumbnail
+                                                name={ex.name}
+                                                videoThumb={ex.video_thumb}
+                                                videoUrl={ex.video_url}
+                                                width={40}
+                                                height={40}
+                                                borderRadius={6}
+                                                captureFrame={false}
+                                            />
                                             <div
                                                 style={{ flex: 1, minWidth: 0 }}
                                             >

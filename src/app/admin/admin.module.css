@@ -1,4 +1,4 @@
-﻿.page { min-height: 100vh; background: var(--mil-blue); color: var(--text-primary); display: flex; }
+﻿.page { min-height: 100%; background: var(--mil-blue); color: var(--text-primary); display: flex; }
 
 /* Sidebar */
 .sidebar { width: 260px; background: var(--surface-1); border-right: 1px solid var(--border-subtle); padding: 24px 0; display: flex; flex-direction: column; position: fixed; top: 0; bottom: 0; overflow-y: auto; }
@@ -14,7 +14,7 @@
 .btnLogout:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(240,165,0,0.45); filter: brightness(1.07); }
 
 /* Main content */
-.main { margin-left: 260px; flex: 1; padding: 32px 40px; min-height: 100vh; }
+.main { margin-left: 260px; flex: 1; padding: 32px 40px; min-height: 100%; }
 
 /* Section header */
 .sectionHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }

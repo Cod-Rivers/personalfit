@@ -21,63 +21,11 @@ import styles from './TrainingPage.module.css';
 import ImageComponent from 'next/image';
 import weightIcon from './../../../../../public/assets/icons/weight-icon.png';
 import { getNewWorkoutLogs, NewWorkoutLogResponse } from '@/libs/workoutLogService';
-import { isEmbeddableUrl } from '@/libs/exerciseVideoService';
 import { computeAutoregulationDecision } from '@/libs/microcycleAutoregulation';
 import { getOfflineMacrocycle } from '@/libs/offline/downloadManager';
 import HelpTooltip from '@/components/atoms/HelpTooltip';
 import { getMicrocycleHelpTopic } from '@/libs/microcycleHelpContent';
-
-/** Exibe um frame estático do vídeo como thumbnail na lista. videoUrl já vem
- * resolvida pela API como URL pública final (R2/CDN), pronta para tocar. */
-function VideoFrameThumbnail({
-    videoUrl,
-    className,
-    style,
-}: {
-    videoUrl: string;
-    className?: string;
-    style?: React.CSSProperties;
-}) {
-    if (!videoUrl) {
-        return (
-            <div
-                className={className}
-                style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: '#1a1a2e',
-                    borderRadius: 6,
-                    fontSize: 22,
-                    flexShrink: 0,
-                    ...style,
-                }}
-            >
-                🎬
-            </div>
-        );
-    }
-
-    return (
-        <video
-            src={videoUrl}
-            muted
-            playsInline
-            preload="metadata"
-            onLoadedMetadata={(e) => {
-                e.currentTarget.currentTime = 1;
-            }}
-            className={className}
-            style={{
-                objectFit: 'cover',
-                borderRadius: 6,
-                flexShrink: 0,
-                background: '#000',
-                ...style,
-            }}
-        />
-    );
-}
+import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
 
 interface TrainingPageParams {
     id: string; // macrocycle ID
@@ -629,27 +577,15 @@ export default function MeusTreinosExercisesPage({
                                     className={`${styles.cardButton} ${styles.exerciseItemContainer}`}
                                 >
                                     <div className="flex items-center">
-                                        {exercise.video_thumb?.startsWith(
-                                            'http',
-                                        ) ? (
-                                            <img
-                                                src={exercise.video_thumb}
-                                                alt={`Thumbnail para ${exercise.name}`}
-                                                className={
-                                                    styles.exerciseThumbnail
-                                                }
-                                            />
-                                        ) : exercise.video_url &&
-                                          !isEmbeddableUrl(
-                                              exercise.video_url,
-                                          ) ? (
-                                            <VideoFrameThumbnail
-                                                videoUrl={exercise.video_url}
-                                                className={
-                                                    styles.exerciseThumbnail
-                                                }
-                                            />
-                                        ) : null}
+                                        <ExerciseThumbnail
+                                            name={exercise.name}
+                                            videoThumb={exercise.video_thumb}
+                                            videoUrl={exercise.video_url}
+                                            className={
+                                                styles.exerciseThumbnail
+                                            }
+                                            style={{ marginRight: 16 }}
+                                        />
                                         <span
                                             className="text-xl font-semibold flex-grow"
                                             style={{

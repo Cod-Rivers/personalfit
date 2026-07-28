@@ -278,78 +278,41 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                 title={exercise.name}
             >
                 <div>
-                    <div className={styles.thumbnailImage}>
-                        {exercise.video_thumb ? (
-                            <div className={styles.thumbnailSection}>
-                                <div
-                                    onClick={handleOpenVideoPlayer}
-                                    className={styles.thumbnailLink}
-                                    style={{
-                                        cursor: exercise.video_url
-                                            ? 'pointer'
-                                            : 'default',
+                    <div className={styles.thumbnailSection}>
+                        <div
+                            onClick={handleOpenVideoPlayer}
+                            className={styles.thumbnailLink}
+                            style={{
+                                cursor: exercise.video_url
+                                    ? 'pointer'
+                                    : 'default',
+                            }}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ')
+                                    handleOpenVideoPlayer();
+                            }}
+                        >
+                            {exercise.video_thumb ? (
+                                <img
+                                    src={exercise.video_thumb}
+                                    alt={`Ver vídeo para ${exercise.name}`}
+                                    className={styles.thumbnailImage}
+                                    onError={(e) => {
+                                        (
+                                            e.target as HTMLImageElement
+                                        ).style.display = 'none';
                                     }}
-                                    role="button"
-                                    tabIndex={0}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' || e.key === ' ')
-                                            handleOpenVideoPlayer();
-                                    }}
-                                >
-                                    <img
-                                        src={exercise.video_thumb}
-                                        alt={`Ver vídeo para ${exercise.name}`}
-                                        className={styles.thumbnailImage}
-                                        onError={(e) => {
-                                            (
-                                                e.target as HTMLImageElement
-                                            ).style.display = 'none';
-                                        }}
-                                    />
-                                </div>
-                            </div>
-                        ) : exercise.video_url && isExternalRedirectOnly ? (
-                            <div className={styles.thumbnailSection}>
-                                <div
-                                    onClick={handleOpenVideoPlayer}
-                                    className={styles.thumbnailLink}
-                                    style={{
-                                        cursor: 'pointer',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        background: '#1a1a2e',
-                                        borderRadius: 8,
-                                        fontSize: 28,
-                                    }}
-                                    role="button"
-                                    tabIndex={0}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' || e.key === ' ')
-                                            handleOpenVideoPlayer();
-                                    }}
-                                >
+                                />
+                            ) : exercise.video_url && isExternalRedirectOnly ? (
+                                <div className={styles.thumbnailPlaceholder}>
                                     {isInstagramUrl(exercise.video_url)
                                         ? '📷'
                                         : '🎵'}
                                 </div>
-                            </div>
-                        ) : exercise.video_url && !embedUrl ? (
-                            <div className={styles.thumbnailSection}>
-                                <div
-                                    onClick={handleOpenVideoPlayer}
-                                    className={styles.thumbnailLink}
-                                    style={{
-                                        cursor: 'pointer',
-                                        position: 'relative',
-                                    }}
-                                    role="button"
-                                    tabIndex={0}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' || e.key === ' ')
-                                            handleOpenVideoPlayer();
-                                    }}
-                                >
+                            ) : exercise.video_url && !embedUrl ? (
+                                <>
                                     <video
                                         src={exercise.video_url}
                                         autoPlay
@@ -357,30 +320,17 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                         loop
                                         playsInline
                                         className={styles.thumbnailImage}
-                                        style={{
-                                            display: 'block',
-                                            borderRadius: 8,
-                                            objectFit: 'cover',
-                                        }}
                                     />
-                                    <div
-                                        style={{
-                                            position: 'absolute',
-                                            bottom: 6,
-                                            right: 8,
-                                            background: 'rgba(0,0,0,0.55)',
-                                            borderRadius: 4,
-                                            padding: '2px 6px',
-                                            fontSize: 11,
-                                            color: '#fff',
-                                            pointerEvents: 'none',
-                                        }}
-                                    >
+                                    <div className={styles.playBadge}>
                                         ▶ ver completo
                                     </div>
+                                </>
+                            ) : (
+                                <div className={styles.thumbnailPlaceholder}>
+                                    {exercise.video_url ? '🎬' : '🏋️'}
                                 </div>
-                            </div>
-                        ) : null}
+                            )}
+                        </div>
                     </div>
                     <div className={styles.modalCard}>
                         <div className={styles.contentLayout}>

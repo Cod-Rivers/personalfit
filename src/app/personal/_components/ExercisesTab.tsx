@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { MUSCLE_GROUPS, type ExerciseLibraryItem } from '@/libs/planningService';
 import { usePersonalExercises } from '@/hooks/usePersonalExercises';
 import VideoUploadModal from '@/components/features/VideoUploadModal';
+import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
 import Modal from '@/components/system/Modal';
 import s from '../personal.module.css';
 
@@ -87,6 +88,12 @@ export default function ExercisesTab({ planType = 'free' }: ExercisesTabProps) {
                 <div className={s.studentList}>
                     {myExercises.map((ex) => (
                         <div key={ex.id} className={s.exCard}>
+                            <ExerciseThumbnail
+                                name={ex.name}
+                                videoThumb={ex.video_thumb}
+                                videoUrl={ex.video_url}
+                                captureFrame={false}
+                            />
                             <div style={{ flex: 1, minWidth: 0 }}>
                                 <p className={s.exCardName}>
                                     {ex.name}

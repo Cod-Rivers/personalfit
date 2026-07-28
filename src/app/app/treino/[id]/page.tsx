@@ -5,6 +5,7 @@ import React, { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import ExerciseDetailCard from '@/components/features/ExerciseDetailCard';
+import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
 import { ApiTrainingProgress, ExerciseLog } from '@/components/features/types';
 
 interface TreinoPageParams {
@@ -95,24 +96,32 @@ export default function TreinoPage({ params: paramsPromise }: TreinoPageProps) {
                         <li key={exercise.id}>
                             <button
                                 onClick={() => setSelectedExercise(exercise)}
-                                className="w-100 text-start rounded p-3"
+                                className="w-100 text-start rounded p-3 d-flex align-items-center"
                                 style={{
                                     background: 'var(--surface-1)',
                                     color: 'var(--text-primary)',
                                     border: '1px solid var(--border-mid)',
                                 }}
                             >
-                                <strong>{exercise.name}</strong>
-                                {exercise.series?.length > 0 && (
-                                    <span
-                                        className="ms-2"
-                                        style={{
-                                            color: 'var(--text-muted)',
-                                        }}
-                                    >
-                                        {exercise.series.join(' - ')}
-                                    </span>
-                                )}
+                                <ExerciseThumbnail
+                                    name={exercise.name}
+                                    videoThumb={exercise.video_thumb}
+                                    videoUrl={exercise.video_url}
+                                    style={{ marginRight: 16 }}
+                                />
+                                <span>
+                                    <strong>{exercise.name}</strong>
+                                    {exercise.series?.length > 0 && (
+                                        <span
+                                            className="ms-2"
+                                            style={{
+                                                color: 'var(--text-muted)',
+                                            }}
+                                        >
+                                            {exercise.series.join(' - ')}
+                                        </span>
+                                    )}
+                                </span>
                             </button>
                         </li>
                     ))}

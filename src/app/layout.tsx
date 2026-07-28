@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { getLocale } from 'next-intl/server';
 import { NextIntlClientProvider } from 'next-intl';
@@ -21,6 +21,12 @@ const inter = Inter({
 
 export const metadata: Metadata = {
     title: 'Venafit Tela de Login',
+};
+
+export const viewport: Viewport = {
+    width: 'device-width',
+    initialScale: 1,
+    viewportFit: 'cover',
 };
 
 export default async function RootLayout({

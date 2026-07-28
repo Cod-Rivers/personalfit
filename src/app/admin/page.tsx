@@ -6,6 +6,9 @@ import { isAxiosError } from 'axios';
 import s from './admin.module.css';
 import * as adminService from '@/libs/adminService';
 import * as videoService from '@/libs/exerciseVideoService';
+import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
+import ExerciseDetailCard from '@/components/features/ExerciseDetailCard';
+import type { ExerciseLog } from '@/components/features/types';
 import AdminAdvertisements from '@/components/organism/AdminAdvertisements';
 import AdminReferralPartners from '@/components/organism/AdminReferralPartners';
 import AdminProtocols from '@/components/organism/AdminProtocols';
@@ -903,8 +906,22 @@ function ExercisesSection() {
     const [uploadProgress, setUploadProgress] = useState(0);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
+    const [previewExercise, setPreviewExercise] =
+        useState<adminService.ExerciseLibraryItem | null>(null);
 
     const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
+
+    const toExerciseLogPreview = (
+        ex: adminService.ExerciseLibraryItem,
+    ): ExerciseLog => ({
+        id: ex.id,
+        name: ex.name,
+        series: [],
+        variations: ex.description || '',
+        video_url: ex.video_url ?? '',
+        video_thumb: ex.video_thumb ?? '',
+        weight: 0,
+    });
 
     const fetchExercises = useCallback(async (q?: string) => {
         try {
@@ -1157,7 +1174,18 @@ function ExercisesSection() {
                 </div>
             ) : (
                 exercises.map((ex) => (
-                    <div key={ex.id} className={s.card}>
+                    <div
+                        key={ex.id}
+                        className={s.card}
+                        onClick={() => setPreviewExercise(ex)}
+                        style={{ cursor: 'pointer' }}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ')
+                                setPreviewExercise(ex);
+                        }}
+                    >
                         <div className={s.cardHeader}>
                             <div
                                 style={{
@@ -1166,19 +1194,21 @@ function ExercisesSection() {
                                     alignItems: 'center',
                                 }}
                             >
-                                {ex.video_thumb && (
-                                    <Image
-                                        src={
-                                            ex.video_thumb.startsWith('http')
-                                                ? ex.video_thumb
-                                                : `${apiBase}${ex.video_thumb}`
-                                        }
-                                        alt={ex.name}
-                                        className={s.exerciseThumb}
-                                        width={80}
-                                        height={60}
-                                    />
-                                )}
+                                <ExerciseThumbnail
+                                    name={ex.name}
+                                    videoThumb={
+                                        ex.video_thumb?.startsWith('http')
+                                            ? ex.video_thumb
+                                            : ex.video_thumb
+                                              ? `${apiBase}${ex.video_thumb}`
+                                              : ''
+                                    }
+                                    videoUrl={ex.video_url}
+                                    width={72}
+                                    height={72}
+                                    captureFrame={false}
+                                    className={s.exerciseThumb}
+                                />
                                 <div>
                                     <h3 className={s.cardTitle}>{ex.name}</h3>
                                     <p className={s.cardMeta}>
@@ -1191,13 +1221,19 @@ function ExercisesSection() {
                             </div>
                             <div className={s.btnGroup}>
                                 <button
-                                    onClick={() => openEdit(ex)}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        openEdit(ex);
+                                    }}
                                     className={`${s.btnOutline} ${s.btnSmall}`}
                                 >
                                     Editar
                                 </button>
                                 <button
-                                    onClick={() => handleDelete(ex.id)}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDelete(ex.id);
+                                    }}
                                     className={`${s.btnDanger} ${s.btnSmall}`}
                                 >
                                     Excluir
@@ -1421,6 +1457,13 @@ function ExercisesSection() {
                     />
                 </div>
             </Modal>
+
+            {previewExercise && (
+                <ExerciseDetailCard
+                    exercise={toExerciseLogPreview(previewExercise)}
+                    onClose={() => setPreviewExercise(null)}
+                />
+            )}
         </>
     );
 }

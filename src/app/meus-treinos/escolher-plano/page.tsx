@@ -5,9 +5,28 @@ import { useRouter } from 'next/navigation';
 import {
     getCelebrityTemplates,
     MacrocycleResponse,
+    ExerciseResponse,
 } from '@/libs/planningService';
 import { getPlans } from '@/libs/paymentService';
+import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
 import s from './escolher-plano.module.css';
+
+/** Primeiro exercício com mídia (thumb ou vídeo) entre todos os treinos do
+ * plano, usado como capa do card — na ordem em que os mesociclos/treinos
+ * aparecem no plano. */
+function findCoverExercise(
+    tpl: MacrocycleResponse,
+): ExerciseResponse | undefined {
+    for (const meso of tpl.mesocycles ?? []) {
+        for (const training of meso.trainings ?? []) {
+            const withMedia = training.exercises?.find(
+                (ex) => ex.video_thumb || ex.video_url,
+            );
+            if (withMedia) return withMedia;
+        }
+    }
+    return tpl.mesocycles?.[0]?.trainings?.[0]?.exercises?.[0];
+}
 
 function extractErrorMessage(err: unknown, fallback: string): string {
     const data = (
@@ -17,7 +36,10 @@ function extractErrorMessage(err: unknown, fallback: string): string {
 }
 
 function formatBRL(value: number): string {
-    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    return value.toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+    });
 }
 
 export default function EscolherPlanoPage() {
@@ -39,7 +61,10 @@ export default function EscolherPlanoPage() {
             setLoading(true);
             setError(null);
             try {
-                if (!localStorage.getItem('user') || !localStorage.getItem('token')) {
+                if (
+                    !localStorage.getItem('user') ||
+                    !localStorage.getItem('token')
+                ) {
                     router.push('/app');
                     return;
                 }
@@ -51,7 +76,12 @@ export default function EscolherPlanoPage() {
                 setTemplates(list);
                 if (catalog) setPrice(catalog.library_plan.value);
             } catch (e) {
-                setError(extractErrorMessage(e, 'Não foi possível carregar os planos.'));
+                setError(
+                    extractErrorMessage(
+                        e,
+                        'Não foi possível carregar os planos.',
+                    ),
+                );
             } finally {
                 setLoading(false);
             }
@@ -89,36 +119,54 @@ export default function EscolherPlanoPage() {
                 </p>
             ) : (
                 <div className={s.grid}>
-                    {templates.map((tpl) => (
-                        <div key={tpl.id} className={s.card}>
-                            <p className={s.cardName}>
-                                {tpl.name}
-                                {tpl.mesocycles?.[0]?.trainings?.length ? (
-                                    <span
+                    {templates.map((tpl) => {
+                        const cover = findCoverExercise(tpl);
+                        return (
+                            <div key={tpl.id} className={s.card}>
+                                <div className={s.cardCover}>
+                                    <ExerciseThumbnail
+                                        name={tpl.name}
+                                        videoThumb={cover?.video_thumb}
+                                        videoUrl={cover?.video_url}
+                                        width="100%"
+                                        height="100%"
+                                        borderRadius={10}
+                                        captureFrame={false}
                                         style={{
-                                            fontWeight: 400,
-                                            fontSize: '0.75rem',
-                                            color: 'var(--text-muted)',
+                                            position: 'absolute',
+                                            inset: 0,
                                         }}
-                                    >
-                                        {tpl.mesocycles[0].trainings.length}{' '}
-                                        treinos
-                                    </span>
-                                ) : null}
-                            </p>
-                            {tpl.goal && (
-                                <p className={s.cardGoal}>{tpl.goal}</p>
-                            )}
-                            <button
-                                className={s.btnApply}
-                                onClick={() => handleBuy(tpl)}
-                            >
-                                {price != null
-                                    ? `Comprar por ${formatBRL(price)}`
-                                    : 'Comprar este plano'}
-                            </button>
-                        </div>
-                    ))}
+                                    />
+                                </div>
+                                <p className={s.cardName}>
+                                    {tpl.name}
+                                    {tpl.mesocycles?.[0]?.trainings?.length ? (
+                                        <span
+                                            style={{
+                                                fontWeight: 400,
+                                                fontSize: '0.75rem',
+                                                color: 'var(--text-muted)',
+                                            }}
+                                        >
+                                            {tpl.mesocycles[0].trainings.length}{' '}
+                                            treinos
+                                        </span>
+                                    ) : null}
+                                </p>
+                                {tpl.goal && (
+                                    <p className={s.cardGoal}>{tpl.goal}</p>
+                                )}
+                                <button
+                                    className={s.btnApply}
+                                    onClick={() => handleBuy(tpl)}
+                                >
+                                    {price != null
+                                        ? `Comprar por ${formatBRL(price)}`
+                                        : 'Comprar este plano'}
+                                </button>
+                            </div>
+                        );
+                    })}
                 </div>
             )}
         </div>

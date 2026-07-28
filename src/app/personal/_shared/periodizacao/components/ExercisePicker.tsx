@@ -7,6 +7,7 @@ import {
     MUSCLE_GROUPS,
     type ExerciseLibraryItem,
 } from '@/libs/planningService';
+import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
 
 interface Props {
     onPick: (item: ExerciseLibraryItem) => void;
@@ -198,42 +199,15 @@ export default function ExercisePicker({ onPick, onClose }: Props) {
                                 'var(--border-subtle)')
                         }
                     >
-                        {/* Thumbnail or placeholder */}
-                        {item.video_thumb ? (
-                            <img
-                                src={item.video_thumb}
-                                alt={item.name}
-                                style={{
-                                    width: 52,
-                                    height: 38,
-                                    objectFit: 'cover',
-                                    borderRadius: 5,
-                                    flexShrink: 0,
-                                    background: '#111',
-                                }}
-                                onError={(e) => {
-                                    (
-                                        e.target as HTMLImageElement
-                                    ).style.display = 'none';
-                                }}
-                            />
-                        ) : (
-                            <div
-                                style={{
-                                    width: 52,
-                                    height: 38,
-                                    borderRadius: 5,
-                                    background: 'var(--border-subtle)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '1.2rem',
-                                    flexShrink: 0,
-                                }}
-                            >
-                                🏋️
-                            </div>
-                        )}
+                        <ExerciseThumbnail
+                            name={item.name}
+                            videoThumb={item.video_thumb}
+                            videoUrl={item.video_url}
+                            width={52}
+                            height={38}
+                            borderRadius={5}
+                            captureFrame={false}
+                        />
                         <div style={{ flex: 1, minWidth: 0 }}>
                             <p
                                 style={{
