@@ -76,6 +76,12 @@ export default function TreinoPage({ params: paramsPromise }: TreinoPageProps) {
 
     return (
         <div className="container py-5">
+            <button
+                className="btn btn-outline-secondary btn-sm mb-3"
+                onClick={() => router.push('/app')}
+            >
+                ← Voltar para Meus Treinos
+            </button>
             <div className="d-flex align-items-center gap-3 mb-4">
                 <Image
                     src="/assets/icons/weight-icon.png"

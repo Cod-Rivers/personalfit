@@ -239,7 +239,11 @@ export default function AgendamentosPage() {
                     </div>
                     <button
                         className={s.btnBack}
-                        onClick={() => router.push('/app')}
+                        onClick={() =>
+                            router.push(
+                                user.has_personal ? '/meus-treinos' : '/app',
+                            )
+                        }
                     >
                         ← Voltar
                     </button>

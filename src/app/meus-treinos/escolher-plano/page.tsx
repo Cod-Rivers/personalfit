@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
     getCelebrityTemplates,
@@ -9,6 +10,7 @@ import {
 } from '@/libs/planningService';
 import { getPlans } from '@/libs/paymentService';
 import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
+import { getStudentHomeRoute } from '@/libs/session';
 import s from './escolher-plano.module.css';
 
 /** Primeiro exercício com mídia (thumb ou vídeo) entre todos os treinos do
@@ -100,6 +102,12 @@ export default function EscolherPlanoPage() {
 
     return (
         <div className="container mx-auto p-4">
+            <Link
+                href={getStudentHomeRoute()}
+                className="btn btn-outline-secondary btn-sm mb-3"
+            >
+                ← Voltar para Meus Treinos
+            </Link>
             <div className={s.header}>
                 <div>
                     <h1 className={s.title}>Planos estilo famosos</h1>

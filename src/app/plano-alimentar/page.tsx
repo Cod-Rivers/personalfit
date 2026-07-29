@@ -45,6 +45,16 @@ export default function MyMealPlanPage() {
                             ao longo do tempo
                         </p>
                     </div>
+                    <button
+                        className={s.btnBack}
+                        onClick={() =>
+                            router.push(
+                                user.has_personal ? '/meus-treinos' : '/app',
+                            )
+                        }
+                    >
+                        ← Voltar
+                    </button>
                 </div>
 
                 <MealPlanEditor />

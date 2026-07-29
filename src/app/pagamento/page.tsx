@@ -24,6 +24,7 @@ import {
     ReferralPartnerPublic,
     getActiveReferralPartners,
 } from '@/libs/referralPartnerService';
+import { getStudentHomeRoute } from '@/libs/session';
 
 // Valor fixo para "sem indicação" — usado tanto aqui quanto interpretado no
 // backend/estatísticas (ver ReferralPartnerController.GetIndicationStats).
@@ -323,6 +324,21 @@ function PaymentPageInner() {
                     />
                     <h1 className="h3 mt-2">Pagamento</h1>
                 </header>
+
+                <div className="mx-3">
+                    <button
+                        className="btn btn-outline-secondary btn-sm mb-3"
+                        onClick={() =>
+                            router.push(
+                                produto === 'pro'
+                                    ? '/personal'
+                                    : getStudentHomeRoute(),
+                            )
+                        }
+                    >
+                        ← Voltar
+                    </button>
+                </div>
 
                 {error && (
                     <div className="alert alert-danger m-3" role="alert">

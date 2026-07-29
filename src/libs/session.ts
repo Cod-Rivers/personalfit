@@ -17,6 +17,7 @@ export interface SessionUser {
     role?: string;
     name?: string;
     email?: string;
+    has_personal?: boolean;
 }
 
 const TOKEN_KEY = 'token';
@@ -59,6 +60,15 @@ export function getUser(): SessionUser | null {
     } catch {
         return null;
     }
+}
+
+/**
+ * Hub de treinos do aluno logado: `/meus-treinos` para quem tem personal
+ * vinculado (sistema de macrociclo), `/app` para quem não tem (dashboard
+ * legado de protocolo). Usado pelos botões "voltar" nas telas do aluno.
+ */
+export function getStudentHomeRoute(): string {
+    return getUser()?.has_personal ? '/meus-treinos' : '/app';
 }
 
 /**

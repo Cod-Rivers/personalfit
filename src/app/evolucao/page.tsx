@@ -46,6 +46,16 @@ export default function MyEvolutionPage() {
                             ou seu personal podem registrar
                         </p>
                     </div>
+                    <button
+                        className={s.btnBack}
+                        onClick={() =>
+                            router.push(
+                                user.has_personal ? '/meus-treinos' : '/app',
+                            )
+                        }
+                    >
+                        ← Voltar
+                    </button>
                 </div>
 
                 <TrainingZonesCalculator />

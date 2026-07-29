@@ -2,6 +2,7 @@
 import React, { FC, useEffect, useState } from 'react';
 import { Api } from '@/libs/api';
 import BackButton from '@/components/molecules/BackButton';
+import { getStudentHomeRoute } from '@/libs/session';
 import QuestionsRenderer from '@/components/organism/QuestionsRenderer';
 import { IQuestionProps } from '@/components/organism/QuestionsRenderer/types';
 import { useRouter } from 'next/navigation';
@@ -195,7 +196,10 @@ const Questions: FC = () => {
         className='container'
         >
             <header className="d-flex w-100 mt-4">
-                <BackButton />
+                <BackButton
+                    link={getStudentHomeRoute()}
+                    label="Voltar para Meus Treinos"
+                />
             </header>
             <div className="d-flex justify-content-center align-items-center" style={{
                 minHeight: '90vh',

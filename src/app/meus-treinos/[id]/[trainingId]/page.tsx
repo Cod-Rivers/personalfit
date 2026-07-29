@@ -4,6 +4,7 @@
 import React, { useEffect, useMemo, useState, use } from 'react';
 import Link from 'next/link';
 import axios from 'axios';
+import { getStudentHomeRoute } from '@/libs/session';
 import {
     getMyMacrocycle,
     MacrocycleResponse,
@@ -290,7 +291,13 @@ export default function MeusTreinosExercisesPage({
     return (
         <>
             <div className="container mx-auto p-4 min-h-screen relative">
-                <div className="d-flex justify-content-end mb-2">
+                <div className="d-flex justify-content-between align-items-center mb-2">
+                    <Link
+                        href={getStudentHomeRoute()}
+                        className="btn btn-outline-secondary btn-sm"
+                    >
+                        ← Voltar para Meus Treinos
+                    </Link>
                     <SyncPendingBadge />
                 </div>
                 {isOffline && (
