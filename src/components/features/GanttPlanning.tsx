@@ -97,7 +97,6 @@ const GanttPlanning: React.FC<GanttPlanningProps> = ({
             {
                 unit: 'week',
                 step: 1,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 format: ((date: Date) => {
                     const d = String(date.getDate()).padStart(2, '0');
                     const m = String(date.getMonth() + 1).padStart(2, '0');

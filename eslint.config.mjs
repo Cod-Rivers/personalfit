@@ -11,6 +11,14 @@ const compat = new FlatCompat({
 
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
+  {
+    rules: {
+      // <img> é usado para thumbnails/avatares vindos de URLs externas
+      // arbitrárias (CDN de vídeo) ou blob/data URLs (preview de upload),
+      // casos que next/image não cobre bem sem lista fixa de domínios.
+      "@next/next/no-img-element": "off",
+    },
+  },
 ];
 
 export default eslintConfig;
