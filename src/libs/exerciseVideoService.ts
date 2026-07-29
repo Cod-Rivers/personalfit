@@ -233,6 +233,21 @@ export const MAX_UPLOAD_DURATION_SECONDS = 90;
  * que um vídeo equivalente com loop automático). */
 export const ACCEPTED_UPLOAD_EXTENSIONS = '.mp4,.webm,.jpg,.jpeg,.png,.webp';
 
+/** Formatos padrão de gravação suportados pelo app: quadrado (1:1) ou horizontal (16:9). */
+export const SQUARE_ASPECT_RATIO = 1;
+export const LANDSCAPE_ASPECT_RATIO = 16 / 9;
+
+/** Ajusta uma proporção medida (largura/altura) para o formato padrão mais próximo
+ * (quadrado ou horizontal), absorvendo pequenas variações de codec/gravação para
+ * que a moldura exibida fique sempre consistente com um dos dois formatos aceitos. */
+export function snapToStandardAspectRatio(ratio: number): number {
+    const distanceToSquare = Math.abs(ratio - SQUARE_ASPECT_RATIO);
+    const distanceToLandscape = Math.abs(ratio - LANDSCAPE_ASPECT_RATIO);
+    return distanceToSquare <= distanceToLandscape
+        ? SQUARE_ASPECT_RATIO
+        : LANDSCAPE_ASPECT_RATIO;
+}
+
 /** Detecta se é URL do YouTube. */
 export function isYouTubeUrl(videoUrl: string): boolean {
     return videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be');

@@ -376,9 +376,12 @@ export default function VideoUploadModal({
                         PNG, WebP
                     </small>
                     <small className="text-muted d-block mt-1">
-                        📹 Grave na horizontal (paisagem) — o app
-                        exibe as prévias de vídeo nesse formato, e
-                        um vídeo vertical fica cortado.
+                        📹 Grave em formato quadrado (1:1) ou
+                        horizontal (16:9) — são os dois formatos
+                        suportados. O app reconhece automaticamente
+                        qual foi usado e ajusta a moldura; outras
+                        proporções (ex.: vídeo vertical) podem ficar
+                        cortadas.
                     </small>
                     {retryAttempt > 1 && submitting && (
                         <div className="alert alert-warning py-1 mt-2 mb-0 small">

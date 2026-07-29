@@ -8,6 +8,7 @@ import {
     isVideoExtension,
     isInstagramUrl,
     isTikTokUrl,
+    snapToStandardAspectRatio,
 } from '@/libs/exerciseVideoService';
 
 interface ExerciseDetailCardProps {
@@ -59,6 +60,9 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
     const [videoAspectRatio, setVideoAspectRatio] = useState<number | null>(
         null,
     );
+    const [thumbAspectRatio, setThumbAspectRatio] = useState<number | null>(
+        null,
+    );
     const [userAnnotations, setUserAnnotations] = useState<string>(''); // Novo estado para as anotações do usuário
     const [isWeightEditing, setIsWeightEditing] = useState<boolean>(false); // Novo estado para controlar a edição do peso
     const [weightValue, setWeightValue] = useState<number | string>(
@@ -87,6 +91,7 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
         // Resetar o cronômetro ao mudar de exercício
         setTimerValue(exercise.restTime || 60);
         setIsTimerRunning(false);
+        setThumbAspectRatio(null);
     }, [exercise.restTime, exercise.id]);
 
     // --- Funções de Callback e Auxiliares ---
@@ -189,7 +194,9 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                     e.currentTarget;
                                 if (videoWidth && videoHeight) {
                                     setVideoAspectRatio(
-                                        videoWidth / videoHeight,
+                                        snapToStandardAspectRatio(
+                                            videoWidth / videoHeight,
+                                        ),
                                     );
                                 }
                             }}
@@ -286,6 +293,7 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                 cursor: exercise.video_url
                                     ? 'pointer'
                                     : 'default',
+                                aspectRatio: thumbAspectRatio ?? undefined,
                             }}
                             role="button"
                             tabIndex={0}
@@ -308,6 +316,19 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                         loop
                                         playsInline
                                         className={styles.thumbnailImage}
+                                        style={{ objectFit: 'contain' }}
+                                        onLoadedMetadata={(e) => {
+                                            const { videoWidth, videoHeight } =
+                                                e.currentTarget;
+                                            if (videoWidth && videoHeight) {
+                                                setThumbAspectRatio(
+                                                    snapToStandardAspectRatio(
+                                                        videoWidth /
+                                                            videoHeight,
+                                                    ),
+                                                );
+                                            }
+                                        }}
                                     />
                                     <div className={styles.playBadge}>
                                         ▶ ver completo
