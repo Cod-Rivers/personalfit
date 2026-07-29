@@ -78,8 +78,18 @@ export interface LocalApiResponse {
 // Props para o card de treino individual
 export interface TrainingCardProps {
     id: string; // ID do treino (ex: "t1", "t2")
-    label: string; // Rótulo do treino (ex: "A", "B")
-    phase?: string; // Nome da fase/mesociclo (ex: "Fase 1", "Hipertrofia")
+    label: string; // Rótulo do treino (ex: "Treino A", "Treino 1", "Segunda")
+    /** Grupos musculares dominantes, ex. "Peito, Ombros e Tríceps". */
+    focusLabel?: string;
+    accent?: 'push' | 'pull' | 'legs' | 'core' | 'mixed';
+    exerciseCount?: number;
+    seriesCount?: number;
+    estimatedMinutes?: number;
+    /** Status do último registro deste treino no microciclo atual. */
+    status?: 'pending' | 'completed' | 'skipped';
+    completedDate?: string;
+    /** Só é preenchido em planos "simple" com dia da semana fixo. */
+    scheduledToday?: boolean;
 }
 
 // Parâmetros da página de listagem de protocolos (para a rota /treinamento/[id])

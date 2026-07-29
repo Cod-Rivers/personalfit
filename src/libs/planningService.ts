@@ -177,6 +177,19 @@ export function toGanttPhases(mesocycles: MesocycleResponse[]): GanttPhase[] {
         }));
 }
 
+/** Seleciona o microciclo "atual" de um mesociclo: em andamento, senão o
+ * próximo pendente, senão o último cadastrado (fase já concluída). */
+export function pickActiveMicrocycle(
+    microcycles: MicrocycleResponse[] = [],
+): MicrocycleResponse | null {
+    return (
+        microcycles.find((m) => m.status === 'in_progress') ??
+        microcycles.find((m) => m.status === 'pending') ??
+        microcycles[microcycles.length - 1] ??
+        null
+    );
+}
+
 /**
  * Converte um macrociclo completo para GanttPhases.
  * Se os mesociclos não tiverem datas próprias, calcula a partir da

@@ -35,6 +35,7 @@ import {
     getMyMacrocycle,
     deleteMyPlanning,
     macroToGanttPhases,
+    pickActiveMicrocycle,
     MacrocycleResponse,
 } from '@/libs/planningService';
 import DownloadOfflineButton from '../../components/features/DownloadOfflineButton';
@@ -49,25 +50,84 @@ import { GanttPhase } from '../../components/features/GanttPlanning';
 import { BsClipboardData } from 'react-icons/bs';
 import { FiChevronDown } from 'react-icons/fi';
 import styles from '../../components/features/TrainingProtocolList.module.css';
+import { summarizeTraining } from '@/libs/trainingSummary';
+import {
+    getNewWorkoutLogs,
+    NewWorkoutLogResponse,
+} from '@/libs/workoutLogService';
 
-function buildMesoGroups(detail: MacrocycleResponse): MesoGroup[] {
+/**
+ * Monta os grupos de treino e enriquece cada card com o status do microciclo
+ * ativo de cada mesociclo (busca best-effort — sem log, o card fica sem badge).
+ * `studentId` vazio (ex.: dados offline) pula a busca de status.
+ */
+async function buildMesoGroups(
+    detail: MacrocycleResponse,
+    studentId: string,
+): Promise<MesoGroup[]> {
     const isSimple = detail.planning_mode === 'simple';
     const isNumbered = detail.simple_day_label === 'number';
-    return (detail.mesocycles ?? []).map((meso) => ({
-        mesoId: meso.id,
-        mesoName: meso.name,
-        phase: meso.phase,
-        durationWeeks: meso.duration_weeks,
-        trainings: (meso.trainings ?? []).map((tr, i) => ({
-            id: tr.id,
-            label: isNumbered
-                ? `Treino ${i + 1}`
-                : isSimple
-                  ? (WEEKDAY_LABELS[tr.weekday ?? -1] ?? 'Sem dia definido')
-                  : `Treino ${tr.reference}`,
-            phase: isSimple ? undefined : meso.name,
-        })),
-    }));
+    const todayWeekday = new Date().getDay();
+
+    return Promise.all(
+        (detail.mesocycles ?? []).map(async (meso) => {
+            const logsByRef = new Map<string, NewWorkoutLogResponse>();
+            const activeMicro = pickActiveMicrocycle(meso.microcycles);
+            if (studentId && activeMicro) {
+                try {
+                    const logs = await getNewWorkoutLogs(
+                        studentId,
+                        detail.id,
+                        meso.id,
+                        activeMicro.id,
+                    );
+                    for (const log of logs) {
+                        const existing = logsByRef.get(log.training_ref);
+                        if (
+                            !existing ||
+                            new Date(log.updated_at) >
+                                new Date(existing.updated_at)
+                        ) {
+                            logsByRef.set(log.training_ref, log);
+                        }
+                    }
+                } catch {
+                    // status é enriquecimento best-effort; não bloqueia a tela
+                }
+            }
+
+            return {
+                mesoId: meso.id,
+                mesoName: meso.name,
+                phase: meso.phase,
+                durationWeeks: meso.duration_weeks,
+                trainings: (meso.trainings ?? []).map((tr, i) => {
+                    const summary = summarizeTraining(tr.exercises);
+                    const log = logsByRef.get(tr.reference);
+                    return {
+                        id: tr.id,
+                        label: isNumbered
+                            ? `Treino ${i + 1}`
+                            : isSimple
+                              ? (WEEKDAY_LABELS[tr.weekday ?? -1] ??
+                                'Sem dia definido')
+                              : `Treino ${tr.reference}`,
+                        focusLabel: summary.focusLabel,
+                        accent: summary.accent,
+                        exerciseCount: summary.exerciseCount,
+                        seriesCount: summary.seriesCount,
+                        estimatedMinutes: summary.estimatedMinutes,
+                        status: log?.status,
+                        completedDate: log?.completed_date,
+                        scheduledToday:
+                            isSimple &&
+                            !isNumbered &&
+                            tr.weekday === todayWeekday,
+                    };
+                }),
+            };
+        }),
+    );
 }
 
 export default function MeusTreinosPage() {
@@ -138,7 +198,9 @@ export default function MeusTreinosPage() {
                 const detail = await getMyMacrocycle(first.id);
                 setSelectedMacro(detail);
                 setStudentId(detail.student_id ?? '');
-                setMesoGroups(buildMesoGroups(detail));
+                setMesoGroups(
+                    await buildMesoGroups(detail, detail.student_id ?? ''),
+                );
                 setGanttPhases(
                     macroToGanttPhases(detail, { preferDuration: true }),
                 );
@@ -155,7 +217,8 @@ export default function MeusTreinosPage() {
                         const detail = stored[0].data;
                         setSelectedMacro(detail);
                         setStudentId(detail.student_id ?? '');
-                        setMesoGroups(buildMesoGroups(detail));
+                        // Offline: sem rede, então pula a busca de status (studentId '').
+                        setMesoGroups(await buildMesoGroups(detail, ''));
                         setGanttPhases(
                             macroToGanttPhases(detail, {
                                 preferDuration: true,
@@ -189,7 +252,9 @@ export default function MeusTreinosPage() {
             setIsOfflineData(false);
             setSelectedMacro(detail);
             setStudentId(detail.student_id ?? '');
-            setMesoGroups(buildMesoGroups(detail));
+            setMesoGroups(
+                await buildMesoGroups(detail, detail.student_id ?? ''),
+            );
             setGanttPhases(
                 macroToGanttPhases(detail, { preferDuration: true }),
             );
@@ -202,7 +267,8 @@ export default function MeusTreinosPage() {
                     setIsOfflineData(true);
                     setSelectedMacro(stored.data);
                     setStudentId(stored.data.student_id ?? '');
-                    setMesoGroups(buildMesoGroups(stored.data));
+                    // Offline: sem rede, então pula a busca de status (studentId '').
+                    setMesoGroups(await buildMesoGroups(stored.data, ''));
                     setGanttPhases(
                         macroToGanttPhases(stored.data, {
                             preferDuration: true,
@@ -433,18 +499,21 @@ export default function MeusTreinosPage() {
                         🌟 Planos estilo famosos
                     </Link>
                 </div>
-                {/* Gantt chart (read-only) */}
-                <div
-                    className={styles.protocolButton}
-                    style={{ marginBottom: '1.2rem' }}
-                >
-                    <GanttPlanning
-                        phases={ganttPhases}
-                        enabled={ganttEnabled}
-                        onToggle={setGanttEnabled}
-                        readOnly
-                    />
-                </div>
+                {/* Gantt chart (read-only) — só faz sentido mostrar (com o
+                    toggle de ocultar) quando o personal já definiu datas */}
+                {ganttPhases.length > 0 && (
+                    <div
+                        className={styles.protocolButton}
+                        style={{ marginBottom: '1.2rem' }}
+                    >
+                        <GanttPlanning
+                            phases={ganttPhases}
+                            enabled={ganttEnabled}
+                            onToggle={setGanttEnabled}
+                            readOnly
+                        />
+                    </div>
+                )}
                 {/* Trainings list agrupada por mesociclo */}
                 {mesoGroups.length === 0 ? (
                     <p className={styles.noTrainingsMessage}>
@@ -487,8 +556,18 @@ export default function MeusTreinosPage() {
                                         }}
                                     >
                                         {group.phase} &middot;{' '}
-                                        {group.durationWeeks} semana(s) /{' '}
-                                        {group.durationWeeks} microciclo(s)
+                                        {group.durationWeeks} semana
+                                        {group.durationWeeks === 1 ? '' : 's'}
+                                        {group.trainings.length > 0 && (
+                                            <>
+                                                {' '}
+                                                &middot; {group.trainings.length}{' '}
+                                                treino
+                                                {group.trainings.length === 1
+                                                    ? ''
+                                                    : 's'}
+                                            </>
+                                        )}
                                     </p>
                                 </div>
                                 {(userRole === 'personal' ||
@@ -511,20 +590,33 @@ export default function MeusTreinosPage() {
                                 )}
                             </div>
                             {/* Cards de treino */}
-                            {group.trainings.map((training) => (
-                                <Link
-                                    href={`/meus-treinos/${selectedMacro?.id}/${training.id}`}
-                                    key={training.id}
-                                    passHref
-                                >
-                                    <div className={styles.protocolButton}>
-                                        <TrainingCard
-                                            id={training.id}
-                                            label={training.label}
-                                        />
-                                    </div>
-                                </Link>
-                            ))}
+                            <div role="list">
+                                {group.trainings.map((training) => (
+                                    <Link
+                                        href={`/meus-treinos/${selectedMacro?.id}/${training.id}`}
+                                        key={training.id}
+                                        className={styles.cardLink}
+                                    >
+                                        <div className={styles.protocolButton}>
+                                            <TrainingCard
+                                                id={training.id}
+                                                label={training.label}
+                                                focusLabel={training.focusLabel}
+                                                accent={training.accent}
+                                                exerciseCount={
+                                                    training.exerciseCount
+                                                }
+                                                seriesCount={
+                                                    training.seriesCount
+                                                }
+                                                estimatedMinutes={
+                                                    training.estimatedMinutes
+                                                }
+                                            />
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
                         </div>
                     ))
                 )}

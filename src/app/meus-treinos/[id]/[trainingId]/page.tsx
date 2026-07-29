@@ -13,6 +13,7 @@ import {
     MicrocycleResponse,
     TrainingResponse,
     searchExercises,
+    pickActiveMicrocycle,
 } from '@/libs/planningService';
 import { ExerciseLog } from '../../../../components/features/types';
 import ExerciseDetailCard from '../../../../components/features/ExerciseDetailCard';
@@ -161,11 +162,7 @@ export default function MeusTreinosExercisesPage({
                     setTrainingRef(t.reference);
                     setCurrentTraining(t);
 
-                    const selectedMicro =
-                        meso.microcycles?.find((m) => m.status === 'in_progress') ??
-                        meso.microcycles?.find((m) => m.status === 'pending') ??
-                        meso.microcycles?.[meso.microcycles.length - 1] ??
-                        null;
+                    const selectedMicro = pickActiveMicrocycle(meso.microcycles);
                     setCurrentMeso(meso);
                     setCurrentMicro(selectedMicro);
 
