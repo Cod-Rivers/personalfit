@@ -294,7 +294,26 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                     handleOpenVideoPlayer();
                             }}
                         >
-                            {exercise.video_thumb ? (
+                            {exercise.video_url &&
+                            !embedUrl &&
+                            !isExternalRedirectOnly ? (
+                                <>
+                                    <video
+                                        src={exercise.video_url}
+                                        poster={
+                                            exercise.video_thumb || undefined
+                                        }
+                                        autoPlay
+                                        muted
+                                        loop
+                                        playsInline
+                                        className={styles.thumbnailImage}
+                                    />
+                                    <div className={styles.playBadge}>
+                                        ▶ ver completo
+                                    </div>
+                                </>
+                            ) : exercise.video_thumb ? (
                                 <img
                                     src={exercise.video_thumb}
                                     alt={`Ver vídeo para ${exercise.name}`}
@@ -311,20 +330,6 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                         ? '📷'
                                         : '🎵'}
                                 </div>
-                            ) : exercise.video_url && !embedUrl ? (
-                                <>
-                                    <video
-                                        src={exercise.video_url}
-                                        autoPlay
-                                        muted
-                                        loop
-                                        playsInline
-                                        className={styles.thumbnailImage}
-                                    />
-                                    <div className={styles.playBadge}>
-                                        ▶ ver completo
-                                    </div>
-                                </>
                             ) : (
                                 <div className={styles.thumbnailPlaceholder}>
                                     {exercise.video_url ? '🎬' : '🏋️'}
@@ -332,10 +337,12 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                             )}
                         </div>
                     </div>
-                    <div className={styles.modalCard}>
-                        <div className={styles.contentLayout}>
-                            <div className={styles.detailsSection}>
-                                <div className={styles.detailRow}>
+                    <div className={styles.contentLayout}>
+                        <div className={styles.detailsSection}>
+                            <h3 className={styles.exerciseTitle}>
+                                {exercise.name}
+                            </h3>
+                            <div className={styles.detailRow}>
                                     <div className={styles.repet}>
                                         <strong>Repetições:</strong>{' '}
                                         <div className={styles.valueBox}>
@@ -508,7 +515,6 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                             </div>
                         </div>
                     </div>
-                </div>
             </Modal>
 
             {/* Modal do Player de Vídeo */}
