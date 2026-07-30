@@ -1,0 +1,125 @@
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 1.2rem;
+}
+
+.monthNav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.navBtn {
+    background: var(--surface-2);
+    border: 1px solid var(--border-mid);
+    color: var(--text-primary);
+    border-radius: var(--radius-md);
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.navBtn:hover {
+    background: var(--surface-3);
+}
+.navBtn:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.monthLabel {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text-primary);
+    text-transform: capitalize;
+    min-width: 130px;
+    text-align: center;
+}
+
+.weekdayRow,
+.grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+}
+
+.weekdayRow {
+    margin-bottom: 6px;
+}
+
+.weekdayLabel {
+    text-align: center;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.dayCell {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
+}
+
+.dayCell[data-empty='true'] {
+    background: transparent;
+    border-color: transparent;
+}
+
+.dayCell[data-status='completed'] {
+    background: var(--mint-glow);
+    border-color: var(--mint-dim);
+    color: var(--mint-text);
+}
+
+.dayCell[data-status='skipped'] {
+    background: rgba(255, 107, 107, 0.14);
+    border-color: var(--coral-dim);
+    color: var(--coral-dim);
+}
+
+.dayCell[data-today='true'] {
+    box-shadow: 0 0 0 2px var(--amber);
+}
+
+.legend {
+    display: flex;
+    gap: 18px;
+    margin-top: 1.2rem;
+    flex-wrap: wrap;
+}
+
+.legendItem {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+.legendDot {
+    width: 12px;
+    height: 12px;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+.legendDot[data-status='completed'] {
+    background: var(--mint-dim);
+}
+.legendDot[data-status='skipped'] {
+    background: var(--coral-dim);
+}

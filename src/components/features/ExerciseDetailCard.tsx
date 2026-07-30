@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import axios from 'axios';
 import { ExerciseLog } from './types';
 import styles from './ExerciseDetailCard.module.css';
 import Modal from '@/components/system/Modal';
@@ -10,10 +11,20 @@ import {
     isTikTokUrl,
     snapToStandardAspectRatio,
 } from '@/libs/exerciseVideoService';
+import {
+    getExerciseAnnotation,
+    saveExerciseAnnotation,
+    getCachedAnnotationNote,
+    setCachedAnnotationNote,
+} from '@/libs/exerciseAnnotationService';
 
 interface ExerciseDetailCardProps {
     exercise: ExerciseLog;
     onClose?: () => void;
+    /** Ajuste intrassessão de carga (%) sugerido pelo painel de autorregulação
+     * do microciclo (ver microcycleAutoregulation.ts). Some do card quando o
+     * treino não usa periodização (ex: fluxo legado /app/treino). */
+    loadAdjustPct?: number;
 }
 
 const getEmbedUrl = (url: string): string | null => {
@@ -50,6 +61,7 @@ const getEmbedUrl = (url: string): string | null => {
 const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
     exercise,
     onClose,
+    loadAdjustPct,
 }) => {
     // --- Estados ---
     const [timerValue, setTimerValue] = useState<number>(
@@ -63,7 +75,11 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
     const [thumbAspectRatio, setThumbAspectRatio] = useState<number | null>(
         null,
     );
-    const [userAnnotations, setUserAnnotations] = useState<string>(''); // Novo estado para as anotações do usuário
+    const [userAnnotations, setUserAnnotations] = useState<string>('');
+    const [isSavingAnnotations, setIsSavingAnnotations] = useState(false);
+    const [annotationsStatus, setAnnotationsStatus] = useState<
+        'idle' | 'saved' | 'saved-offline' | 'error'
+    >('idle');
     const [isWeightEditing, setIsWeightEditing] = useState<boolean>(false); // Novo estado para controlar a edição do peso
     const [weightValue, setWeightValue] = useState<number | string>(
         exercise.weight > 0 ? exercise.weight : '',
@@ -93,6 +109,29 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
         setIsTimerRunning(false);
         setThumbAspectRatio(null);
     }, [exercise.restTime, exercise.id]);
+
+    useEffect(() => {
+        // Preenchimento otimista com o cache local (funciona offline e evita
+        // "piscar" vazio enquanto a resposta do servidor não chega); o
+        // servidor é a fonte da verdade e sobrescreve assim que responder.
+        setAnnotationsStatus('idle');
+        setUserAnnotations(getCachedAnnotationNote(exercise.id));
+
+        let cancelled = false;
+        getExerciseAnnotation(exercise.id)
+            .then((res) => {
+                if (cancelled) return;
+                setUserAnnotations(res.note ?? '');
+                setCachedAnnotationNote(exercise.id, res.note ?? '');
+            })
+            .catch(() => {
+                // Offline ou exercício ainda sem contrapartida no backend:
+                // mantém o valor do cache local já aplicado acima.
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [exercise.id]);
 
     // --- Funções de Callback e Auxiliares ---
     const handleStartTimer = useCallback(() => {
@@ -242,9 +281,40 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
         return null;
     };
 
-    const handleSaveAnnotations = () => {
-        // TODO: persistir 'userAnnotations' no backend.
-        alert('Anotações salvas!');
+    const handleSaveAnnotations = async () => {
+        // Cache local primeiro: garante que a anotação não se perde mesmo se
+        // a chamada ao servidor falhar (offline) ou o usuário fechar o card
+        // logo em seguida.
+        setCachedAnnotationNote(exercise.id, userAnnotations);
+        setIsSavingAnnotations(true);
+        try {
+            await saveExerciseAnnotation(exercise.id, userAnnotations);
+            setAnnotationsStatus('saved');
+        } catch (err) {
+            if (axios.isAxiosError(err) && !err.response) {
+                // Sem conexão: já está salvo localmente, só não sincronizou ainda.
+                setAnnotationsStatus('saved-offline');
+            } else {
+                setAnnotationsStatus('error');
+            }
+        } finally {
+            setIsSavingAnnotations(false);
+            setTimeout(() => setAnnotationsStatus('idle'), 3000);
+        }
+    };
+
+    // Sugestão de carga do "Controle do Microciclo (Autorregulação)": aplica
+    // o ajuste intrassessão sobre a carga planejada do exercício e arredonda
+    // para o incremento de 0,5kg mais próximo (menor granularidade prática de anilha).
+    const recommendedWeight = useMemo(() => {
+        if (!exercise.plannedWeight || loadAdjustPct == null) return null;
+        const adjusted = exercise.plannedWeight * (1 + loadAdjustPct / 100);
+        return Math.round(adjusted * 2) / 2;
+    }, [exercise.plannedWeight, loadAdjustPct]);
+
+    const handleApplyRecommendedWeight = () => {
+        if (recommendedWeight == null) return;
+        setWeightValue(recommendedWeight);
     };
 
     // --- Lógica de Renderização ---
@@ -382,6 +452,14 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                     </div>
                                     <div>
                                         <strong>Peso (KG):</strong>{' '}
+                                        <div
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                flexWrap: 'wrap',
+                                                gap: '0.4rem',
+                                            }}
+                                        >
                                         {isWeightEditing ? (
                                             <input
                                                 type="number"
@@ -420,6 +498,17 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                                 </svg>
                                             </span>
                                         )}
+                                        {recommendedWeight != null && (
+                                            <button
+                                                type="button"
+                                                className={styles.recommendedWeightChip}
+                                                onClick={handleApplyRecommendedWeight}
+                                                title="Sugestão baseada no Controle do Microciclo (Autorregulação)"
+                                            >
+                                                Sugerido: {recommendedWeight} kg
+                                            </button>
+                                        )}
+                                        </div>
                                     </div>
                                 </div>
                                 <div className={styles.detailRow}>
@@ -485,9 +574,26 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                     <button
                                         onClick={handleSaveAnnotations}
                                         className={styles.saveAnnotationsButton}
+                                        disabled={isSavingAnnotations}
                                     >
-                                        Salvar
+                                        {isSavingAnnotations ? 'Salvando...' : 'Salvar'}
                                     </button>
+                                    {annotationsStatus !== 'idle' && (
+                                        <p
+                                            className={
+                                                annotationsStatus === 'error'
+                                                    ? styles.annotationsStatusError
+                                                    : styles.annotationsStatus
+                                            }
+                                        >
+                                            {annotationsStatus === 'saved' &&
+                                                '✓ Anotações salvas.'}
+                                            {annotationsStatus === 'saved-offline' &&
+                                                '💾 Salvo neste dispositivo — sem conexão para sincronizar agora.'}
+                                            {annotationsStatus === 'error' &&
+                                                'Não foi possível salvar. Tente novamente.'}
+                                        </p>
+                                    )}
                                 </div>
                                 {/* Tempo de Descanso e Cronômetro */}
                                 {(exercise.restTime ?? 0) > 0 && (

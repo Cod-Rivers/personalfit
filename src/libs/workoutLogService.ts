@@ -118,6 +118,21 @@ export async function getNewWorkoutLogs(
     return data ?? [];
 }
 
+/**
+ * Logs do aluno logado através de todos os macro/meso/microciclos, filtrados
+ * por planned_date. Usado pelo calendário de constância (histórico web).
+ */
+export async function getMyWorkoutLogsInRange(
+    from: string,
+    to: string,
+): Promise<NewWorkoutLogResponse[]> {
+    const { data } = await Api.get<NewWorkoutLogResponse[]>(
+        `/me/workout-logs`,
+        { params: { from, to } },
+    );
+    return data ?? [];
+}
+
 export async function completeNewWorkoutLog(
     studentId: string,
     planningId: string,

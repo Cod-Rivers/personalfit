@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useFCMToken } from '@/hooks/useFCMToken';
 import { listenNativePushToken } from '@/libs/nativePush';
+import { refreshNativeAuthToken } from '@/libs/session';
 
 export default function FCMProvider({
     children,
@@ -15,6 +16,13 @@ export default function FCMProvider({
     // Registra o token de push nativo (app Android) quando presente. No web
     // comum é no-op — o push do navegador continua vindo do useFCMToken acima.
     useEffect(() => listenNativePushToken(), []);
+
+    // Reenvia o token de sessão à bridge nativa a cada boot do app (não só
+    // no login) — mantém o widget de calendário sincronizando mesmo sem
+    // refresh token (ver refreshNativeAuthToken).
+    useEffect(() => {
+        refreshNativeAuthToken();
+    }, []);
 
     const showBlocked = permissionState === 'denied' && !dismissed;
     const showOptIn = permissionState === 'default' && !dismissed;

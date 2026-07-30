@@ -387,6 +387,25 @@ export default function MeusTreinosPage() {
                 />
                 {/* Gamificação: streak + conquistas (some se ainda não treinou) */}
                 <GamificationBanner />
+                <div
+                    style={{
+                        display: 'flex',
+                        justifyContent: 'flex-end',
+                        marginBottom: '0.8rem',
+                    }}
+                >
+                    <Link
+                        href="/meus-treinos/historico"
+                        style={{
+                            fontSize: '0.8rem',
+                            fontWeight: 600,
+                            color: 'var(--mint-text)',
+                            textDecoration: 'none',
+                        }}
+                    >
+                        📅 Ver histórico completo
+                    </Link>
+                </div>
                 {/* Macro selector header */}
                 <div className={styles.header}>
                     <BsClipboardData size={20} color="var(--amber)" />

@@ -11,6 +11,10 @@ export interface ExerciseLog {
     notes?: string;        // Anotações do próprio aluno (campo notes do ExerciseLog)
     comments?: string;     // Instruções do personal trainer (campo comments do Exercise)
     restTime?: number;
+    /** Carga planejada pelo personal (ExerciseResponse.load_kg), usada como
+     * base para a sugestão de carga do painel de autorregulação do
+     * microciclo. Ausente no fluxo legado (/app/treino). */
+    plannedWeight?: number;
     // Adicione outros campos se existirem
 }
 

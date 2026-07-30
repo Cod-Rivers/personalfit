@@ -39,11 +39,13 @@ describe('loginSchema', () => {
 });
 
 describe('signUpSchema', () => {
+    // 111.444.777-35 é o CPF de exemplo padrão usado por geradores/tutoriais
+    // brasileiros: dígitos verificadores válidos, mas não atribuído a ninguém.
     const validPayload = {
         name: 'Maria Silva',
         email: 'maria@venafit.com',
         phone: '11987654321',
-        cpf: '12345678901',
+        cpf: '11144477735',
         password: 'senha1234',
         confirm_password: 'senha1234',
     };
@@ -61,22 +63,22 @@ describe('signUpSchema', () => {
     it('accepts a CPF formatted with dots and dash, normalizing it to digits only', () => {
         const result = signUpSchema.safeParse({
             ...validPayload,
-            cpf: '123.456.789-01',
+            cpf: '111.444.777-35',
         });
         expect(result.success).toBe(true);
         if (result.success) {
-            expect(result.data.cpf).toBe('12345678901');
+            expect(result.data.cpf).toBe('11144477735');
         }
     });
 
     it('accepts a CPF with stray spaces, normalizing it to digits only', () => {
         const result = signUpSchema.safeParse({
             ...validPayload,
-            cpf: '123 456 789 01',
+            cpf: '111 444 777 35',
         });
         expect(result.success).toBe(true);
         if (result.success) {
-            expect(result.data.cpf).toBe('12345678901');
+            expect(result.data.cpf).toBe('11144477735');
         }
     });
 
@@ -86,6 +88,24 @@ describe('signUpSchema', () => {
             cpf: '123456789',
         });
         expect(tooShort.success).toBe(false);
+    });
+
+    it('rejects a CPF with 11 digits but an invalid check digit', () => {
+        // Mesmo bug que causava erro 500 em produção: 11 dígitos passa numa
+        // checagem só de formato, mas falha no checksum do backend.
+        const result = signUpSchema.safeParse({
+            ...validPayload,
+            cpf: '12345678901',
+        });
+        expect(result.success).toBe(false);
+    });
+
+    it('rejects a CPF with all repeated digits', () => {
+        const result = signUpSchema.safeParse({
+            ...validPayload,
+            cpf: '11111111111',
+        });
+        expect(result.success).toBe(false);
     });
 
     it('rejects a password shorter than 8 characters', () => {

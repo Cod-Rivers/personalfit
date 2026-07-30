@@ -54,6 +54,7 @@ function toExerciseLog(ex: ExerciseResponse): ExerciseLog {
         notes: '',
         comments: ex.comments,
         restTime: ex.rest_seconds ?? 90,
+        plannedWeight: ex.load_kg,
     };
 }
 
@@ -639,6 +640,7 @@ export default function MeusTreinosExercisesPage({
                     <ExerciseDetailCard
                         exercise={selectedExercise}
                         onClose={handleCloseDetailCard}
+                        loadAdjustPct={decision.intraSessionLoadAdjustPct}
                     />
                 )}
                 <div className={styles.finalizarContainer}>

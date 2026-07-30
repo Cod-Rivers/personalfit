@@ -1,5 +1,28 @@
 import { z } from 'zod';
 
+// Espelha o algoritmo de dígito verificador em
+// Personal-fit-Back/internal/domain/user/cpf-validator.go — sem isto, CPFs
+// com 11 dígitos mas checksum inválido passavam na validação do formulário e
+// só falhavam no backend, que devolvia um erro genérico ao usuário.
+function isValidCpfChecksum(cpf: string): boolean {
+    if (!/^\d{11}$/.test(cpf)) return false;
+    if (/^(\d)\1{10}$/.test(cpf)) return false;
+
+    const digits = cpf.split('').map(Number);
+
+    let sum = 0;
+    for (let i = 0; i < 9; i++) sum += digits[i] * (10 - i);
+    let firstDigit = 11 - (sum % 11);
+    if (firstDigit >= 10) firstDigit = 0;
+    if (firstDigit !== digits[9]) return false;
+
+    sum = 0;
+    for (let i = 0; i < 10; i++) sum += digits[i] * (11 - i);
+    let secondDigit = 11 - (sum % 11);
+    if (secondDigit >= 10) secondDigit = 0;
+    return secondDigit === digits[10];
+}
+
 export const loginSchema = z.object({
     email: z.string().email('E-mail inválido'),
     // No login validamos apenas a presença — a autenticação é feita pelo
@@ -31,7 +54,8 @@ export const signUpSchema = z
             .refine(
                 (val) => /^\d{11}$/.test(val),
                 'CPF deve conter 11 dígitos numéricos',
-            ),
+            )
+            .refine(isValidCpfChecksum, 'CPF inválido'),
         password: strongPassword,
         confirm_password: z.string(),
     })
