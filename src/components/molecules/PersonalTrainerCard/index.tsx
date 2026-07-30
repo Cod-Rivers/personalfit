@@ -9,51 +9,45 @@ interface PersonalTrainerCardProps {
     trainerName?: string;
 }
 
+function getInitials(name: string): string {
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return '';
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
 export default function PersonalTrainerCard({
     branding,
     trainerName,
 }: PersonalTrainerCardProps) {
     if (!branding && !trainerName) return null;
 
-    const primaryColor = branding?.primary_color ?? 'var(--mint)';
-    const secondaryColor = branding?.secondary_color ?? primaryColor;
-
     return (
-        <div
-            className={styles.card}
-            style={{
-                background: `linear-gradient(135deg, ${primaryColor}18, ${secondaryColor}10)`,
-                borderColor: `${primaryColor}40`,
-            }}
-        >
-            <div className={styles.inner}>
-                {branding?.logo_base64 && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                        src={branding.logo_base64}
-                        alt={
-                            trainerName
-                                ? `Logo de ${trainerName}`
-                                : 'Logo do Personal'
-                        }
-                        className={styles.logo}
-                    />
+        <div className={styles.card}>
+            {branding?.logo_base64 ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                    src={branding.logo_base64}
+                    alt={
+                        trainerName
+                            ? `Logo de ${trainerName}`
+                            : 'Logo do Personal'
+                    }
+                    className={styles.logo}
+                />
+            ) : (
+                trainerName && (
+                    <div className={styles.avatar} aria-hidden="true">
+                        {getInitials(trainerName)}
+                    </div>
+                )
+            )}
+            <div className={styles.info}>
+                <span className={styles.eyebrow}>Seu personal</span>
+                {trainerName && <p className={styles.name}>{trainerName}</p>}
+                {branding?.welcome_banner && (
+                    <p className={styles.banner}>{branding.welcome_banner}</p>
                 )}
-                <div className={styles.info}>
-                    {trainerName && (
-                        <p
-                            className={styles.name}
-                            style={{ color: primaryColor }}
-                        >
-                            {trainerName}
-                        </p>
-                    )}
-                    {branding?.welcome_banner && (
-                        <p className={styles.banner}>
-                            {branding.welcome_banner}
-                        </p>
-                    )}
-                </div>
             </div>
         </div>
     );

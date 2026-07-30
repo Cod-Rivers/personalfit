@@ -47,8 +47,13 @@ import {
 import SyncPendingBadge from '../../components/features/SyncPendingBadge';
 import GanttPlanning from '../../components/features/GanttPlanning';
 import { GanttPhase } from '../../components/features/GanttPlanning';
-import { BsClipboardData } from 'react-icons/bs';
-import { FiChevronDown } from 'react-icons/fi';
+import {
+    FiChevronDown,
+    FiStar,
+    FiEdit2,
+    FiTrash2,
+    FiWifiOff,
+} from 'react-icons/fi';
 import styles from '../../components/features/TrainingProtocolList.module.css';
 import { summarizeTraining } from '@/libs/trainingSummary';
 import {
@@ -347,10 +352,11 @@ export default function MeusTreinosPage() {
                 <p>Nenhum treino disponível para você no momento.</p>
                 <Link
                     href="/meus-treinos/escolher-plano"
-                    className="fw-bold text-decoration-none"
+                    className="fw-bold text-decoration-none d-inline-flex align-items-center gap-1"
                     style={{ color: 'var(--amber)' }}
                 >
-                    🌟 Escolher um plano estilo famosos
+                    <FiStar size={14} />
+                    Escolher um plano estilo famosos
                 </Link>
             </div>
         );
@@ -373,10 +379,11 @@ export default function MeusTreinosPage() {
             >
                 {isOfflineData && (
                     <div
-                        className="alert alert-warning py-2 px-3 mb-3"
+                        className="alert alert-warning py-2 px-3 mb-3 d-flex align-items-center gap-2"
                         style={{ fontSize: '0.85rem' }}
                     >
-                        📴 Exibindo plano salvo offline (sem conexão no
+                        <FiWifiOff size={14} style={{ flexShrink: 0 }} />
+                        Exibindo plano salvo offline (sem conexão no
                         momento).
                     </div>
                 )}
@@ -387,40 +394,51 @@ export default function MeusTreinosPage() {
                 />
                 {/* Gamificação: streak + conquistas (some se ainda não treinou) */}
                 <GamificationBanner />
+
+                {/* Seletor de plano + atalhos rápidos, agrupados num único
+                    cartão para não competir em peso visual com o card do
+                    personal acima. */}
                 <div
                     style={{
-                        display: 'flex',
-                        justifyContent: 'flex-end',
-                        marginBottom: '0.8rem',
+                        background: 'var(--surface-1)',
+                        border: '1px solid var(--border-subtle)',
+                        borderRadius: 12,
+                        padding: '2px 14px',
+                        marginBottom: '1.2rem',
                     }}
                 >
-                    <Link
-                        href="/meus-treinos/historico"
+                    <div
+                        className="position-relative d-flex align-items-center gap-2"
+                        ref={dropdownRef}
                         style={{
-                            fontSize: '0.8rem',
-                            fontWeight: 600,
-                            color: 'var(--mint-text)',
-                            textDecoration: 'none',
+                            padding: '10px 0',
+                            borderBottom: '1px solid var(--border-subtle)',
                         }}
                     >
-                        📅 Ver histórico completo
-                    </Link>
-                </div>
-                {/* Macro selector header */}
-                <div className={styles.header}>
-                    <BsClipboardData size={20} color="var(--amber)" />
-                    <div className="position-relative" ref={dropdownRef}>
+                        <span
+                            aria-hidden="true"
+                            style={{
+                                width: 8,
+                                height: 8,
+                                borderRadius: 2,
+                                background: 'var(--amber)',
+                                flexShrink: 0,
+                            }}
+                        />
                         <button
                             onClick={() => setSelectorOpen((o) => !o)}
-                            className="btn btn-link d-flex align-items-center gap-1 fw-bold fs-6 text-decoration-none p-0"
+                            className="btn btn-link d-flex align-items-center gap-1 fw-bold fs-6 text-decoration-none p-0 flex-grow-1"
                             style={{
                                 color: 'var(--text-primary)',
                                 boxShadow: 'none',
+                                textAlign: 'left',
                             }}
                             aria-haspopup="listbox"
                             aria-expanded={selectorOpen}
                         >
-                            <span>{selectedMacro?.name || 'Meus Treinos'}</span>
+                            <span className="flex-grow-1">
+                                {selectedMacro?.name || 'Meus Treinos'}
+                            </span>
                             {macrocycles.length > 1 && (
                                 <FiChevronDown
                                     size={16}
@@ -429,10 +447,22 @@ export default function MeusTreinosPage() {
                                         transform: selectorOpen
                                             ? 'rotate(180deg)'
                                             : 'rotate(0deg)',
+                                        flexShrink: 0,
                                     }}
                                 />
                             )}
                         </button>
+                        <div
+                            className="d-flex align-items-center gap-2"
+                            style={{ flexShrink: 0 }}
+                        >
+                            {selectedMacro?.status === 'active' && (
+                                <DownloadOfflineButton
+                                    macrocycle={selectedMacro}
+                                />
+                            )}
+                            <SyncPendingBadge />
+                        </div>
 
                         {selectorOpen && macrocycles.length > 1 && (
                             <ul
@@ -442,6 +472,8 @@ export default function MeusTreinosPage() {
                                     background: 'var(--surface-1)',
                                     border: '1px solid var(--border-mid)',
                                     minWidth: '180px',
+                                    top: '100%',
+                                    left: 0,
                                     zIndex: 50,
                                 }}
                             >
@@ -489,16 +521,17 @@ export default function MeusTreinosPage() {
                                                     handleDeleteMacro(m);
                                                 }}
                                                 disabled={deletingId === m.id}
-                                                className="btn btn-link p-0 me-2"
+                                                className="btn btn-link p-0 me-2 d-flex align-items-center"
                                                 style={{
                                                     color: 'var(--text-muted)',
-                                                    fontSize: '0.9rem',
                                                     lineHeight: 1,
                                                 }}
                                             >
-                                                {deletingId === m.id
-                                                    ? '…'
-                                                    : '🗑️'}
+                                                {deletingId === m.id ? (
+                                                    '…'
+                                                ) : (
+                                                    <FiTrash2 size={14} />
+                                                )}
                                             </button>
                                         )}
                                     </li>
@@ -506,16 +539,59 @@ export default function MeusTreinosPage() {
                             </ul>
                         )}
                     </div>
-                    {selectedMacro?.status === 'active' && (
-                        <DownloadOfflineButton macrocycle={selectedMacro} />
-                    )}
-                    <SyncPendingBadge />
+
+                    <Link
+                        href="/meus-treinos/historico"
+                        className="d-flex align-items-center gap-2 text-decoration-none"
+                        style={{
+                            padding: '10px 0',
+                            borderBottom: '1px solid var(--border-subtle)',
+                        }}
+                    >
+                        <span
+                            aria-hidden="true"
+                            style={{
+                                width: 8,
+                                height: 8,
+                                borderRadius: 2,
+                                background: 'var(--mint)',
+                                flexShrink: 0,
+                            }}
+                        />
+                        <span
+                            style={{
+                                fontSize: '0.87rem',
+                                fontWeight: 600,
+                                color: 'var(--mint-text)',
+                            }}
+                        >
+                            Ver histórico completo
+                        </span>
+                    </Link>
                     <Link
                         href="/meus-treinos/escolher-plano"
-                        className="btn btn-link d-flex align-items-center gap-1 fw-bold fs-6 text-decoration-none p-0"
-                        style={{ color: 'var(--amber)' }}
+                        className="d-flex align-items-center gap-2 text-decoration-none"
+                        style={{ padding: '10px 0' }}
                     >
-                        🌟 Planos estilo famosos
+                        <span
+                            aria-hidden="true"
+                            style={{
+                                width: 8,
+                                height: 8,
+                                borderRadius: 2,
+                                background: 'var(--violet)',
+                                flexShrink: 0,
+                            }}
+                        />
+                        <span
+                            style={{
+                                fontSize: '0.87rem',
+                                fontWeight: 600,
+                                color: 'var(--amber)',
+                            }}
+                        >
+                            Planos estilo famosos
+                        </span>
                     </Link>
                 </div>
                 {/* Gantt chart (read-only) — só faz sentido mostrar (com o
@@ -593,6 +669,7 @@ export default function MeusTreinosPage() {
                                     userRole === 'admin') && (
                                     <Link
                                         href={`/personal/aluno/${studentId}/periodizacao/${selectedMacro?.id}`}
+                                        className="d-inline-flex align-items-center gap-1"
                                         style={{
                                             fontSize: '0.75rem',
                                             color: 'var(--amber, #f0a500)',
@@ -604,7 +681,8 @@ export default function MeusTreinosPage() {
                                             fontWeight: 600,
                                         }}
                                     >
-                                        ✏️ Editar fase
+                                        <FiEdit2 size={12} />
+                                        Editar fase
                                     </Link>
                                 )}
                             </div>

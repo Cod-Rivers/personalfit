@@ -193,9 +193,9 @@ const Header: React.FC = () => {
             </div>
         )}
         <nav className="navbar navbar-expand-lg navbar-dark bg-header">
-            <div className="container-fluid">
+            <div className="container-fluid header-top-row">
                 <a
-                    className="navbar-brand d-flex align-items-center gap-2"
+                    className="navbar-brand d-flex align-items-center gap-2 header-brand"
                     href="#"
                 >
                     <AvatarUpload
@@ -226,13 +226,16 @@ const Header: React.FC = () => {
                                 width: 'auto',
                                 objectFit: 'contain',
                                 borderRadius: 6,
+                                flexShrink: 0,
                             }}
                         />
                     )}
-                    Olá, {user.name}
+                    <span className="header-brand-name">
+                        Olá, {user.name}
+                    </span>
                 </a>
                 <button
-                    className="navbar-toggler"
+                    className="navbar-toggler header-toggler"
                     type="button"
                     data-bs-toggle="collapse"
                     data-bs-target="#navbarSupportedContent"

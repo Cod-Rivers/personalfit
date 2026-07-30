@@ -56,6 +56,40 @@
 .nav-link-active:hover { color: var(--mint) !important; }
 .navbar-brand { font-weight: 700; letter-spacing: 0.02em; }
 
+/* ── Alinhamento do topo: avatar/saudação + hambúrguer sempre na mesma
+   linha, com o toggler agrupado junto ao avatar em vez de solto na borda
+   da tela em telas estreitas. ── */
+.header-top-row {
+    flex-wrap: nowrap;
+    gap: 10px;
+}
+.header-brand {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin-right: 0;
+}
+.header-brand-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+.header-toggler {
+    flex-shrink: 0;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+}
+.header-toggler:focus {
+    box-shadow: 0 0 0 3px rgba(15, 252, 190, 0.25);
+}
+
 /* ── Theme toggle ── */
 .btn-theme-toggle {
     background: var(--surface-2);

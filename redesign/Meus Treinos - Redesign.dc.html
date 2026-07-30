@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+[data-theme="light"]{
+  --mint:#0ffcbe; --mint-dim:#0ac99a; --mint-text:#0b7a61; --mint-glow:rgba(15,252,190,0.12);
+  --coral:#ff6b6b; --amber:#f0a500; --amber-text:#8a5f00; --violet:#8b5cf6;
+  --surface-1:#faf6ef; --surface-2:#f5f0e8; --surface-3:#ebe5d9;
+  --border-subtle:rgba(60,50,30,0.15); --border-mid:rgba(60,50,30,0.28);
+  --text-primary:#2c2418; --text-secondary:#4a3f30; --text-muted:#7a6e5c;
+  --btn-text:#2c2418; --mil-blue:#f5f0e8;
+  --grad-card:linear-gradient(160deg,#faf6ef 0%,#f0ebe0 100%);
+  --shadow-sm:0 1px 4px rgba(50,40,20,0.12); --shadow-md:0 4px 14px rgba(50,40,20,0.18); --shadow-lg:0 8px 28px rgba(50,40,20,0.22);
+  --header-bg:linear-gradient(90deg,#0b1929 0%,#1c2f4a 100%); --header-text:#e8f4ff;
+  --canvas:#e7e2d6;
+}
+[data-theme="dark"]{
+  --mint:#0ffcbe; --mint-dim:#0ac99a; --mint-text:#0ffcbe; --mint-glow:rgba(15,252,190,0.15);
+  --coral:#ff6b6b; --amber:#f0a500; --amber-text:#f0a500; --violet:#a78bfa;
+  --surface-1:#0f0f0f; --surface-2:#1a1a1a; --surface-3:#242424;
+  --border-subtle:rgba(255,255,255,0.08); --border-mid:rgba(255,255,255,0.16);
+  --text-primary:#e8e8e8; --text-secondary:#a0a0a0; --text-muted:#666666;
+  --btn-text:#0b0b0b; --mil-blue:#000000;
+  --grad-card:linear-gradient(160deg,#111111 0%,#080808 100%);
+  --shadow-sm:0 2px 8px rgba(0,0,0,0.5); --shadow-md:0 4px 16px rgba(0,0,0,0.6); --shadow-lg:0 8px 32px rgba(0,0,0,0.7);
+  --header-bg:linear-gradient(90deg,#000000 0%,#111111 100%); --header-text:#e8e8e8;
+  --canvas:#0a0a0a;
+}
+.mt-card[data-accent="push"]{--accent:var(--coral);--accent-bg:rgba(255,107,107,0.14);}
+.mt-card[data-accent="pull"]{--accent:var(--mint);--accent-bg:var(--mint-glow);}
+.mt-card[data-accent="legs"]{--accent:var(--amber);--accent-bg:rgba(240,165,0,0.14);}
+.mt-card[data-accent="mixed"]{--accent:var(--text-muted);--accent-bg:var(--surface-3);}
+.mt-icon-chip{background:var(--accent-bg);color:var(--accent);}
+.mt-card{border-left-color:var(--accent);}
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="min-height:100vh;background:var(--canvas);display:flex;justify-content:center;padding:44px 20px;font-family:Inter,system-ui,sans-serif;box-sizing:border-box;">
+  <div style="width:402px;flex-shrink:0;background:var(--mil-blue);border-radius:26px;overflow:hidden;box-shadow:var(--shadow-lg);display:flex;flex-direction:column;min-height:800px;position:relative;">
+
+    <div style="background:var(--header-bg);color:var(--header-text);padding:16px 16px 14px;position:relative;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:38px;height:38px;border-radius:50%;background:var(--mint);color:#0b1929;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.8rem;flex-shrink:0;">AR</div>
+        <div style="font-size:1.05rem;font-weight:700;line-height:1.25;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Olá, Aline Rodrigues</div>
+        <button onclick="{{ toggleMenu }}" aria-label="Menu" style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,0.08);border:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;flex-shrink:0;">
+          <span style="display:block;width:16px;height:2px;background:var(--header-text);"></span>
+          <span style="display:block;width:16px;height:2px;background:var(--header-text);"></span>
+          <span style="display:block;width:16px;height:2px;background:var(--header-text);"></span>
+        </button>
+      </div>
+      <sc-if value="{{ menuOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="margin-top:12px;background:var(--surface-1);border-radius:12px;overflow:hidden;box-shadow:var(--shadow-md);">
+          <a href="#" style="display:block;padding:12px 16px;color:var(--text-primary);font-size:0.85rem;font-weight:600;text-decoration:none;border-bottom:1px solid var(--border-subtle);">📅 Agendamentos</a>
+          <a href="#" style="display:block;padding:12px 16px;color:var(--text-primary);font-size:0.85rem;font-weight:600;text-decoration:none;border-bottom:1px solid var(--border-subtle);">🍽️ Plano Alimentar</a>
+          <a href="#" style="display:block;padding:12px 16px;color:var(--text-primary);font-size:0.85rem;font-weight:600;text-decoration:none;border-bottom:1px solid var(--border-subtle);">👤 Minha Conta</a>
+          <a href="#" style="display:block;padding:12px 16px;color:var(--coral);font-size:0.85rem;font-weight:600;text-decoration:none;">Sair</a>
+        </div>
+      </sc-if>
+    </div>
+    <div style="height:3px;background:var(--mint);flex-shrink:0;"></div>
+
+    <div style="flex:1;padding:18px 16px 28px;display:flex;flex-direction:column;gap:16px;">
+
+      <div style="background:var(--surface-1);border:1px solid var(--border-subtle);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow-sm);">
+        <div style="width:40px;height:40px;border-radius:50%;background:var(--mint-glow);color:var(--mint-text);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.75rem;flex-shrink:0;">RM</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-muted);">Seu personal</div>
+          <div style="font-size:0.95rem;font-weight:700;color:var(--text-primary);">Riverson Da Silva Morais</div>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);flex-shrink:0;"><path d="M9 5l7 7-7 7"/></svg>
+      </div>
+
+      <div style="background:var(--surface-1);border:1px solid var(--border-subtle);border-radius:12px;padding:4px 14px;">
+        <button onclick="{{ toggleSelector }}" style="width:100%;background:none;border:none;padding:11px 0;display:flex;align-items:center;gap:8px;cursor:pointer;text-align:left;border-bottom:1px solid var(--border-subtle);">
+          <span style="width:8px;height:8px;border-radius:2px;background:var(--amber);flex-shrink:0;"></span>
+          <span style="flex:1;font-size:0.9rem;font-weight:700;color:var(--text-primary);">Fase 1 · Divisão ABC</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);transform:{{ selectorChevronTransform }};transition:transform 0.2s;"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <a href="#" style="display:flex;align-items:center;gap:8px;padding:11px 0;text-decoration:none;border-bottom:1px solid var(--border-subtle);">
+          <span style="width:8px;height:8px;border-radius:2px;background:var(--violet);flex-shrink:0;"></span>
+          <span style="flex:1;font-size:0.87rem;font-weight:600;color:var(--amber-text);">Planos estilo famosos</span>
+        </a>
+        <a href="#" style="display:flex;align-items:center;gap:8px;padding:11px 0;text-decoration:none;">
+          <span style="width:8px;height:8px;border-radius:2px;background:var(--mint);flex-shrink:0;"></span>
+          <span style="flex:1;font-size:0.87rem;font-weight:600;color:var(--mint-text);">Ver histórico completo</span>
+        </a>
+      </div>
+
+      <div>
+        <div style="font-size:1rem;font-weight:800;color:var(--text-primary);margin-bottom:2px;">Ciclo único</div>
+        <div style="font-size:0.78rem;color:var(--text-muted);">Acumulação · 8 semanas · 3 treinos</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <sc-for list="{{ trainings }}" as="t" hint-placeholder-count="3">
+          <div class="mt-card" data-accent="{{ t.accent }}" style="display:flex;align-items:center;gap:12px;padding:13px 14px;background:var(--grad-card);border:1px solid var(--border-mid);border-left:4px solid;border-radius:12px;box-shadow:var(--shadow-md);">
+            <div class="mt-icon-chip" style="width:42px;height:42px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;gap:3px;">
+              <span style="display:block;width:4px;height:12px;background:currentColor;border-radius:1px;"></span>
+              <span style="display:block;width:4px;height:18px;background:currentColor;border-radius:1px;"></span>
+              <span style="display:block;width:4px;height:8px;background:currentColor;border-radius:1px;"></span>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:0.97rem;font-weight:700;color:var(--text-primary);">{{ t.label }}</div>
+              <div style="font-size:0.76rem;color:var(--text-secondary);margin-top:2px;">{{ t.exerciseCount }} exercícios · {{ t.seriesCount }} séries · ~{{ t.estimatedMinutes }} min</div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);flex-shrink:0;"><path d="M9 5l7 7-7 7"/></svg>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="background:var(--header-bg);color:var(--header-text);padding:18px 16px;text-align:center;">
+      <div style="font-weight:800;font-size:0.95rem;margin-bottom:4px;">Venafit</div>
+      <div style="font-size:0.68rem;opacity:0.85;display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;">
+        <span>© 2026 Venafit</span><span>·</span>
+        <a href="#" style="color:var(--mint);text-decoration:none;">Central de Ajuda</a><span>·</span>
+        <a href="#" style="color:var(--mint);text-decoration:none;">Privacidade</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:480,&quot;height&quot;:880},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;section&quot;:&quot;Tema&quot;},&quot;showAccentColors&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Treinos&quot;}}">
+class Component extends DCLogic {
+  state = { menuOpen: false, selectorOpen: false };
+
+  renderVals() {
+    const showAccent = this.props.showAccentColors ?? true;
+    const raw = [
+      { id: 1, label: 'Treino 1', accentRaw: 'push', exerciseCount: 9, seriesCount: 27, estimatedMinutes: 56 },
+      { id: 2, label: 'Treino 2', accentRaw: 'pull', exerciseCount: 9, seriesCount: 27, estimatedMinutes: 56 },
+      { id: 3, label: 'Treino 3', accentRaw: 'legs', exerciseCount: 8, seriesCount: 24, estimatedMinutes: 50 },
+    ];
+    const trainings = raw.map(t => ({ ...t, accent: showAccent ? t.accentRaw : 'mixed' }));
+
+    return {
+      theme: this.props.theme ?? 'light',
+      trainings,
+      menuOpen: this.state.menuOpen,
+      toggleMenu: () => this.setState(s => ({ menuOpen: !s.menuOpen })),
+      toggleSelector: () => this.setState(s => ({ selectorOpen: !s.selectorOpen })),
+      selectorChevronTransform: this.state.selectorOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+    };
+  }
+}
+</script>
+</body>
+</html>
