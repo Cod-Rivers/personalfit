@@ -7,6 +7,31 @@
     box-sizing: border-box;
 }
 
+/* App roda dentro de um WebView Android full-screen, sem chrome de navegador:
+   suprime o flash cinza padrão de tap e dá feedback :active genérico onde um
+   componente não define o seu próprio (a maioria só tem :hover, que não
+   existe em touch). Regras mais específicas de :active continuam valendo. */
+html {
+    -webkit-tap-highlight-color: transparent;
+}
+button, a, [role='button'] {
+    -webkit-tap-highlight-color: transparent;
+}
+button:active, a:active, [role='button']:active {
+    opacity: 0.8;
+}
+
+/* Evita que long-press em controles de UI (não-texto) abra o menu nativo de
+   seleção/callout do Android. Formulários ficam explicitamente de fora. */
+button, nav, [role='button'] {
+    user-select: none;
+    -webkit-touch-callout: none;
+}
+input, textarea, select {
+    user-select: text;
+    -webkit-touch-callout: default;
+}
+
 /* ── Scrollbar (visível com setas do navegador) ── */
 .main-content {
     scrollbar-width: auto;
@@ -65,6 +90,7 @@ strong, b { font-weight: 700; }
 .main-content {
     flex: 1;
     overflow-y: auto;
+    overscroll-behavior-y: contain;
     position: relative;
     z-index: 1;
     width: 100%;

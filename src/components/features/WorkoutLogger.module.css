@@ -215,6 +215,11 @@
     box-shadow: 0 6px 18px rgba(255,107,107,0.5);
     filter: brightness(1.08);
 }
+.btnSkip:active:not(:disabled) {
+    transform: scale(0.96);
+    box-shadow: 0 1px 4px rgba(255,107,107,0.3);
+    filter: brightness(0.95);
+}
 
 .btnComplete {
     background: var(--grad-mint);
@@ -225,6 +230,11 @@
     transform: translateY(-2px) scale(1.02);
     box-shadow: 0 6px 18px rgba(61,255,208,0.5);
     filter: brightness(1.08);
+}
+.btnComplete:active:not(:disabled) {
+    transform: scale(0.96);
+    box-shadow: 0 1px 4px rgba(61,255,208,0.3);
+    filter: brightness(0.95);
 }
 
 .btnSkip:disabled,
@@ -453,6 +463,10 @@
 .btnSkip:hover:not(:disabled) {
     background: rgba(255, 107, 107, 0.1);
 }
+.btnSkip:active:not(:disabled) {
+    background: rgba(255, 107, 107, 0.2);
+    transform: scale(0.97);
+}
 
 .btnComplete {
     color: var(--mint-text);
@@ -461,6 +475,10 @@
 
 .btnComplete:hover:not(:disabled) {
     background: rgba(15, 252, 190, 0.1);
+}
+.btnComplete:active:not(:disabled) {
+    background: rgba(15, 252, 190, 0.2);
+    transform: scale(0.97);
 }
 
 .btnSkip:disabled,

@@ -17,7 +17,7 @@
 }
 
 .hint {
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: var(--text-secondary);
     margin-bottom: 20px;
     line-height: 1.5;
@@ -26,7 +26,7 @@
 .loading,
 .empty {
     color: var(--text-secondary);
-    font-size: 14px;
+    font-size: 0.875rem;
     text-align: center;
     padding: 32px 0;
 }
@@ -37,7 +37,7 @@
     border: none;
     border-radius: 8px;
     padding: 8px 18px;
-    font-size: 14px;
+    font-size: 0.875rem;
     font-weight: 600;
     cursor: pointer;
     transition: opacity 0.15s;
@@ -47,10 +47,17 @@
     opacity: 0.88;
 }
 
+.tableWrap {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
 .table {
     width: 100%;
+    min-width: 480px;
     border-collapse: collapse;
-    font-size: 14px;
+    font-size: 0.875rem;
 }
 
 .table th {
@@ -80,7 +87,7 @@
 }
 
 .owner {
-    font-size: 12px;
+    font-size: 0.75rem;
     color: var(--text-secondary);
 }
 
@@ -95,7 +102,7 @@
     color: var(--mint);
     border-radius: 6px;
     padding: 3px 10px;
-    font-size: 12px;
+    font-size: 0.75rem;
     cursor: pointer;
     transition: background 0.15s;
 }
@@ -111,7 +118,7 @@
     color: var(--coral);
     border-radius: 6px;
     padding: 3px 10px;
-    font-size: 12px;
+    font-size: 0.75rem;
     cursor: pointer;
     transition: background 0.15s;
 }
@@ -172,7 +179,7 @@
     color: var(--coral);
     border-radius: 8px;
     padding: 10px 14px;
-    font-size: 14px;
+    font-size: 0.875rem;
     margin-bottom: 16px;
 }
 
@@ -189,7 +196,7 @@
 }
 
 .label {
-    font-size: 13px;
+    font-size: 0.8125rem;
     font-weight: 500;
     color: var(--text-secondary);
 }
@@ -215,7 +222,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 14px;
+    font-size: 0.875rem;
     color: var(--text-primary);
 }
 
@@ -232,7 +239,7 @@
     color: var(--text-secondary);
     border-radius: 8px;
     padding: 8px 18px;
-    font-size: 14px;
+    font-size: 0.875rem;
     cursor: pointer;
 }
 
@@ -242,7 +249,7 @@
     border: none;
     border-radius: 8px;
     padding: 8px 18px;
-    font-size: 14px;
+    font-size: 0.875rem;
     font-weight: 600;
     cursor: pointer;
     transition: opacity 0.15s;

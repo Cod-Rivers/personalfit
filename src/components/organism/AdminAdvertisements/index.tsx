@@ -118,6 +118,7 @@ export default function AdminAdvertisements() {
             ) : ads.length === 0 ? (
                 <p className={styles.empty}>Nenhum anúncio cadastrado.</p>
             ) : (
+                <div className={styles.tableWrap}>
                 <table className={styles.table}>
                     <thead>
                         <tr>
@@ -179,6 +180,7 @@ export default function AdminAdvertisements() {
                         ))}
                     </tbody>
                 </table>
+                </div>
             )}
 
             {showForm && (

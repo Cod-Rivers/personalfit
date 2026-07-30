@@ -35,7 +35,7 @@ export default function FCMProvider({
                     role="alert"
                     style={{
                         position: 'fixed',
-                        bottom: 16,
+                        bottom: 'calc(16px + env(safe-area-inset-bottom))',
                         left: 16,
                         right: 16,
                         zIndex: 9999,
@@ -58,7 +58,7 @@ export default function FCMProvider({
                     role="alert"
                     style={{
                         position: 'fixed',
-                        bottom: 16,
+                        bottom: 'calc(16px + env(safe-area-inset-bottom))',
                         left: 16,
                         right: 16,
                         zIndex: 9999,

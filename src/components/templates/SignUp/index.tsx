@@ -69,7 +69,6 @@ const TSignUp: FC = () => {
                 <Image
                     src="/assets/images/logo.png"
                     alt="logo"
-                    sizes="cover"
                     width={200}
                     height={95}
                 />

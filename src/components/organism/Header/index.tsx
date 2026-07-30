@@ -381,17 +381,21 @@ const Header: React.FC = () => {
                                                         key={n.id}
                                                         className={`notif-item ${!n.read ? 'notif-unread' : ''}`}
                                                     >
-                                                        <input
-                                                            type="checkbox"
-                                                            className="notif-item-check"
-                                                            aria-label="Marcar como vista"
+                                                        <label
+                                                            className="notif-item-check-label"
                                                             title="Marcar como vista"
-                                                            onChange={() =>
-                                                                handleDismiss(
-                                                                    n.id,
-                                                                )
-                                                            }
-                                                        />
+                                                        >
+                                                            <input
+                                                                type="checkbox"
+                                                                className="notif-item-check"
+                                                                aria-label="Marcar como vista"
+                                                                onChange={() =>
+                                                                    handleDismiss(
+                                                                        n.id,
+                                                                    )
+                                                                }
+                                                            />
+                                                        </label>
                                                         <div
                                                             className="notif-item-body"
                                                             onClick={() =>

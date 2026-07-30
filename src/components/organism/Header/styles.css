@@ -6,9 +6,14 @@
     border-bottom: 2px solid var(--header-border);
     box-shadow: var(--shadow-md);
     padding: 12px 0;
+    /* Colchão para a status bar/notch quando o conteúdo é desenhado sob ela
+       (env() resolve para 0 fora dessa situação, então é inofensivo manter). */
+    padding-top: calc(12px + env(safe-area-inset-top));
     position: sticky;
     top: 0;
     z-index: 100;
+    user-select: none;
+    -webkit-touch-callout: none;
 }
 
 .btn-gold {
@@ -43,6 +48,8 @@
 .nav-item, .nav-link, .navbar-brand {
     color: var(--header-text) !important;
     transition: color 0.2s;
+    user-select: none;
+    -webkit-touch-callout: none;
 }
 .nav-link:hover { color: var(--mint) !important; }
 .nav-link-active { color: var(--mint-text) !important; }
@@ -193,6 +200,10 @@
 }
 
 .notif-dropdown {
+    /* Conteúdo real (título/mensagem da notificação) — reverte o
+       user-select:none herdado de .bg-header para permitir cópia. */
+    user-select: text;
+    -webkit-touch-callout: default;
     position: absolute;
     top: 40px;
     right: 0;
@@ -240,6 +251,7 @@
 }
 
 .notif-dropdown-close {
+    position: relative;
     flex-shrink: 0;
     width: 26px;
     height: 26px;
@@ -257,6 +269,14 @@
     transition:
         background 0.15s,
         color 0.15s;
+}
+
+/* Área de toque invisível estendida até ~44px sem alterar o círculo visível
+   de 26px (recomendação Android de alvo mínimo de toque). */
+.notif-dropdown-close::after {
+    content: '';
+    position: absolute;
+    inset: -9px;
 }
 
 .notif-dropdown-close:hover,
@@ -290,11 +310,19 @@
 .notif-item:hover { background: var(--mint-glow); }
 .notif-item:last-child { border-bottom: none; }
 
-.notif-item-check {
+.notif-item-check-label {
     flex-shrink: 0;
-    margin-top: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    cursor: pointer;
+}
+
+.notif-item-check {
     width: 15px;
     height: 15px;
+    margin: 0;
     cursor: pointer;
     accent-color: var(--mint);
 }

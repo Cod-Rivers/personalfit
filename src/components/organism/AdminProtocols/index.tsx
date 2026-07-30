@@ -270,6 +270,7 @@ export default function AdminProtocols() {
                     Nenhum protocolo cadastrado para {tab}.
                 </p>
             ) : (
+                <div className={styles.tableWrap}>
                 <table className={styles.table}>
                     <thead>
                         <tr>
@@ -329,6 +330,7 @@ export default function AdminProtocols() {
                         ))}
                     </tbody>
                 </table>
+                </div>
             )}
 
             <Modal

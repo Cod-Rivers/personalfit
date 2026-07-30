@@ -843,6 +843,7 @@ function RatingsSection() {
                     </p>
                 </div>
             ) : (
+                <div className={s.tableWrap}>
                 <table className={s.table}>
                     <thead>
                         <tr>
@@ -871,6 +872,7 @@ function RatingsSection() {
                         ))}
                     </tbody>
                 </table>
+                </div>
             )}
         </>
     );
@@ -1708,6 +1710,7 @@ function LogsSection() {
                 </div>
             ) : (
                 <>
+                    <div className={s.tableWrap}>
                     <table className={s.table}>
                         <thead>
                             <tr>
@@ -1747,6 +1750,7 @@ function LogsSection() {
                             ))}
                         </tbody>
                     </table>
+                    </div>
                     <div className={s.pagination}>
                         <button
                             onClick={() => setPage((p) => Math.max(1, p - 1))}
@@ -1897,6 +1901,7 @@ function UsersSection({ currentUserId }: { currentUserId: string }) {
                     <h3 className={s.emptyTitle}>Nenhum usuário encontrado</h3>
                 </div>
             ) : (
+                <div className={s.tableWrap}>
                 <table className={s.table}>
                     <thead>
                         <tr>
@@ -2018,6 +2023,7 @@ function UsersSection({ currentUserId }: { currentUserId: string }) {
                         })}
                     </tbody>
                 </table>
+                </div>
             )}
         </>
     );
@@ -2385,6 +2391,7 @@ function RelatoriosSection() {
                         </div>
                     ) : (
                         <>
+                            <div className={s.tableWrap}>
                             <table className={s.table}>
                                 <thead>
                                     <tr>
@@ -2425,6 +2432,7 @@ function RelatoriosSection() {
                                     ))}
                                 </tbody>
                             </table>
+                            </div>
 
                             {/* Paginação */}
                             {totalPages > 1 && (

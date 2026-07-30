@@ -150,6 +150,7 @@ export default function AdminReferralPartners() {
                     Nenhum parceiro de indicação cadastrado.
                 </p>
             ) : (
+                <div className={styles.tableWrap}>
                 <table className={styles.table}>
                     <thead>
                         <tr>
@@ -208,6 +209,7 @@ export default function AdminReferralPartners() {
                         ))}
                     </tbody>
                 </table>
+                </div>
             )}
 
             <Modal
@@ -457,6 +459,7 @@ function IndicationStatsPanel() {
                     Nenhuma indicação encontrada para esse filtro.
                 </p>
             ) : (
+                <div className={styles.tableWrap}>
                 <table className={styles.table}>
                     <thead>
                         <tr>
@@ -483,6 +486,7 @@ function IndicationStatsPanel() {
                         ))}
                     </tbody>
                 </table>
+                </div>
             )}
         </div>
     );

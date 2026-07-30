@@ -102,7 +102,6 @@ const TLogin: FC = () => {
                 <Image
                     src="/assets/images/logo.png"
                     alt="logo"
-                    sizes="cover"
                     width={405}
                     height={192}
                 />

@@ -33,7 +33,11 @@
 .cardTitle { margin: 0; font-size: 1rem; font-weight: 600; }
 .cardMeta { font-size: 0.82rem; color: var(--text-muted); margin: 4px 0 0; }
 
-.table { width: 100%; border-collapse: collapse; }
+/* Sem isto, tabelas mais largas que 360/412dp eram cortadas pelo
+   overflow:hidden do container raiz (.main_back) — nenhuma coluna à direita
+   ficava acessível. */
+.tableWrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.table { width: 100%; min-width: 480px; border-collapse: collapse; }
 .table th { text-align: left; padding: 10px 12px; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-muted); border-bottom: 1px solid var(--border-subtle); }
 .table td { padding: 10px 12px; font-size: 0.88rem; border-bottom: 1px solid rgba(61,255,208,0.05); color: var(--text-secondary); }
 .table tr:hover td { background: rgba(61,255,208,0.04); }

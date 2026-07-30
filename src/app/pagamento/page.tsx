@@ -318,7 +318,6 @@ function PaymentPageInner() {
                     <Image
                         src="/assets/images/logo.png"
                         alt="logo"
-                        sizes="cover"
                         width={150}
                         height={70}
                     />
