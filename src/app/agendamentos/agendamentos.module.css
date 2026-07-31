@@ -163,6 +163,7 @@
 .typePresencial { background: rgba(240,165,0,0.15); color: var(--amber); }
 .typeOnline { background: rgba(15,252,190,0.12); color: var(--mint); }
 .typeConsultoria { background: rgba(200,100,200,0.15); color: #c85adc; }
+.typeAvaliacao { background: rgba(255,107,107,0.15); color: var(--coral); }
 
 .statusPending { background: rgba(150,150,150,0.15); color: var(--text-secondary); }
 .statusConfirmed { background: rgba(15,252,190,0.12); color: var(--mint); }

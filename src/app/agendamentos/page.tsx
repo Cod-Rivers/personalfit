@@ -38,6 +38,7 @@ const TYPE_COLOR: Record<AppointmentType, string> = {
     presencial: 'typePresencial',
     online: 'typeOnline',
     consultoria: 'typeConsultoria',
+    avaliacao: 'typeAvaliacao',
 };
 
 function formatDate(iso: string) {

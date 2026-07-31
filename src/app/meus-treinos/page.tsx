@@ -45,8 +45,10 @@ import {
     getOfflineMacrocycle,
 } from '@/libs/offline/downloadManager';
 import SyncPendingBadge from '../../components/features/SyncPendingBadge';
-import GanttPlanning from '../../components/features/GanttPlanning';
-import { GanttPhase } from '../../components/features/GanttPlanning';
+import GanttPlanning, {
+    GanttPhase,
+} from '../../components/features/GanttPlanningResponsive';
+import { useGanttToggle } from '@/hooks/useGanttToggle';
 import {
     FiChevronDown,
     FiStar,
@@ -135,6 +137,12 @@ async function buildMesoGroups(
     );
 }
 
+/** Planos "simple" não têm fases reais — não faz sentido mostrar o Gantt. */
+function computeGanttPhases(detail: MacrocycleResponse): GanttPhase[] {
+    if (detail.planning_mode === 'simple') return [];
+    return macroToGanttPhases(detail);
+}
+
 export default function MeusTreinosPage() {
     const { currentTopAd, currentBottomAd, canShowAds } = useAds();
     const { branding, personalName } = useBranding();
@@ -145,7 +153,9 @@ export default function MeusTreinosPage() {
     const [ganttPhases, setGanttPhases] = useState<GanttPhase[]>([]);
     const [userRole, setUserRole] = useState<string>('');
     const [studentId, setStudentId] = useState<string>('');
-    const [ganttEnabled, setGanttEnabled] = useState(true);
+    const [ganttEnabled, setGanttEnabled] = useGanttToggle(
+        'venafit:gantt:meus-treinos',
+    );
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isOfflineData, setIsOfflineData] = useState(false);
@@ -206,9 +216,7 @@ export default function MeusTreinosPage() {
                 setMesoGroups(
                     await buildMesoGroups(detail, detail.student_id ?? ''),
                 );
-                setGanttPhases(
-                    macroToGanttPhases(detail, { preferDuration: true }),
-                );
+                setGanttPhases(computeGanttPhases(detail));
             } catch (e) {
                 // Sem resposta = sem conexão com a API: tentar os planos
                 // baixados para offline (IndexedDB) antes de mostrar erro.
@@ -224,11 +232,7 @@ export default function MeusTreinosPage() {
                         setStudentId(detail.student_id ?? '');
                         // Offline: sem rede, então pula a busca de status (studentId '').
                         setMesoGroups(await buildMesoGroups(detail, ''));
-                        setGanttPhases(
-                            macroToGanttPhases(detail, {
-                                preferDuration: true,
-                            }),
-                        );
+                        setGanttPhases(computeGanttPhases(detail));
                         setLoading(false);
                         return;
                     }
@@ -260,9 +264,7 @@ export default function MeusTreinosPage() {
             setMesoGroups(
                 await buildMesoGroups(detail, detail.student_id ?? ''),
             );
-            setGanttPhases(
-                macroToGanttPhases(detail, { preferDuration: true }),
-            );
+            setGanttPhases(computeGanttPhases(detail));
         } catch (e) {
             if (axios.isAxiosError(e) && !e.response) {
                 const stored = await getOfflineMacrocycle(macro.id).catch(
@@ -274,11 +276,7 @@ export default function MeusTreinosPage() {
                     setStudentId(stored.data.student_id ?? '');
                     // Offline: sem rede, então pula a busca de status (studentId '').
                     setMesoGroups(await buildMesoGroups(stored.data, ''));
-                    setGanttPhases(
-                        macroToGanttPhases(stored.data, {
-                            preferDuration: true,
-                        }),
-                    );
+                    setGanttPhases(computeGanttPhases(stored.data));
                     setLoading(false);
                     return;
                 }

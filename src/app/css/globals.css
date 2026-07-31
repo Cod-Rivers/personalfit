@@ -503,3 +503,43 @@ a:hover { color: var(--mint-text-dim); }
     .sm\:p-6 { padding: 1.5rem; }
     .sm\:text-4xl { font-size: 2.25rem; line-height: 2.5rem; }
 }
+
+/* ── GanttPlanning: tooltip do dhtmlx-gantt ──
+   Renderizado direto no <body>, fora de .ganttContainer — por isso o tema
+   fica aqui (global) em vez de GanttPlanning.module.css (CSS Modules não
+   aceita um seletor :global() sem nenhuma classe local no mesmo seletor). */
+.gantt_tooltip {
+    background: var(--surface-2) !important;
+    border: 1px solid rgba(61,255,208,0.25) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    color: var(--text-primary) !important;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    padding: 8px 10px !important;
+}
+
+/* ── GanttPlanning: "Imprimir/Exportar" ──
+   Isola o Gantt/timeline na impressão, escondendo o resto da página — regra
+   precisa ser global porque esconde ANCESTRAIS/IRMÃOS fora da árvore do
+   componente, o que :global() dentro de um CSS Module não alcança. */
+.gantt-print-only {
+    display: none;
+}
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    .gantt-print-target,
+    .gantt-print-target * {
+        visibility: visible;
+    }
+    .gantt-print-target {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+    }
+    .gantt-print-only {
+        display: block;
+    }
+}

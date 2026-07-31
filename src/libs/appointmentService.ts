@@ -1,6 +1,6 @@
 ﻿import { Api } from '@/libs/api';
 
-export type AppointmentType = 'presencial' | 'online' | 'consultoria';
+export type AppointmentType = 'presencial' | 'online' | 'consultoria' | 'avaliacao';
 export type AppointmentStatus = 'pending' | 'confirmed' | 'attended' | 'missed' | 'cancelled' | 'cancelled_advance';
 export type ExceptionStatus = 'pending' | 'accepted' | 'rejected';
 
@@ -233,6 +233,7 @@ export const APPOINTMENT_TYPE_LABEL: Record<AppointmentType, string> = {
     presencial: 'Presencial',
     online: 'Online',
     consultoria: 'Consultoria',
+    avaliacao: 'Avaliação física',
 };
 
 export const APPOINTMENT_STATUS_LABEL: Record<AppointmentStatus, string> = {

@@ -4,12 +4,20 @@ import { useRouter, useParams } from 'next/navigation';
 import {
     getMacrocycle,
     updateMacrocycle,
+    updatePhaseDate,
+    getPlanWorkoutLogs,
     macroToGanttPhases,
     type MacrocycleResponse,
     type MesocycleRequest,
     type MesocycleResponse,
+    type PeriodizedWorkoutLogResponse,
 } from '@/libs/planningService';
-import GanttPlanning from '@/components/features/GanttPlanning';
+import { listStudentAppointments } from '@/libs/appointmentService';
+import GanttPlanning, {
+    type GanttAssessment,
+} from '@/components/features/GanttPlanningResponsive';
+import { useGanttToggle } from '@/hooks/useGanttToggle';
+import { useEditablePhaseDates } from '@/hooks/useEditablePhaseDates';
 import {
     STATUS_LABEL,
     formatDate,
@@ -28,6 +36,13 @@ export default function PeriodizacaoDetalhePage() {
     const [macro, setMacro] = useState<MacrocycleResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const [pageError, setPageError] = useState('');
+    const [ganttEnabled, setGanttEnabled] = useGanttToggle(
+        'venafit:gantt:periodizacao',
+    );
+    const [workoutLogs, setWorkoutLogs] = useState<
+        PeriodizedWorkoutLogResponse[]
+    >([]);
+    const [assessments, setAssessments] = useState<GanttAssessment[]>([]);
 
     /* Modal state */
     const [modalMode, setModalMode] = useState<'add' | 'edit' | null>(null);
@@ -44,6 +59,42 @@ export default function PeriodizacaoDetalhePage() {
             .catch((e: Error) => setPageError(e.message))
             .finally(() => setLoading(false));
     }, [studentId, planningId]);
+
+    /* ── Comparativo plano×realizado + marcos de avaliação física (Gantt) ──
+     * Best-effort: sem start_date/end_date não há janela pra buscar; e a
+     * Agenda é feature PRO, então listStudentAppointments pode dar 403 pra
+     * personal do plano gratuito — nenhum dos dois casos deve travar a tela. */
+    useEffect(() => {
+        if (!macro?.start_date || !macro?.end_date) {
+            setWorkoutLogs([]);
+            setAssessments([]);
+            return;
+        }
+        getPlanWorkoutLogs(studentId, planningId)
+            .then(setWorkoutLogs)
+            .catch(() => setWorkoutLogs([]));
+        listStudentAppointments(studentId, macro.start_date, macro.end_date)
+            .then((items) =>
+                setAssessments(
+                    items
+                        .filter((a) => a.type === 'avaliacao')
+                        .map((a) => ({ id: a.id, date: a.start_at.split('T')[0] })),
+                ),
+            )
+            .catch(() => setAssessments([]));
+    }, [macro?.start_date, macro?.end_date, studentId, planningId]);
+
+    /* ── Ajuste fino de datas no Gantt (drag) ── */
+    const savePhaseDates = useCallback(
+        (phaseId: string, start: string, end: string) =>
+            updatePhaseDate(studentId, planningId, phaseId, start, end),
+        [studentId, planningId],
+    );
+    const { handlePhaseUpdate, phaseError } = useEditablePhaseDates(
+        macro,
+        setMacro,
+        savePhaseDates,
+    );
 
     /* ── Modal open/close ── */
     const openAddModal = useCallback(() => {
@@ -177,7 +228,7 @@ export default function PeriodizacaoDetalhePage() {
     const isSimpleMode = macro.planning_mode === 'simple';
     const ganttPhases = isSimpleMode
         ? []
-        : macroToGanttPhases(macro, { preferDuration: true });
+        : macroToGanttPhases(macro, workoutLogs);
     const statusClass =
         macro.status === 'active'
             ? s.badgeActive
@@ -237,7 +288,22 @@ export default function PeriodizacaoDetalhePage() {
                 {/* Gantt */}
                 {ganttPhases.length > 0 && (
                     <div style={{ marginBottom: 28 }}>
-                        <GanttPlanning phases={ganttPhases} />
+                        <GanttPlanning
+                            phases={ganttPhases}
+                            enabled={ganttEnabled}
+                            onToggle={setGanttEnabled}
+                            onPhaseUpdate={handlePhaseUpdate}
+                            assessments={assessments}
+                            printTitle={`${macro.name} — ${macro.goal}`}
+                        />
+                        {phaseError && (
+                            <div
+                                className="alert alert-danger mt-2 mb-0"
+                                role="alert"
+                            >
+                                {phaseError}
+                            </div>
+                        )}
                     </div>
                 )}
 

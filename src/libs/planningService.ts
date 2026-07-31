@@ -159,24 +159,6 @@ export interface UpdateMacrocycleRequest {
     mesocycles?: MesocycleRequest[];
 }
 
-interface MacroToGanttOptions {
-    preferDuration?: boolean;
-}
-
-
-
-/** Converte mesociclos da API para o formato GanttPhase do componente. */
-export function toGanttPhases(mesocycles: MesocycleResponse[]): GanttPhase[] {
-    return mesocycles
-        .filter((m) => m.start_date && m.end_date)
-        .map((m) => ({
-            id: m.id,
-            name: m.name,
-            start: m.start_date!,
-            end: m.end_date!,
-        }));
-}
-
 /** Seleciona o microciclo "atual" de um mesociclo: em andamento, senão o
  * próximo pendente, senão o último cadastrado (fase já concluída). */
 export function pickActiveMicrocycle(
@@ -192,32 +174,58 @@ export function pickActiveMicrocycle(
 
 /**
  * Converte um macrociclo completo para GanttPhases.
- * Se os mesociclos não tiverem datas próprias, calcula a partir da
- * data de início do macrociclo + duration_weeks de cada fase em sequência.
+ * Cada mesociclo usa sua própria data (start_date/end_date) quando definida —
+ * seja porque veio assim do backend, seja porque o personal ajustou via drag
+ * no Gantt (ver UpdatePhase/PUT .../phase/:phaseId). Para os que ainda não
+ * têm data própria, calcula a partir de duration_weeks, encadeando a partir
+ * de onde a fase anterior (com ou sem data própria) terminou — começando do
+ * start_date do macrociclo, se houver.
  */
+/** Fração (0–1) de microciclos concluídos de um mesociclo; undefined sem microciclos. */
+function computeMesoProgress(m: MesocycleResponse): number | undefined {
+    const micros = m.microcycles ?? [];
+    if (micros.length === 0) return undefined;
+    const completed = micros.filter((mc) => mc.status === 'completed').length;
+    return completed / micros.length;
+}
+
+/** Início/fim real de uma fase — min/max de completed_date entre os logs
+ * concluídos desse mesociclo. undefined (campos ausentes) sem nenhum log
+ * concluído ainda: comparativo "plano vs. realizado" só faz sentido depois
+ * que o aluno de fato treinou algo na fase. */
+function computeActualSpan(
+    mesoId: string,
+    logs: PeriodizedWorkoutLogResponse[],
+): { actualStart?: string; actualEnd?: string } {
+    const completedDates = logs
+        .filter((l) => l.mesocycle_id === mesoId && l.status === 'completed' && l.completed_date)
+        .map((l) => (l.completed_date as string).split(' ')[0]); // "YYYY-MM-DD HH:MM:SS" → "YYYY-MM-DD"
+    if (completedDates.length === 0) return {};
+    return {
+        actualStart: completedDates.reduce((a, b) => (a < b ? a : b)),
+        actualEnd: completedDates.reduce((a, b) => (a > b ? a : b)),
+    };
+}
+
+/** Campos exibidos no Gantt (cor por fase, progresso, tooltip, comparativo
+ * plano×realizado) — comuns aos dois ramos (data própria ou calculada) de
+ * macroToGanttPhases. */
+function mesoGanttMeta(m: MesocycleResponse, logs: PeriodizedWorkoutLogResponse[]) {
+    return {
+        phase: m.phase,
+        methodology: m.methodology,
+        progress: computeMesoProgress(m),
+        activeFocus: pickActiveMicrocycle(m.microcycles)?.focus,
+        ...computeActualSpan(m.id, logs),
+    };
+}
+
 export function macroToGanttPhases(
     macro: MacrocycleResponse,
-    options?: MacroToGanttOptions,
+    logs: PeriodizedWorkoutLogResponse[] = [],
 ): GanttPhase[] {
     const mesos = [...(macro.mesocycles ?? [])].sort((a, b) => a.order - b.order);
     if (mesos.length === 0) return [];
-
-    const preferDuration = options?.preferDuration ?? false;
-
-    // Se todos os mesociclos já têm datas, usa as datas deles diretamente
-    const allHaveDates = mesos.every((m) => m.start_date && m.end_date);
-    if (allHaveDates && !preferDuration) {
-        return mesos.map((m) => ({
-            id: m.id,
-            name: m.name,
-            start: m.start_date!,
-            end: m.end_date!,
-        }));
-    }
-
-    // Calcula datas a partir do start_date do macrociclo + duration_weeks
-    const macroStart = macro.start_date;
-    if (!macroStart) return [];
 
     const fmt = (d: Date) => d.toISOString().split('T')[0];
     const addWeeks = (d: Date, weeks: number) => {
@@ -227,13 +235,28 @@ export function macroToGanttPhases(
     };
 
     const phases: GanttPhase[] = [];
-    let cursor = new Date(macroStart);
+    let cursor = macro.start_date ? new Date(macro.start_date) : null;
 
     for (const m of mesos) {
+        if (m.start_date && m.end_date) {
+            phases.push({
+                id: m.id,
+                name: m.name,
+                start: m.start_date,
+                end: m.end_date,
+                ...mesoGanttMeta(m, logs),
+            });
+            cursor = new Date(m.end_date);
+            continue;
+        }
+
+        // Sem data própria e sem base anterior para calcular — pula a fase
+        // em vez de desenhar um bloco de posição arbitrária e enganosa.
+        if (!cursor) continue;
+
         if (m.duration_weeks <= 0) {
-            // duration_weeks inválido (0) — não inventa uma duração fictícia
-            // para não esconder dado corrompido; melhor pular a fase no Gantt
-            // do que desenhar um bloco de tamanho arbitrário e enganoso.
+            // duration_weeks inválido (0) — mesma lógica: pula em vez de
+            // inventar uma duração fictícia para esconder dado corrompido.
             console.warn(
                 `Mesociclo "${m.name}" (${m.id}) tem duration_weeks=0 — ignorado no Gantt.`,
             );
@@ -246,6 +269,7 @@ export function macroToGanttPhases(
             name: m.name,
             start: fmt(start),
             end: fmt(end),
+            ...mesoGanttMeta(m, logs),
         });
         cursor = end;
     }
@@ -404,6 +428,36 @@ export async function updatePhaseDate(
         { start_date: startDate, end_date: endDate },
     );
     return data;
+}
+
+export interface PeriodizedWorkoutLogResponse {
+    id: string;
+    macrocycle_id: string;
+    mesocycle_id: string;
+    microcycle_id: string;
+    student_id: string;
+    training_ref: string;
+    status: 'pending' | 'completed' | 'skipped';
+    planned_date: string;
+    completed_date?: string;
+}
+
+/**
+ * GET /students/:studentId/planning/:planningId/workout-logs — todos os
+ * logs de treino do aluno dentro deste macrociclo (todos os mesociclos e
+ * microciclos de uma vez). Usado pelo comparativo "plano vs. realizado" do
+ * Gantt: `completed_date` de cada log dá o início/fim real de cada fase,
+ * pra comparar com as datas planejadas (`start`/`end` de GanttPhase).
+ * Retorna [] se o macrociclo ainda não tem start_date/end_date definidos.
+ */
+export async function getPlanWorkoutLogs(
+    studentId: string,
+    planningId: string,
+): Promise<PeriodizedWorkoutLogResponse[]> {
+    const { data } = await Api.get<PeriodizedWorkoutLogResponse[]>(
+        `/students/${studentId}/planning/${planningId}/workout-logs`,
+    );
+    return data ?? [];
 }
 
 /** DELETE /students/:studentId/planning/:planningId */

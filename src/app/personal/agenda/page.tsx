@@ -56,6 +56,7 @@ const TYPE_COLOR: Record<AppointmentType, string> = {
     presencial: 'typePresencial',
     online: 'typeOnline',
     consultoria: 'typeConsultoria',
+    avaliacao: 'typeAvaliacao',
 };
 
 function formatDate(iso: string) {
@@ -906,6 +907,9 @@ export default function AgendaPage() {
                             <option value="online">Online</option>
                             <option value="consultoria">
                                 Consultoria
+                            </option>
+                            <option value="avaliacao">
+                                Avaliação física
                             </option>
                         </select>
                     </label>

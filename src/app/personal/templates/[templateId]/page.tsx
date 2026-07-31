@@ -9,7 +9,8 @@ import {
     type MesocycleRequest,
     type MesocycleResponse,
 } from '@/libs/planningService';
-import GanttPlanning from '@/components/features/GanttPlanning';
+import GanttPlanning from '@/components/features/GanttPlanningResponsive';
+import { useGanttToggle } from '@/hooks/useGanttToggle';
 import {
     STATUS_LABEL,
     mesoToRequest,
@@ -27,6 +28,9 @@ export default function TemplateDetalhePage() {
     const [macro, setMacro] = useState<MacrocycleResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const [pageError, setPageError] = useState('');
+    const [ganttEnabled, setGanttEnabled] = useGanttToggle(
+        'venafit:gantt:templates',
+    );
 
     /* Modal state */
     const [modalMode, setModalMode] = useState<'add' | 'edit' | null>(null);
@@ -176,9 +180,10 @@ export default function TemplateDetalhePage() {
     const isSimpleMode = macro.planning_mode === 'simple';
     // Templates raramente têm start_date, então o Gantt normalmente fica
     // vazio aqui — sem tratamento especial, macroToGanttPhases já retorna [].
-    const ganttPhases = isSimpleMode
-        ? []
-        : macroToGanttPhases(macro, { preferDuration: true });
+    // Somente leitura por design: CloneForStudent (backend) não copia
+    // start_date/end_date dos mesociclos ao aplicar o template a um aluno —
+    // ajustar datas aqui seria descartado silenciosamente nesse momento.
+    const ganttPhases = isSimpleMode ? [] : macroToGanttPhases(macro);
     const statusClass =
         macro.status === 'active'
             ? s.badgeActive
@@ -232,7 +237,12 @@ export default function TemplateDetalhePage() {
                 {/* Gantt */}
                 {ganttPhases.length > 0 && (
                     <div style={{ marginBottom: 28 }}>
-                        <GanttPlanning phases={ganttPhases} />
+                        <GanttPlanning
+                            phases={ganttPhases}
+                            readOnly
+                            enabled={ganttEnabled}
+                            onToggle={setGanttEnabled}
+                        />
                     </div>
                 )}
 

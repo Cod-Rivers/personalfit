@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { MesocycleResponse } from '@/libs/planningService';
 import { formatDate, weekdayLabel } from '../lib/mesocycleTransforms';
+import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
 import s from '../builder.module.css';
 
 interface Props {
@@ -136,105 +137,67 @@ export default function MesocycleSection({
                                     </span>
                                 </div>
                                 {t.exercises.length > 0 && (
-                                    <div className={s.exerciseTableWrap}>
-                                    <table className={s.exerciseTable}>
-                                        <thead>
-                                            <tr>
-                                                <th style={{ width: 52 }}></th>
-                                                <th>Exercício</th>
-                                                <th>Séries</th>
-                                                <th>Variação</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {t.exercises.map((ex, i) => (
-                                                <tr key={ex.id ?? i}>
-                                                    <td
-                                                        style={{
-                                                            padding:
-                                                                '4px 6px 4px 0',
-                                                        }}
+                                    <ul className={s.exerciseList}>
+                                        {t.exercises.map((ex, i) => {
+                                            const seriesText = ex.series_label
+                                                ? ex.series_label
+                                                : ex.timed
+                                                  ? ex.series
+                                                        .map((s) => `${s}s`)
+                                                        .join(' / ')
+                                                  : ex.series.join('/');
+                                            return (
+                                                <li
+                                                    key={ex.id ?? i}
+                                                    className={s.exerciseCard}
+                                                >
+                                                    <ExerciseThumbnail
+                                                        name={ex.name}
+                                                        videoThumb={
+                                                            ex.video_thumb
+                                                        }
+                                                        videoUrl={
+                                                            ex.video_url
+                                                        }
+                                                        className={
+                                                            s.exerciseThumbnail
+                                                        }
+                                                    />
+                                                    <div
+                                                        className={
+                                                            s.exerciseInfo
+                                                        }
                                                     >
-                                                        {ex.video_thumb ? (
-                                                            <a
-                                                                href={
-                                                                    ex.video_url ||
-                                                                    '#'
-                                                                }
-                                                                target="_blank"
-                                                                rel="noreferrer"
-                                                                title="Ver vídeo"
-                                                            >
-                                                                <img
-                                                                    src={
-                                                                        ex.video_thumb
-                                                                    }
-                                                                    alt={
-                                                                        ex.name
-                                                                    }
-                                                                    style={{
-                                                                        width: 48,
-                                                                        height: 34,
-                                                                        objectFit:
-                                                                            'cover',
-                                                                        borderRadius: 4,
-                                                                        display:
-                                                                            'block',
-                                                                    }}
-                                                                    onError={(
-                                                                        e,
-                                                                    ) => {
-                                                                        (
-                                                                            e.target as HTMLImageElement
-                                                                        ).style.display =
-                                                                            'none';
-                                                                    }}
-                                                                />
-                                                            </a>
-                                                        ) : (
-                                                            <span
-                                                                style={{
-                                                                    fontSize:
-                                                                        '1.2rem',
-                                                                }}
-                                                            >
-                                                                🏋️
-                                                            </span>
-                                                        )}
-                                                    </td>
-                                                    <td>{ex.name}</td>
-                                                    <td>
-                                                        {ex.series_label
-                                                            ? ex.series_label
-                                                            : ex.timed
-                                                              ? ex.series
-                                                                    .map(
-                                                                        (s) =>
-                                                                            `${s}s`,
-                                                                    )
-                                                                    .join(' / ')
-                                                              : ex.series.join(
-                                                                    '/',
-                                                                )}
+                                                        <p
+                                                            className={
+                                                                s.exerciseName
+                                                            }
+                                                        >
+                                                            {ex.name}
+                                                        </p>
+                                                        <p
+                                                            className={
+                                                                s.exerciseMeta
+                                                            }
+                                                        >
+                                                            {seriesText}
+                                                            {ex.variations &&
+                                                                ` · ${ex.variations}`}
+                                                        </p>
                                                         {ex.comments && (
-                                                            <div
-                                                                style={{
-                                                                    fontSize:
-                                                                        '0.72rem',
-                                                                    color: 'var(--text-muted)',
-                                                                    marginTop: 2,
-                                                                }}
+                                                            <p
+                                                                className={
+                                                                    s.exerciseComments
+                                                                }
                                                             >
                                                                 {ex.comments}
-                                                            </div>
+                                                            </p>
                                                         )}
-                                                    </td>
-                                                    <td>{ex.variations}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                    </div>
+                                                    </div>
+                                                </li>
+                                            );
+                                        })}
+                                    </ul>
                                 )}
                             </div>
                         ))
