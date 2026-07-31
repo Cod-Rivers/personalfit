@@ -41,6 +41,9 @@ export interface ExercisePerformanceResponse {
     load_kg: number;
     rpe: number;
     notes?: string;
+    /** Bissérie/trissérie/superssérie a que este exercício pertencia no
+     * plano (espelha ExerciseResponse.group_id). Ausente = avulso. */
+    group_id?: string;
 }
 
 export interface NewWorkoutLogResponse {
@@ -74,6 +77,7 @@ export interface CompleteWorkoutLogRequest {
         load_kg: number;
         rpe: number;
         notes?: string;
+        group_id?: string;
     }>;
     notes?: string;
 }

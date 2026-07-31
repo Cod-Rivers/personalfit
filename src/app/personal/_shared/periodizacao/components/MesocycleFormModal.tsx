@@ -75,6 +75,9 @@ export default function MesocycleFormModal({
             ? responseMicroToLocal(meso.microcycles, meso.duration_weeks)
             : makeDefaultMicrocycles(4),
     );
+    // Ajustes semanais ficam recolhidos por padrão: a prescrição de
+    // exercícios é a informação mais consultada ao abrir o formulário.
+    const [adjustmentsOpen, setAdjustmentsOpen] = useState(false);
 
     const {
         register,
@@ -283,6 +286,76 @@ export default function MesocycleFormModal({
         [],
     );
 
+    /* ── Combinar exercícios (bissérie/trissérie/superssérie) ── */
+    const combineWithPrevious = useCallback(
+        (tid: string, eid: string) =>
+            setLocalTrainings((prev) =>
+                prev.map((t) => {
+                    if (t._id !== tid) return t;
+                    const idx = t.exercises.findIndex((e) => e._id === eid);
+                    if (idx <= 0) return t;
+                    const groupId =
+                        t.exercises[idx - 1].group_id ?? genId();
+                    return {
+                        ...t,
+                        exercises: t.exercises.map((e, i) =>
+                            i === idx - 1 || i === idx
+                                ? { ...e, group_id: groupId }
+                                : e,
+                        ),
+                    };
+                }),
+            ),
+        [],
+    );
+
+    const ungroupExercises = useCallback(
+        (tid: string, groupId: string) =>
+            setLocalTrainings((prev) =>
+                prev.map((t) =>
+                    t._id !== tid
+                        ? t
+                        : {
+                              ...t,
+                              exercises: t.exercises.map((e) =>
+                                  e.group_id === groupId
+                                      ? { ...e, group_id: undefined }
+                                      : e,
+                              ),
+                          },
+                ),
+            ),
+        [],
+    );
+
+    const removeLastFromGroup = useCallback(
+        (tid: string, eid: string) =>
+            setLocalTrainings((prev) =>
+                prev.map((t) => {
+                    if (t._id !== tid) return t;
+                    const target = t.exercises.find((e) => e._id === eid);
+                    const groupId = target?.group_id;
+                    if (!groupId) return t;
+                    const membersLeft = t.exercises.filter(
+                        (e) => e._id !== eid && e.group_id === groupId,
+                    );
+                    // Se só sobrar 1 exercício no bloco, desfaz o bloco inteiro
+                    // (um "grupo" de 1 exercício não faz sentido).
+                    const clearAlso =
+                        membersLeft.length === 1 ? membersLeft[0]._id : null;
+                    return {
+                        ...t,
+                        exercises: t.exercises.map((e) =>
+                            e._id === eid || e._id === clearAlso
+                                ? { ...e, group_id: undefined }
+                                : e,
+                        ),
+                    };
+                }),
+            ),
+        [],
+    );
+
     // Aviso leve (não bloqueia salvar): fases longas sem nenhuma semana de
     // deload marcada são um sinal comum de risco de overtraining/estagnação —
     // ver diretrizes de periodização (Bompa/Fleck: deload a cada 4-6 semanas).
@@ -290,6 +363,24 @@ export default function MesocycleFormModal({
         !simpleMode &&
         durationWeeksWatch >= 5 &&
         !localMicrocycles.some((m) => m.is_deload);
+
+    // Resumo de 1 linha mostrado com o bloco de ajustes recolhido.
+    const adjustmentsSummary = (() => {
+        if (!simpleMode) {
+            return `${localMicrocycles.length} semana${localMicrocycles.length === 1 ? '' : 's'} configurável${localMicrocycles.length === 1 ? '' : 'is'}`;
+        }
+        const week = localMicrocycles[0];
+        const parts: string[] = [];
+        if (week?.target_rpe) parts.push(`RPE ${week.target_rpe}`);
+        if (week?.volume_adjust_pct && week.volume_adjust_pct !== '0')
+            parts.push(`Volume ${week.volume_adjust_pct}%`);
+        if (week?.intensity_adjust_pct && week.intensity_adjust_pct !== '0')
+            parts.push(`Intensidade ${week.intensity_adjust_pct}%`);
+        if (week?.focus) parts.push(`Foco: ${week.focus}`);
+        return parts.length > 0
+            ? parts.join(' · ')
+            : 'Opcional — RPE, volume, intensidade, foco e notas';
+    })();
 
     const onSubmit = (data: MesoFormData) => {
         const req = localToMesoRequest(
@@ -533,25 +624,6 @@ export default function MesocycleFormModal({
                         </>
                     )}
 
-                    {suggestDeloadWarning && (
-                        <div
-                            className="alert alert-warning py-2 mb-3"
-                            style={{ fontSize: '0.8rem' }}
-                        >
-                            ⚠️ Fase com {durationWeeksWatch} semanas e nenhuma
-                            marcada como deload. Blocos longos sem semana de
-                            descarga aumentam o risco de overtraining —
-                            considere marcar uma semana como deload (ex: a
-                            última) abaixo.
-                        </div>
-                    )}
-
-                    <MicrocycleEditor
-                        microcycles={localMicrocycles}
-                        onUpdate={updateMicrocycle}
-                        simpleMode={simpleMode}
-                    />
-
                     <TrainingsEditor
                         trainings={localTrainings}
                         onAddTraining={addTraining}
@@ -568,7 +640,98 @@ export default function MesocycleFormModal({
                         simpleMode={simpleMode}
                         dayLabelStyle={dayLabelStyle}
                         onUpdateTrainingWeekday={updateTrainingWeekday}
+                        onCombineWithPrevious={combineWithPrevious}
+                        onUngroupExercises={ungroupExercises}
+                        onRemoveLastFromGroup={removeLastFromGroup}
                     />
+
+                    <div
+                        style={{
+                            border: '1px solid var(--border-subtle)',
+                            borderRadius: 8,
+                            marginBottom: 18,
+                            overflow: 'hidden',
+                        }}
+                    >
+                        <button
+                            type="button"
+                            onClick={() => setAdjustmentsOpen((v) => !v)}
+                            aria-expanded={adjustmentsOpen}
+                            style={{
+                                width: '100%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                gap: 10,
+                                padding: '10px 12px',
+                                background:
+                                    'var(--surface-2, rgba(255,255,255,0.04))',
+                                border: 'none',
+                                cursor: 'pointer',
+                                textAlign: 'left',
+                            }}
+                        >
+                            <span>
+                                <span
+                                    style={{
+                                        display: 'block',
+                                        fontSize: '0.88rem',
+                                        fontWeight: 700,
+                                    }}
+                                >
+                                    {simpleMode
+                                        ? 'Ajustes desta semana'
+                                        : 'Ajustes semanais'}
+                                </span>
+                                <span
+                                    style={{
+                                        display: 'block',
+                                        fontSize: '0.74rem',
+                                        color: 'var(--text-muted)',
+                                        marginTop: 2,
+                                    }}
+                                >
+                                    {adjustmentsSummary}
+                                </span>
+                            </span>
+                            <span
+                                aria-hidden
+                                style={{
+                                    transform: adjustmentsOpen
+                                        ? 'rotate(180deg)'
+                                        : 'none',
+                                    transition: 'transform 0.15s',
+                                    color: 'var(--text-muted)',
+                                    flexShrink: 0,
+                                }}
+                            >
+                                ▾
+                            </span>
+                        </button>
+
+                        {adjustmentsOpen && (
+                            <div style={{ padding: 12 }}>
+                                {suggestDeloadWarning && (
+                                    <div
+                                        className="alert alert-warning py-2 mb-3"
+                                        style={{ fontSize: '0.8rem' }}
+                                    >
+                                        ⚠️ Fase com {durationWeeksWatch}{' '}
+                                        semanas e nenhuma marcada como deload.
+                                        Blocos longos sem semana de descarga
+                                        aumentam o risco de overtraining —
+                                        considere marcar uma semana como
+                                        deload abaixo.
+                                    </div>
+                                )}
+                                <MicrocycleEditor
+                                    microcycles={localMicrocycles}
+                                    onUpdate={updateMicrocycle}
+                                    simpleMode={simpleMode}
+                                />
+                            </div>
+                        )}
+                    </div>
 
                     {saveError && (
                         <div

@@ -21,30 +21,7 @@ interface Props {
 
 export default function MicrocycleEditor({ microcycles, onUpdate, simpleMode }: Props) {
     return (
-        <div
-            style={{
-                borderTop: '1px solid var(--border-subtle)',
-                paddingTop: 16,
-                marginBottom: 18,
-            }}
-        >
-            <p style={{ margin: '0 0 8px 0', fontSize: '0.9rem', fontWeight: 600 }}>
-                {simpleMode
-                    ? 'Ajustes desta semana (opcional)'
-                    : 'Microciclos (ajuste livre por semana)'}
-            </p>
-            <p
-                style={{
-                    margin: '0 0 10px 0',
-                    fontSize: '0.75rem',
-                    color: 'var(--text-muted)',
-                }}
-            >
-                {simpleMode
-                    ? 'Opcional: RPE alvo, ajustes de volume/intensidade e notas para esta semana de treino.'
-                    : 'Você pode definir foco, RPE alvo, ajustes de volume/intensidade e deload para cada semana.'}
-            </p>
-
+        <div>
             {microcycles.map((micro) => (
                 <div
                     key={micro._id}

@@ -5,6 +5,8 @@ import type { ExerciseLibraryItem } from '@/libs/planningService';
 import {
     WEEKDAYS,
     weekdayLabel,
+    partitionExerciseGroups,
+    comboGroupLabel,
     type LocalExercise,
     type LocalTraining,
 } from '../lib/mesocycleTransforms';
@@ -34,6 +36,13 @@ interface Props {
     onOpenPicker: (tid: string) => void;
     onClosePicker: () => void;
     onPickExercise: (tid: string, item: ExerciseLibraryItem) => void;
+    /** Agrupa um exercício com o exercício imediatamente anterior num bloco
+     * (bissérie/trissérie/superssérie) — descanso só ao final do bloco. */
+    onCombineWithPrevious?: (tid: string, eid: string) => void;
+    /** Desfaz o bloco inteiro, devolvendo todos os membros a exercícios avulsos. */
+    onUngroupExercises?: (tid: string, groupId: string) => void;
+    /** Tira só o último exercício adicionado ao bloco (reversível). */
+    onRemoveLastFromGroup?: (tid: string, eid: string) => void;
 }
 
 export default function TrainingsEditor({
@@ -52,6 +61,9 @@ export default function TrainingsEditor({
     simpleMode,
     dayLabelStyle = 'weekday',
     onUpdateTrainingWeekday,
+    onCombineWithPrevious,
+    onUngroupExercises,
+    onRemoveLastFromGroup,
 }: Props) {
     const isNumbered = simpleMode && dayLabelStyle === 'number';
     return (
@@ -242,10 +254,108 @@ export default function TrainingsEditor({
                                 </tr>
                             </thead>
                             <tbody>
-                                {t.exercises.map((ex) => (
-                                    <React.Fragment key={ex._id}>
-                                        <tr>
-                                            <td style={{ padding: '4px 4px' }}>
+                                {partitionExerciseGroups(t.exercises).map(
+                                    (group) => {
+                                        const isCombo = group.length > 1;
+                                        const groupId = group[0].group_id;
+                                        return (
+                                            <React.Fragment key={group[0]._id}>
+                                                {isCombo && groupId && (
+                                                    <tr>
+                                                        <td
+                                                            colSpan={4}
+                                                            style={{
+                                                                padding:
+                                                                    '6px 4px 2px 8px',
+                                                                borderLeft:
+                                                                    '3px solid var(--violet, #8b5cf6)',
+                                                            }}
+                                                        >
+                                                            <div
+                                                                style={{
+                                                                    display:
+                                                                        'flex',
+                                                                    alignItems:
+                                                                        'center',
+                                                                    justifyContent:
+                                                                        'space-between',
+                                                                    gap: 8,
+                                                                }}
+                                                            >
+                                                                <span
+                                                                    style={{
+                                                                        fontSize:
+                                                                            '0.68rem',
+                                                                        fontWeight: 800,
+                                                                        color: 'var(--violet, #8b5cf6)',
+                                                                        background:
+                                                                            'rgba(139,92,246,0.12)',
+                                                                        padding:
+                                                                            '2px 9px',
+                                                                        borderRadius: 20,
+                                                                    }}
+                                                                >
+                                                                    🔗{' '}
+                                                                    {comboGroupLabel(
+                                                                        group.length,
+                                                                    )}
+                                                                </span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                        onUngroupExercises?.(
+                                                                            t._id,
+                                                                            groupId,
+                                                                        )
+                                                                    }
+                                                                    style={{
+                                                                        background:
+                                                                            'none',
+                                                                        border: 'none',
+                                                                        color: 'var(--text-muted)',
+                                                                        fontSize:
+                                                                            '0.66rem',
+                                                                        fontWeight: 700,
+                                                                        textDecoration:
+                                                                            'underline',
+                                                                        cursor: 'pointer',
+                                                                    }}
+                                                                >
+                                                                    Desagrupar
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                                {group.map((ex, idxInGroup) => {
+                                                    const globalIdx =
+                                                        t.exercises.findIndex(
+                                                            (e) =>
+                                                                e._id ===
+                                                                ex._id,
+                                                        );
+                                                    const canCombine =
+                                                        !ex.group_id &&
+                                                        globalIdx > 0;
+                                                    const isLastInGroup =
+                                                        isCombo &&
+                                                        idxInGroup ===
+                                                            group.length - 1;
+                                                    return (
+                                                        <React.Fragment
+                                                            key={ex._id}
+                                                        >
+                                                            <tr>
+                                                                <td
+                                                                    style={{
+                                                                        padding:
+                                                                            '4px 4px',
+                                                                        borderLeft:
+                                                                            isCombo
+                                                                                ? '3px solid var(--violet, #8b5cf6)'
+                                                                                : undefined,
+                                                                    }}
+                                                                >
                                                 <input
                                                     value={ex.name}
                                                     onChange={(e) =>
@@ -280,7 +390,7 @@ export default function TrainingsEditor({
                                                     className="form-select form-select-sm mb-1"
                                                 >
                                                     <option value="reps">
-                                                        Reps (N×M)
+                                                        Reps (séries × repetições)
                                                     </option>
                                                     <option value="time">
                                                         Tempo (min/seg)
@@ -482,36 +592,121 @@ export default function TrainingsEditor({
                                                 </button>
                                             </td>
                                         </tr>
-                                        {/* Linha de observações */}
-                                        <tr key={ex._id + '-obs'}>
-                                            <td
-                                                colSpan={4}
-                                                style={{
-                                                    padding: '0 4px 8px 4px',
-                                                }}
-                                            >
-                                                <textarea
-                                                    value={ex.observations}
-                                                    onChange={(e) =>
-                                                        onUpdateExercise(
-                                                            t._id,
-                                                            ex._id,
-                                                            'observations',
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                    placeholder="Observações / instruções do personal (opcional)"
-                                                    className="form-control form-control-sm"
-                                                    rows={2}
-                                                    style={{
-                                                        resize: 'vertical',
-                                                        fontSize: '0.8rem',
-                                                    }}
-                                                />
-                                            </td>
-                                        </tr>
-                                    </React.Fragment>
-                                ))}
+                                                            {/* Linha de observações */}
+                                                            <tr>
+                                                                <td
+                                                                    colSpan={4}
+                                                                    style={{
+                                                                        padding:
+                                                                            '0 4px 4px 4px',
+                                                                        borderLeft:
+                                                                            isCombo
+                                                                                ? '3px solid var(--violet, #8b5cf6)'
+                                                                                : undefined,
+                                                                    }}
+                                                                >
+                                                                    <textarea
+                                                                        value={
+                                                                            ex.observations
+                                                                        }
+                                                                        onChange={(
+                                                                            e,
+                                                                        ) =>
+                                                                            onUpdateExercise(
+                                                                                t._id,
+                                                                                ex._id,
+                                                                                'observations',
+                                                                                e
+                                                                                    .target
+                                                                                    .value,
+                                                                            )
+                                                                        }
+                                                                        placeholder="Observações / instruções do personal (opcional)"
+                                                                        className="form-control form-control-sm"
+                                                                        rows={2}
+                                                                        style={{
+                                                                            resize: 'vertical',
+                                                                            fontSize:
+                                                                                '0.8rem',
+                                                                        }}
+                                                                    />
+                                                                    {(canCombine ||
+                                                                        isLastInGroup) && (
+                                                                        <div
+                                                                            style={{
+                                                                                display:
+                                                                                    'flex',
+                                                                                gap: 12,
+                                                                                marginTop: 4,
+                                                                            }}
+                                                                        >
+                                                                            {canCombine && (
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() =>
+                                                                                        onCombineWithPrevious?.(
+                                                                                            t._id,
+                                                                                            ex._id,
+                                                                                        )
+                                                                                    }
+                                                                                    style={{
+                                                                                        background:
+                                                                                            'none',
+                                                                                        border: 'none',
+                                                                                        padding: 0,
+                                                                                        color: 'var(--violet, #8b5cf6)',
+                                                                                        fontSize:
+                                                                                            '0.7rem',
+                                                                                        fontWeight: 700,
+                                                                                        cursor: 'pointer',
+                                                                                    }}
+                                                                                >
+                                                                                    🔗
+                                                                                    Agrupar
+                                                                                    com
+                                                                                    exercício
+                                                                                    anterior
+                                                                                </button>
+                                                                            )}
+                                                                            {isLastInGroup && (
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() =>
+                                                                                        onRemoveLastFromGroup?.(
+                                                                                            t._id,
+                                                                                            ex._id,
+                                                                                        )
+                                                                                    }
+                                                                                    style={{
+                                                                                        background:
+                                                                                            'none',
+                                                                                        border: 'none',
+                                                                                        padding: 0,
+                                                                                        color: 'var(--text-muted)',
+                                                                                        fontSize:
+                                                                                            '0.7rem',
+                                                                                        fontWeight: 700,
+                                                                                        textDecoration:
+                                                                                            'underline',
+                                                                                        cursor: 'pointer',
+                                                                                    }}
+                                                                                >
+                                                                                    Tirar
+                                                                                    do
+                                                                                    bloco
+                                                                                </button>
+                                                                            )}
+                                                                        </div>
+                                                                    )}
+                                                                </td>
+                                                            </tr>
+                                                        </React.Fragment>
+                                                    );
+                                                })}
+                                            </React.Fragment>
+                                        );
+                                    },
+                                )}
                             </tbody>
                         </table>
                         </div>

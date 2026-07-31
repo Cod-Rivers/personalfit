@@ -89,6 +89,10 @@ export interface LocalExercise {
     timed: boolean;
     video_url: string;
     video_thumb: string;
+    /** Agrupa exercícios executados em sequência, sem descanso entre si
+     * (bissérie/trissérie/superssérie). Exercícios consecutivos com o mesmo
+     * group_id dentro do mesmo treino formam um bloco. undefined = avulso. */
+    group_id?: string;
 }
 
 export interface LocalTraining {
@@ -116,6 +120,38 @@ export interface LocalMicrocycle {
 
 export function genId() {
     return Math.random().toString(36).slice(2);
+}
+
+/**
+ * Particiona os exercícios de um treino em blocos: cada bloco é uma sequência
+ * consecutiva de exercícios com o mesmo group_id (bissérie/trissérie/
+ * superssérie), ou um único exercício avulso. A ordem de execução dentro de
+ * um bloco é a ordem em `exercises` — não há campo de ordem separado.
+ */
+export function partitionExerciseGroups(
+    exercises: LocalExercise[],
+): LocalExercise[][] {
+    const groups: LocalExercise[][] = [];
+    for (const ex of exercises) {
+        const last = groups[groups.length - 1];
+        if (
+            ex.group_id &&
+            last &&
+            last[last.length - 1].group_id === ex.group_id
+        ) {
+            last.push(ex);
+        } else {
+            groups.push([ex]);
+        }
+    }
+    return groups;
+}
+
+/** Rótulo do bloco combinado conforme o número de exercícios agrupados. */
+export function comboGroupLabel(size: number): string {
+    if (size <= 2) return 'Bissérie';
+    if (size === 3) return 'Trissérie';
+    return 'Superssérie';
 }
 
 export function makeDefaultMicrocycles(durationWeeks: number): LocalMicrocycle[] {
@@ -223,6 +259,7 @@ export function responseToLocal(trainings: TrainingResponse[]): LocalTraining[] 
                 timed,
                 video_url: ex.video_url ?? '',
                 video_thumb: ex.video_thumb ?? '',
+                group_id: ex.group_id,
             };
         }),
     }));
@@ -307,6 +344,7 @@ export function localToMesoRequest(
                     video_url: ex.video_url,
                     video_thumb: ex.video_thumb,
                     timed,
+                    group_id: ex.group_id,
                 };
             }),
         })),
@@ -350,6 +388,7 @@ export function mesoToRequest(meso: MesocycleResponse): MesocycleRequest {
                 tempo_seconds: ex.tempo_seconds,
                 rpe_target: ex.rpe_target,
                 muscle_group: ex.muscle_group,
+                group_id: ex.group_id,
             })),
         })),
     };

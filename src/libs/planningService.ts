@@ -20,6 +20,10 @@ export interface ExerciseResponse {
     tempo_seconds?: number;
     rpe_target?: number;
     muscle_group?: string;
+    /** Agrupa exercícios executados em sequência, sem descanso entre si
+     * (bissérie/trissérie/superssérie). Exercícios com o mesmo group_id dentro
+     * do mesmo treino formam um bloco — a ordem de execução é a ordem em `exercises`. */
+    group_id?: string;
 }
 
 export interface TrainingResponse {
@@ -119,6 +123,7 @@ export interface ExerciseRequest {
     tempo_seconds?: number;
     rpe_target?: number;
     muscle_group?: string;
+    group_id?: string;
 }
 
 export interface TrainingRequest {

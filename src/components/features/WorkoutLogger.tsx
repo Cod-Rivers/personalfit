@@ -48,6 +48,10 @@ interface WorkoutLoggerProps {
 interface ExerciseLog {
     exerciseId: string;
     name: string;
+    /** Bissérie/trissérie/superssérie a que este exercício pertence no
+     * plano (ExerciseResponse.group_id) — repassado ao registrar o treino
+     * para o histórico poder exibir as séries executadas agrupadas. */
+    groupId?: string;
     plannedSeries: number[];
     series: Array<{
         seriesNum: number;
@@ -84,6 +88,7 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
             return {
                 exerciseId: ex.id,
                 name: ex.name,
+                groupId: ex.group_id,
                 plannedSeries: ex.series,
                 series: ex.series.map((_, i) => ({
                     seriesNum: i + 1,
@@ -137,6 +142,7 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                         load_kg: s.loadKg,
                         rpe: s.rpe,
                         notes: s.notes,
+                        group_id: ex.groupId,
                     })),
                 ),
                 notes,

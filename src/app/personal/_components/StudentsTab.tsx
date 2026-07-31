@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AvatarUpload from '@/components/molecules/AvatarUpload';
 import Modal from '@/components/system/Modal';
@@ -14,6 +15,7 @@ interface Props {
 
 export default function StudentsTab({ state }: Props) {
     const router = useRouter();
+    const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
     const {
         students,
         loading,
@@ -66,145 +68,190 @@ export default function StudentsTab({ state }: Props) {
                 <div className={s.studentList}>
                     {students.map((st) => (
                         <div key={st.id} className={s.studentCard}>
-                            <AvatarUpload
-                                current={st.avatar}
-                                name={st.name}
-                                size={48}
-                                editable={false}
-                            />
-                            <div className={s.studentInfo}>
-                                <p className={s.studentName}>
-                                    {st.name}
-                                    <span
-                                        className={
-                                            st.link_status === 'active'
-                                                ? s.badgeActive
+                            <div className={s.studentCardHead}>
+                                <AvatarUpload
+                                    current={st.avatar}
+                                    name={st.name}
+                                    size={48}
+                                    editable={false}
+                                />
+                                <div className={s.studentInfo}>
+                                    <p className={s.studentName}>
+                                        {st.name}
+                                        <span
+                                            className={
+                                                st.link_status === 'active'
+                                                    ? s.badgeActive
+                                                    : st.link_status ===
+                                                        'pending'
+                                                      ? s.badgeLinkPending
+                                                      : s.badgeInactive
+                                            }
+                                        >
+                                            {st.link_status === 'active'
+                                                ? 'Ativo'
                                                 : st.link_status === 'pending'
-                                                  ? s.badgeLinkPending
-                                                  : s.badgeInactive
-                                        }
-                                    >
-                                        {st.link_status === 'active'
-                                            ? 'Ativo'
-                                            : st.link_status === 'pending'
-                                              ? 'Aguardando confirmação'
-                                              : 'Inativo'}
-                                    </span>
-                                </p>
-                                <p className={s.studentMeta}>
-                                    {st.email} · {st.cpf}
-                                    {st.phone ? ` · ${st.phone}` : ''}
-                                </p>
+                                                  ? 'Aguardando confirmação'
+                                                  : 'Inativo'}
+                                        </span>
+                                    </p>
+                                    <p className={s.studentMeta}>
+                                        {st.email} · {st.cpf}
+                                        {st.phone ? ` · ${st.phone}` : ''}
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setMenuOpenId((cur) =>
+                                            cur === st.id ? null : st.id,
+                                        )
+                                    }
+                                    className={s.kebabBtn}
+                                    aria-haspopup="true"
+                                    aria-expanded={menuOpenId === st.id}
+                                    aria-label="Mais opções"
+                                >
+                                    ⋯
+                                </button>
+                                {menuOpenId === st.id && (
+                                    <>
+                                        <button
+                                            type="button"
+                                            className={s.kebabOverlay}
+                                            aria-label="Fechar menu"
+                                            onClick={() => setMenuOpenId(null)}
+                                        />
+                                        <div className={s.kebabMenu}>
+                                            <button
+                                                type="button"
+                                                className={s.kebabMenuItem}
+                                                disabled={
+                                                    toggleBusyId !== null ||
+                                                    st.link_status ===
+                                                        'pending'
+                                                }
+                                                onClick={() => {
+                                                    setMenuOpenId(null);
+                                                    if (
+                                                        st.link_status ===
+                                                        'active'
+                                                    ) {
+                                                        deactivate(st);
+                                                    } else {
+                                                        requestActivation(st);
+                                                    }
+                                                }}
+                                            >
+                                                {toggleBusyId === st.id
+                                                    ? 'Aguarde...'
+                                                    : st.link_status ===
+                                                        'active'
+                                                      ? 'Desativar aluno'
+                                                      : st.link_status ===
+                                                          'pending'
+                                                        ? 'Aguardando aluno...'
+                                                        : 'Ativar aluno'}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className={s.kebabMenuItem}
+                                                onClick={() => {
+                                                    setMenuOpenId(null);
+                                                    openUnlink(st);
+                                                }}
+                                            >
+                                                Desvincular
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
                             </div>
-                            <div className={s.studentActions}>
+
+                            <div className={s.studentCardBody}>
                                 <button
                                     onClick={() =>
                                         router.push(
                                             `/personal/aluno/${st.id}/treino`,
                                         )
                                     }
-                                    className={s.btnAction}
-                                    style={{
-                                        borderColor: '#f0a500',
-                                        color: '#f0a500',
-                                    }}
+                                    className={s.ctaPrimary}
                                 >
                                     👁️ Ver Treino
                                 </button>
-                                <button
-                                    onClick={() =>
-                                        router.push(
-                                            `/personal/aluno/${st.id}/periodizacao`,
-                                        )
-                                    }
-                                    className={s.btnAction}
-                                    style={{
-                                        borderColor: '#5bc0be',
-                                        color: '#5bc0be',
-                                    }}
-                                >
-                                    📋 Periodização
-                                </button>
-                                <button
-                                    onClick={() =>
-                                        router.push(
-                                            `/personal/aluno/${st.id}/plano-alimentar`,
-                                        )
-                                    }
-                                    className={s.btnAction}
-                                >
-                                    🍽️ Plano Alimentar
-                                </button>
-                                <button
-                                    onClick={() =>
-                                        router.push(
-                                            `/personal/aluno/${st.id}/evolucao`,
-                                        )
-                                    }
-                                    className={s.btnAction}
-                                >
-                                    📈 Evolução
-                                </button>
-                                <button
-                                    onClick={() =>
-                                        router.push(
-                                            `/personal/aluno/${st.id}/feedback`,
-                                        )
-                                    }
-                                    className={s.btnAction}
-                                    style={{
-                                        borderColor: '#8b5cf6',
-                                        color: '#8b5cf6',
-                                    }}
-                                >
-                                    💬 Feedback
-                                </button>
-                                <button
-                                    onClick={() =>
-                                        router.push(
-                                            `/personal/aluno/${st.id}/financeiro`,
-                                        )
-                                    }
-                                    className={s.btnAction}
-                                    style={{
-                                        borderColor: '#2e9e77',
-                                        color: '#2e9e77',
-                                    }}
-                                >
-                                    💰 Financeiro
-                                </button>
-                                <button
-                                    onClick={() =>
-                                        st.link_status === 'active'
-                                            ? deactivate(st)
-                                            : requestActivation(st)
-                                    }
-                                    className={s.btnAction}
-                                    disabled={
-                                        toggleBusyId !== null ||
-                                        st.link_status === 'pending'
-                                    }
-                                >
-                                    {toggleBusyId === st.id
-                                        ? 'Aguarde...'
-                                        : st.link_status === 'active'
-                                          ? 'Desativar'
-                                          : st.link_status === 'pending'
-                                            ? 'Aguardando aluno...'
-                                            : 'Ativar'}
-                                </button>
-                                <button
-                                    onClick={() => openEdit(st)}
-                                    className={s.btnAction}
-                                >
-                                    Editar
-                                </button>
-                                <button
-                                    onClick={() => openUnlink(st)}
-                                    className={s.btnDanger}
-                                >
-                                    Desvincular
-                                </button>
+
+                                <div className={s.actionsGrid}>
+                                    <button
+                                        onClick={() =>
+                                            router.push(
+                                                `/personal/aluno/${st.id}/periodizacao`,
+                                            )
+                                        }
+                                        className={s.gridAction}
+                                        style={{
+                                            borderColor: '#5bc0be',
+                                            color: '#5bc0be',
+                                        }}
+                                    >
+                                        📋 Periodização
+                                    </button>
+                                    <button
+                                        onClick={() =>
+                                            router.push(
+                                                `/personal/aluno/${st.id}/plano-alimentar`,
+                                            )
+                                        }
+                                        className={s.gridAction}
+                                    >
+                                        🍽️ Plano Alimentar
+                                    </button>
+                                    <button
+                                        onClick={() =>
+                                            router.push(
+                                                `/personal/aluno/${st.id}/evolucao`,
+                                            )
+                                        }
+                                        className={s.gridAction}
+                                    >
+                                        📈 Evolução
+                                    </button>
+                                    <button
+                                        onClick={() =>
+                                            router.push(
+                                                `/personal/aluno/${st.id}/financeiro`,
+                                            )
+                                        }
+                                        className={s.gridAction}
+                                        style={{
+                                            borderColor: '#2e9e77',
+                                            color: '#2e9e77',
+                                        }}
+                                    >
+                                        💰 Financeiro
+                                    </button>
+                                </div>
+
+                                <div className={s.footLinks}>
+                                    <button
+                                        type="button"
+                                        onClick={() => openEdit(st)}
+                                        className={s.footLink}
+                                    >
+                                        Editar
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            router.push(
+                                                `/personal/aluno/${st.id}/feedback`,
+                                            )
+                                        }
+                                        className={s.footLink}
+                                        style={{ color: '#8b5cf6' }}
+                                    >
+                                        💬 Feedback
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     ))}
