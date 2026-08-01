@@ -17,14 +17,20 @@ import {
     getCachedAnnotationNote,
     setCachedAnnotationNote,
 } from '@/libs/exerciseAnnotationService';
+import { LoadSuggestion } from '@/libs/loadSuggestion';
 
 interface ExerciseDetailCardProps {
     exercise: ExerciseLog;
     onClose?: () => void;
     /** Ajuste intrassessão de carga (%) sugerido pelo painel de autorregulação
-     * do microciclo (ver microcycleAutoregulation.ts). Some do card quando o
-     * treino não usa periodização (ex: fluxo legado /app/treino). */
+     * do microciclo (ver microcycleAutoregulation.ts). Usado como fallback
+     * simples (% sobre a carga prescrita) quando loadSuggestion não está
+     * disponível — ex: treino sem periodização (fluxo legado /app/treino). */
     loadAdjustPct?: number;
+    /** Sugestão completa do motor de carga (ver libs/loadSuggestion.ts),
+     * combinando prescrição do personal com o histórico do aluno. Tem
+     * prioridade sobre loadAdjustPct quando presente. */
+    loadSuggestion?: LoadSuggestion;
 }
 
 const getEmbedUrl = (url: string): string | null => {
@@ -62,6 +68,7 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
     exercise,
     onClose,
     loadAdjustPct,
+    loadSuggestion,
 }) => {
     // --- Estados ---
     const [timerValue, setTimerValue] = useState<number>(
@@ -303,14 +310,16 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
         }
     };
 
-    // Sugestão de carga do "Controle do Microciclo (Autorregulação)": aplica
-    // o ajuste intrassessão sobre a carga planejada do exercício e arredonda
-    // para o incremento de 0,5kg mais próximo (menor granularidade prática de anilha).
+    // Sugestão de carga do "Controle do Microciclo (Autorregulação)": prefere
+    // o motor completo (loadSuggestion, que combina prescrição + histórico do
+    // aluno) e cai para o ajuste simples sobre a carga planejada quando ele
+    // não está disponível (ex: treino sem periodização).
     const recommendedWeight = useMemo(() => {
+        if (loadSuggestion) return loadSuggestion.suggestedKg;
         if (!exercise.plannedWeight || loadAdjustPct == null) return null;
         const adjusted = exercise.plannedWeight * (1 + loadAdjustPct / 100);
         return Math.round(adjusted * 2) / 2;
-    }, [exercise.plannedWeight, loadAdjustPct]);
+    }, [loadSuggestion, exercise.plannedWeight, loadAdjustPct]);
 
     const handleApplyRecommendedWeight = () => {
         if (recommendedWeight == null) return;
@@ -503,12 +512,28 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                                 type="button"
                                                 className={styles.recommendedWeightChip}
                                                 onClick={handleApplyRecommendedWeight}
-                                                title="Sugestão baseada no Controle do Microciclo (Autorregulação)"
+                                                title={
+                                                    loadSuggestion?.reason ??
+                                                    'Sugestão baseada no Controle do Microciclo (Autorregulação)'
+                                                }
                                             >
                                                 Sugerido: {recommendedWeight} kg
                                             </button>
                                         )}
                                         </div>
+                                        {loadSuggestion?.abovePrescribed && (
+                                            <p
+                                                className="small"
+                                                style={{
+                                                    color: 'var(--coral, #ff6b6b)',
+                                                    marginTop: '0.25rem',
+                                                }}
+                                            >
+                                                Acima da carga prescrita pelo
+                                                personal — considere revisar
+                                                com ele.
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                                 <div className={styles.detailRow}>

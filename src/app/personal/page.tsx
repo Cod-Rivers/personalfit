@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { usePersonalStudents } from '@/hooks/usePersonalStudents';
 import s from './personal.module.css';
 import BrandingSettings from '@/components/organism/BrandingSettings';
+import AutoregulationPolicySettings from '@/components/organism/AutoregulationPolicySettings';
 import MyAdvertisements from '@/components/organism/MyAdvertisements';
 import StudentsTab from './_components/StudentsTab';
 import ExercisesTab from './_components/ExercisesTab';
@@ -24,6 +25,7 @@ type Tab =
     | 'retention'
     | 'exercises'
     | 'branding'
+    | 'autoregulation'
     | 'ads'
     | 'ciclos'
     | '_publicTemplates';
@@ -110,6 +112,14 @@ export default function PersonalDashboard() {
                     >
                         🎨 Personalização
                     </button>
+                    <button
+                        className={
+                            tab === 'autoregulation' ? s.tabActive : s.tab
+                        }
+                        onClick={() => setTab('autoregulation')}
+                    >
+                        ⚙️ Autorregulação
+                    </button>
                     {planType === 'pro' && (
                         <button
                             className={tab === 'ads' ? s.tabActive : s.tab}
@@ -172,6 +182,8 @@ export default function PersonalDashboard() {
                 {tab === 'branding' && (
                     <BrandingSettings planType={planType} />
                 )}
+
+                {tab === 'autoregulation' && <AutoregulationPolicySettings />}
 
                 {tab === 'ads' && planType === 'pro' && <MyAdvertisements />}
 

@@ -22,12 +22,23 @@ import SyncPendingBadge from '../../../../components/features/SyncPendingBadge';
 import styles from './TrainingPage.module.css';
 import ImageComponent from 'next/image';
 import weightIcon from './../../../../../public/assets/icons/weight-icon.png';
-import { getNewWorkoutLogs, NewWorkoutLogResponse } from '@/libs/workoutLogService';
+import {
+    getNewWorkoutLogs,
+    getMyWorkoutLogsInRange,
+    NewWorkoutLogResponse,
+} from '@/libs/workoutLogService';
 import { computeAutoregulationDecision } from '@/libs/microcycleAutoregulation';
 import { getOfflineMacrocycle } from '@/libs/offline/downloadManager';
 import HelpTooltip from '@/components/atoms/HelpTooltip';
 import { getMicrocycleHelpTopic } from '@/libs/microcycleHelpContent';
 import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
+import { resolveAutoregulationPolicy } from '@/libs/autoregulationPolicy';
+import { getEffectiveAutoregulationPolicy } from '@/libs/autoregulationPolicyService';
+import {
+    computeLoadSuggestion,
+    LoadHistoryEntry,
+    LoadSuggestion,
+} from '@/libs/loadSuggestion';
 
 interface TrainingPageParams {
     id: string; // macrocycle ID
@@ -123,6 +134,12 @@ export default function MeusTreinosExercisesPage({
     const [studentId, setStudentId] = useState('');
     const [microLogsCount, setMicroLogsCount] = useState(0);
     const [previousMicroAvgRPE, setPreviousMicroAvgRPE] = useState(7);
+    const [autoregulationOverrides, setAutoregulationOverrides] = useState<
+        Parameters<typeof resolveAutoregulationPolicy>[0]['personal']
+    >(null);
+    const [loadHistoryByExercise, setLoadHistoryByExercise] = useState<
+        Record<string, LoadHistoryEntry[]>
+    >({});
 
     const [readinessScore, setReadinessScore] = useState<number>(6);
     const [sleepHours, setSleepHours] = useState<number>(7);
@@ -242,6 +259,57 @@ export default function MeusTreinosExercisesPage({
         })();
     }, [macrocycleId, trainingId]);
 
+    // Parâmetros de autorregulação do personal (quando definidos) + histórico
+    // de cargas executadas nos últimos 90 dias, usados pelo motor de
+    // sugestão de carga (libs/loadSuggestion.ts). Independente do carregamento
+    // do plano — falha aqui não deve bloquear a tela de exercícios.
+    useEffect(() => {
+        let cancelled = false;
+
+        getEffectiveAutoregulationPolicy()
+            .then((overrides) => {
+                if (!cancelled) setAutoregulationOverrides(overrides);
+            })
+            .catch(() => {
+                // Sem policy customizada (offline ou aluno sem personal vinculado):
+                // segue com o padrão do app.
+            });
+
+        const to = new Date();
+        const from = new Date();
+        from.setDate(from.getDate() - 90);
+        const toISO = to.toISOString().split('T')[0];
+        const fromISO = from.toISOString().split('T')[0];
+
+        getMyWorkoutLogsInRange(fromISO, toISO)
+            .then((logs) => {
+                if (cancelled) return;
+                const byExercise: Record<string, LoadHistoryEntry[]> = {};
+                for (const log of logs) {
+                    if (log.status !== 'completed') continue;
+                    const date = log.completed_date ?? log.planned_date;
+                    for (const ep of log.exercises) {
+                        if (!ep.exercise_id) continue;
+                        (byExercise[ep.exercise_id] ??= []).push({
+                            date,
+                            loadKg: ep.load_kg,
+                            reps: ep.reps,
+                            rpe: ep.rpe,
+                        });
+                    }
+                }
+                setLoadHistoryByExercise(byExercise);
+            })
+            .catch(() => {
+                // Sem histórico (offline ou sem logs ainda): sugestão de carga
+                // cai para "só prescrição" ou "sem base", conforme o caso.
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
     const handleExerciseClick = (exercise: ExerciseLog) => {
         setSelectedExercise(exercise);
     };
@@ -249,6 +317,17 @@ export default function MeusTreinosExercisesPage({
     const handleCloseDetailCard = () => {
         setSelectedExercise(null);
     };
+
+    // Resolve os parâmetros de autorregulação: config do personal (quando
+    // definida) sobrepondo o padrão do app, campo a campo (ver
+    // libs/autoregulationPolicy.ts). Ainda não há níveis de macro/microciclo
+    // persistidos, então o único override possível hoje é o do personal.
+    const policy = useMemo(
+        () =>
+            resolveAutoregulationPolicy({ personal: autoregulationOverrides })
+                .policy,
+        [autoregulationOverrides],
+    );
 
     const decision = useMemo(
         () =>
@@ -263,6 +342,7 @@ export default function MeusTreinosExercisesPage({
                 plannedVolumeAdjustPct: currentMicro?.volume_adjust_pct,
                 plannedIntensityAdjustPct: currentMicro?.intensity_adjust_pct,
                 consecutiveHighFatigueDays: highFatigueDays,
+                policy,
             }),
         [
             readinessScore,
@@ -273,8 +353,39 @@ export default function MeusTreinosExercisesPage({
             hrvDeltaMs,
             currentMicro,
             highFatigueDays,
+            policy,
         ],
     );
+
+    // Sugestão de carga por exercício: combina prescrição do personal com o
+    // histórico executado pelo aluno e aplica por cima o ajuste do dia
+    // decidido acima (ver libs/loadSuggestion.ts). Mapeado por exercise.id
+    // para alimentar tanto a lista de exercícios quanto o card de detalhe.
+    const loadSuggestions = useMemo(() => {
+        const targetRPE =
+            currentMicro?.target_rpe != null
+                ? currentMicro.target_rpe +
+                  (decision.zone === 'fadiga'
+                      ? -1
+                      : decision.zone === 'supercompensacao'
+                        ? 0.5
+                        : 0)
+                : 7;
+        const isDeload = Boolean(currentMicro?.is_deload) || decision.triggerDeload;
+
+        const map: Record<string, LoadSuggestion> = {};
+        for (const exercise of exercises) {
+            map[exercise.id] = computeLoadSuggestion({
+                prescribedKg: exercise.plannedWeight,
+                history: loadHistoryByExercise[exercise.id] ?? [],
+                targetRPE,
+                autoregulationAdjustPct: decision.intraSessionLoadAdjustPct,
+                isDeload,
+                policy,
+            });
+        }
+        return map;
+    }, [exercises, loadHistoryByExercise, currentMicro, decision, policy]);
 
     if (isLoading) {
         return <div className="p-6 text-center">Carregando exercícios...</div>;
@@ -573,7 +684,9 @@ export default function MeusTreinosExercisesPage({
                 </div>
                 {exercises.length > 0 ? (
                     <ul className={`${styles.exerciseListContainer} space-y-3`}>
-                        {exercises.map((exercise) => (
+                        {exercises.map((exercise) => {
+                            const suggestion = loadSuggestions[exercise.id];
+                            return (
                             <li key={exercise.id}>
                                 <button
                                     onClick={() =>
@@ -591,14 +704,47 @@ export default function MeusTreinosExercisesPage({
                                             }
                                             style={{ marginRight: 16 }}
                                         />
-                                        <span
-                                            className="text-xl font-semibold flex-grow"
-                                            style={{
-                                                color: 'var(--text-primary)',
-                                            }}
-                                        >
-                                            {exercise.name}
-                                        </span>
+                                        <div className="flex-grow">
+                                            <span
+                                                className="text-xl font-semibold"
+                                                style={{
+                                                    color: 'var(--text-primary)',
+                                                    display: 'block',
+                                                }}
+                                            >
+                                                {exercise.name}
+                                            </span>
+                                            {suggestion?.suggestedKg != null ? (
+                                                <span
+                                                    className="small"
+                                                    style={{
+                                                        color: suggestion.abovePrescribed
+                                                            ? 'var(--coral, #ff6b6b)'
+                                                            : 'var(--mint, #3dffd0)',
+                                                    }}
+                                                    title={suggestion.reason}
+                                                >
+                                                    Sugerido hoje:{' '}
+                                                    {suggestion.suggestedKg} kg
+                                                    {suggestion.source === 'ambos'
+                                                        ? ' · base: você + personal'
+                                                        : suggestion.source === 'aluno'
+                                                          ? ' · base: seu histórico'
+                                                          : ' · base: personal'}
+                                                </span>
+                                            ) : (
+                                                exercise.plannedWeight == null && (
+                                                    <span
+                                                        className="small"
+                                                        style={{
+                                                            color: 'var(--text-muted)',
+                                                        }}
+                                                    >
+                                                        Sem carga registrada ainda
+                                                    </span>
+                                                )
+                                            )}
+                                        </div>
                                     </div>
                                     <svg
                                         xmlns="http://www.w3.org/2000/svg"
@@ -617,7 +763,8 @@ export default function MeusTreinosExercisesPage({
                                     </svg>
                                 </button>
                             </li>
-                        ))}
+                            );
+                        })}
                     </ul>
                 ) : (
                     <div className="text-center py-12">
@@ -641,6 +788,7 @@ export default function MeusTreinosExercisesPage({
                         exercise={selectedExercise}
                         onClose={handleCloseDetailCard}
                         loadAdjustPct={decision.intraSessionLoadAdjustPct}
+                        loadSuggestion={loadSuggestions[selectedExercise.id]}
                     />
                 )}
                 <div className={styles.finalizarContainer}>

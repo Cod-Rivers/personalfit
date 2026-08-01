@@ -1,3 +1,8 @@
+import {
+    AutoregulationPolicy,
+    DEFAULT_AUTOREGULATION_POLICY,
+} from './autoregulationPolicy';
+
 export interface AutoregulationInput {
     readinessScore: number; // 1-10
     sleepHours: number;
@@ -9,6 +14,10 @@ export interface AutoregulationInput {
     plannedVolumeAdjustPct?: number;
     plannedIntensityAdjustPct?: number;
     consecutiveHighFatigueDays?: number;
+    /** Parâmetros de zona/ajuste/deload resolvidos (personal > padrão do
+     * app). Omitir usa o padrão do app inteiro — mantém o comportamento
+     * histórico desta função para quem ainda não passa policy. */
+    policy?: AutoregulationPolicy;
 }
 
 export interface AutoregulationDecision {
@@ -30,6 +39,7 @@ const clamp = (value: number, min: number, max: number): number =>
 export function computeAutoregulationDecision(
     input: AutoregulationInput,
 ): AutoregulationDecision {
+    const policy = input.policy ?? DEFAULT_AUTOREGULATION_POLICY;
     const readiness = clamp(input.readinessScore, 1, 10);
     const sleep = clamp(input.sleepHours, 0, 12);
     const stress = clamp(input.stressScore, 1, 10);
@@ -69,16 +79,19 @@ export function computeAutoregulationDecision(
     let intensityAdjustPct = baseIntensity;
     let intraSessionLoadAdjustPct = 0;
 
-    if (balance >= 20 && prevRPE <= targetRPE) {
+    if (balance >= policy.superBalanceThreshold && prevRPE <= targetRPE) {
         zone = 'supercompensacao';
-        volumeAdjustPct = clamp(baseVolume + 8, -100, 100);
-        intensityAdjustPct = clamp(baseIntensity + 3, -100, 100);
-        intraSessionLoadAdjustPct = 3;
-    } else if (balance <= -12 || (prevRPE >= targetRPE + 2 && hrvDelta <= 0)) {
+        volumeAdjustPct = clamp(baseVolume + policy.superVolumePct, -100, 100);
+        intensityAdjustPct = clamp(baseIntensity + policy.superIntensityPct, -100, 100);
+        intraSessionLoadAdjustPct = policy.superIntraSessionPct;
+    } else if (
+        balance <= policy.fatigueBalanceThreshold ||
+        (prevRPE >= targetRPE + 2 && hrvDelta <= 0)
+    ) {
         zone = 'fadiga';
-        volumeAdjustPct = clamp(baseVolume - 20, -100, 100);
-        intensityAdjustPct = clamp(baseIntensity - 7, -100, 100);
-        intraSessionLoadAdjustPct = -7;
+        volumeAdjustPct = clamp(baseVolume + policy.fatigueVolumePct, -100, 100);
+        intensityAdjustPct = clamp(baseIntensity + policy.fatigueIntensityPct, -100, 100);
+        intraSessionLoadAdjustPct = policy.fatigueIntraSessionPct;
     } else {
         zone = 'manutencao';
         intraSessionLoadAdjustPct = 0;
@@ -86,7 +99,9 @@ export function computeAutoregulationDecision(
 
     const highFatigueDays = input.consecutiveHighFatigueDays ?? 0;
     const triggerDeload =
-        zone === 'fadiga' && (highFatigueDays >= 2 || prevRPE >= 9);
+        zone === 'fadiga' &&
+        (highFatigueDays >= policy.deloadConsecutiveDays ||
+            prevRPE >= policy.deloadRpeTrigger);
 
     let message = 'Manter plano do microciclo.';
     if (zone === 'supercompensacao') {
