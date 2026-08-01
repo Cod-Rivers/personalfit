@@ -17,6 +17,7 @@ import {
     SIMPLE_MODE_DEFAULTS,
     genId,
     makeDefaultMicrocycles,
+    nextFreeWeekday,
     responseMicroToLocal,
     responseToLocal,
     syncMicrocyclesByDuration,
@@ -161,26 +162,13 @@ export default function MesocycleFormModal({
     );
 
     /* ── Training CRUD ── */
+    // No modo por dia da semana o dia faz o papel do A/B/C: cada treino novo
+    // já nasce rotulado (Seg, Ter…), senão todas as abas ficariam iguais até
+    // o personal escolher o dia uma a uma.
+    const autoWeekday = Boolean(simpleMode) && dayLabelStyle !== 'number';
+
     const addTraining = useCallback(() => {
         setLocalTrainings((prev) => {
-            const usedRefs = prev.map((t) => t.reference);
-            const nextRef =
-                NEXT_REF.find((r) => !usedRefs.includes(r)) ??
-                String(prev.length + 1);
-            return [...prev, { _id: genId(), reference: nextRef, exercises: [] }];
-        });
-    }, []);
-
-    const removeTraining = useCallback(
-        (tid: string) =>
-            setLocalTrainings((prev) => prev.filter((t) => t._id !== tid)),
-        [],
-    );
-
-    const duplicateTraining = useCallback((tid: string) => {
-        setLocalTrainings((prev) => {
-            const source = prev.find((t) => t._id === tid);
-            if (!source) return prev;
             const usedRefs = prev.map((t) => t.reference);
             const nextRef =
                 NEXT_REF.find((r) => !usedRefs.includes(r)) ??
@@ -190,15 +178,50 @@ export default function MesocycleFormModal({
                 {
                     _id: genId(),
                     reference: nextRef,
-                    weekday: source.weekday,
-                    exercises: source.exercises.map((ex) => ({
-                        ...ex,
-                        _id: genId(),
-                    })),
+                    weekday: autoWeekday
+                        ? nextFreeWeekday(prev.map((t) => t.weekday))
+                        : undefined,
+                    exercises: [],
                 },
             ];
         });
-    }, []);
+    }, [autoWeekday]);
+
+    const removeTraining = useCallback(
+        (tid: string) =>
+            setLocalTrainings((prev) => prev.filter((t) => t._id !== tid)),
+        [],
+    );
+
+    const duplicateTraining = useCallback(
+        (tid: string) => {
+            setLocalTrainings((prev) => {
+                const source = prev.find((t) => t._id === tid);
+                if (!source) return prev;
+                const usedRefs = prev.map((t) => t.reference);
+                const nextRef =
+                    NEXT_REF.find((r) => !usedRefs.includes(r)) ??
+                    String(prev.length + 1);
+                return [
+                    ...prev,
+                    {
+                        _id: genId(),
+                        reference: nextRef,
+                        // A cópia vai para o próximo dia livre — repetir o dia
+                        // da origem criaria duas abas com o mesmo rótulo.
+                        weekday: autoWeekday
+                            ? nextFreeWeekday(prev.map((t) => t.weekday))
+                            : source.weekday,
+                        exercises: source.exercises.map((ex) => ({
+                            ...ex,
+                            _id: genId(),
+                        })),
+                    },
+                ];
+            });
+        },
+        [autoWeekday],
+    );
 
     const updateTrainingRef = useCallback(
         (tid: string, ref: string) =>
@@ -441,21 +464,12 @@ export default function MesocycleFormModal({
                     {!simpleMode && (
                         <>
                             {/* ── Phase info ── */}
-                            <div style={{ marginBottom: 14 }}>
-                                <label
-                                    style={{
-                                        display: 'block',
-                                        fontSize: '0.8rem',
-                                        color: 'var(--text-muted)',
-                                        marginBottom: 4,
-                                    }}
-                                >
-                                    Nome *
-                                </label>
+                            <div className={s.formGroup}>
+                                <label className={s.formLabel}>Nome *</label>
                                 <input
                                     {...register('name')}
                                     placeholder="Ex: Fase de Hipertrofia"
-                                    className="form-control"
+                                    className={s.formInput}
                                 />
                                 {errors.name && (
                                     <small className="text-danger">
@@ -464,27 +478,14 @@ export default function MesocycleFormModal({
                                 )}
                             </div>
 
-                            <div
-                                style={{
-                                    display: 'flex',
-                                    gap: 12,
-                                    marginBottom: 14,
-                                }}
-                            >
-                                <div style={{ flex: 1 }}>
-                                    <label
-                                        style={{
-                                            display: 'block',
-                                            fontSize: '0.8rem',
-                                            color: 'var(--text-muted)',
-                                            marginBottom: 4,
-                                        }}
-                                    >
+                            <div className={s.formRow}>
+                                <div className={s.formGroup}>
+                                    <label className={s.formLabel}>
                                         Fase *
                                     </label>
                                     <select
                                         {...register('phase')}
-                                        className="form-control"
+                                        className={s.formSelect}
                                     >
                                         <option value="">Selecione</option>
                                         <optgroup label="Clássica (Matveyev)">
@@ -508,15 +509,8 @@ export default function MesocycleFormModal({
                                         </small>
                                     )}
                                 </div>
-                                <div style={{ flex: 1 }}>
-                                    <label
-                                        style={{
-                                            display: 'block',
-                                            fontSize: '0.8rem',
-                                            color: 'var(--text-muted)',
-                                            marginBottom: 4,
-                                        }}
-                                    >
+                                <div className={s.formGroup}>
+                                    <label className={s.formLabel}>
                                         Duração{' '}
                                         <span style={{ fontWeight: 400 }}>
                                             (semanas = microciclos)
@@ -524,7 +518,14 @@ export default function MesocycleFormModal({
                                         *
                                     </label>
                                     {/* Presets rápidos */}
-                                    <div className="d-flex gap-1 mb-1 flex-wrap">
+                                    <div
+                                        style={{
+                                            display: 'flex',
+                                            gap: 6,
+                                            marginBottom: 6,
+                                            flexWrap: 'wrap',
+                                        }}
+                                    >
                                         {[3, 4, 5, 6].map((w) => {
                                             const current =
                                                 watch('duration_weeks');
@@ -543,23 +544,11 @@ export default function MesocycleFormModal({
                                                             },
                                                         )
                                                     }
-                                                    style={{
-                                                        padding: '3px 11px',
-                                                        borderRadius: 20,
-                                                        border: active
-                                                            ? '1.5px solid var(--mint, #2ecc71)'
-                                                            : '1px solid var(--border-subtle)',
-                                                        background: active
-                                                            ? 'var(--mint, #2ecc71)'
-                                                            : 'transparent',
-                                                        color: active
-                                                            ? '#000'
-                                                            : 'var(--text-muted)',
-                                                        fontSize: '0.78rem',
-                                                        fontWeight: 600,
-                                                        cursor: 'pointer',
-                                                        whiteSpace: 'nowrap',
-                                                    }}
+                                                    className={
+                                                        active
+                                                            ? s.presetChipActive
+                                                            : s.presetChip
+                                                    }
                                                 >
                                                     {w} sem
                                                     {w === 4 ? ' ⭐' : ''}
@@ -574,7 +563,7 @@ export default function MesocycleFormModal({
                                         type="number"
                                         min={1}
                                         max={52}
-                                        className="form-control"
+                                        className={s.formInput}
                                         placeholder="Outra duração..."
                                     />
                                     <small
@@ -593,20 +582,13 @@ export default function MesocycleFormModal({
                                 </div>
                             </div>
 
-                            <div style={{ marginBottom: 20 }}>
-                                <label
-                                    style={{
-                                        display: 'block',
-                                        fontSize: '0.8rem',
-                                        color: 'var(--text-muted)',
-                                        marginBottom: 4,
-                                    }}
-                                >
+                            <div className={s.formGroup}>
+                                <label className={s.formLabel}>
                                     Metodologia *
                                 </label>
                                 <select
                                     {...register('methodology')}
-                                    className="form-control"
+                                    className={s.formSelect}
                                 >
                                     <option value="">Selecione</option>
                                     {METHODOLOGIES.map((m) => (
@@ -645,72 +627,37 @@ export default function MesocycleFormModal({
                         onRemoveLastFromGroup={removeLastFromGroup}
                     />
 
-                    <div
-                        style={{
-                            border: '1px solid var(--border-subtle)',
-                            borderRadius: 8,
-                            marginBottom: 18,
-                            overflow: 'hidden',
-                        }}
-                    >
+                    <div className={s.collapsibleCard}>
                         <button
                             type="button"
                             onClick={() => setAdjustmentsOpen((v) => !v)}
                             aria-expanded={adjustmentsOpen}
-                            style={{
-                                width: '100%',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                gap: 10,
-                                padding: '10px 12px',
-                                background:
-                                    'var(--surface-2, rgba(255,255,255,0.04))',
-                                border: 'none',
-                                cursor: 'pointer',
-                                textAlign: 'left',
-                            }}
+                            className={s.collapsibleToggle}
                         >
                             <span>
-                                <span
-                                    style={{
-                                        display: 'block',
-                                        fontSize: '0.88rem',
-                                        fontWeight: 700,
-                                    }}
-                                >
+                                <span className={s.collapsibleTitle}>
                                     {simpleMode
                                         ? 'Ajustes desta semana'
                                         : 'Ajustes semanais'}
                                 </span>
-                                <span
-                                    style={{
-                                        display: 'block',
-                                        fontSize: '0.74rem',
-                                        color: 'var(--text-muted)',
-                                        marginTop: 2,
-                                    }}
-                                >
+                                <span className={s.collapsibleSummary}>
                                     {adjustmentsSummary}
                                 </span>
                             </span>
                             <span
                                 aria-hidden
-                                style={{
-                                    transform: adjustmentsOpen
-                                        ? 'rotate(180deg)'
-                                        : 'none',
-                                    transition: 'transform 0.15s',
-                                    color: 'var(--text-muted)',
-                                    flexShrink: 0,
-                                }}
+                                className={
+                                    adjustmentsOpen
+                                        ? s.collapsibleChevronOpen
+                                        : s.collapsibleChevron
+                                }
                             >
                                 ▾
                             </span>
                         </button>
 
                         {adjustmentsOpen && (
-                            <div style={{ padding: 12 }}>
+                            <div className={s.collapsibleBody}>
                                 {suggestDeloadWarning && (
                                     <div
                                         className="alert alert-warning py-2 mb-3"

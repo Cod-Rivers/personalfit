@@ -57,6 +57,18 @@ export function weekdayLabel(weekday?: number): string | undefined {
     return WEEKDAYS.find((w) => w.value === weekday)?.label;
 }
 
+/**
+ * Próximo dia da semana ainda livre, na ordem de exibição (segunda → domingo).
+ * É o equivalente de NEXT_REF (A, B, C…) para o modo por dia da semana: cada
+ * treino novo já nasce com um rótulo próprio em vez de todos ficarem sem dia.
+ * Retorna undefined quando os 7 dias já estão ocupados.
+ */
+export function nextFreeWeekday(
+    used: (number | undefined)[],
+): number | undefined {
+    return WEEKDAYS.find((w) => !used.includes(w.value))?.value;
+}
+
 // Valores fixos usados para o mesociclo único e oculto do modo simples —
 // o personal não vê/edita esses campos nesse modo.
 export const SIMPLE_MODE_DEFAULTS: MesoPhaseFormData = {

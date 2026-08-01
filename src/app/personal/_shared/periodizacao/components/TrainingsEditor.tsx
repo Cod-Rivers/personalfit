@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import type { ExerciseLibraryItem } from '@/libs/planningService';
 import {
     WEEKDAYS,
@@ -45,6 +45,34 @@ interface Props {
     onRemoveLastFromGroup?: (tid: string, eid: string) => void;
 }
 
+/** Rótulo curto da aba. Os três modos caem no mesmo fallback (`T1`, `T2`…)
+ * quando não há rótulo próprio, para que nenhuma aba fique sem identidade
+ * (antes, todo treino sem dia definido virava "Novo" e ficava indistinguível). */
+function trainingTabLabel(
+    t: LocalTraining,
+    index: number,
+    simpleMode?: boolean,
+    isNumbered?: boolean,
+): string {
+    if (isNumbered) return `T${index + 1}`;
+    if (simpleMode)
+        return weekdayLabel(t.weekday)?.slice(0, 3) ?? `T${index + 1}`;
+    return t.reference || `T${index + 1}`;
+}
+
+/** Rótulo por extenso — usado no title/aria-label da aba, igual nos 3 modos. */
+function trainingFullLabel(
+    t: LocalTraining,
+    index: number,
+    simpleMode?: boolean,
+    isNumbered?: boolean,
+): string {
+    if (isNumbered) return `Treino ${index + 1}`;
+    if (simpleMode)
+        return weekdayLabel(t.weekday) ?? `Treino ${index + 1} (sem dia)`;
+    return `Treino ${t.reference || index + 1}`;
+}
+
 export default function TrainingsEditor({
     trainings,
     onAddTraining,
@@ -66,25 +94,32 @@ export default function TrainingsEditor({
     onRemoveLastFromGroup,
 }: Props) {
     const isNumbered = simpleMode && dayLabelStyle === 'number';
+
+    // Um treino por vez em foco — evita ter que rolar por A, B, C, D (ou os 7
+    // dias da semana) inteiros abertos ao mesmo tempo. Sempre que o treino em
+    // foco deixa de existir (removido, ou ainda não há nenhum), cai para o
+    // último da lista — cobre criação (+ Treino) e remoção numa só regra.
+    const [activeId, setActiveId] = useState<string | null>(
+        trainings[0]?._id ?? null,
+    );
+    useEffect(() => {
+        if (trainings.length === 0) {
+            if (activeId !== null) setActiveId(null);
+            return;
+        }
+        if (!trainings.some((t) => t._id === activeId)) {
+            setActiveId(trainings[trainings.length - 1]._id);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [trainings]);
+
+    const active = trainings.find((t) => t._id === activeId) ?? null;
+    const activeIndex = active ? trainings.indexOf(active) : -1;
+
     return (
-        <div
-            style={{
-                borderTop: '1px solid var(--border-subtle)',
-                paddingTop: 20,
-                marginBottom: 20,
-            }}
-        >
-            <div
-                style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: 12,
-                }}
-            >
-                <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600 }}>
-                    Treinos desta fase
-                </p>
+        <div className={s.trainingsSection}>
+            <div className={s.sectionHeaderRow}>
+                <p>Treinos desta fase</p>
                 <button
                     type="button"
                     className={s.btnSmall}
@@ -95,56 +130,62 @@ export default function TrainingsEditor({
             </div>
 
             {trainings.length === 0 && (
-                <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                <p className={s.emptyHint}>
                     Nenhum treino adicionado. Use &quot;+ Treino&quot; para
                     adicionar.
                 </p>
             )}
 
-            {trainings.map((t, index) => (
-                <div
-                    key={t._id}
-                    style={{
-                        background: 'var(--surface-2, rgba(255,255,255,0.04))',
-                        border: '1px solid var(--border-subtle)',
-                        borderRadius: 8,
-                        padding: '12px 14px',
-                        marginBottom: 12,
-                    }}
-                >
-                    {/* Training header */}
-                    <div
-                        style={{
-                            display: 'flex',
-                            gap: 8,
-                            alignItems: 'center',
-                            marginBottom: 10,
-                        }}
-                    >
-                        {isNumbered ? (
-                            <span
-                                style={{
-                                    width: 80,
-                                    textAlign: 'center',
-                                    fontWeight: 700,
-                                    fontSize: '0.85rem',
-                                }}
+            {trainings.length > 0 && (
+                <div className={s.dayChipRow}>
+                    {trainings.map((t, i) => {
+                        const full = trainingFullLabel(
+                            t,
+                            i,
+                            simpleMode,
+                            isNumbered,
+                        );
+                        return (
+                            <button
+                                key={t._id}
+                                type="button"
+                                className={
+                                    t._id === activeId
+                                        ? s.dayChipActive
+                                        : s.dayChip
+                                }
+                                title={full}
+                                aria-label={full}
+                                aria-pressed={t._id === activeId}
+                                onClick={() => setActiveId(t._id)}
                             >
-                                Treino {index + 1}
+                                {trainingTabLabel(t, i, simpleMode, isNumbered)}
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
+
+            {active && (
+                <div className={s.trainingCard}>
+                    {/* Cabeçalho: referência/dia da semana + ações do treino */}
+                    <div className={s.trainingCardHeader}>
+                        {isNumbered ? (
+                            <span className={s.refStatic}>
+                                Treino {activeIndex + 1}
                             </span>
                         ) : simpleMode ? (
                             <select
-                                value={t.weekday ?? ''}
+                                value={active.weekday ?? ''}
                                 onChange={(e) =>
                                     onUpdateTrainingWeekday?.(
-                                        t._id,
+                                        active._id,
                                         e.target.value === ''
                                             ? undefined
                                             : Number(e.target.value),
                                     )
                                 }
-                                className="form-control"
-                                style={{ width: 150, fontWeight: 700 }}
+                                className={s.weekdaySelectNarrow}
                             >
                                 <option value="">Sem dia definido</option>
                                 {WEEKDAYS.map((w) => (
@@ -155,39 +196,26 @@ export default function TrainingsEditor({
                             </select>
                         ) : (
                             <input
-                                value={t.reference}
+                                value={active.reference}
                                 onChange={(e) =>
-                                    onUpdateTrainingRef(t._id, e.target.value)
+                                    onUpdateTrainingRef(
+                                        active._id,
+                                        e.target.value,
+                                    )
                                 }
                                 placeholder="Ref (A, B…)"
-                                className="form-control"
-                                style={{
-                                    width: 80,
-                                    textAlign: 'center',
-                                    fontWeight: 700,
-                                }}
+                                className={s.refInput}
                             />
                         )}
-                        <span
-                            style={{
-                                fontSize: '0.82rem',
-                                color: 'var(--text-muted)',
-                                flex: 1,
-                            }}
-                        >
-                            {isNumbered
-                                ? `Treino ${index + 1}`
-                                : simpleMode
-                                  ? (weekdayLabel(t.weekday) ??
-                                    'Sem dia definido')
-                                  : `Treino ${t.reference}`}{' '}
-                            — {t.exercises.length} exercício(s)
+                        <span className={s.trainingCardMeta}>
+                            {active.exercises.length} exercício
+                            {active.exercises.length === 1 ? '' : 's'}
                         </span>
                         <button
                             type="button"
                             className={s.btnTiny}
                             title="Duplicar treino"
-                            onClick={() => onDuplicateTraining(t._id)}
+                            onClick={() => onDuplicateTraining(active._id)}
                         >
                             🧬
                         </button>
@@ -195,549 +223,492 @@ export default function TrainingsEditor({
                             type="button"
                             className={s.btnTiny}
                             style={{ color: 'var(--coral, #e74c3c)' }}
-                            onClick={() => onRemoveTraining(t._id)}
+                            title="Remover treino"
+                            onClick={() => onRemoveTraining(active._id)}
                         >
                             ✕
                         </button>
                     </div>
 
-                    {/* Exercises table */}
-                    {t.exercises.length > 0 && (
-                        <div className={s.exerciseTableWrap}>
-                        <table
-                            style={{
-                                width: '100%',
-                                borderCollapse: 'collapse',
-                                marginBottom: 8,
-                            }}
-                        >
-                            <thead>
-                                <tr>
-                                    <th
-                                        style={{
-                                            fontSize: '0.72rem',
-                                            color: 'var(--text-muted)',
-                                            textAlign: 'left',
-                                            padding: '4px 6px',
-                                            borderBottom:
-                                                '1px solid var(--border-subtle)',
-                                        }}
-                                    >
-                                        Exercício *
-                                    </th>
-                                    <th
-                                        style={{
-                                            fontSize: '0.72rem',
-                                            color: 'var(--text-muted)',
-                                            textAlign: 'left',
-                                            padding: '4px 6px',
-                                            borderBottom:
-                                                '1px solid var(--border-subtle)',
-                                            width: 120,
-                                        }}
-                                    >
-                                        Séries
-                                    </th>
-                                    <th
-                                        style={{
-                                            fontSize: '0.72rem',
-                                            color: 'var(--text-muted)',
-                                            textAlign: 'left',
-                                            padding: '4px 6px',
-                                            borderBottom:
-                                                '1px solid var(--border-subtle)',
-                                        }}
-                                    >
-                                        Variação
-                                    </th>
-                                    <th style={{ width: 32 }}></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {partitionExerciseGroups(t.exercises).map(
-                                    (group) => {
-                                        const isCombo = group.length > 1;
-                                        const groupId = group[0].group_id;
-                                        return (
-                                            <React.Fragment key={group[0]._id}>
-                                                {isCombo && groupId && (
-                                                    <tr>
-                                                        <td
-                                                            colSpan={4}
-                                                            style={{
-                                                                padding:
-                                                                    '6px 4px 2px 8px',
-                                                                borderLeft:
-                                                                    '3px solid var(--violet, #8b5cf6)',
-                                                            }}
+                    {/* Exercícios */}
+                    {active.exercises.length > 0 && (
+                        <div className={s.exercisesStack}>
+                            {partitionExerciseGroups(active.exercises).map(
+                                (group) => {
+                                    const isCombo = group.length > 1;
+                                    const groupId = group[0].group_id;
+                                    const cards = group.map(
+                                        (ex, idxInGroup) => {
+                                            const globalIdx =
+                                                active.exercises.findIndex(
+                                                    (e) => e._id === ex._id,
+                                                );
+                                            const canCombine =
+                                                !ex.group_id && globalIdx > 0;
+                                            const isLastInGroup =
+                                                isCombo &&
+                                                idxInGroup ===
+                                                    group.length - 1;
+                                            return (
+                                                <div
+                                                    key={ex._id}
+                                                    className={
+                                                        s.exerciseEditCard
+                                                    }
+                                                >
+                                                    <div
+                                                        className={
+                                                            s.exerciseEditHeader
+                                                        }
+                                                    >
+                                                        <input
+                                                            value={ex.name}
+                                                            onChange={(e) =>
+                                                                onUpdateExercise(
+                                                                    active._id,
+                                                                    ex._id,
+                                                                    'name',
+                                                                    e.target
+                                                                        .value,
+                                                                )
+                                                            }
+                                                            placeholder="Nome do exercício"
+                                                            className={
+                                                                s.formInput
+                                                            }
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            title="Remover exercício"
+                                                            className={
+                                                                s.btnRemoveExercise
+                                                            }
+                                                            onClick={() =>
+                                                                onRemoveExercise(
+                                                                    active._id,
+                                                                    ex._id,
+                                                                )
+                                                            }
                                                         >
+                                                            ✕
+                                                        </button>
+                                                    </div>
+
+                                                    <div
+                                                        className={
+                                                            s.formGroup
+                                                        }
+                                                        style={{
+                                                            marginBottom: 0,
+                                                        }}
+                                                    >
+                                                        <label
+                                                            className={
+                                                                s.formLabel
+                                                            }
+                                                        >
+                                                            Séries
+                                                        </label>
+                                                        <select
+                                                            value={
+                                                                ex.series_mode
+                                                            }
+                                                            onChange={(e) =>
+                                                                onUpdateExercise(
+                                                                    active._id,
+                                                                    ex._id,
+                                                                    'series_mode',
+                                                                    e.target
+                                                                        .value,
+                                                                )
+                                                            }
+                                                            className={
+                                                                s.formSelect
+                                                            }
+                                                        >
+                                                            <option value="reps">
+                                                                Reps (séries ×
+                                                                repetições)
+                                                            </option>
+                                                            <option value="time">
+                                                                Tempo (min/seg)
+                                                            </option>
+                                                            <option value="free">
+                                                                Livre (texto)
+                                                            </option>
+                                                        </select>
+                                                        {ex.series_mode ===
+                                                            'reps' && (
                                                             <div
-                                                                style={{
-                                                                    display:
-                                                                        'flex',
-                                                                    alignItems:
-                                                                        'center',
-                                                                    justifyContent:
-                                                                        'space-between',
-                                                                    gap: 8,
-                                                                }}
+                                                                className={
+                                                                    s.seriesSubfieldRow
+                                                                }
                                                             >
-                                                                <span
-                                                                    style={{
-                                                                        fontSize:
-                                                                            '0.68rem',
-                                                                        fontWeight: 800,
-                                                                        color: 'var(--violet, #8b5cf6)',
-                                                                        background:
-                                                                            'rgba(139,92,246,0.12)',
-                                                                        padding:
-                                                                            '2px 9px',
-                                                                        borderRadius: 20,
-                                                                    }}
-                                                                >
-                                                                    🔗{' '}
-                                                                    {comboGroupLabel(
-                                                                        group.length,
-                                                                    )}
-                                                                </span>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() =>
-                                                                        onUngroupExercises?.(
-                                                                            t._id,
-                                                                            groupId,
+                                                                <input
+                                                                    type="number"
+                                                                    min="1"
+                                                                    value={
+                                                                        ex.series_sets
+                                                                    }
+                                                                    onChange={(
+                                                                        e,
+                                                                    ) =>
+                                                                        onUpdateExercise(
+                                                                            active._id,
+                                                                            ex._id,
+                                                                            'series_sets',
+                                                                            e
+                                                                                .target
+                                                                                .value,
                                                                         )
                                                                     }
-                                                                    style={{
-                                                                        background:
-                                                                            'none',
-                                                                        border: 'none',
-                                                                        color: 'var(--text-muted)',
-                                                                        fontSize:
-                                                                            '0.66rem',
-                                                                        fontWeight: 700,
-                                                                        textDecoration:
-                                                                            'underline',
-                                                                        cursor: 'pointer',
-                                                                    }}
+                                                                    placeholder="Séries"
+                                                                    className={
+                                                                        s.smallNumInput
+                                                                    }
+                                                                />
+                                                                <span
+                                                                    className={
+                                                                        s.seriesTimesSign
+                                                                    }
                                                                 >
-                                                                    Desagrupar
-                                                                </button>
+                                                                    ×
+                                                                </span>
+                                                                <input
+                                                                    type="number"
+                                                                    min="1"
+                                                                    value={
+                                                                        ex.series_value
+                                                                    }
+                                                                    onChange={(
+                                                                        e,
+                                                                    ) =>
+                                                                        onUpdateExercise(
+                                                                            active._id,
+                                                                            ex._id,
+                                                                            'series_value',
+                                                                            e
+                                                                                .target
+                                                                                .value,
+                                                                        )
+                                                                    }
+                                                                    placeholder="Reps"
+                                                                    className={
+                                                                        s.smallNumInput
+                                                                    }
+                                                                />
+                                                                <span
+                                                                    className={
+                                                                        s.seriesUnitLabel
+                                                                    }
+                                                                >
+                                                                    reps
+                                                                </span>
                                                             </div>
-                                                        </td>
-                                                    </tr>
-                                                )}
-                                                {group.map((ex, idxInGroup) => {
-                                                    const globalIdx =
-                                                        t.exercises.findIndex(
-                                                            (e) =>
-                                                                e._id ===
-                                                                ex._id,
-                                                        );
-                                                    const canCombine =
-                                                        !ex.group_id &&
-                                                        globalIdx > 0;
-                                                    const isLastInGroup =
-                                                        isCombo &&
-                                                        idxInGroup ===
-                                                            group.length - 1;
-                                                    return (
-                                                        <React.Fragment
-                                                            key={ex._id}
-                                                        >
-                                                            <tr>
-                                                                <td
-                                                                    style={{
-                                                                        padding:
-                                                                            '4px 4px',
-                                                                        borderLeft:
-                                                                            isCombo
-                                                                                ? '3px solid var(--violet, #8b5cf6)'
-                                                                                : undefined,
-                                                                    }}
+                                                        )}
+                                                        {ex.series_mode ===
+                                                            'time' && (
+                                                            <div
+                                                                className={
+                                                                    s.seriesSubfieldRow
+                                                                }
+                                                            >
+                                                                <input
+                                                                    type="number"
+                                                                    min="1"
+                                                                    value={
+                                                                        ex.series_sets
+                                                                    }
+                                                                    onChange={(
+                                                                        e,
+                                                                    ) =>
+                                                                        onUpdateExercise(
+                                                                            active._id,
+                                                                            ex._id,
+                                                                            'series_sets',
+                                                                            e
+                                                                                .target
+                                                                                .value,
+                                                                        )
+                                                                    }
+                                                                    placeholder="Séries"
+                                                                    className={
+                                                                        s.smallNumInput
+                                                                    }
+                                                                />
+                                                                <span
+                                                                    className={
+                                                                        s.seriesTimesSign
+                                                                    }
                                                                 >
-                                                <input
-                                                    value={ex.name}
-                                                    onChange={(e) =>
-                                                        onUpdateExercise(
-                                                            t._id,
-                                                            ex._id,
-                                                            'name',
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                    placeholder="Nome do exercício"
-                                                    className="form-control form-control-sm"
-                                                />
-                                            </td>
-                                            <td
-                                                style={{
-                                                    padding: '4px 4px',
-                                                    minWidth: 200,
-                                                }}
-                                            >
-                                                {/* Seletor de modo de séries */}
-                                                <select
-                                                    value={ex.series_mode}
-                                                    onChange={(e) =>
-                                                        onUpdateExercise(
-                                                            t._id,
-                                                            ex._id,
-                                                            'series_mode',
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                    className="form-select form-select-sm mb-1"
-                                                >
-                                                    <option value="reps">
-                                                        Reps (séries × repetições)
-                                                    </option>
-                                                    <option value="time">
-                                                        Tempo (min/seg)
-                                                    </option>
-                                                    <option value="free">
-                                                        Livre (texto)
-                                                    </option>
-                                                </select>
-                                                {ex.series_mode === 'reps' && (
-                                                    <div className="d-flex gap-1 align-items-center">
-                                                        <input
-                                                            type="number"
-                                                            min="1"
-                                                            value={
-                                                                ex.series_sets
-                                                            }
-                                                            onChange={(e) =>
-                                                                onUpdateExercise(
-                                                                    t._id,
-                                                                    ex._id,
-                                                                    'series_sets',
-                                                                    e.target
-                                                                        .value,
-                                                                )
-                                                            }
-                                                            placeholder="Séries"
-                                                            className="form-control form-control-sm"
-                                                            style={{
-                                                                width: 60,
-                                                            }}
-                                                        />
-                                                        <span
-                                                            style={{
-                                                                fontSize:
-                                                                    '0.8rem',
-                                                            }}
-                                                        >
-                                                            ×
-                                                        </span>
-                                                        <input
-                                                            type="number"
-                                                            min="1"
-                                                            value={
-                                                                ex.series_value
-                                                            }
-                                                            onChange={(e) =>
-                                                                onUpdateExercise(
-                                                                    t._id,
-                                                                    ex._id,
-                                                                    'series_value',
-                                                                    e.target
-                                                                        .value,
-                                                                )
-                                                            }
-                                                            placeholder="Reps"
-                                                            className="form-control form-control-sm"
-                                                            style={{
-                                                                width: 60,
-                                                            }}
-                                                        />
-                                                        <span
-                                                            style={{
-                                                                fontSize:
-                                                                    '0.75rem',
-                                                                color: 'var(--text-muted)',
-                                                            }}
-                                                        >
-                                                            reps
-                                                        </span>
-                                                    </div>
-                                                )}
-                                                {ex.series_mode === 'time' && (
-                                                    <div className="d-flex gap-1 align-items-center">
-                                                        <input
-                                                            type="number"
-                                                            min="1"
-                                                            value={
-                                                                ex.series_sets
-                                                            }
-                                                            onChange={(e) =>
-                                                                onUpdateExercise(
-                                                                    t._id,
-                                                                    ex._id,
-                                                                    'series_sets',
-                                                                    e.target
-                                                                        .value,
-                                                                )
-                                                            }
-                                                            placeholder="Séries"
-                                                            className="form-control form-control-sm"
-                                                            style={{
-                                                                width: 60,
-                                                            }}
-                                                        />
-                                                        <span
-                                                            style={{
-                                                                fontSize:
-                                                                    '0.8rem',
-                                                            }}
-                                                        >
-                                                            ×
-                                                        </span>
-                                                        <input
-                                                            type="number"
-                                                            min="1"
-                                                            value={
-                                                                ex.series_value
-                                                            }
-                                                            onChange={(e) =>
-                                                                onUpdateExercise(
-                                                                    t._id,
-                                                                    ex._id,
-                                                                    'series_value',
-                                                                    e.target
-                                                                        .value,
-                                                                )
-                                                            }
-                                                            placeholder="Segundos"
-                                                            className="form-control form-control-sm"
-                                                            style={{
-                                                                width: 70,
-                                                            }}
-                                                        />
-                                                        <span
-                                                            style={{
-                                                                fontSize:
-                                                                    '0.75rem',
-                                                                color: 'var(--text-muted)',
-                                                            }}
-                                                        >
-                                                            seg
-                                                        </span>
-                                                    </div>
-                                                )}
-                                                {ex.series_mode === 'free' && (
-                                                    <input
-                                                        value={
-                                                            ex.series_free
-                                                        }
-                                                        onChange={(e) =>
-                                                            onUpdateExercise(
-                                                                t._id,
-                                                                ex._id,
-                                                                'series_free',
-                                                                e.target
-                                                                    .value,
-                                                            )
-                                                        }
-                                                        placeholder="Ex: 3-4 × 10-12 reps"
-                                                        className="form-control form-control-sm"
-                                                    />
-                                                )}
-                                            </td>
-                                            <td style={{ padding: '4px 4px' }}>
-                                                <input
-                                                    value={ex.variations}
-                                                    onChange={(e) =>
-                                                        onUpdateExercise(
-                                                            t._id,
-                                                            ex._id,
-                                                            'variations',
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                    placeholder="Opcional"
-                                                    className="form-control form-control-sm"
-                                                />
-                                            </td>
-                                            <td
-                                                style={{
-                                                    padding: '4px 4px',
-                                                    textAlign: 'center',
-                                                }}
-                                            >
-                                                <button
-                                                    type="button"
-                                                    title="Remover exercício"
-                                                    style={{
-                                                        background:
-                                                            'transparent',
-                                                        border: '1px solid var(--coral)',
-                                                        color: 'var(--coral)',
-                                                        padding: '2px 7px',
-                                                        borderRadius: 4,
-                                                        cursor: 'pointer',
-                                                        fontSize: '0.78rem',
-                                                        fontWeight: 700,
-                                                        lineHeight: 1.4,
-                                                        flexShrink: 0,
-                                                    }}
-                                                    onClick={() =>
-                                                        onRemoveExercise(
-                                                            t._id,
-                                                            ex._id,
-                                                        )
-                                                    }
-                                                >
-                                                    ✕
-                                                </button>
-                                            </td>
-                                        </tr>
-                                                            {/* Linha de observações */}
-                                                            <tr>
-                                                                <td
-                                                                    colSpan={4}
-                                                                    style={{
-                                                                        padding:
-                                                                            '0 4px 4px 4px',
-                                                                        borderLeft:
-                                                                            isCombo
-                                                                                ? '3px solid var(--violet, #8b5cf6)'
-                                                                                : undefined,
-                                                                    }}
+                                                                    ×
+                                                                </span>
+                                                                <input
+                                                                    type="number"
+                                                                    min="1"
+                                                                    value={
+                                                                        ex.series_value
+                                                                    }
+                                                                    onChange={(
+                                                                        e,
+                                                                    ) =>
+                                                                        onUpdateExercise(
+                                                                            active._id,
+                                                                            ex._id,
+                                                                            'series_value',
+                                                                            e
+                                                                                .target
+                                                                                .value,
+                                                                        )
+                                                                    }
+                                                                    placeholder="Segundos"
+                                                                    className={
+                                                                        s.smallNumInput
+                                                                    }
+                                                                />
+                                                                <span
+                                                                    className={
+                                                                        s.seriesUnitLabel
+                                                                    }
                                                                 >
-                                                                    <textarea
-                                                                        value={
-                                                                            ex.observations
-                                                                        }
-                                                                        onChange={(
-                                                                            e,
-                                                                        ) =>
-                                                                            onUpdateExercise(
-                                                                                t._id,
-                                                                                ex._id,
-                                                                                'observations',
-                                                                                e
-                                                                                    .target
-                                                                                    .value,
-                                                                            )
-                                                                        }
-                                                                        placeholder="Observações / instruções do personal (opcional)"
-                                                                        className="form-control form-control-sm"
-                                                                        rows={2}
-                                                                        style={{
-                                                                            resize: 'vertical',
-                                                                            fontSize:
-                                                                                '0.8rem',
-                                                                        }}
-                                                                    />
-                                                                    {(canCombine ||
-                                                                        isLastInGroup) && (
-                                                                        <div
-                                                                            style={{
-                                                                                display:
-                                                                                    'flex',
-                                                                                gap: 12,
-                                                                                marginTop: 4,
-                                                                            }}
-                                                                        >
-                                                                            {canCombine && (
-                                                                                <button
-                                                                                    type="button"
-                                                                                    onClick={() =>
-                                                                                        onCombineWithPrevious?.(
-                                                                                            t._id,
-                                                                                            ex._id,
-                                                                                        )
-                                                                                    }
-                                                                                    style={{
-                                                                                        background:
-                                                                                            'none',
-                                                                                        border: 'none',
-                                                                                        padding: 0,
-                                                                                        color: 'var(--violet, #8b5cf6)',
-                                                                                        fontSize:
-                                                                                            '0.7rem',
-                                                                                        fontWeight: 700,
-                                                                                        cursor: 'pointer',
-                                                                                    }}
-                                                                                >
-                                                                                    🔗
-                                                                                    Agrupar
-                                                                                    com
-                                                                                    exercício
-                                                                                    anterior
-                                                                                </button>
-                                                                            )}
-                                                                            {isLastInGroup && (
-                                                                                <button
-                                                                                    type="button"
-                                                                                    onClick={() =>
-                                                                                        onRemoveLastFromGroup?.(
-                                                                                            t._id,
-                                                                                            ex._id,
-                                                                                        )
-                                                                                    }
-                                                                                    style={{
-                                                                                        background:
-                                                                                            'none',
-                                                                                        border: 'none',
-                                                                                        padding: 0,
-                                                                                        color: 'var(--text-muted)',
-                                                                                        fontSize:
-                                                                                            '0.7rem',
-                                                                                        fontWeight: 700,
-                                                                                        textDecoration:
-                                                                                            'underline',
-                                                                                        cursor: 'pointer',
-                                                                                    }}
-                                                                                >
-                                                                                    Tirar
-                                                                                    do
-                                                                                    bloco
-                                                                                </button>
-                                                                            )}
-                                                                        </div>
-                                                                    )}
-                                                                </td>
-                                                            </tr>
-                                                        </React.Fragment>
-                                                    );
-                                                })}
+                                                                    seg
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                        {ex.series_mode ===
+                                                            'free' && (
+                                                            <input
+                                                                value={
+                                                                    ex.series_free
+                                                                }
+                                                                onChange={(
+                                                                    e,
+                                                                ) =>
+                                                                    onUpdateExercise(
+                                                                        active._id,
+                                                                        ex._id,
+                                                                        'series_free',
+                                                                        e
+                                                                            .target
+                                                                            .value,
+                                                                    )
+                                                                }
+                                                                placeholder="Ex: 3-4 × 10-12 reps"
+                                                                className={
+                                                                    s.formInput
+                                                                }
+                                                                style={{
+                                                                    marginTop: 8,
+                                                                }}
+                                                            />
+                                                        )}
+                                                    </div>
+
+                                                    <div
+                                                        className={
+                                                            s.formGroup
+                                                        }
+                                                        style={{
+                                                            marginBottom: 0,
+                                                        }}
+                                                    >
+                                                        <label
+                                                            className={
+                                                                s.formLabel
+                                                            }
+                                                        >
+                                                            Variação
+                                                        </label>
+                                                        <input
+                                                            value={
+                                                                ex.variations
+                                                            }
+                                                            onChange={(e) =>
+                                                                onUpdateExercise(
+                                                                    active._id,
+                                                                    ex._id,
+                                                                    'variations',
+                                                                    e.target
+                                                                        .value,
+                                                                )
+                                                            }
+                                                            placeholder="Opcional"
+                                                            className={
+                                                                s.formInput
+                                                            }
+                                                        />
+                                                    </div>
+
+                                                    <div
+                                                        className={
+                                                            s.formGroup
+                                                        }
+                                                        style={{
+                                                            marginBottom: 0,
+                                                        }}
+                                                    >
+                                                        <label
+                                                            className={
+                                                                s.formLabel
+                                                            }
+                                                        >
+                                                            Observações
+                                                        </label>
+                                                        <textarea
+                                                            value={
+                                                                ex.observations
+                                                            }
+                                                            onChange={(e) =>
+                                                                onUpdateExercise(
+                                                                    active._id,
+                                                                    ex._id,
+                                                                    'observations',
+                                                                    e.target
+                                                                        .value,
+                                                                )
+                                                            }
+                                                            placeholder="Observações / instruções do personal (opcional)"
+                                                            className={
+                                                                s.formInput
+                                                            }
+                                                            rows={2}
+                                                            style={{
+                                                                resize:
+                                                                    'vertical',
+                                                            }}
+                                                        />
+                                                    </div>
+
+                                                    {(canCombine ||
+                                                        isLastInGroup) && (
+                                                        <div
+                                                            className={
+                                                                s.comboActionsRow
+                                                            }
+                                                        >
+                                                            {canCombine && (
+                                                                <button
+                                                                    type="button"
+                                                                    className={
+                                                                        s.linkBtnAccent
+                                                                    }
+                                                                    onClick={() =>
+                                                                        onCombineWithPrevious?.(
+                                                                            active._id,
+                                                                            ex._id,
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    🔗 Agrupar
+                                                                    com
+                                                                    exercício
+                                                                    anterior
+                                                                </button>
+                                                            )}
+                                                            {isLastInGroup && (
+                                                                <button
+                                                                    type="button"
+                                                                    className={
+                                                                        s.linkBtn
+                                                                    }
+                                                                    onClick={() =>
+                                                                        onRemoveLastFromGroup?.(
+                                                                            active._id,
+                                                                            ex._id,
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    Tirar do
+                                                                    bloco
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        },
+                                    );
+
+                                    if (!isCombo || !groupId) {
+                                        return (
+                                            <React.Fragment key={group[0]._id}>
+                                                {cards}
                                             </React.Fragment>
                                         );
-                                    },
-                                )}
-                            </tbody>
-                        </table>
+                                    }
+
+                                    return (
+                                        <div
+                                            key={group[0]._id}
+                                            className={s.comboGroup}
+                                        >
+                                            <div
+                                                className={s.comboBracket}
+                                            />
+                                            <div className={s.comboBody}>
+                                                <div
+                                                    className={
+                                                        s.comboLabelRow
+                                                    }
+                                                >
+                                                    <span
+                                                        className={
+                                                            s.comboChip
+                                                        }
+                                                    >
+                                                        🔗{' '}
+                                                        {comboGroupLabel(
+                                                            group.length,
+                                                        )}
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        className={s.linkBtn}
+                                                        onClick={() =>
+                                                            onUngroupExercises?.(
+                                                                active._id,
+                                                                groupId,
+                                                            )
+                                                        }
+                                                    >
+                                                        Desagrupar
+                                                    </button>
+                                                </div>
+                                                {cards}
+                                            </div>
+                                        </div>
+                                    );
+                                },
+                            )}
                         </div>
                     )}
 
-                    <div className="d-flex gap-2">
+                    <div style={{ display: 'flex', gap: 8 }}>
                         <button
                             type="button"
                             className={s.btnSmall}
-                            onClick={() => onOpenPicker(t._id)}
+                            onClick={() => onOpenPicker(active._id)}
                         >
                             + Exercício
                         </button>
                         <button
                             type="button"
                             className={s.btnSmall}
-                            onClick={() => onAddExercise(t._id)}
+                            onClick={() => onAddExercise(active._id)}
                         >
                             + Manual
                         </button>
                     </div>
 
                     {/* Exercise Picker */}
-                    {pickerFor === t._id && (
+                    {pickerFor === active._id && (
                         <ExercisePicker
-                            onPick={(item) => onPickExercise(t._id, item)}
+                            onPick={(item) => onPickExercise(active._id, item)}
                             onClose={onClosePicker}
                         />
                     )}
                 </div>
-            ))}
+            )}
         </div>
     );
 }

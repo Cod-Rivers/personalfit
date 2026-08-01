@@ -1,6 +1,7 @@
 'use client';
 
 import type { LocalMicrocycle } from '../lib/mesocycleTransforms';
+import s from '../builder.module.css';
 
 const MICRO_STATUS_LABEL: Record<string, string> = {
     pending: 'Pendente',
@@ -23,40 +24,15 @@ export default function MicrocycleEditor({ microcycles, onUpdate, simpleMode }: 
     return (
         <div>
             {microcycles.map((micro) => (
-                <div
-                    key={micro._id}
-                    style={{
-                        border: '1px solid var(--border-subtle)',
-                        borderRadius: 8,
-                        padding: 10,
-                        marginBottom: 8,
-                        background: 'var(--surface-2, rgba(255,255,255,0.04))',
-                    }}
-                >
-                    <div
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            marginBottom: 8,
-                        }}
-                    >
-                        <strong style={{ fontSize: '0.82rem' }}>
+                <div key={micro._id} className={s.microCard}>
+                    <div className={s.microCardHeader}>
+                        <strong>
                             {simpleMode
                                 ? 'Semana de treino'
                                 : `Semana ${micro.week_number}`}
                         </strong>
                         {!simpleMode && (
-                            <label
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 6,
-                                    margin: 0,
-                                    fontSize: '0.75rem',
-                                    color: 'var(--text-muted)',
-                                }}
-                            >
+                            <label className={s.deloadToggle}>
                                 <input
                                     type="checkbox"
                                     checked={micro.is_deload}
@@ -73,61 +49,52 @@ export default function MicrocycleEditor({ microcycles, onUpdate, simpleMode }: 
                         )}
                     </div>
 
-                    <div className="row g-2">
-                        {!simpleMode && (
-                            <div className="col-md-3">
-                                <label className="form-label small mb-1">
-                                    Status
-                                </label>
-                                {micro.id ? (
-                                    // Semana já existente: status é calculado
-                                    // automaticamente a partir dos treinos
-                                    // registrados pelo aluno, não editável aqui.
-                                    <div
-                                        className="form-control form-control-sm"
-                                        style={{
-                                            background: 'transparent',
-                                            color: 'var(--text-muted)',
-                                        }}
-                                        title="Definido automaticamente pelos treinos registrados nesta semana"
-                                    >
-                                        {MICRO_STATUS_LABEL[micro.status] ??
-                                            micro.status}
-                                    </div>
-                                ) : (
-                                    <select
-                                        className="form-control form-control-sm"
-                                        value={micro.status}
-                                        onChange={(e) =>
-                                            onUpdate(
-                                                micro._id,
-                                                'status',
-                                                e.target.value,
-                                            )
-                                        }
-                                    >
-                                        <option value="pending">
-                                            Pendente
-                                        </option>
-                                        <option value="in_progress">
-                                            Em progresso
-                                        </option>
-                                        <option value="completed">
-                                            Concluído
-                                        </option>
-                                    </select>
-                                )}
-                            </div>
-                        )}
-                        <div className="col-md-3">
-                            <label className="form-label small mb-1">
-                                RPE alvo
-                            </label>
+                    {!simpleMode && (
+                        <div className={s.formGroup}>
+                            <label className={s.formLabel}>Status</label>
+                            {micro.id ? (
+                                // Semana já existente: status é calculado
+                                // automaticamente a partir dos treinos
+                                // registrados pelo aluno, não editável aqui.
+                                <div
+                                    className={s.microStatusReadonly}
+                                    title="Definido automaticamente pelos treinos registrados nesta semana"
+                                >
+                                    {MICRO_STATUS_LABEL[micro.status] ??
+                                        micro.status}
+                                </div>
+                            ) : (
+                                <select
+                                    className={s.formSelect}
+                                    value={micro.status}
+                                    onChange={(e) =>
+                                        onUpdate(
+                                            micro._id,
+                                            'status',
+                                            e.target.value,
+                                        )
+                                    }
+                                >
+                                    <option value="pending">Pendente</option>
+                                    <option value="in_progress">
+                                        Em progresso
+                                    </option>
+                                    <option value="completed">
+                                        Concluído
+                                    </option>
+                                </select>
+                            )}
+                        </div>
+                    )}
+
+                    <div className={s.formRow}>
+                        <div className={s.formGroup}>
+                            <label className={s.formLabel}>RPE alvo</label>
                             <input
                                 type="number"
                                 min={1}
                                 max={10}
-                                className="form-control form-control-sm"
+                                className={s.formInput}
                                 value={micro.target_rpe}
                                 onChange={(e) =>
                                     onUpdate(
@@ -139,15 +106,15 @@ export default function MicrocycleEditor({ microcycles, onUpdate, simpleMode }: 
                                 placeholder="ex: 7"
                             />
                         </div>
-                        <div className="col-md-3">
-                            <label className="form-label small mb-1">
+                        <div className={s.formGroup}>
+                            <label className={s.formLabel}>
                                 Ajuste volume %
                             </label>
                             <input
                                 type="number"
                                 min={-100}
                                 max={100}
-                                className="form-control form-control-sm"
+                                className={s.formInput}
                                 value={micro.volume_adjust_pct}
                                 onChange={(e) =>
                                     onUpdate(
@@ -158,15 +125,15 @@ export default function MicrocycleEditor({ microcycles, onUpdate, simpleMode }: 
                                 }
                             />
                         </div>
-                        <div className="col-md-3">
-                            <label className="form-label small mb-1">
+                        <div className={s.formGroup}>
+                            <label className={s.formLabel}>
                                 Ajuste intensidade %
                             </label>
                             <input
                                 type="number"
                                 min={-100}
                                 max={100}
-                                className="form-control form-control-sm"
+                                className={s.formInput}
                                 value={micro.intensity_adjust_pct}
                                 onChange={(e) =>
                                     onUpdate(
@@ -177,42 +144,32 @@ export default function MicrocycleEditor({ microcycles, onUpdate, simpleMode }: 
                                 }
                             />
                         </div>
-                        <div className="col-md-12">
-                            <label className="form-label small mb-1">
-                                Foco da semana
-                            </label>
-                            <input
-                                type="text"
-                                className="form-control form-control-sm"
-                                value={micro.focus}
-                                onChange={(e) =>
-                                    onUpdate(
-                                        micro._id,
-                                        'focus',
-                                        e.target.value,
-                                    )
-                                }
-                                placeholder="Ex: Acúmulo técnico de quadríceps"
-                            />
-                        </div>
-                        <div className="col-md-12">
-                            <label className="form-label small mb-1">
-                                Notas
-                            </label>
-                            <textarea
-                                rows={2}
-                                className="form-control form-control-sm"
-                                value={micro.notes}
-                                onChange={(e) =>
-                                    onUpdate(
-                                        micro._id,
-                                        'notes',
-                                        e.target.value,
-                                    )
-                                }
-                                placeholder="Estratégia desta semana (autorregulação, técnica, deload, etc.)"
-                            />
-                        </div>
+                    </div>
+
+                    <div className={s.formGroup}>
+                        <label className={s.formLabel}>Foco da semana</label>
+                        <input
+                            type="text"
+                            className={s.formInput}
+                            value={micro.focus}
+                            onChange={(e) =>
+                                onUpdate(micro._id, 'focus', e.target.value)
+                            }
+                            placeholder="Ex: Acúmulo técnico de quadríceps"
+                        />
+                    </div>
+                    <div className={s.formGroup} style={{ marginBottom: 0 }}>
+                        <label className={s.formLabel}>Notas</label>
+                        <textarea
+                            rows={2}
+                            className={s.formInput}
+                            style={{ resize: 'vertical' }}
+                            value={micro.notes}
+                            onChange={(e) =>
+                                onUpdate(micro._id, 'notes', e.target.value)
+                            }
+                            placeholder="Estratégia desta semana (autorregulação, técnica, deload, etc.)"
+                        />
                     </div>
                 </div>
             ))}

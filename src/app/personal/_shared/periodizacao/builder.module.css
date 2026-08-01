@@ -523,3 +523,346 @@
     box-shadow: 0 6px 18px rgba(61,255,208,0.5);
     filter: brightness(1.08);
 }
+
+/* ── Editable training/exercise cards (mesmo visual do .exerciseCard
+   read-only, adaptado pra formulário) ── */
+.trainingsSection {
+    border-top: 1px solid var(--border-subtle);
+    padding-top: 20px;
+    margin-bottom: 20px;
+}
+
+.sectionHeaderRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.sectionHeaderRow p {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.emptyHint {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+}
+
+.trainingCard {
+    background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 12px;
+}
+
+/* O seletor de dia da semana é bem mais largo que o campo A/B/C: sem
+   flex-wrap, o rótulo + os botões de ação estouravam o card no celular. */
+.trainingCardHeader {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.trainingCardMeta {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    flex: 1;
+    min-width: 90px;
+}
+
+.refInput {
+    composes: formInput;
+    width: 64px;
+    flex: 0 0 auto;
+    padding: 8px 6px;
+    text-align: center;
+    font-weight: 700;
+}
+
+.weekdaySelectNarrow {
+    composes: formSelect;
+    width: 150px;
+    max-width: 100%;
+    flex: 0 0 auto;
+    font-weight: 700;
+}
+
+/* Rótulo fixo do modo numerado ("Treino 1") — mesmo peso/alinhamento dos
+   campos editáveis dos outros dois modos. */
+.refStatic {
+    flex: 0 0 auto;
+    min-width: 64px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.dayChipRow {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+/* Largura mínima de 40px (A/B/C) mas cresce para caber "Seg", "Sáb", "T10"… */
+.dayChip {
+    min-width: 40px;
+    padding: 0 10px;
+    white-space: nowrap;
+    height: 34px;
+    border-radius: 8px;
+    border: 1px solid var(--border-subtle);
+    background: var(--surface-1);
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.dayChip:hover { border-color: var(--mint-dim, var(--mint)); }
+.dayChipActive {
+    composes: dayChip;
+    background: var(--mint);
+    color: #0b1929;
+    border-color: var(--mint);
+}
+
+.exercisesStack {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.exerciseEditCard {
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.exerciseEditHeader {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.exerciseEditHeader .formInput {
+    flex: 1;
+}
+
+.btnRemoveExercise {
+    background: transparent;
+    border: 1px solid var(--coral);
+    color: var(--coral);
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 700;
+    transition: background 0.15s;
+}
+.btnRemoveExercise:hover { background: rgba(255,107,107,0.1); }
+
+.seriesSubfieldRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.smallNumInput {
+    composes: formInput;
+    width: 56px;
+    padding: 8px 6px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.seriesUnitLabel {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+.seriesTimesSign {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+/* ── Combinar exercícios: bissérie / trissérie / superssérie ── */
+.comboGroup {
+    display: flex;
+    gap: 10px;
+}
+
+.comboBracket {
+    width: 3px;
+    border-radius: 3px;
+    background: var(--violet, #8b5cf6);
+    flex-shrink: 0;
+}
+
+.comboBody {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.comboLabelRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.comboChip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(139, 92, 246, 0.14);
+    color: var(--violet, #8b5cf6);
+    font-size: 0.68rem;
+    font-weight: 800;
+    padding: 3px 10px;
+    border-radius: 20px;
+}
+
+.linkBtn {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-decoration: underline;
+    cursor: pointer;
+}
+.linkBtn:hover { color: var(--text-primary); }
+
+.linkBtnAccent {
+    composes: linkBtn;
+    color: var(--violet, #8b5cf6);
+    text-decoration: none;
+}
+.linkBtnAccent:hover { color: var(--violet, #8b5cf6); filter: brightness(1.15); }
+
+.comboActionsRow {
+    display: flex;
+    gap: 14px;
+}
+
+/* ── Preset chips (duração em semanas, etc.) ── */
+.presetChip {
+    padding: 3px 11px;
+    border-radius: 20px;
+    border: 1px solid var(--border-subtle);
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.presetChipActive {
+    composes: presetChip;
+    border: 1.5px solid var(--mint);
+    background: var(--mint);
+    color: #0b1929;
+}
+
+/* ── Bloco recolhível de ajustes semanais ── */
+.collapsibleCard {
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    margin-bottom: 18px;
+    overflow: hidden;
+}
+
+.collapsibleToggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 14px;
+    background: var(--surface-2);
+    border: none;
+    cursor: pointer;
+    text-align: left;
+}
+
+.collapsibleTitle {
+    display: block;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.collapsibleSummary {
+    display: block;
+    font-size: 0.74rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.collapsibleChevron {
+    color: var(--text-muted);
+    flex-shrink: 0;
+    transition: transform 0.15s;
+}
+.collapsibleChevronOpen {
+    composes: collapsibleChevron;
+    transform: rotate(180deg);
+}
+
+.collapsibleBody {
+    padding: 14px;
+}
+
+/* ── Microciclo (ajustes semanais) ── */
+.microCard {
+    background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 10px;
+}
+
+.microCardHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.microCardHeader strong {
+    font-size: 0.85rem;
+}
+
+.deloadToggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.microStatusReadonly {
+    composes: formInput;
+    background: transparent;
+    color: var(--text-muted);
+}
