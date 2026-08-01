@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { microcycleHelpTopics } from '@/libs/microcycleHelpContent';
+import { getSortedGlossaryTerms } from '@/libs/glossaryContent';
+import GlossaryLink from '@/components/atoms/GlossaryLink';
 
 type Audience = 'student' | 'personal';
 
@@ -47,7 +49,8 @@ const studentSections: HelpSection[] = [
             <>
                 <p className="mb-2">
                     Ao abrir um exercício, você pode registrar o resultado de
-                    cada série: repetições, carga (kg) e RPE (esforço
+                    cada série: repetições, carga (kg) e{' '}
+                    <GlossaryLink id="rpe">RPE</GlossaryLink> (esforço
                     percebido, de 1 a 10). No final, escolha{' '}
                     <strong>Completar Treino</strong> para salvar tudo, ou{' '}
                     <strong>Pular Treino</strong> caso não tenha treinado,
@@ -123,11 +126,18 @@ const studentSections: HelpSection[] = [
         id: 'notificacoes',
         title: 'Notificações',
         body: (
-            <p className="mb-0">
-                O sino no topo da tela mostra avisos do seu personal ou do
-                app (por exemplo, mudanças de treino ou agenda). Toque em uma
-                notificação para marcá-la como lida.
-            </p>
+            <>
+                <p className="mb-2">
+                    O sino no topo da tela mostra avisos do seu personal ou do
+                    app (por exemplo, mudanças de treino ou agenda). Toque em
+                    uma notificação para marcá-la como lida.
+                </p>
+                <p className="mb-0">
+                    Se você permitir quando o app pedir, esses avisos também
+                    chegam como <strong>notificação push</strong> no
+                    navegador ou celular, mesmo com o Venafit fechado.
+                </p>
+            </>
         ),
     },
     {
@@ -179,15 +189,22 @@ const personalSections: HelpSection[] = [
                     <strong>Total de Alunos</strong> e <strong>Ativos</strong>,
                     e logo abaixo as abas com tudo que você gerencia:{' '}
                     <Link href="#convidar-alunos">Meus Alunos</Link>,{' '}
+                    <Link href="#retencao">Retenção</Link>,{' '}
                     <Link href="#exercicios">Meus Exercícios</Link>,{' '}
                     <Link href="#personalizacao">Personalização</Link>,{' '}
-                    <Link href="#anuncios">Meus Anúncios</Link>,{' '}
-                    <Link href="#agenda">Agenda</Link>,{' '}
+                    <Link href="#autorregulacao-config">Autorregulação</Link>,{' '}
                     <Link href="#periodizacao-biblioteca">
                         Minha Periodização / Treinos
                     </Link>{' '}
                     e a{' '}
                     <Link href="#biblioteca-publica">Biblioteca Pública</Link>.
+                    Assinantes <Link href="#plano-pro">PRO</Link> têm ainda a
+                    aba <Link href="#anuncios">Meus Anúncios</Link>.
+                </p>
+                <p className="mb-2">
+                    <Link href="#agenda">Agenda</Link> e{' '}
+                    <Link href="#desafios">Desafios</Link> ficam como botões de
+                    acesso rápido no topo do painel (não abas).
                 </p>
                 <p className="mb-0">
                     Quer ver como o app aparece para quem você treina? Use{' '}
@@ -216,25 +233,69 @@ const personalSections: HelpSection[] = [
                     Nos cartões você acessa{' '}
                     <strong>👁️ Ver Treino</strong>, que leva direto para o
                     treino ativo do aluno (com todo o CRUD de mesociclos e
-                    treinos), a{' '}
-                    <Link href="#periodizacao-aluno">Periodização</Link>, o{' '}
+                    treinos), além de{' '}
+                    <Link href="#periodizacao-aluno">📋 Periodização</Link>,{' '}
                     <Link href="#plano-alimentar-personal">
-                        Plano Alimentar
-                    </Link>{' '}
-                    e a{' '}
-                    <Link href="#evolucao-personal">Evolução</Link> do aluno,
-                    além de <strong>Editar</strong>, <strong>Ativar</strong>/
-                    <strong>Desativar</strong> e <strong>Desvincular</strong>.
+                        🍽️ Plano Alimentar
+                    </Link>
+                    , <Link href="#evolucao-personal">📈 Evolução</Link>,{' '}
+                    <Link href="#financeiro-personal">💰 Financeiro</Link> e{' '}
+                    <Link href="#feedback-personal">💬 Feedback</Link> do
+                    aluno.
                 </p>
                 <p className="mb-0">
-                    Desvincular não apaga a conta do aluno — remove só o
-                    vínculo com você. Sem um personal, ele passa a poder gerar
-                    o próprio treino pela anamnese automática. No plano
-                    gratuito você mantém <strong>até 3 alunos</strong>; com o{' '}
+                    <strong>Editar</strong> fica no rodapé do cartão; as ações{' '}
+                    <strong>Ativar</strong>/<strong>Desativar</strong> e{' '}
+                    <strong>Desvincular</strong> ficam no menu{' '}
+                    <strong>⋯</strong> do cartão. Desvincular não apaga a
+                    conta do aluno — remove só o vínculo com você. Sem um
+                    personal, ele passa a poder gerar o próprio treino pela
+                    anamnese automática. No plano gratuito você mantém{' '}
+                    <strong>até 3 alunos</strong>; com o{' '}
                     <Link href="#plano-pro">PRO</Link> os alunos são
                     ilimitados.
                 </p>
             </>
+        ),
+    },
+    {
+        id: 'retencao',
+        title: 'Retenção',
+        body: (
+            <p className="mb-0">
+                Na aba <strong>📊 Retenção</strong> você vê há quantos dias
+                cada aluno não registra um treino, para agir antes que ele
+                abandone o acompanhamento. Direto da lista você pode{' '}
+                <strong>enviar um lembrete</strong> ao aluno.
+            </p>
+        ),
+    },
+    {
+        id: 'financeiro-personal',
+        title: 'Financeiro do aluno',
+        body: (
+            <p className="mb-0">
+                Pelo cartão do aluno em <strong>💰 Financeiro</strong> você
+                lança cobranças (mensalidade, pacote de sessões etc.), marca
+                como pagas, reabre ou exclui um lançamento — um controle
+                simples de cobrança por aluno, sem meio de pagamento
+                integrado.
+            </p>
+        ),
+    },
+    {
+        id: 'feedback-personal',
+        title: 'Feedback do aluno',
+        body: (
+            <p className="mb-0">
+                Pelo cartão do aluno em <strong>💬 Feedback</strong> você vê a
+                nota que o aluno deu para cada{' '}
+                <GlossaryLink id="macrociclo">macrociclo</GlossaryLink>,{' '}
+                <GlossaryLink id="mesociclo">mesociclo</GlossaryLink> e{' '}
+                <GlossaryLink id="microciclo-periodo">microciclo</GlossaryLink>{' '}
+                (satisfação e RPE), para calibrar os próximos ciclos com base
+                na experiência real dele.
+            </p>
         ),
     },
     {
@@ -254,9 +315,33 @@ const personalSections: HelpSection[] = [
                     <strong>URL</strong> (por exemplo, um link do YouTube). Com
                     o <Link href="#plano-pro">PRO</Link>, você também pode{' '}
                     <strong>subir o arquivo de vídeo</strong> direto do
-                    aparelho, com a sua própria mídia.
+                    aparelho ou importar de um <strong>TikTok</strong>, com a
+                    sua própria mídia.
                 </p>
             </>
+        ),
+    },
+    {
+        id: 'autorregulacao-config',
+        title: 'Autorregulação (configurações)',
+        body: (
+            <p className="mb-0">
+                Na aba <strong>⚙️ Autorregulação</strong> você ajusta os
+                parâmetros que definem as zonas de{' '}
+                <GlossaryLink id="autorregulacao">autorregulação</GlossaryLink>{' '}
+                dos seus alunos — por exemplo, a partir de qual diferença
+                entre RPE previsto e RPE alvo o app classifica o dia como{' '}
+                <GlossaryLink id="supercompensacao">
+                    Supercompensação
+                </GlossaryLink>{' '}
+                ou Fadiga, e quando sugerir um{' '}
+                <GlossaryLink id="deload">deload</GlossaryLink>. Veja o manual
+                completo em{' '}
+                <Link href="#autorregulacao-rpe-rir">
+                    Periodização + Autorregulação por RPE/RIR
+                </Link>
+                .
+            </p>
         ),
     },
     {
@@ -265,12 +350,20 @@ const personalSections: HelpSection[] = [
         body: (
             <>
                 <p className="mb-2">
-                    Aqui ficam seus <strong>ciclos reutilizáveis</strong> —
-                    monte uma vez e aplique em vários alunos. Em{' '}
-                    <strong>+ Novo Ciclo</strong> você cria o macrociclo;
+                    Aqui ficam seus{' '}
+                    <GlossaryLink id="template-modelo">
+                        ciclos reutilizáveis
+                    </GlossaryLink>{' '}
+                    — monte uma vez e aplique em vários alunos. Em{' '}
+                    <strong>+ Novo Ciclo</strong> você cria o{' '}
+                    <GlossaryLink id="macrociclo">macrociclo</GlossaryLink>;
                     depois use <strong>🛠 Configurar treinos</strong> para
-                    montar mesociclos, microciclos e os exercícios de cada
-                    treino.
+                    montar <GlossaryLink id="mesociclo">mesociclos</GlossaryLink>
+                    ,{' '}
+                    <GlossaryLink id="microciclo-periodo">
+                        microciclos
+                    </GlossaryLink>{' '}
+                    e os exercícios de cada treino.
                 </p>
                 <p className="mb-2">
                     Para cada ciclo você pode <strong>📋 Aplicar</strong> a um
@@ -311,11 +404,12 @@ const personalSections: HelpSection[] = [
             <>
                 <p className="mb-2">
                     O botão <strong>👁️ Ver Treino</strong> no cartão do aluno é
-                    um atalho: ele pula direto para o macrociclo ativo do
-                    aluno (ou o mais recente, se nenhum estiver ativo) já na
-                    tela de edição de mesociclos e treinos. Se o aluno ainda
-                    não tiver nenhum macrociclo, você cai na lista abaixo para
-                    criar o primeiro.
+                    um atalho: ele pula direto para o{' '}
+                    <GlossaryLink id="macrociclo">macrociclo</GlossaryLink>{' '}
+                    ativo do aluno (ou o mais recente, se nenhum estiver
+                    ativo) já na tela de edição de mesociclos e treinos. Se o
+                    aluno ainda não tiver nenhum macrociclo, você cai na lista
+                    abaixo para criar o primeiro.
                 </p>
                 <p className="mb-2">
                     Pelo cartão do aluno em <strong>📋 Periodização</strong>{' '}
@@ -326,10 +420,14 @@ const personalSections: HelpSection[] = [
                     <strong>Ativo</strong> ou <strong>Concluído</strong>).
                 </p>
                 <p className="mb-0">
-                    Ao abrir um macrociclo você organiza mesociclos,
-                    microciclos e os treinos. Um bom macrociclo pode virar
-                    modelo reutilizável com <strong>📋 Modelo</strong> — ele
-                    passa a aparecer na sua{' '}
+                    Ao abrir um macrociclo você organiza{' '}
+                    <GlossaryLink id="mesociclo">mesociclos</GlossaryLink>,{' '}
+                    <GlossaryLink id="microciclo-periodo">
+                        microciclos
+                    </GlossaryLink>{' '}
+                    e os treinos. Um bom macrociclo pode virar modelo
+                    reutilizável com <strong>📋 Modelo</strong> — ele passa a
+                    aparecer na sua{' '}
                     <Link href="#periodizacao-biblioteca">
                         Minha Periodização / Treinos
                     </Link>
@@ -363,12 +461,13 @@ const personalSections: HelpSection[] = [
 
                 <h3 className="h6 mt-3 mb-2">1. RPE e RIR: a mesma escala</h3>
                 <p className="mb-2">
-                    O <strong>RPE</strong> (Rate of Perceived Exertion, ou
-                    Esforço Percebido) mede o quão puxada foi uma série, de 1 a
-                    10. O <strong>RIR</strong> (Reps in Reserve, ou Repetições
-                    em Reserva) é a leitura inversa: quantas repetições ainda
-                    dariam para fazer antes de falhar. São a mesma régua — basta
-                    converter:
+                    O <GlossaryLink id="rpe"><strong>RPE</strong></GlossaryLink>{' '}
+                    (Rate of Perceived Exertion, ou Esforço Percebido) mede o
+                    quão puxada foi uma série, de 1 a 10. O{' '}
+                    <GlossaryLink id="rir"><strong>RIR</strong></GlossaryLink>{' '}
+                    (Reps in Reserve, ou Repetições em Reserva) é a leitura
+                    inversa: quantas repetições ainda dariam para fazer antes
+                    de falhar. São a mesma régua — basta converter:
                 </p>
                 <div className="table-responsive mb-2">
                     <table className="table table-sm table-bordered align-middle mb-1">
@@ -428,18 +527,27 @@ const personalSections: HelpSection[] = [
                 </p>
                 <ul className="mb-2 ps-3">
                     <li>
-                        <strong>Macrociclo</strong> — o plano inteiro
-                        (objetivo, datas, status Rascunho/Ativo/Concluído).
+                        <GlossaryLink id="macrociclo">
+                            <strong>Macrociclo</strong>
+                        </GlossaryLink>{' '}
+                        — o plano inteiro (objetivo, datas, status
+                        Rascunho/Ativo/Concluído).
                     </li>
                     <li>
-                        <strong>Mesociclos (Fases)</strong> — blocos de 3 a 6
-                        semanas, cada um com uma <strong>fase</strong> e uma{' '}
-                        <strong>metodologia</strong> (veja abaixo).
+                        <GlossaryLink id="mesociclo">
+                            <strong>Mesociclos (Fases)</strong>
+                        </GlossaryLink>{' '}
+                        — blocos de 3 a 6 semanas, cada um com uma{' '}
+                        <strong>fase</strong> e uma <strong>metodologia</strong>{' '}
+                        (veja abaixo).
                     </li>
                     <li>
-                        <strong>Microciclos</strong> — cada semana da fase. É
-                        aqui que a autorregulação vive: RPE alvo, ajustes de
-                        volume/intensidade e deload são definidos por semana.
+                        <GlossaryLink id="microciclo-periodo">
+                            <strong>Microciclos</strong>
+                        </GlossaryLink>{' '}
+                        — cada semana da fase. É aqui que a autorregulação
+                        vive: RPE alvo, ajustes de volume/intensidade e deload
+                        são definidos por semana.
                     </li>
                     <li>
                         <strong>Treinos A/B/C/D</strong> — os treinos de cada
@@ -463,9 +571,10 @@ const personalSections: HelpSection[] = [
                 </ul>
                 <p className="mb-3">
                     E a <strong>Metodologia</strong> de progressão: Linear,
-                    Ondulada Diária (DUP), Ondulada Semanal, Conjugada, Bloco ou
-                    Outra. Duração recomendada: <strong>3–6 semanas por
-                    fase</strong> (4 é o padrão).
+                    Ondulada Diária (<GlossaryLink id="dup">DUP</GlossaryLink>),
+                    Ondulada Semanal, Conjugada, Bloco ou Outra. Duração
+                    recomendada: <strong>3–6 semanas por fase</strong> (4 é o
+                    padrão).
                 </p>
 
                 <h3 className="h6 mt-3 mb-2">
@@ -491,9 +600,11 @@ const personalSections: HelpSection[] = [
                         para a carga/intensidade.
                     </li>
                     <li>
-                        <strong>Deload:</strong> marca a semana como
-                        recuperação (tipicamente RPE mais baixo e volume
-                        reduzido).
+                        <GlossaryLink id="deload">
+                            <strong>Deload:</strong>
+                        </GlossaryLink>{' '}
+                        marca a semana como recuperação (tipicamente RPE mais
+                        baixo e volume reduzido).
                     </li>
                     <li>
                         <strong>Foco e Notas:</strong> a estratégia da semana em
@@ -529,7 +640,9 @@ const personalSections: HelpSection[] = [
                         <tbody>
                             <tr>
                                 <td>
-                                    <strong>Supercompensação</strong>
+                                    <GlossaryLink id="supercompensacao">
+                                        <strong>Supercompensação</strong>
+                                    </GlossaryLink>
                                 </td>
                                 <td>Bem recuperado, RPE abaixo do alvo</td>
                                 <td>Progride levemente carga/volume</td>
@@ -554,12 +667,18 @@ const personalSections: HelpSection[] = [
                 <p className="mb-2">Os ajustes acontecem em dois tempos:</p>
                 <ul className="mb-3 ps-3">
                     <li>
-                        <strong>Intrassessão:</strong> durante o treino (ex.:
-                        baixar 5% a 10% da carga se o RPE estourar o alvo).
+                        <GlossaryLink id="intrassessao-intersessao">
+                            <strong>Intrassessão:</strong>
+                        </GlossaryLink>{' '}
+                        durante o treino (ex.: baixar 5% a 10% da carga se o
+                        RPE estourar o alvo).
                     </li>
                     <li>
-                        <strong>Intersessão:</strong> para os próximos dias
-                        (ex.: cortar ~20% de volume enquanto a fadiga persistir).
+                        <GlossaryLink id="intrassessao-intersessao">
+                            <strong>Intersessão:</strong>
+                        </GlossaryLink>{' '}
+                        para os próximos dias (ex.: cortar ~20% de volume
+                        enquanto a fadiga persistir).
                     </li>
                 </ul>
 
@@ -699,8 +818,9 @@ const personalSections: HelpSection[] = [
                 <p className="mb-2">
                     Em <strong>📅 Agenda</strong> você marca sessões{' '}
                     <strong>presenciais</strong>, <strong>online</strong>{' '}
-                    (com link de reunião) ou de <strong>consultoria</strong>.
-                    Filtre por período e, em cada sessão, registre a situação:{' '}
+                    (com link de reunião), de <strong>consultoria</strong> ou
+                    de <strong>avaliação física</strong>. Filtre por período
+                    e, em cada sessão, registre a situação:{' '}
                     <strong>Confirmar</strong>, <strong>✓ Presente</strong>,{' '}
                     <strong>✗ Faltou</strong> ou <strong>Cancelar</strong>.
                 </p>
@@ -734,6 +854,25 @@ const personalSections: HelpSection[] = [
                     pontual). Quando o aluno pede uma remarcação, ela chega
                     como <strong>Pendente</strong> e você{' '}
                     <strong>✓ Aceita</strong> ou <strong>✗ Rejeita</strong>.
+                </p>
+            </>
+        ),
+    },
+    {
+        id: 'desafios',
+        title: 'Desafios',
+        body: (
+            <>
+                <p className="mb-2">
+                    Em <strong>🏆 Desafios</strong> você cria uma campanha
+                    pública com um link para divulgar seu trabalho — quem
+                    ainda não é seu aluno pode participar informando nome,
+                    e-mail e telefone, sem precisar ter conta no Venafit.
+                </p>
+                <p className="mb-0">
+                    Pela lista de participantes você acompanha quem entrou e
+                    pode <strong>converter</strong> qualquer um deles em aluno
+                    seu diretamente, sem precisar enviar o convite padrão.
                 </p>
             </>
         ),
@@ -863,22 +1002,34 @@ export default function AjudaClient() {
     const sections = isPersonal ? personalSections : studentSections;
 
     const tocSections = isPersonal
-        ? sections.map((s) => ({ id: s.id, title: s.title, pro: s.pro }))
+        ? [
+              ...sections.map((s) => ({ id: s.id, title: s.title, pro: s.pro })),
+              { id: 'glossario', title: '📖 Glossário', pro: false },
+          ]
         : [
               { id: 'autorregulacao', title: 'Controle do Microciclo', pro: false },
               ...sections.map((s) => ({ id: s.id, title: s.title, pro: s.pro })),
+              { id: 'glossario', title: '📖 Glossário', pro: false },
           ];
 
     return (
         <div className="container py-4">
             <div className="d-flex justify-content-between align-items-center mb-3">
                 <h1 className="h4 mb-0">Central de Ajuda</h1>
-                <Link
-                    href={isPersonal ? '/personal' : '/meus-treinos'}
-                    className="btn btn-outline-secondary btn-sm"
-                >
-                    Voltar
-                </Link>
+                <div className="d-flex gap-2">
+                    <Link
+                        href="#glossario"
+                        className="btn btn-outline-secondary btn-sm"
+                    >
+                        📖 Glossário
+                    </Link>
+                    <Link
+                        href={isPersonal ? '/personal' : '/meus-treinos'}
+                        className="btn btn-outline-secondary btn-sm"
+                    >
+                        Voltar
+                    </Link>
+                </div>
             </div>
 
             {/* Seletor de público */}
@@ -995,6 +1146,50 @@ export default function AjudaClient() {
                     </div>
                 </section>
             ))}
+
+            <section id="glossario" className="card mb-3">
+                <div className="card-body">
+                    <h2 className="h6">📖 Glossário</h2>
+                    <p className="text-muted small mb-3">
+                        Explicação rápida dos termos técnicos usados nesta
+                        Central de Ajuda, de RPE e periodização a recursos do
+                        app.
+                    </p>
+                    <div className="row g-3">
+                        {getSortedGlossaryTerms().map((term) => (
+                            <div
+                                className="col-12 col-md-6"
+                                key={term.id}
+                                id={`glossario-${term.id}`}
+                            >
+                                <div className="h-100 p-3 rounded border">
+                                    <h3 className="h6 mb-1">{term.term}</h3>
+                                    <p className="small mb-0">{term.long}</p>
+                                    {term.seeAlso &&
+                                        (term.seeAlso.audience === audience ? (
+                                            <Link
+                                                href={`#${term.seeAlso.id}`}
+                                                className="small d-inline-block mt-2"
+                                            >
+                                                Ver seção completa:{' '}
+                                                {term.seeAlso.label} →
+                                            </Link>
+                                        ) : (
+                                            <p className="text-muted small mt-2 mb-0">
+                                                Detalhado na Central do{' '}
+                                                {term.seeAlso.audience ===
+                                                'personal'
+                                                    ? 'Personal'
+                                                    : 'Aluno'}
+                                                : “{term.seeAlso.label}”.
+                                            </p>
+                                        ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
 
             <div className="text-muted small mt-4">
                 {isPersonal

@@ -1,0 +1,11 @@
+.term {
+    color: var(--mint-text) !important;
+    text-decoration: underline dotted;
+    text-underline-offset: 2px;
+    text-decoration-thickness: 1px;
+}
+
+.term:hover,
+.term:focus-visible {
+    text-decoration-style: solid;
+}
