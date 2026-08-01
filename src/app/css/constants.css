@@ -6,7 +6,7 @@
     --color-black: #000;
     --color-white: #fff;
     --color-light-gray: #c4b89e;
-    --color-bg-dark: #f5f0e8;
+    --color-bg-dark: #ece1cb;
 
     /* ── Paleta principal (fixa em ambos temas) ── */
     --mint:           #0ffcbe;
@@ -23,15 +23,20 @@
     --violet-dim:     #7c4ddb;
     --violet-text:    #6d28d9;
 
-    /* ── Paleta de superfície — LIGHT ── */
-    --mil-blue:       #f5f0e8;
-    --mil-blue-mid:   #ebe5d9;
-    --mil-blue-light: #e0d8ca;
-    --surface-1:      #faf6ef;
-    --surface-2:      #f5f0e8;
-    --surface-3:      #ebe5d9;
-    --border-subtle:  rgba(60,50,30,0.15);
-    --border-mid:     rgba(60,50,30,0.28);
+    /* ── Paleta de superfície — LIGHT ──
+       Antes, --mil-blue e --surface-2 eram o MESMO hex (#f5f0e8) e todo o
+       resto da escala cabia entre 250-235 (≈6% de luminosidade) — por isso
+       card/input/modal se fundiam num bege só ("sem vida"). Alargada pra um
+       degrade real (branco → bege claro → bege médio), no mesmo espírito da
+       escala do dark (0 → 36), mantendo a família de cor quente. ── */
+    --mil-blue:       #ece1cb;
+    --mil-blue-mid:   #e2d4b8;
+    --mil-blue-light: #d6c5a0;
+    --surface-1:      #fffdf9;
+    --surface-2:      #f8f2e6;
+    --surface-3:      #f0e7d4;
+    --border-subtle:  rgba(60,50,30,0.18);
+    --border-mid:     rgba(60,50,30,0.32);
 
     /* ── Texto — LIGHT ── */
     --text-primary:   #2c2418;
@@ -45,19 +50,19 @@
     --grad-mint:  linear-gradient(135deg, #0ffcbe 0%, #0ac99a 100%);
     --grad-amber: linear-gradient(135deg, #f0a500 0%, #cc8b00 100%);
     --grad-coral: linear-gradient(135deg, #ff6b6b 0%, #e04f4f 100%);
-    --grad-card:  linear-gradient(160deg, #faf6ef 0%, #f0ebe0 100%);
-    --grad-hero:  linear-gradient(160deg, #f5f0e8 0%, #ebe5d9 60%, #f5f0e8 100%);
+    --grad-card:  linear-gradient(160deg, #fffdf9 0%, #f0e7d4 100%);
+    --grad-hero:  linear-gradient(160deg, #f8f2e6 0%, #ece1cb 60%, #f8f2e6 100%);
 
     /* ── Sombras ── */
-    --shadow-sm:  0 1px 4px rgba(50,40,20,0.12);
-    --shadow-md:  0 4px 14px rgba(50,40,20,0.18);
-    --shadow-lg:  0 8px 28px rgba(50,40,20,0.22);
+    --shadow-sm:  0 1px 4px rgba(50,40,20,0.14);
+    --shadow-md:  0 4px 14px rgba(50,40,20,0.20);
+    --shadow-lg:  0 8px 28px rgba(50,40,20,0.24);
     --shadow-mint: 0 0 16px rgba(15,252,190,0.25);
     --shadow-amber: 0 4px 16px rgba(240,165,0,0.22);
 
     /* ── Efeito de vidro ── */
-    --glass-bg:     rgba(245,240,232,0.88);
-    --glass-border: rgba(60,50,30,0.15);
+    --glass-bg:     rgba(248,242,230,0.88);
+    --glass-border: rgba(60,50,30,0.18);
 
     /* ── Header ── */
     --header-bg: linear-gradient(90deg, #0b1929 0%, #1c2f4a 100%);

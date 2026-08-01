@@ -11,6 +11,7 @@ import {
     type LocalTraining,
 } from '../lib/mesocycleTransforms';
 import ExercisePicker from './ExercisePicker';
+import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
 import s from '../builder.module.css';
 
 interface Props {
@@ -261,6 +262,27 @@ export default function TrainingsEditor({
                                                             s.exerciseEditHeader
                                                         }
                                                     >
+                                                        <ExerciseThumbnail
+                                                            name={
+                                                                ex.name ||
+                                                                'Exercício'
+                                                            }
+                                                            videoThumb={
+                                                                ex.video_thumb
+                                                            }
+                                                            videoUrl={
+                                                                ex.video_url
+                                                            }
+                                                            width={48}
+                                                            height={48}
+                                                            borderRadius={8}
+                                                            captureFrame={
+                                                                false
+                                                            }
+                                                            className={
+                                                                s.exerciseEditThumb
+                                                            }
+                                                        />
                                                         <input
                                                             value={ex.name}
                                                             onChange={(e) =>

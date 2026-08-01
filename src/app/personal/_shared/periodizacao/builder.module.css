@@ -639,24 +639,45 @@
     margin-bottom: 12px;
 }
 
+/* Mesmo tratamento visual do .exerciseCard read-only (gradiente + borda +
+   sombra + sheen), pra o card de edição não parecer um formulário solto —
+   segue o "modelo de cartão" usado no resto do app pra exercício. */
 .exerciseEditCard {
-    background: var(--surface-1);
-    border: 1px solid var(--border-subtle);
+    background: var(--grad-card);
+    border: 1px solid var(--border-mid);
     border-radius: 10px;
     padding: 12px;
     display: flex;
     flex-direction: column;
     gap: 10px;
+    box-shadow: var(--shadow-md);
+    position: relative;
+    overflow: hidden;
+}
+.exerciseEditCard::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, rgba(61,255,208,0.05) 0%, transparent 60%);
+    pointer-events: none;
 }
 
 .exerciseEditHeader {
     display: flex;
-    gap: 8px;
+    gap: 10px;
     align-items: center;
+    position: relative;
 }
 
 .exerciseEditHeader .formInput {
     flex: 1;
+}
+
+/* Mesma thumbnail do card read-only (ExerciseThumbnail), só que menor —
+   aqui é só pra identificar o exercício de relance, o nome já está editável
+   ao lado. */
+.exerciseEditThumb {
+    flex-shrink: 0;
 }
 
 .btnRemoveExercise {
