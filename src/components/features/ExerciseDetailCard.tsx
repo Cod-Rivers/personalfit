@@ -12,6 +12,10 @@ import {
     snapToStandardAspectRatio,
 } from '@/libs/exerciseVideoService';
 import {
+    formatTechniqueSummary,
+    groupTechniqueLabel,
+} from '@/libs/trainingTechniques';
+import {
     getExerciseAnnotation,
     saveExerciseAnnotation,
     getCachedAnnotationNote,
@@ -572,6 +576,32 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                             <strong>Observações:</strong>
                                         </p>
                                         <p>{exercise.notes}</p>
+                                    </div>
+                                )}
+                                {/* Técnica de treinamento avançada marcada pelo personal */}
+                                {exercise.technique && (
+                                    <div className={styles.notesSection}>
+                                        <p>
+                                            <strong>Técnica:</strong>
+                                        </p>
+                                        <p>
+                                            {formatTechniqueSummary(
+                                                exercise.technique,
+                                                exercise.technique_params,
+                                            )}
+                                        </p>
+                                    </div>
+                                )}
+                                {exercise.group_technique && (
+                                    <div className={styles.notesSection}>
+                                        <p>
+                                            <strong>Combinação:</strong>
+                                        </p>
+                                        <p>
+                                            {groupTechniqueLabel(
+                                                exercise.group_technique,
+                                            )}
+                                        </p>
                                     </div>
                                 )}
                                 {/* Instruções do personal trainer (campo comments) */}

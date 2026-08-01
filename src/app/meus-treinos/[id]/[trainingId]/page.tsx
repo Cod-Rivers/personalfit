@@ -66,6 +66,9 @@ function toExerciseLog(ex: ExerciseResponse): ExerciseLog {
         comments: ex.comments,
         restTime: ex.rest_seconds ?? 90,
         plannedWeight: ex.load_kg,
+        technique: ex.technique,
+        technique_params: ex.technique_params,
+        group_technique: ex.group_technique,
     };
 }
 

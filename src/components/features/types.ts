@@ -15,6 +15,18 @@ export interface ExerciseLog {
      * base para a sugestão de carga do painel de autorregulação do
      * microciclo. Ausente no fluxo legado (/app/treino). */
     plannedWeight?: number;
+    /** Técnica de treinamento avançada (dropset, isometria etc) — ver
+     * TECHNIQUE_CATALOG em @/libs/trainingTechniques. */
+    technique?: string;
+    technique_params?: {
+        rounds?: number;
+        round_reduction_pct?: number;
+        pause_seconds?: number;
+        extra_reps?: number;
+        hold_seconds?: number;
+    };
+    /** Variante do bloco de bi-set/superset (ver GROUP_TECHNIQUE_CATALOG). */
+    group_technique?: string;
     // Adicione outros campos se existirem
 }
 

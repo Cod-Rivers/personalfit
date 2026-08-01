@@ -27,6 +27,21 @@ export interface ExerciseResponse {
      * (bissérie/trissérie/superssérie). Exercícios com o mesmo group_id dentro
      * do mesmo treino formam um bloco — a ordem de execução é a ordem em `exercises`. */
     group_id?: string;
+    /** Variante do bloco de group_id (biset/superset/triset/giant_set/
+     * pre_exhaustion/post_exhaustion) — ver GROUP_TECHNIQUE_CATALOG. */
+    group_technique?: string;
+    /** Técnica de treinamento aplicada a este exercício (dropset, isometria
+     * etc) — ver TECHNIQUE_CATALOG em trainingTechniques.ts. */
+    technique?: string;
+    technique_params?: TechniqueParamsResponse;
+}
+
+export interface TechniqueParamsResponse {
+    rounds?: number;
+    round_reduction_pct?: number;
+    pause_seconds?: number;
+    extra_reps?: number;
+    hold_seconds?: number;
 }
 
 export interface TrainingResponse {
@@ -134,6 +149,9 @@ export interface ExerciseRequest {
     rpe_target?: number;
     muscle_group?: string;
     group_id?: string;
+    group_technique?: string;
+    technique?: string;
+    technique_params?: TechniqueParamsResponse;
 }
 
 export interface TrainingRequest {

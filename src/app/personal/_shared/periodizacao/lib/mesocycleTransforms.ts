@@ -4,6 +4,7 @@ import type {
     MesocycleRequest,
     TrainingResponse,
 } from '@/libs/planningService';
+import { groupTechniqueLabel } from '@/libs/trainingTechniques';
 
 export const STATUS_LABEL: Record<string, string> = {
     draft: 'Rascunho',
@@ -121,6 +122,18 @@ export interface LocalExercise {
      * (bissérie/trissérie/superssérie). Exercícios consecutivos com o mesmo
      * group_id dentro do mesmo treino formam um bloco. undefined = avulso. */
     group_id?: string;
+    /** Variante do bloco de group_id — ver GROUP_TECHNIQUE_CATALOG. */
+    group_technique?: string;
+    /** Técnica de treinamento avançada (dropset, isometria etc). '' = nenhuma. */
+    technique: string;
+    // Parâmetros da técnica selecionada (mesmo padrão string-para-input dos
+    // outros campos de prescrição). Só os relevantes para `technique` (ver
+    // TECHNIQUE_CATALOG) são exibidos/enviados.
+    technique_rounds: string;
+    technique_reduction_pct: string;
+    technique_pause_seconds: string;
+    technique_extra_reps: string;
+    technique_hold_seconds: string;
 }
 
 export interface LocalTraining {
@@ -196,8 +209,11 @@ export function partitionExerciseGroups(
     return groups;
 }
 
-/** Rótulo do bloco combinado conforme o número de exercícios agrupados. */
-export function comboGroupLabel(size: number): string {
+/** Rótulo do bloco combinado: usa a variante explícita (group_technique)
+ * quando marcada, senão cai no heurístico por número de exercícios. */
+export function comboGroupLabel(size: number, groupTechnique?: string): string {
+    const explicit = groupTechniqueLabel(groupTechnique);
+    if (explicit) return explicit;
     if (size <= 2) return 'Bissérie';
     if (size === 3) return 'Trissérie';
     return 'Superssérie';
@@ -317,6 +333,21 @@ export function responseToLocal(trainings: TrainingResponse[]): LocalTraining[] 
                 video_url: ex.video_url ?? '',
                 video_thumb: ex.video_thumb ?? '',
                 group_id: ex.group_id,
+                group_technique: ex.group_technique,
+                technique: ex.technique ?? '',
+                technique_rounds: numToField(ex.technique_params?.rounds),
+                technique_reduction_pct: numToField(
+                    ex.technique_params?.round_reduction_pct,
+                ),
+                technique_pause_seconds: numToField(
+                    ex.technique_params?.pause_seconds,
+                ),
+                technique_extra_reps: numToField(
+                    ex.technique_params?.extra_reps,
+                ),
+                technique_hold_seconds: numToField(
+                    ex.technique_params?.hold_seconds,
+                ),
             };
         }),
     }));
@@ -425,6 +456,32 @@ export function localToMesoRequest(
                     rpe_target: fieldToNum(ex.rpe_target, { min: 1, max: 10 }),
                     muscle_group: ex.muscle_group || undefined,
                     group_id: ex.group_id,
+                    group_technique: ex.group_technique,
+                    technique: ex.technique || undefined,
+                    technique_params: ex.technique
+                        ? {
+                              rounds: fieldToNum(ex.technique_rounds, {
+                                  min: 0,
+                                  max: 255,
+                              }),
+                              round_reduction_pct: fieldToNum(
+                                  ex.technique_reduction_pct,
+                                  { min: 0, max: 100 },
+                              ),
+                              pause_seconds: fieldToNum(
+                                  ex.technique_pause_seconds,
+                                  { min: 0, max: 65535 },
+                              ),
+                              extra_reps: fieldToNum(ex.technique_extra_reps, {
+                                  min: 0,
+                                  max: 255,
+                              }),
+                              hold_seconds: fieldToNum(
+                                  ex.technique_hold_seconds,
+                                  { min: 0, max: 65535 },
+                              ),
+                          }
+                        : undefined,
                 };
             }),
         })),
@@ -471,6 +528,9 @@ export function mesoToRequest(meso: MesocycleResponse): MesocycleRequest {
                 rpe_target: ex.rpe_target,
                 muscle_group: ex.muscle_group,
                 group_id: ex.group_id,
+                group_technique: ex.group_technique,
+                technique: ex.technique,
+                technique_params: ex.technique_params,
             })),
         })),
     };

@@ -12,7 +12,27 @@ import {
 } from '../lib/mesocycleTransforms';
 import ExercisePicker from './ExercisePicker';
 import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
+import {
+    TECHNIQUE_CATALOG,
+    TECHNIQUE_CATEGORIES,
+    GROUP_TECHNIQUE_CATALOG,
+    formatTechniqueSummary,
+    type TechniqueParamKey,
+} from '@/libs/trainingTechniques';
 import s from '../builder.module.css';
+
+/** Mapeia a chave genérica do catálogo (rounds/round_reduction_pct/...) para
+ * o campo string correspondente em LocalExercise. */
+const TECHNIQUE_FIELD_MAP: Record<
+    TechniqueParamKey,
+    keyof Omit<LocalExercise, '_id'>
+> = {
+    rounds: 'technique_rounds',
+    round_reduction_pct: 'technique_reduction_pct',
+    pause_seconds: 'technique_pause_seconds',
+    extra_reps: 'technique_extra_reps',
+    hold_seconds: 'technique_hold_seconds',
+};
 
 interface Props {
     trainings: LocalTraining[];
@@ -103,6 +123,27 @@ function PrescriptionNumber({
  * "Ajustes semanais" do MesocycleFormModal. */
 function prescriptionSummary(ex: LocalExercise): string {
     const parts: string[] = [];
+    if (ex.technique) {
+        parts.push(
+            formatTechniqueSummary(ex.technique, {
+                rounds: ex.technique_rounds
+                    ? Number(ex.technique_rounds)
+                    : undefined,
+                round_reduction_pct: ex.technique_reduction_pct
+                    ? Number(ex.technique_reduction_pct)
+                    : undefined,
+                pause_seconds: ex.technique_pause_seconds
+                    ? Number(ex.technique_pause_seconds)
+                    : undefined,
+                extra_reps: ex.technique_extra_reps
+                    ? Number(ex.technique_extra_reps)
+                    : undefined,
+                hold_seconds: ex.technique_hold_seconds
+                    ? Number(ex.technique_hold_seconds)
+                    : undefined,
+            }),
+        );
+    }
     if (ex.load_kg) parts.push(`${ex.load_kg} kg`);
     if (ex.load_percentage) parts.push(`${ex.load_percentage}% 1RM`);
     if (ex.tempo_seconds) parts.push(`Cadência ${ex.tempo_seconds}s`);
@@ -916,6 +957,137 @@ export default function TrainingsEditor({
                                                                         )}
                                                                     </select>
                                                                 </div>
+                                                                <div
+                                                                    className={
+                                                                        s.prescriptionFieldWide
+                                                                    }
+                                                                >
+                                                                    <label
+                                                                        className={
+                                                                            s.formLabel
+                                                                        }
+                                                                    >
+                                                                        Técnica
+                                                                        avançada
+                                                                    </label>
+                                                                    <select
+                                                                        value={
+                                                                            ex.technique
+                                                                        }
+                                                                        onChange={(
+                                                                            e,
+                                                                        ) =>
+                                                                            onUpdateExercise(
+                                                                                active._id,
+                                                                                ex._id,
+                                                                                'technique',
+                                                                                e
+                                                                                    .target
+                                                                                    .value,
+                                                                            )
+                                                                        }
+                                                                        className={
+                                                                            s.formSelect
+                                                                        }
+                                                                    >
+                                                                        <option value="">
+                                                                            Nenhuma
+                                                                        </option>
+                                                                        {TECHNIQUE_CATEGORIES.map(
+                                                                            (
+                                                                                category,
+                                                                            ) => (
+                                                                                <optgroup
+                                                                                    key={
+                                                                                        category
+                                                                                    }
+                                                                                    label={
+                                                                                        category
+                                                                                    }
+                                                                                >
+                                                                                    {Object.entries(
+                                                                                        TECHNIQUE_CATALOG,
+                                                                                    )
+                                                                                        .filter(
+                                                                                            ([
+                                                                                                ,
+                                                                                                def,
+                                                                                            ]) =>
+                                                                                                def.category ===
+                                                                                                category,
+                                                                                        )
+                                                                                        .map(
+                                                                                            ([
+                                                                                                value,
+                                                                                                def,
+                                                                                            ]) => (
+                                                                                                <option
+                                                                                                    key={
+                                                                                                        value
+                                                                                                    }
+                                                                                                    value={
+                                                                                                        value
+                                                                                                    }
+                                                                                                >
+                                                                                                    {
+                                                                                                        def.label
+                                                                                                    }
+                                                                                                </option>
+                                                                                            ),
+                                                                                        )}
+                                                                                </optgroup>
+                                                                            ),
+                                                                        )}
+                                                                    </select>
+                                                                </div>
+                                                                {ex.technique &&
+                                                                    TECHNIQUE_CATALOG[
+                                                                        ex
+                                                                            .technique
+                                                                    ]?.fields.map(
+                                                                        (
+                                                                            f,
+                                                                        ) => (
+                                                                            <PrescriptionNumber
+                                                                                key={
+                                                                                    f.key
+                                                                                }
+                                                                                label={
+                                                                                    f.label
+                                                                                }
+                                                                                unit={
+                                                                                    f.unit
+                                                                                }
+                                                                                min={String(
+                                                                                    f.min,
+                                                                                )}
+                                                                                max={String(
+                                                                                    f.max,
+                                                                                )}
+                                                                                value={
+                                                                                    ex[
+                                                                                        TECHNIQUE_FIELD_MAP[
+                                                                                            f
+                                                                                                .key
+                                                                                        ]
+                                                                                    ] as string
+                                                                                }
+                                                                                onChange={(
+                                                                                    v,
+                                                                                ) =>
+                                                                                    onUpdateExercise(
+                                                                                        active._id,
+                                                                                        ex._id,
+                                                                                        TECHNIQUE_FIELD_MAP[
+                                                                                            f
+                                                                                                .key
+                                                                                        ],
+                                                                                        v,
+                                                                                    )
+                                                                                }
+                                                                            />
+                                                                        ),
+                                                                    )}
                                                             </div>
                                                         )}
                                                     </div>
@@ -1000,8 +1172,55 @@ export default function TrainingsEditor({
                                                         🔗{' '}
                                                         {comboGroupLabel(
                                                             group.length,
+                                                            group[0]
+                                                                .group_technique,
                                                         )}
                                                     </span>
+                                                    <select
+                                                        value={
+                                                            group[0]
+                                                                .group_technique ??
+                                                            ''
+                                                        }
+                                                        onChange={(e) => {
+                                                            const value =
+                                                                e.target.value;
+                                                            group.forEach(
+                                                                (g) =>
+                                                                    onUpdateExercise(
+                                                                        active._id,
+                                                                        g._id,
+                                                                        'group_technique',
+                                                                        value,
+                                                                    ),
+                                                            );
+                                                        }}
+                                                        className={
+                                                            s.formInput
+                                                        }
+                                                        style={{
+                                                            maxWidth: 220,
+                                                        }}
+                                                    >
+                                                        <option value="">
+                                                            Tipo de
+                                                            combinação…
+                                                        </option>
+                                                        {GROUP_TECHNIQUE_CATALOG.map(
+                                                            (gt) => (
+                                                                <option
+                                                                    key={
+                                                                        gt.value
+                                                                    }
+                                                                    value={
+                                                                        gt.value
+                                                                    }
+                                                                >
+                                                                    {gt.label}
+                                                                </option>
+                                                            ),
+                                                        )}
+                                                    </select>
                                                     <button
                                                         type="button"
                                                         className={s.linkBtn}
