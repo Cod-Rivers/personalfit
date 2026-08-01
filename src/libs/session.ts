@@ -105,6 +105,24 @@ export function getStudentHomeRoute(): string {
 }
 
 /**
+ * Rota de entrada por papel, logo após a autenticação. Usada tanto pelo login
+ * quanto pela seleção de perfil (login com CPF de papel duplo), que antes
+ * repetiam a mesma cadeia de ternários.
+ *
+ * Aluno COM personal vinculado entra por `/vitrine` — a página de divulgação da
+ * marca do personal. Quem decide se ela aparece é o SERVIDOR: `/vitrine`
+ * consulta a API e, se o personal não estiver no plano Pro ou não tiver
+ * publicado a página, redireciona na hora para o fluxo atual (Meus Treinos).
+ * O cliente não conhece o plano do personal e não deveria conhecer. Aluno sem
+ * personal nem passa por lá.
+ */
+export function landingRouteFor(user: SessionUser): string {
+    if (user.role === 'admin' || user.role === 'content_editor') return '/admin';
+    if (user.role === 'personal') return '/personal';
+    return user.has_personal ? '/vitrine' : '/app';
+}
+
+/**
  * Limpa toda a sessão: localStorage, cookies e — importante para LGPD — os
  * dados sensíveis de saúde/treino em cache local (IndexedDB offline e Cache
  * Storage do service worker). Em dispositivo compartilhado, isso evita que o

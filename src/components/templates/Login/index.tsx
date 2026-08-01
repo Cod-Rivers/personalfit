@@ -9,7 +9,7 @@ import { Api } from '@/libs/api';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, LoginFormData } from '@/libs/validation/authSchemas';
-import { saveSession } from '@/libs/session';
+import { landingRouteFor, saveSession } from '@/libs/session';
 
 const TLogin: FC = () => {
     const t = useTranslations('LoginPage');
@@ -47,13 +47,7 @@ const TLogin: FC = () => {
                 }
                 saveSession(data.token, data.user);
                 window.location.href =
-                    redirectTarget ||
-                    (data.user.role === 'admin' ||
-                    data.user.role === 'content_editor'
-                        ? '/admin'
-                        : data.user.role === 'personal'
-                          ? '/personal'
-                          : '/app');
+                    redirectTarget || landingRouteFor(data.user);
             }
         } catch {
             setError('Erro ao realizar login');
@@ -85,14 +79,8 @@ const TLogin: FC = () => {
         const token = localStorage.getItem('token');
         const stored = localStorage.getItem('user');
         if (token && stored) {
-            const parsed = JSON.parse(stored);
             window.location.href =
-                safeRedirect ||
-                (parsed.role === 'admin' || parsed.role === 'content_editor'
-                    ? '/admin'
-                    : parsed.role === 'personal'
-                      ? '/personal'
-                      : '/app');
+                safeRedirect || landingRouteFor(JSON.parse(stored));
         }
     }, []);
 

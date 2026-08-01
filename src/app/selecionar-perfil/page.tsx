@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { saveSession } from '@/libs/session';
+import { landingRouteFor, saveSession } from '@/libs/session';
 
 interface UserData {
     id: string;
@@ -35,12 +35,7 @@ export default function SelecionarPerfil() {
         saveSession(token, user);
         localStorage.setItem('refresh_token', refreshToken);
         sessionStorage.removeItem('pending_auth');
-        window.location.href =
-            user.role === 'admin' || user.role === 'content_editor'
-                ? '/admin'
-                : user.role === 'personal'
-                  ? '/personal'
-                  : '/app';
+        window.location.href = landingRouteFor(user);
     };
 
     if (!pending) return null;

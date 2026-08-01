@@ -2,14 +2,25 @@
 
 export interface PersonalBranding {
     logo_base64?: string;
+    /** Paleta escolhida entre o conjunto fechado (ver libs/showcaseThemes.ts). */
+    theme_id?: string;
+    /** Derivadas de `theme_id` pelo servidor — somente leitura no cliente. */
     primary_color?: string;
     secondary_color?: string;
     welcome_banner?: string;
 }
 
+/** Campos que o personal de fato edita; as cores vêm da paleta. */
+export interface UpdateBrandingPayload {
+    logo_base64?: string;
+    theme_id: string;
+    welcome_banner?: string;
+}
 
 /** Atualiza o branding do personal autenticado (plano pro). */
-export async function updateBranding(data: PersonalBranding): Promise<PersonalBranding> {
+export async function updateBranding(
+    data: UpdateBrandingPayload,
+): Promise<PersonalBranding> {
     const res = await Api.put<{ branding: PersonalBranding }>(
         '/personal/branding',
         data,

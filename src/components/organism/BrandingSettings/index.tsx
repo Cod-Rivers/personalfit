@@ -1,11 +1,17 @@
 'use client';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-    PersonalBranding,
+    UpdateBrandingPayload,
     updateBranding,
     getMyBranding,
 } from '@/libs/brandingService';
 import { useBranding } from '@/context/BrandingContext';
+import {
+    DEFAULT_SHOWCASE_THEME_ID,
+    SHOWCASE_THEMES,
+    buildShowcaseThemeVars,
+    findShowcaseTheme,
+} from '@/libs/showcaseThemes';
 import styles from './BrandingSettings.module.css';
 
 interface Props {
@@ -28,8 +34,7 @@ export default function BrandingSettings({ planType }: Props) {
     const isPro = planType === 'pro';
 
     const [logo, setLogo] = useState('');
-    const [primaryColor, setPrimaryColor] = useState('#0ffcbe');
-    const [secondaryColor, setSecondaryColor] = useState('#ff6b6b');
+    const [themeId, setThemeId] = useState(DEFAULT_SHOWCASE_THEME_ID);
     const [welcomeBanner, setWelcomeBanner] = useState('');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -46,8 +51,18 @@ export default function BrandingSettings({ planType }: Props) {
             .then(({ branding }) => {
                 if (branding) {
                     setLogo(branding.logo_base64 ?? '');
-                    setPrimaryColor(branding.primary_color ?? '#0ffcbe');
-                    setSecondaryColor(branding.secondary_color ?? '#ff6b6b');
+                    // Branding salvo antes das paletas existirem não tem
+                    // theme_id: casa pela cor primária, e findShowcaseTheme cai
+                    // no padrão se nenhuma bater.
+                    setThemeId(
+                        branding.theme_id ??
+                            (SHOWCASE_THEMES.find(
+                                (t) =>
+                                    t.accent.toLowerCase() ===
+                                    (branding.primary_color ?? '').toLowerCase(),
+                            )?.id ??
+                                DEFAULT_SHOWCASE_THEME_ID),
+                    );
                     setWelcomeBanner(branding.welcome_banner ?? '');
                 }
             })
@@ -77,10 +92,9 @@ export default function BrandingSettings({ planType }: Props) {
         setError('');
         setSuccess(false);
         try {
-            const payload: PersonalBranding = {
+            const payload: UpdateBrandingPayload = {
                 logo_base64: logo || undefined,
-                primary_color: primaryColor,
-                secondary_color: secondaryColor,
+                theme_id: themeId,
                 welcome_banner: welcomeBanner,
             };
             const saved = await updateBranding(payload);
@@ -97,6 +111,8 @@ export default function BrandingSettings({ planType }: Props) {
     };
 
     if (loading) return <p className={styles.loading}>Carregando...</p>;
+
+    const themeVars = buildShowcaseThemeVars(findShowcaseTheme(themeId));
 
     return (
         <div className={styles.wrapper}>
@@ -165,48 +181,47 @@ export default function BrandingSettings({ planType }: Props) {
                     </div>
                 </section>
 
-                {/* Colors */}
+                {/* Tema */}
                 <section className={styles.section}>
-                    <h3 className={styles.sectionTitle}>Cores</h3>
+                    <h3 className={styles.sectionTitle}>Tema</h3>
                     <p className={styles.sectionDesc}>
-                        Defina as cores que substituirão as cores padrão da
-                        plataforma para seus alunos.
+                        Escolha uma paleta: ela define as cores do app para seus
+                        alunos e também a sua página de divulgação. As cores de
+                        cartão, borda e texto são derivadas automaticamente,
+                        garantindo contraste.
                     </p>
-                    <div className={styles.colorRow}>
-                        <label className={styles.colorLabel}>
-                            <span>Cor primária</span>
-                            <div className={styles.colorInputWrapper}>
-                                <input
-                                    type="color"
-                                    value={primaryColor}
-                                    onChange={(e) =>
-                                        setPrimaryColor(e.target.value)
-                                    }
-                                    disabled={!isPro}
-                                    className={styles.colorPicker}
+                    <div className={styles.themeRow}>
+                        {SHOWCASE_THEMES.map((t) => (
+                            <button
+                                key={t.id}
+                                type="button"
+                                className={styles.themeOption}
+                                onClick={() => setThemeId(t.id)}
+                                disabled={!isPro}
+                                aria-pressed={themeId === t.id}
+                                title={t.label}
+                            >
+                                <span
+                                    className={`${styles.themeSwatch} ${
+                                        themeId === t.id
+                                            ? styles.themeSwatchActive
+                                            : ''
+                                    }`}
+                                    style={{
+                                        background: `linear-gradient(135deg, ${t.accent} 50%, ${t.bg} 50%)`,
+                                    }}
                                 />
-                                <span className={styles.colorHex}>
-                                    {primaryColor}
+                                <span
+                                    className={`${styles.themeLabel} ${
+                                        themeId === t.id
+                                            ? styles.themeLabelActive
+                                            : ''
+                                    }`}
+                                >
+                                    {t.label}
                                 </span>
-                            </div>
-                        </label>
-                        <label className={styles.colorLabel}>
-                            <span>Cor secundária</span>
-                            <div className={styles.colorInputWrapper}>
-                                <input
-                                    type="color"
-                                    value={secondaryColor}
-                                    onChange={(e) =>
-                                        setSecondaryColor(e.target.value)
-                                    }
-                                    disabled={!isPro}
-                                    className={styles.colorPicker}
-                                />
-                                <span className={styles.colorHex}>
-                                    {secondaryColor}
-                                </span>
-                            </div>
-                        </label>
+                            </button>
+                        ))}
                     </div>
                 </section>
 
@@ -240,8 +255,12 @@ export default function BrandingSettings({ planType }: Props) {
                         className={styles.preview}
                         style={
                             {
-                                '--preview-primary': primaryColor,
-                                '--preview-secondary': secondaryColor,
+                                '--preview-primary': themeVars['--vt-accent'],
+                                '--preview-secondary': themeVars['--vt-bg'],
+                                // O texto do banner acompanha o fundo da paleta:
+                                // fixá-lo em branco sumiria na paleta clara.
+                                '--preview-banner-text':
+                                    themeVars['--vt-text'],
                             } as React.CSSProperties
                         }
                     >

@@ -1,0 +1,458 @@
+/*
+ * Vitrine do personal — tela inicial do aluno vinculado a um personal Pro.
+ *
+ * Esta tela é uma ILHA de tema: todas as cores vêm das vars --vt-* derivadas da
+ * paleta que o personal escolheu (ver libs/showcaseThemes.ts), não dos tokens
+ * globais do app. Espaçamento, raio e tipografia continuam nos tokens globais
+ * (--space-*, --radius-*, --font-*) para não destoar do resto do produto.
+ */
+
+/*
+ * O layout global (.main-content > :not(nav)) impõe max-width 600px e padding
+ * lateral a toda página. A vitrine é sangrada (capa de borda a borda), então
+ * precisa zerar esse padding — daí a especificidade extra via :global.
+ */
+:global(.main-content) > .page {
+    max-width: 480px;
+    padding: 0;
+    margin: 0 auto;
+}
+
+.card {
+    background: var(--vt-bg);
+    color: var(--vt-text);
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Em telas maiores a vitrine vira um cartão destacado do fundo do app. */
+@media (min-width: 768px) {
+    .card {
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-lg);
+        margin: var(--space-5) 0;
+        min-height: 0;
+    }
+}
+
+/* ── Capa ── */
+
+.cover {
+    position: relative;
+    height: 220px;
+    flex-shrink: 0;
+    background: var(--vt-card);
+}
+
+.coverImg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.coverPlaceholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-xs);
+    color: var(--vt-text-faint);
+    text-align: center;
+    padding: 0 var(--space-6);
+}
+
+/* Escurece o pé da capa para o avatar e os controles não sumirem sobre fotos
+   claras. */
+.coverScrim {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        180deg,
+        rgba(0, 0, 0, 0.15) 0%,
+        rgba(0, 0, 0, 0.65) 100%
+    );
+    pointer-events: none;
+}
+
+.coverTop {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    right: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+}
+
+.editBtn {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(6px);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    flex-shrink: 0;
+    transition: background 0.15s;
+}
+.editBtn:hover {
+    background: rgba(255, 255, 255, 0.32);
+}
+
+.proBadge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(6px);
+    padding: 5px 10px;
+    border-radius: var(--radius-full);
+    margin-left: auto;
+}
+
+.proDot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--vt-accent);
+}
+
+.proLabel {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.03em;
+}
+
+.avatar {
+    position: absolute;
+    left: 16px;
+    bottom: -34px;
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    border: 3px solid var(--vt-frame-border);
+    overflow: hidden;
+    background: var(--vt-card);
+}
+
+.avatarImg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.avatarFallback {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--vt-accent);
+}
+
+/* ── Corpo ── */
+
+.body {
+    padding: 44px var(--space-4) 0;
+}
+
+.identity {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+}
+
+.name {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--vt-text);
+    line-height: 1.2;
+    margin: 0;
+}
+
+.tagline {
+    font-size: var(--font-sm);
+    color: var(--vt-accent);
+    font-weight: 600;
+    margin: 2px 0 0;
+}
+
+.social {
+    display: flex;
+    gap: 6px;
+    margin-top: 2px;
+    /* flex-wrap junto de flex-shrink:0 nos filhos: sem ele, os ícones estouram
+       o cartão quando o nome do personal é longo. */
+    flex-wrap: wrap;
+}
+
+.socialLink {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--vt-card);
+    color: var(--vt-text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    flex-shrink: 0;
+    transition: color 0.15s, background 0.15s;
+}
+.socialLink:hover {
+    color: var(--vt-accent);
+    background: var(--vt-border);
+}
+
+/* ── Estatísticas ── */
+
+.stats {
+    display: flex;
+    margin-top: var(--space-4);
+    border-top: 1px solid var(--vt-border);
+    border-bottom: 1px solid var(--vt-border);
+}
+
+.stat {
+    flex: 1;
+    text-align: center;
+    padding: var(--space-3) var(--space-1);
+    border-right: 1px solid var(--vt-border);
+}
+.stat:last-child {
+    border-right: none;
+}
+
+.statValue {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--vt-text);
+}
+
+.statLabel {
+    font-size: 0.62rem;
+    color: var(--vt-text-muted);
+    margin-top: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+/* ── Bio e especialidades ── */
+
+.bio {
+    margin-top: var(--space-4);
+    font-size: var(--font-base);
+    line-height: 1.55;
+    color: var(--vt-text-secondary);
+    white-space: pre-line;
+}
+
+.chips {
+    display: flex;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+    margin-top: 14px;
+}
+
+.chip {
+    padding: 6px var(--space-3);
+    border-radius: var(--radius-full);
+    font-size: 0.72rem;
+    font-weight: 600;
+    background: var(--vt-card);
+    color: var(--vt-text-secondary);
+}
+
+/* ── Resultados de alunos ── */
+
+.section {
+    margin-top: 22px;
+}
+
+.sectionTitle {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--vt-text-faint);
+    margin-bottom: var(--space-3);
+}
+
+/* Sangra o carrossel até as bordas do cartão, mas mantém o primeiro e o último
+   item alinhados ao texto. */
+.carousel {
+    display: flex;
+    gap: var(--space-3);
+    overflow-x: auto;
+    padding: 0 var(--space-4) var(--space-1);
+    margin: 0 calc(-1 * var(--space-4));
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+}
+
+.resultCard {
+    flex: 0 0 108px;
+    scroll-snap-align: start;
+}
+
+.resultImg {
+    width: 108px;
+    height: 132px;
+    object-fit: cover;
+    border-radius: var(--radius-lg);
+    display: block;
+    background: var(--vt-card);
+}
+
+.resultCaption {
+    font-size: 0.68rem;
+    color: var(--vt-text-muted);
+    margin-top: 5px;
+    text-align: center;
+}
+
+/* ── Depoimento ── */
+
+.testimonial {
+    margin-top: 22px;
+    background: var(--vt-card);
+    border: 1px solid var(--vt-border);
+    border-radius: 14px;
+    padding: 14px;
+    display: flex;
+    gap: var(--space-3);
+}
+
+.testimonialAvatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    object-fit: cover;
+    background: var(--vt-border);
+}
+
+.testimonialText {
+    font-size: 0.82rem;
+    color: var(--vt-text-secondary);
+    line-height: 1.5;
+    font-style: italic;
+    margin: 0;
+}
+
+.testimonialAuthor {
+    font-size: 0.7rem;
+    color: var(--vt-text-muted);
+    font-weight: 700;
+    margin: 6px 0 0;
+}
+
+/* ── Aviso / comercial ── */
+
+.announcement {
+    display: block;
+    margin-top: 22px;
+    background: var(--vt-card);
+    border: 1px solid var(--vt-accent);
+    border-radius: var(--radius-lg);
+    padding: var(--space-3) 14px;
+    text-decoration: none;
+}
+
+.announcementLabel {
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--vt-accent);
+    margin-bottom: var(--space-1);
+}
+
+.announcementText {
+    font-size: 0.82rem;
+    color: var(--vt-text-secondary);
+    line-height: 1.45;
+}
+
+.announcementImageWrap {
+    display: block;
+    margin-top: 22px;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: 1px solid var(--vt-accent);
+}
+
+.announcementImg {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    display: block;
+}
+
+/* ── CTA ── */
+
+.ctaWrap {
+    margin-top: 22px;
+    padding-bottom: var(--space-5);
+}
+
+.cta {
+    width: 100%;
+    padding: 15px 0;
+    border: none;
+    border-radius: var(--radius-lg);
+    background: var(--vt-accent);
+    color: var(--vt-btn-text);
+    font-size: 0.95rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: filter 0.15s;
+}
+.cta:hover {
+    filter: brightness(1.08);
+}
+.cta:active {
+    filter: brightness(0.94);
+}
+
+.credit {
+    text-align: center;
+    font-size: 0.68rem;
+    color: var(--vt-text-faint);
+    margin-top: var(--space-3);
+}
+
+/* Aviso exibido só para o personal dono, quando a página ainda está oculta
+   para os alunos. */
+.draftNotice {
+    margin: var(--space-3) var(--space-4) 0;
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    border: 1px dashed var(--vt-accent);
+    background: var(--vt-card);
+    color: var(--vt-text-secondary);
+    font-size: var(--font-xs);
+    line-height: 1.5;
+}
+
+.loading {
+    padding: var(--space-8) var(--space-4);
+    text-align: center;
+    color: var(--text-muted);
+}

@@ -1,0 +1,311 @@
+/*
+ * Painel de edição da vitrine. Roda dentro do Modal full-screen do sistema
+ * (components/system/Modal), então usa os tokens GLOBAIS do app — quem edita é
+ * o personal, dentro da interface normal do produto; as cores --vt-* da paleta
+ * só valem para a prévia de tema aqui dentro.
+ */
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+}
+
+.group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.label {
+    font-size: var(--font-xs);
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.hint {
+    font-size: var(--font-xs);
+    color: var(--text-muted);
+    line-height: 1.45;
+}
+
+.input,
+.textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    background: var(--surface-1);
+    color: var(--text-primary);
+    font-size: var(--font-base);
+    font-family: inherit;
+}
+.input:focus,
+.textarea:focus {
+    outline: none;
+    border-color: var(--mint-dim);
+}
+
+.textarea {
+    resize: vertical;
+    min-height: 76px;
+}
+
+.counter {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-align: right;
+}
+
+/* ── Seletor de tema ── */
+
+.swatches {
+    display: flex;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+}
+
+.swatch {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    cursor: pointer;
+    padding: 0;
+    /* Borda sempre presente (transparente quando não selecionado) para o item
+       não "pular" 2px ao ser escolhido. */
+    border: 3px solid transparent;
+    box-shadow: 0 0 0 1px var(--border-subtle);
+    transition: transform 0.12s;
+}
+.swatch:hover {
+    transform: scale(1.08);
+}
+.swatchActive {
+    border-color: var(--text-primary);
+}
+
+/* ── Interruptores de visibilidade ── */
+
+.toggleRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+}
+
+.toggleLabel {
+    font-size: var(--font-base);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.toggle {
+    width: 42px;
+    height: 24px;
+    border-radius: var(--radius-full);
+    border: none;
+    cursor: pointer;
+    background: var(--border-mid);
+    position: relative;
+    flex-shrink: 0;
+    transition: background 0.15s;
+}
+.toggleOn {
+    background: var(--mint-dim);
+}
+
+.knob {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    transition: left 0.15s;
+}
+.toggleOn .knob {
+    left: 21px;
+}
+
+/* ── Blocos por seção ── */
+
+.section {
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    background: var(--surface-2);
+}
+
+.grid3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-2);
+}
+
+/* Alunos e Avaliação: calculados pelo servidor, não editáveis — mesma altura
+   de um input para o grid de 3 colunas não pular entre eles e o campo "Anos". */
+.computedStat {
+    padding: 10px 12px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    background: var(--surface-3);
+    color: var(--text-secondary);
+    font-size: var(--font-base);
+    font-weight: 700;
+}
+
+@media (max-width: 420px) {
+    .grid3 {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ── Upload de imagem ── */
+
+.mediaRow {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+}
+
+.mediaPreview {
+    width: 96px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+    background: var(--surface-3);
+    flex-shrink: 0;
+}
+
+.mediaPreviewRound {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+}
+
+.mediaEmpty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.smallBtn {
+    padding: 8px 14px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+    background: var(--surface-1);
+    color: var(--text-primary);
+    font-size: var(--font-sm);
+    font-weight: 600;
+    cursor: pointer;
+    /* flex-shrink:0 sem flex-wrap no pai faz o botão estourar o cartão em
+       telas estreitas — o pai (.mediaRow/.resultActions) tem wrap. */
+    flex-shrink: 0;
+}
+.smallBtn:hover:not(:disabled) {
+    background: var(--surface-3);
+}
+.smallBtn:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.dangerBtn {
+    composes: smallBtn;
+    color: var(--coral-dim);
+    border-color: var(--coral-dim);
+}
+
+/* ── Lista de resultados ── */
+
+.resultRow {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    padding: var(--space-3);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    background: var(--surface-1);
+}
+
+.resultThumb {
+    width: 52px;
+    height: 64px;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+    background: var(--surface-3);
+}
+
+.resultCaptionInput {
+    composes: input;
+    flex: 1 1 140px;
+    width: auto;
+}
+
+/* ── Tipo de aviso ── */
+
+.typeToggle {
+    display: flex;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+.typeBtn {
+    flex: 1 1 90px;
+    padding: 9px 0;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+    background: var(--surface-1);
+    color: var(--text-secondary);
+    font-size: var(--font-sm);
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.typeBtnActive {
+    composes: typeBtn;
+    background: var(--mint-dim);
+    border-color: var(--mint-dim);
+    color: var(--btn-text);
+}
+
+/* ── Rodapé ── */
+
+.error {
+    color: var(--coral-dim);
+    font-size: var(--font-sm);
+    margin: 0;
+}
+
+.saveBtn {
+    padding: 11px 22px;
+    border: none;
+    border-radius: var(--radius-md);
+    background: var(--grad-mint);
+    color: var(--btn-text);
+    font-size: var(--font-base);
+    font-weight: 700;
+    cursor: pointer;
+}
+.saveBtn:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.cancelBtn {
+    composes: smallBtn;
+}

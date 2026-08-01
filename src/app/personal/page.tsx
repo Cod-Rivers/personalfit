@@ -147,6 +147,23 @@ export default function PersonalDashboard() {
                     </button>
                     <button
                         className={s.tab}
+                        onClick={() =>
+                            router.push(
+                                planType === 'pro'
+                                    ? '/vitrine'
+                                    : '/pagamento?produto=pro',
+                            )
+                        }
+                        title={
+                            planType === 'pro'
+                                ? 'Página de divulgação exibida aos seus alunos'
+                                : 'Recurso exclusivo do plano PRO'
+                        }
+                    >
+                        ✨ Minha Página{planType === 'pro' ? '' : ' 🔒'}
+                    </button>
+                    <button
+                        className={s.tab}
                         onClick={() => router.push('/personal/desafios')}
                     >
                         🏆 Desafios
