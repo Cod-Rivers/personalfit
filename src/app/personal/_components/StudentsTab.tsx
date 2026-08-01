@@ -229,6 +229,20 @@ export default function StudentsTab({ state }: Props) {
                                     >
                                         💰 Financeiro
                                     </button>
+                                    <button
+                                        onClick={() =>
+                                            router.push(
+                                                `/personal/aluno/${st.id}/anamnese`,
+                                            )
+                                        }
+                                        className={s.gridAction}
+                                        style={{
+                                            borderColor: '#e0a03c',
+                                            color: '#e0a03c',
+                                        }}
+                                    >
+                                        🩺 Triagem/Anamnese
+                                    </button>
                                 </div>
 
                                 <div className={s.footLinks}>

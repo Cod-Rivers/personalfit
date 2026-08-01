@@ -6,6 +6,11 @@ export interface IQuestionProps {
         answer_id: string;
         text: string;
     }>;
+    /** "" (ou ausente) = pergunta legada de anamnese; "parq" = triagem de
+     * saúde (PAR-Q). O backend já ordena PARQ primeiro em GET /questions.
+     * Opcional e não lido pelo QuestionsRenderer — usado só por quem exibe a
+     * lista fora dele (ex.: tela de revisão da anamnese). */
+    category?: string;
 }
 
 export interface IquestionsRendererProps {

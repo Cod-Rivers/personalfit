@@ -19,6 +19,13 @@ const DOR_LABELS: Record<string, string> = {
 // para que o backend registre qual versão o titular aceitou (prova de consentimento).
 const CONSENT_VERSION = '2026-07-21';
 
+// Versão do termo de responsabilidade (waiver) aceito quando a triagem PAR-Q
+// sinaliza uma resposta de risco. Incremente ao mudar o texto abaixo, para
+// que o backend registre qual versão o titular aceitou.
+// ATENÇÃO: texto do termo é um rascunho — precisa de revisão jurídica antes
+// de ir para produção.
+const WAIVER_VERSION = '2026-08-01';
+
 /** Espelha commands.ProtocolSummary do backend (Personal-fit-Back). */
 interface ProtocolSummary {
     assigned: boolean;
@@ -30,6 +37,11 @@ interface ProtocolSummary {
     ambiente_aviso?: string;
     duracao_sessao?: string;
     notes?: string;
+    // Preenchidos quando a triagem PAR-Q sinaliza uma resposta de risco:
+    // nenhum protocolo é atribuído até o titular aceitar o termo de
+    // responsabilidade (ver POST /user/anamnesis/waiver).
+    blocked?: boolean;
+    block_reasons?: string[];
 }
 
 const MUSCLE_EMPHASIS_LABELS: Record<string, string> = {
@@ -56,6 +68,8 @@ const ERROR_COPY: Record<string, string> = {
         'Seu personal trainer monta seu treino diretamente — a anamnese automática não se aplica ao seu caso.',
     anamnesis_blocked:
         'Você já fez uma anamnese recentemente. É preciso esperar o intervalo mínimo antes de repetir.',
+    no_waiver_pending:
+        'Não há um termo de responsabilidade pendente para aceitar. Atualize a página e tente novamente.',
 };
 
 type ApiErrorResponse = { error?: string; code?: string };
@@ -92,13 +106,17 @@ const Questions: FC = () => {
     const [questions, setQuestions] = useState<IQuestionProps[]>([]);
     const [doresOptions, setDoresOptions] = useState<string[]>([]);
     const [selectedDores, setSelectedDores] = useState<string[]>([]);
-    const [step, setStep] = useState<'dores' | 'questions' | 'review' | 'result'>('dores');
+    const [step, setStep] = useState<
+        'dores' | 'triagem' | 'questions' | 'review' | 'result' | 'blocked' | 'linked-record'
+    >('dores');
     const [answers, setAnswers] = useState<{ [key: string]: string }>({});
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [protocolSummary, setProtocolSummary] = useState<ProtocolSummary | null>(null);
     const [consentGiven, setConsentGiven] = useState(false);
+    const [waiverAccepted, setWaiverAccepted] = useState(false);
+    const [waiverSubmitting, setWaiverSubmitting] = useState(false);
     // Aluno free bloqueado (menos de 2 meses desde a última anamnese e sem
     // liberação): oferece a compra de uma nova anamnese + treino.
     const [blockedInfo, setBlockedInfo] = useState<{
@@ -149,6 +167,20 @@ const Questions: FC = () => {
         setStep('review');
     };
 
+    /** Decide para qual tela ir a partir de um protocol_summary — reaproveitado
+     * pelo envio da anamnese e pelo aceite do termo de responsabilidade, já
+     * que ambos os endpoints devolvem o mesmo formato de resposta. */
+    const resolveStep = (summary: ProtocolSummary | null) => {
+        setProtocolSummary(summary);
+        if (summary?.blocked) {
+            setStep('blocked');
+        } else if (summary && !summary.assigned && !summary.blocked) {
+            setStep('linked-record');
+        } else {
+            setStep('result');
+        }
+    };
+
     const handleConfirmSubmit = async () => {
         try {
             setSubmitting(true);
@@ -163,12 +195,26 @@ const Questions: FC = () => {
                 consent: consentGiven,
                 consent_version: CONSENT_VERSION,
             });
-            setProtocolSummary(data.protocol_summary ?? null);
-            setStep('result');
+            resolveStep(data.protocol_summary ?? null);
         } catch (error) {
             setErrorMessage(friendlyError(error));
         } finally {
             setSubmitting(false);
+        }
+    };
+
+    const handleAcceptWaiver = async () => {
+        try {
+            setWaiverSubmitting(true);
+            setErrorMessage(null);
+            const { data } = await Api.post('/user/anamnesis/waiver', {
+                waiver_version: WAIVER_VERSION,
+            });
+            resolveStep(data.protocol_summary ?? null);
+        } catch (error) {
+            setErrorMessage(friendlyError(error));
+        } finally {
+            setWaiverSubmitting(false);
         }
     };
 
@@ -181,7 +227,14 @@ const Questions: FC = () => {
         const stored = localStorage.getItem('user');
         if (stored) {
             const parsed = JSON.parse(stored);
-            // Aluno vinculado a um personal recebe o treino diretamente dele, não faz anamnese própria
+            // Aluno vinculado a um personal recebe o treino diretamente dele, não faz anamnese própria.
+            // CONHECIDO EM ABERTO: se o personal usar "Liberar para o aluno preencher"
+            // (POST /students/:id/anamnesis-access), este aluno passa a poder preencher a
+            // própria anamnese — mas /user/anamnesis/status (única checagem já feita aqui)
+            // não devolve esse flag, então não há como diferenciar os dois casos sem uma nova
+            // chamada. Por ora mantém o redirect incondicional (o caso comum, personal nunca
+            // libera); falta um ponto de entrada direto para /anamnese nesse cenário — ex. um
+            // link "Preencher minha anamnese" a partir de /meus-treinos.
             if (parsed.has_personal) {
                 router.replace('/meus-treinos');
                 return;
@@ -277,6 +330,22 @@ const Questions: FC = () => {
                         <button
                             className="btn btn-gold"
                             disabled={!consentGiven}
+                            onClick={() => setStep('triagem')}
+                        >
+                            Continuar
+                        </button>
+                    </div>
+                )}
+                {!loading && !blockedInfo && step === 'triagem' && (
+                    <div className="w-100 d-flex flex-column text-center">
+                        <h1>Triagem de segurança</h1>
+                        <p>
+                            Antes de montar seu treino, precisamos confirmar
+                            que você pode praticar atividade física com
+                            segurança. As próximas perguntas são rápidas.
+                        </p>
+                        <button
+                            className="btn btn-gold mt-2"
                             onClick={() => setStep('questions')}
                         >
                             Continuar
@@ -289,7 +358,7 @@ const Questions: FC = () => {
                             questions={questions}
                             submitQuestions={handleQuestionsAnswered}
                             initialAnswers={answers}
-                            onBackBeforeFirst={() => setStep('dores')}
+                            onBackBeforeFirst={() => setStep('triagem')}
                         />
                     </div>
                 )}
@@ -377,6 +446,85 @@ const Questions: FC = () => {
                                 suporte se isso persistir.
                             </p>
                         )}
+                        <button
+                            className="btn btn-gold"
+                            onClick={() => router.push('/meus-treinos')}
+                        >
+                            Ver meus treinos
+                        </button>
+                    </div>
+                )}
+                {!loading && !blockedInfo && step === 'blocked' && (
+                    <div className="w-100 d-flex flex-column text-center">
+                        <h1>Antes de continuar, precisamos confirmar sua liberação</h1>
+                        <p>
+                            Algumas das suas respostas indicam que você deve
+                            buscar orientação profissional antes de começar a
+                            treinar. Por isso, ainda não montamos seu treino
+                            automaticamente.
+                        </p>
+                        {protocolSummary?.block_reasons && protocolSummary.block_reasons.length > 0 && (
+                            <div className="d-flex flex-column gap-2 my-3 text-start">
+                                {protocolSummary.block_reasons.map((reason, idx) => (
+                                    <div key={idx} className="p-3 rounded" style={{ background: 'var(--surface-1)' }}>
+                                        {reason}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        <div className="p-3 rounded my-3 text-start" style={{ background: 'var(--surface-1)' }}>
+                            <p className="mb-3">
+                                {/* Rascunho — precisa de revisão jurídica antes de ir para produção. */}
+                                Declaro que já obtive a liberação de um médico,
+                                de um profissional de educação física e de um
+                                fisioterapeuta para a prática de atividade
+                                física, e assumo a responsabilidade pelas
+                                informações prestadas nesta triagem. Sei que
+                                devo interromper a atividade e procurar
+                                orientação médica caso sinta qualquer
+                                desconforto.
+                            </p>
+                            <div className="form-check mb-3">
+                                <input
+                                    className="form-check-input"
+                                    type="checkbox"
+                                    id="waiver-accept"
+                                    checked={waiverAccepted}
+                                    onChange={(e) => setWaiverAccepted(e.target.checked)}
+                                />
+                                <label className="form-check-label" htmlFor="waiver-accept">
+                                    Li e aceito o termo acima
+                                </label>
+                            </div>
+                            {errorMessage && (
+                                <p className="mb-3" style={{ color: 'var(--color-danger, #c0392b)' }}>
+                                    {errorMessage}
+                                </p>
+                            )}
+                            <button
+                                className="btn btn-gold w-100"
+                                disabled={!waiverAccepted || waiverSubmitting}
+                                onClick={handleAcceptWaiver}
+                            >
+                                {waiverSubmitting ? 'Enviando...' : 'Aceitar e continuar'}
+                            </button>
+                        </div>
+                        <button
+                            type="button"
+                            className="btn btn-link"
+                            onClick={() => router.push(getStudentHomeRoute())}
+                        >
+                            Prefiro não continuar agora
+                        </button>
+                    </div>
+                )}
+                {!loading && !blockedInfo && step === 'linked-record' && (
+                    <div className="w-100 d-flex flex-column text-center">
+                        <h1>Respostas registradas</h1>
+                        <p>
+                            {protocolSummary?.notes ??
+                                'Suas respostas foram registradas. Seu personal trainer já monta seu treino diretamente.'}
+                        </p>
                         <button
                             className="btn btn-gold"
                             onClick={() => router.push('/meus-treinos')}
