@@ -87,6 +87,7 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
         null,
     );
     const [userAnnotations, setUserAnnotations] = useState<string>('');
+    const [notesOpen, setNotesOpen] = useState(false);
     const [isSavingAnnotations, setIsSavingAnnotations] = useState(false);
     const [annotationsStatus, setAnnotationsStatus] = useState<
         'idle' | 'saved' | 'saved-offline' | 'error'
@@ -126,7 +127,9 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
         // "piscar" vazio enquanto a resposta do servidor não chega); o
         // servidor é a fonte da verdade e sobrescreve assim que responder.
         setAnnotationsStatus('idle');
-        setUserAnnotations(getCachedAnnotationNote(exercise.id));
+        const cachedNote = getCachedAnnotationNote(exercise.id);
+        setUserAnnotations(cachedNote);
+        setNotesOpen(!!cachedNote);
 
         let cancelled = false;
         getExerciseAnnotation(exercise.id)
@@ -134,6 +137,7 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                 if (cancelled) return;
                 setUserAnnotations(res.note ?? '');
                 setCachedAnnotationNote(exercise.id, res.note ?? '');
+                if (res.note) setNotesOpen(true);
             })
             .catch(() => {
                 // Offline ou exercício ainda sem contrapartida no backend:
@@ -540,12 +544,14 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                         )}
                                     </div>
                                 </div>
-                                <div className={styles.detailRow}>
-                                    <p>
-                                        <strong>Variações:</strong>{' '}
-                                        {exercise.variations || 'N/A'}
-                                    </p>
-                                </div>
+                                {exercise.variations && (
+                                    <div className={styles.detailRow}>
+                                        <p>
+                                            <strong>Variações:</strong>{' '}
+                                            {exercise.variations}
+                                        </p>
+                                    </div>
+                                )}
                                 {exercise.timed && (
                                     <p className={styles.timedInfo}>
                                         Controlado por tempo
@@ -616,38 +622,75 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                     </div>
                                 )}
                                 {/* Campo de Anotações do Usuário */}
-                                <div className={styles.userAnnotationsSection}>
-                                    <p>
-                                        <strong>Minhas Anotações:</strong>
-                                    </p>
-                                    <textarea
-                                        value={userAnnotations}
-                                        onChange={handleAnnotationsChange}
-                                        className={styles.userAnnotationsInput}
-                                        placeholder="Adicione suas anotações aqui..."
-                                    />
+                                <div className={styles.collapsibleCard}>
                                     <button
-                                        onClick={handleSaveAnnotations}
-                                        className={styles.saveAnnotationsButton}
-                                        disabled={isSavingAnnotations}
+                                        type="button"
+                                        onClick={() =>
+                                            setNotesOpen((v) => !v)
+                                        }
+                                        aria-expanded={notesOpen}
+                                        className={styles.collapsibleToggle}
                                     >
-                                        {isSavingAnnotations ? 'Salvando...' : 'Salvar'}
-                                    </button>
-                                    {annotationsStatus !== 'idle' && (
-                                        <p
+                                        <span
+                                            className={styles.collapsibleTitle}
+                                        >
+                                            Minhas Anotações
+                                        </span>
+                                        <span
+                                            aria-hidden
                                             className={
-                                                annotationsStatus === 'error'
-                                                    ? styles.annotationsStatusError
-                                                    : styles.annotationsStatus
+                                                notesOpen
+                                                    ? styles.collapsibleChevronOpen
+                                                    : styles.collapsibleChevron
                                             }
                                         >
-                                            {annotationsStatus === 'saved' &&
-                                                '✓ Anotações salvas.'}
-                                            {annotationsStatus === 'saved-offline' &&
-                                                '💾 Salvo neste dispositivo — sem conexão para sincronizar agora.'}
-                                            {annotationsStatus === 'error' &&
-                                                'Não foi possível salvar. Tente novamente.'}
-                                        </p>
+                                            ▾
+                                        </span>
+                                    </button>
+                                    {notesOpen && (
+                                        <div className={styles.collapsibleBody}>
+                                            <textarea
+                                                value={userAnnotations}
+                                                onChange={
+                                                    handleAnnotationsChange
+                                                }
+                                                className={
+                                                    styles.userAnnotationsInput
+                                                }
+                                                placeholder="Adicione suas anotações aqui..."
+                                            />
+                                            <button
+                                                onClick={handleSaveAnnotations}
+                                                className={
+                                                    styles.saveAnnotationsButton
+                                                }
+                                                disabled={isSavingAnnotations}
+                                            >
+                                                {isSavingAnnotations
+                                                    ? 'Salvando...'
+                                                    : 'Salvar'}
+                                            </button>
+                                            {annotationsStatus !== 'idle' && (
+                                                <p
+                                                    className={
+                                                        annotationsStatus ===
+                                                        'error'
+                                                            ? styles.annotationsStatusError
+                                                            : styles.annotationsStatus
+                                                    }
+                                                >
+                                                    {annotationsStatus ===
+                                                        'saved' &&
+                                                        '✓ Anotações salvas.'}
+                                                    {annotationsStatus ===
+                                                        'saved-offline' &&
+                                                        '💾 Salvo neste dispositivo — sem conexão para sincronizar agora.'}
+                                                    {annotationsStatus ===
+                                                        'error' &&
+                                                        'Não foi possível salvar. Tente novamente.'}
+                                                </p>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
                                 {/* Tempo de Descanso e Cronômetro */}

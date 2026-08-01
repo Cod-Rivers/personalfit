@@ -151,6 +151,7 @@ export default function MeusTreinosExercisesPage({
     const [hrvDeltaMs, setHrvDeltaMs] = useState<number>(0);
     const [previousRPE, setPreviousRPE] = useState<number>(7);
     const [highFatigueDays, setHighFatigueDays] = useState<number>(0);
+    const [microPanelOpen, setMicroPanelOpen] = useState(false);
 
     const calculateAvgRPE = (logs: NewWorkoutLogResponse[]): number => {
         const all = logs.flatMap((log) => log.exercises.map((ex) => ex.rpe));
@@ -456,25 +457,50 @@ export default function MeusTreinosExercisesPage({
 
                 {/* Painel de autorregulação do microciclo */}
                 <div className="card mb-4">
-                    <div className="card-body">
-                        <div className="d-flex justify-content-between align-items-center mb-2">
-                            <h2 className="h6 mb-0 d-flex align-items-center">
-                                Controle do Microciclo (Autorregulação)
-                                <HelpTooltip
-                                    text={
-                                        getMicrocycleHelpTopic('autorregulacao')
-                                            .short
-                                    }
-                                    href="/ajuda#autorregulacao"
-                                />
-                            </h2>
+                    <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setMicroPanelOpen((v) => !v)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                setMicroPanelOpen((v) => !v);
+                            }
+                        }}
+                        aria-expanded={microPanelOpen}
+                        className={`card-body d-flex justify-content-between align-items-center ${styles.microPanelToggle}`}
+                    >
+                        <h2 className="h6 mb-0 d-flex align-items-center">
+                            Controle do Microciclo (Autorregulação)
+                            <HelpTooltip
+                                text={
+                                    getMicrocycleHelpTopic('autorregulacao')
+                                        .short
+                                }
+                                href="/ajuda#autorregulacao"
+                            />
+                        </h2>
+                        <div className="d-flex align-items-center gap-2">
                             {currentMicro && (
                                 <span className="badge bg-secondary">
                                     Semana {currentMicro.week_number}
                                 </span>
                             )}
+                            <span
+                                aria-hidden
+                                className={
+                                    microPanelOpen
+                                        ? styles.microPanelChevronOpen
+                                        : styles.microPanelChevron
+                                }
+                            >
+                                ▾
+                            </span>
                         </div>
+                    </div>
 
+                    {microPanelOpen && (
+                    <div className="card-body pt-0">
                         {currentMeso && currentMicro && (
                             <p className="small text-muted mb-2">
                                 {currentMeso.name} · foco:{' '}
@@ -691,6 +717,7 @@ export default function MeusTreinosExercisesPage({
                             </Link>
                         </div>
                     </div>
+                    )}
                 </div>
                 {exercises.length > 0 ? (
                     <ul className={`${styles.exerciseListContainer} space-y-3`}>

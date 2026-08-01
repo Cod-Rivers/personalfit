@@ -136,3 +136,20 @@
     margin-top: 0.5rem;
     text-align: center;
 }
+
+.microPanelToggle {
+    cursor: pointer;
+}
+
+.microPanelChevron {
+    color: var(--text-muted);
+    flex-shrink: 0;
+    transition: transform 0.15s;
+}
+
+.microPanelChevronOpen {
+    color: var(--text-muted);
+    flex-shrink: 0;
+    transition: transform 0.15s;
+    transform: rotate(180deg);
+}
