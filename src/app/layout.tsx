@@ -9,6 +9,7 @@ import Footer from '@/components/organism/Footer';
 import HeaderCondicional from '@/components/organism/HeaderCondicional';
 import FCMProvider from '@/components/FCMProvider';
 import ServiceWorkerRegistrar from '@/components/system/ServiceWorkerRegistrar';
+import InstallPwaPrompt from '@/components/system/InstallPwaPrompt';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './css/globals.css';
 
@@ -21,12 +22,23 @@ const inter = Inter({
 
 export const metadata: Metadata = {
     title: 'Venafit Tela de Login',
+    manifest: '/manifest.json',
+    icons: {
+        icon: [{ url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' }],
+        apple: [{ url: '/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+    },
+    appleWebApp: {
+        capable: true,
+        statusBarStyle: 'black-translucent',
+        title: 'Venafit',
+    },
 };
 
 export const viewport: Viewport = {
     width: 'device-width',
     initialScale: 1,
     viewportFit: 'cover',
+    themeColor: '#0ac99a',
 };
 
 export default async function RootLayout({
@@ -53,6 +65,7 @@ export default async function RootLayout({
             <body className={`main_back`}>
                 <NextIntlClientProvider>
                     <ServiceWorkerRegistrar />
+                    <InstallPwaPrompt />
                     <ThemeProvider>
                         <BrandingProvider>
                             <AdProvider>
