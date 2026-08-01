@@ -36,8 +36,10 @@ export default function NovoPeriodizacaoPage() {
 
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
-    const [planningMode, setPlanningMode] = useState<PlanningMode>('periodized');
-    const [dayLabelStyle, setDayLabelStyle] = useState<DayLabelStyle>('weekday');
+    const [planningMode, setPlanningMode] =
+        useState<PlanningMode>('periodized');
+    const [dayLabelStyle, setDayLabelStyle] =
+        useState<DayLabelStyle>('weekday');
 
     const {
         register,
@@ -60,7 +62,7 @@ export default function NovoPeriodizacaoPage() {
                 mesocycles: [],
             });
             router.push(
-                `/personal/aluno/${studentId}/periodizacao/${macro.id}`,
+                `/personal/aluno/${studentId}/periodizacao/${macro.id}?created=1`,
             );
         } catch (e: unknown) {
             setError((e as Error).message ?? 'Erro ao criar macrociclo');
@@ -74,10 +76,7 @@ export default function NovoPeriodizacaoPage() {
             <div className={s.container}>
                 <div className={s.header}>
                     <h1 className={s.headerTitle}>Novo Macrociclo</h1>
-                    <button
-                        className={s.btnBack}
-                        onClick={() => router.back()}
-                    >
+                    <button className={s.btnBack} onClick={() => router.back()}>
                         ← Voltar
                     </button>
                 </div>

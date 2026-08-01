@@ -18,12 +18,14 @@ import {
 } from '@/app/personal/_shared/periodizacao/lib/mesocycleTransforms';
 import MesocycleSection from '@/app/personal/_shared/periodizacao/components/MesocycleSection';
 import MesocycleFormModal from '@/app/personal/_shared/periodizacao/components/MesocycleFormModal';
+import { useToast } from '@/components/system/Toast';
 import s from '@/app/personal/_shared/periodizacao/builder.module.css';
 
 export default function TemplateDetalhePage() {
     const router = useRouter();
     const params = useParams<{ templateId: string }>();
     const { templateId } = params;
+    const { showSuccess, showError, ToastSlot } = useToast();
 
     const [macro, setMacro] = useState<MacrocycleResponse | null>(null);
     const [loading, setLoading] = useState(true);
@@ -85,16 +87,17 @@ export default function TemplateDetalhePage() {
                     mesocycles: updatedList,
                 });
                 setMacro(updated);
+                showSuccess('Mesociclo removido com sucesso!');
             } catch (e: unknown) {
                 const msg = (
                     e as { response?: { data?: { message?: string } } }
                 )?.response?.data?.message;
-                alert(msg || 'Erro ao remover mesociclo.');
+                showError(msg || 'Erro ao remover mesociclo.');
             } finally {
                 setSaving(false);
             }
         },
-        [macro, templateId],
+        [macro, templateId, showSuccess, showError],
     );
 
     /* ── Duplicar mesociclo ── */
@@ -112,16 +115,17 @@ export default function TemplateDetalhePage() {
                     mesocycles: updatedList,
                 });
                 setMacro(updated);
+                showSuccess('Mesociclo duplicado com sucesso!');
             } catch (e: unknown) {
                 const msg = (
                     e as { response?: { data?: { message?: string } } }
                 )?.response?.data?.message;
-                alert(msg || 'Erro ao duplicar mesociclo.');
+                showError(msg || 'Erro ao duplicar mesociclo.');
             } finally {
                 setSaving(false);
             }
         },
-        [macro, templateId],
+        [macro, templateId, showSuccess, showError],
     );
 
     /* ── Save (add ou edit) ── */
@@ -144,6 +148,13 @@ export default function TemplateDetalhePage() {
                 });
                 setMacro(updated);
                 closeModal();
+                showSuccess(
+                    macro.planning_mode === 'simple'
+                        ? 'Treinos da semana salvos com sucesso!'
+                        : modalMode === 'add'
+                          ? 'Mesociclo criado com sucesso!'
+                          : 'Mesociclo salvo com sucesso!',
+                );
             } catch (e: unknown) {
                 const msg = (
                     e as { response?: { data?: { message?: string } } }
@@ -153,7 +164,7 @@ export default function TemplateDetalhePage() {
                 setSaving(false);
             }
         },
-        [macro, modalMode, editingMeso, templateId, closeModal],
+        [macro, modalMode, editingMeso, templateId, closeModal, showSuccess],
     );
 
     /* ── Loading / error states ── */
@@ -196,6 +207,7 @@ export default function TemplateDetalhePage() {
 
     return (
         <div className={s.page}>
+            {ToastSlot}
             <div className={s.container}>
                 {/* Header */}
                 <div className={s.header}>
@@ -271,9 +283,8 @@ export default function TemplateDetalhePage() {
                 {isSimpleMode ? (
                     !simpleMeso ? (
                         <p style={{ color: 'var(--text-muted)' }}>
-                            Nenhum treino configurado ainda. Clique em
-                            &quot;+ Configurar treinos da semana&quot; para
-                            começar.
+                            Nenhum treino configurado ainda. Clique em &quot;+
+                            Configurar treinos da semana&quot; para começar.
                         </p>
                     ) : (
                         <MesocycleSection

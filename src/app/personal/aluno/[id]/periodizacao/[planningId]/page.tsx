@@ -1,6 +1,6 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import {
     getMacrocycle,
     updateMacrocycle,
@@ -26,12 +26,15 @@ import {
 } from '@/app/personal/_shared/periodizacao/lib/mesocycleTransforms';
 import MesocycleSection from '@/app/personal/_shared/periodizacao/components/MesocycleSection';
 import MesocycleFormModal from '@/app/personal/_shared/periodizacao/components/MesocycleFormModal';
+import { useToast } from '@/components/system/Toast';
 import s from '@/app/personal/_shared/periodizacao/builder.module.css';
 
 export default function PeriodizacaoDetalhePage() {
     const router = useRouter();
     const params = useParams<{ id: string; planningId: string }>();
+    const searchParams = useSearchParams();
     const { id: studentId, planningId } = params;
+    const { showSuccess, showError, ToastSlot } = useToast();
 
     const [macro, setMacro] = useState<MacrocycleResponse | null>(null);
     const [loading, setLoading] = useState(true);
@@ -60,6 +63,18 @@ export default function PeriodizacaoDetalhePage() {
             .finally(() => setLoading(false));
     }, [studentId, planningId]);
 
+    /* ── Confirmação de macrociclo recém-criado (vem da tela "Novo
+     * Macrociclo") ── some da URL logo em seguida pra não reaparecer num
+     * refresh manual da página. */
+    useEffect(() => {
+        if (searchParams.get('created') !== '1') return;
+        showSuccess('Macrociclo criado com sucesso!');
+        router.replace(
+            `/personal/aluno/${studentId}/periodizacao/${planningId}`,
+        );
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchParams]);
+
     /* ── Comparativo plano×realizado + marcos de avaliação física (Gantt) ──
      * Best-effort: sem start_date/end_date não há janela pra buscar; e a
      * Agenda é feature PRO, então listStudentAppointments pode dar 403 pra
@@ -78,7 +93,10 @@ export default function PeriodizacaoDetalhePage() {
                 setAssessments(
                     items
                         .filter((a) => a.type === 'avaliacao')
-                        .map((a) => ({ id: a.id, date: a.start_at.split('T')[0] })),
+                        .map((a) => ({
+                            id: a.id,
+                            date: a.start_at.split('T')[0],
+                        })),
                 ),
             )
             .catch(() => setAssessments([]));
@@ -133,16 +151,17 @@ export default function PeriodizacaoDetalhePage() {
                     mesocycles: updatedList,
                 });
                 setMacro(updated);
+                showSuccess('Mesociclo removido com sucesso!');
             } catch (e: unknown) {
                 const msg = (
                     e as { response?: { data?: { message?: string } } }
                 )?.response?.data?.message;
-                alert(msg || 'Erro ao remover mesociclo.');
+                showError(msg || 'Erro ao remover mesociclo.');
             } finally {
                 setSaving(false);
             }
         },
-        [macro, studentId, planningId],
+        [macro, studentId, planningId, showSuccess, showError],
     );
 
     /* ── Duplicar mesociclo ── */
@@ -160,16 +179,17 @@ export default function PeriodizacaoDetalhePage() {
                     mesocycles: updatedList,
                 });
                 setMacro(updated);
+                showSuccess('Mesociclo duplicado com sucesso!');
             } catch (e: unknown) {
                 const msg = (
                     e as { response?: { data?: { message?: string } } }
                 )?.response?.data?.message;
-                alert(msg || 'Erro ao duplicar mesociclo.');
+                showError(msg || 'Erro ao duplicar mesociclo.');
             } finally {
                 setSaving(false);
             }
         },
-        [macro, studentId, planningId],
+        [macro, studentId, planningId, showSuccess, showError],
     );
 
     /* ── Save (add ou edit) ── */
@@ -192,6 +212,13 @@ export default function PeriodizacaoDetalhePage() {
                 });
                 setMacro(updated);
                 closeModal();
+                showSuccess(
+                    macro.planning_mode === 'simple'
+                        ? 'Treinos da semana salvos com sucesso!'
+                        : modalMode === 'add'
+                          ? 'Mesociclo criado com sucesso!'
+                          : 'Mesociclo salvo com sucesso!',
+                );
             } catch (e: unknown) {
                 const msg = (
                     e as { response?: { data?: { message?: string } } }
@@ -201,7 +228,15 @@ export default function PeriodizacaoDetalhePage() {
                 setSaving(false);
             }
         },
-        [macro, modalMode, editingMeso, studentId, planningId, closeModal],
+        [
+            macro,
+            modalMode,
+            editingMeso,
+            studentId,
+            planningId,
+            closeModal,
+            showSuccess,
+        ],
     );
 
     /* ── Loading / error states ── */
@@ -241,6 +276,7 @@ export default function PeriodizacaoDetalhePage() {
 
     return (
         <div className={s.page}>
+            {ToastSlot}
             <div className={s.container}>
                 {/* Header */}
                 <div className={s.header}>
@@ -332,9 +368,8 @@ export default function PeriodizacaoDetalhePage() {
                 {isSimpleMode ? (
                     !simpleMeso ? (
                         <p style={{ color: 'var(--text-muted)' }}>
-                            Nenhum treino configurado ainda. Clique em
-                            &quot;+ Configurar treinos da semana&quot; para
-                            começar.
+                            Nenhum treino configurado ainda. Clique em &quot;+
+                            Configurar treinos da semana&quot; para começar.
                         </p>
                     ) : (
                         <MesocycleSection

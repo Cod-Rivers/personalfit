@@ -1,0 +1,70 @@
+.wrap {
+    position: fixed;
+    top: calc(var(--app-header-height, 64px) + 12px);
+    left: 0;
+    right: 0;
+    z-index: var(--z-toast);
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+    padding: 0 16px;
+}
+
+.toast {
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: 480px;
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 10px;
+    box-shadow: var(--shadow-lg);
+    font-size: 0.88rem;
+    font-weight: 600;
+    animation: slideDown 0.2s ease-out;
+}
+
+.toastSuccess {
+    composes: toast;
+    background: var(--surface-1);
+    border: 1px solid rgba(61, 255, 208, 0.35);
+    color: var(--mint-text, var(--mint));
+}
+
+.toastError {
+    composes: toast;
+    background: var(--surface-1);
+    border: 1px solid rgba(255, 107, 107, 0.35);
+    color: var(--coral);
+}
+
+.toast span:first-child {
+    flex: 1;
+}
+
+.closeBtn {
+    background: none;
+    border: none;
+    color: inherit;
+    opacity: 0.7;
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 2px;
+    flex-shrink: 0;
+}
+.closeBtn:hover {
+    opacity: 1;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-8px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}

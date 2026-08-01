@@ -1,7 +1,26 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { MUSCLE_GROUPS, type ExerciseLibraryItem } from '@/libs/planningService';
+import {
+    DndContext,
+    closestCenter,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+    SortableContext,
+    useSortable,
+    arrayMove,
+    rectSortingStrategy,
+    verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import {
+    MUSCLE_GROUPS,
+    type ExerciseLibraryItem,
+} from '@/libs/planningService';
 import {
     WEEKDAYS,
     weekdayLabel,
@@ -45,7 +64,10 @@ interface Props {
     simpleMode?: boolean;
     /** "weekday" (padrão, seletor de dia) ou "number" (Treino 1, Treino 2... pela ordem da lista). */
     dayLabelStyle?: 'weekday' | 'number';
-    onUpdateTrainingWeekday?: (tid: string, weekday: number | undefined) => void;
+    onUpdateTrainingWeekday?: (
+        tid: string,
+        weekday: number | undefined,
+    ) => void;
     onRemoveExercise: (tid: string, eid: string) => void;
     onUpdateExercise: (
         tid: string,
@@ -64,6 +86,16 @@ interface Props {
     onUngroupExercises?: (tid: string, groupId: string) => void;
     /** Tira só o último exercício adicionado ao bloco (reversível). */
     onRemoveLastFromGroup?: (tid: string, eid: string) => void;
+    /** Reordena as abas de treino (arrastar e soltar). */
+    onReorderTrainings?: (order: string[]) => void;
+    /** Reordena os exercícios (ou blocos combo inteiros) dentro de um treino. */
+    onReorderExercises?: (tid: string, exerciseIds: string[]) => void;
+    /** Aplica os campos preenchidos no bloco de prescrição geral a todos os
+     * exercícios do treino informado. */
+    onBulkFillPrescription?: (
+        tid: string,
+        fields: BulkPrescriptionFields,
+    ) => void;
 }
 
 /** Rótulo curto da aba. Os três modos caem no mesmo fallback (`T1`, `T2`…)
@@ -115,6 +147,350 @@ function PrescriptionNumber({
                 />
                 <span className={s.seriesUnitLabel}>{unit}</span>
             </div>
+        </div>
+    );
+}
+
+/** Select de grupo muscular — usado tanto na prescrição por exercício quanto
+ * na prescrição geral do treino, daí extraído em vez de duplicado. */
+function MuscleGroupSelect({
+    value,
+    onChange,
+}: {
+    value: string;
+    onChange: (value: string) => void;
+}) {
+    return (
+        <div className={s.prescriptionFieldWide}>
+            <label className={s.formLabel}>Grupo muscular</label>
+            <select
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                className={s.formSelect}
+            >
+                <option value="">Não definido</option>
+                {MUSCLE_GROUPS.map((g) => (
+                    <option key={g} value={g}>
+                        {g}
+                    </option>
+                ))}
+            </select>
+        </div>
+    );
+}
+
+/** Select de técnica avançada + campos de parâmetro dela — mesmo motivo do
+ * MuscleGroupSelect acima: idêntico na prescrição por exercício e na geral,
+ * só muda de onde vem/vai o valor. */
+function TechniqueBlock({
+    technique,
+    onChangeTechnique,
+    getParamValue,
+    onChangeParam,
+}: {
+    technique: string;
+    onChangeTechnique: (value: string) => void;
+    getParamValue: (key: TechniqueParamKey) => string;
+    onChangeParam: (key: TechniqueParamKey, value: string) => void;
+}) {
+    return (
+        <>
+            <div className={s.prescriptionFieldWide}>
+                <label className={s.formLabel}>Técnica avançada</label>
+                <select
+                    value={technique}
+                    onChange={(e) => onChangeTechnique(e.target.value)}
+                    className={s.formSelect}
+                >
+                    <option value="">Nenhuma</option>
+                    {TECHNIQUE_CATEGORIES.map((category) => (
+                        <optgroup key={category} label={category}>
+                            {Object.entries(TECHNIQUE_CATALOG)
+                                .filter(([, def]) => def.category === category)
+                                .map(([value, def]) => (
+                                    <option key={value} value={value}>
+                                        {def.label}
+                                    </option>
+                                ))}
+                        </optgroup>
+                    ))}
+                </select>
+            </div>
+            {technique &&
+                TECHNIQUE_CATALOG[technique]?.fields.map((f) => (
+                    <PrescriptionNumber
+                        key={f.key}
+                        label={f.label}
+                        unit={f.unit}
+                        min={String(f.min)}
+                        max={String(f.max)}
+                        value={getParamValue(f.key)}
+                        onChange={(v) => onChangeParam(f.key, v)}
+                    />
+                ))}
+        </>
+    );
+}
+
+/** Campos de prescrição preenchíveis em bloco (não pertencem a nenhum
+ * exercício até serem aplicados). */
+export interface BulkPrescriptionFields {
+    load_kg: string;
+    load_percentage: string;
+    tempo_seconds: string;
+    rpe_target: string;
+    muscle_group: string;
+    technique: string;
+    technique_rounds: string;
+    technique_reduction_pct: string;
+    technique_pause_seconds: string;
+    technique_extra_reps: string;
+    technique_hold_seconds: string;
+}
+
+const EMPTY_BULK_FIELDS: BulkPrescriptionFields = {
+    load_kg: '',
+    load_percentage: '',
+    tempo_seconds: '',
+    rpe_target: '',
+    muscle_group: '',
+    technique: '',
+    technique_rounds: '',
+    technique_reduction_pct: '',
+    technique_pause_seconds: '',
+    technique_extra_reps: '',
+    technique_hold_seconds: '',
+};
+
+/** Preenchimento geral de prescrição: define uma vez os campos que valem pra
+ * (quase) todos os exercícios do treino em foco, e só o que for preenchido
+ * aqui é aplicado — o resto de cada exercício continua intocado, para o
+ * personal ajustar pontualmente depois. */
+function BulkPrescriptionFill({
+    exerciseCount,
+    onApply,
+}: {
+    exerciseCount: number;
+    onApply: (fields: BulkPrescriptionFields) => void;
+}) {
+    const [open, setOpen] = useState(false);
+    const [fields, setFields] =
+        useState<BulkPrescriptionFields>(EMPTY_BULK_FIELDS);
+
+    const setField =
+        (key: keyof BulkPrescriptionFields): ((value: string) => void) =>
+        (value) =>
+            setFields((prev) => ({ ...prev, [key]: value }));
+
+    const hasAnyValue = Object.values(fields).some((v) => v !== '');
+
+    const handleApply = () => {
+        if (!hasAnyValue) return;
+        if (
+            !confirm(
+                `Aplicar esta prescrição geral aos ${exerciseCount} exercício${exerciseCount === 1 ? '' : 's'} deste treino? Os campos preenchidos aqui substituem os valores individuais já definidos — os demais campos de cada exercício continuam como estão.`,
+            )
+        )
+            return;
+        onApply(fields);
+    };
+
+    return (
+        <div className={s.prescriptionCard} style={{ marginBottom: 12 }}>
+            <button
+                type="button"
+                onClick={() => setOpen((v) => !v)}
+                aria-expanded={open}
+                className={s.prescriptionToggle}
+            >
+                <span>
+                    <span className={s.collapsibleTitle}>
+                        Prescrição geral do treino
+                    </span>
+                    <span className={s.collapsibleSummary}>
+                        Preenche todos os exercícios de uma vez — ajuste
+                        pontualmente depois
+                    </span>
+                </span>
+                <span
+                    aria-hidden
+                    className={
+                        open ? s.collapsibleChevronOpen : s.collapsibleChevron
+                    }
+                >
+                    ▾
+                </span>
+            </button>
+
+            {open && (
+                <div className={s.prescriptionBody}>
+                    <PrescriptionNumber
+                        label="Carga"
+                        unit="kg"
+                        min="0"
+                        step="0.5"
+                        value={fields.load_kg}
+                        onChange={setField('load_kg')}
+                    />
+                    <PrescriptionNumber
+                        label="% de 1RM"
+                        unit="%"
+                        min="0"
+                        max="100"
+                        value={fields.load_percentage}
+                        onChange={setField('load_percentage')}
+                    />
+                    <PrescriptionNumber
+                        label="Cadência"
+                        unit="seg"
+                        min="0"
+                        value={fields.tempo_seconds}
+                        onChange={setField('tempo_seconds')}
+                    />
+                    <PrescriptionNumber
+                        label="RPE alvo"
+                        unit="1-10"
+                        min="1"
+                        max="10"
+                        value={fields.rpe_target}
+                        onChange={setField('rpe_target')}
+                    />
+                    <MuscleGroupSelect
+                        value={fields.muscle_group}
+                        onChange={setField('muscle_group')}
+                    />
+                    <TechniqueBlock
+                        technique={fields.technique}
+                        onChangeTechnique={setField('technique')}
+                        getParamValue={(key) =>
+                            fields[
+                                TECHNIQUE_FIELD_MAP[
+                                    key
+                                ] as keyof BulkPrescriptionFields
+                            ]
+                        }
+                        onChangeParam={(key, value) =>
+                            setFields((prev) => ({
+                                ...prev,
+                                [TECHNIQUE_FIELD_MAP[
+                                    key
+                                ] as keyof BulkPrescriptionFields]: value,
+                            }))
+                        }
+                    />
+                    <div
+                        className={s.prescriptionFieldWide}
+                        style={{ marginTop: 4 }}
+                    >
+                        <button
+                            type="button"
+                            className={s.btnSmall}
+                            disabled={!hasAnyValue}
+                            onClick={handleApply}
+                        >
+                            Aplicar a todos os {exerciseCount} exercício
+                            {exerciseCount === 1 ? '' : 's'}
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+/** Aba de treino arrastável — só vira "pegável" quando o modo de ordenação
+ * está ligado, senão o clique normal (selecionar a aba) continua funcionando
+ * sem conflito com os listeners de drag. */
+function SortableDayChip({
+    id,
+    active,
+    label,
+    fullLabel,
+    reorderMode,
+    onClick,
+}: {
+    id: string;
+    active: boolean;
+    label: string;
+    fullLabel: string;
+    reorderMode: boolean;
+    onClick: () => void;
+}) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id, disabled: !reorderMode });
+
+    const style: React.CSSProperties = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+        touchAction: reorderMode ? 'none' : undefined,
+    };
+
+    return (
+        <button
+            ref={setNodeRef}
+            style={style}
+            type="button"
+            className={active ? s.dayChipActive : s.dayChip}
+            title={fullLabel}
+            aria-label={fullLabel}
+            onClick={reorderMode ? undefined : onClick}
+            {...(reorderMode
+                ? { ...attributes, ...listeners }
+                : { 'aria-pressed': active })}
+        >
+            {reorderMode && (
+                <span className={s.dragHandleIcon} aria-hidden>
+                    ⠿
+                </span>
+            )}
+            {label}
+        </button>
+    );
+}
+
+/** Envolve um bloco de exercício (avulso ou combo inteiro) para ficar
+ * arrastável. A "alça" só aparece em modo de ordenação, e é ela — não o
+ * card inteiro — que recebe os listeners de drag, para não brigar com os
+ * inputs/botões do card por baixo. */
+function SortableExerciseGroup({
+    id,
+    reorderMode,
+    children,
+}: {
+    id: string;
+    reorderMode: boolean;
+    children: React.ReactNode;
+}) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id, disabled: !reorderMode });
+
+    const style: React.CSSProperties = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+    };
+
+    return (
+        <div ref={setNodeRef} style={style}>
+            {reorderMode && (
+                <div className={s.dragHandleRow} {...attributes} {...listeners}>
+                    <span aria-hidden>⠿</span> Arraste para reordenar
+                </div>
+            )}
+            {children}
         </div>
     );
 }
@@ -186,6 +562,9 @@ export default function TrainingsEditor({
     onCombineWithPrevious,
     onUngroupExercises,
     onRemoveLastFromGroup,
+    onReorderTrainings,
+    onReorderExercises,
+    onBulkFillPrescription,
 }: Props) {
     const isNumbered = simpleMode && dayLabelStyle === 'number';
 
@@ -224,17 +603,58 @@ export default function TrainingsEditor({
             return next;
         });
 
+    // Ordenação por arrastar-e-soltar: modo explícito (em vez de sempre-ativo)
+    // para não conflitar com o clique normal nas abas/botões dos cards.
+    const [reorderTrainingsMode, setReorderTrainingsMode] = useState(false);
+    const [reorderExercisesMode, setReorderExercisesMode] = useState(false);
+    const dragSensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    );
+
+    // Trocar de treino em foco com o modo de ordenar exercícios ligado
+    // arrastaria a lista errada — desliga ao trocar de aba.
+    useEffect(() => {
+        setReorderExercisesMode(false);
+    }, [activeId]);
+
+    const handleTrainingsDragEnd = (event: DragEndEvent) => {
+        const { active: dragged, over } = event;
+        if (!over || dragged.id === over.id) return;
+        const ids = trainings.map((t) => t._id);
+        const oldIndex = ids.indexOf(String(dragged.id));
+        const newIndex = ids.indexOf(String(over.id));
+        if (oldIndex === -1 || newIndex === -1) return;
+        onReorderTrainings?.(arrayMove(ids, oldIndex, newIndex));
+    };
+
     return (
         <div className={s.trainingsSection}>
             <div className={s.sectionHeaderRow}>
                 <p>Treinos desta fase</p>
-                <button
-                    type="button"
-                    className={s.btnSmall}
-                    onClick={onAddTraining}
-                >
-                    + Treino
-                </button>
+                <div style={{ display: 'flex', gap: 8 }}>
+                    {trainings.length > 1 && (
+                        <button
+                            type="button"
+                            className={
+                                reorderTrainingsMode
+                                    ? s.btnSmallActive
+                                    : s.btnSmall
+                            }
+                            onClick={() => setReorderTrainingsMode((v) => !v)}
+                        >
+                            {reorderTrainingsMode
+                                ? 'Concluir ordenação'
+                                : '⇅ Ordenar treinos'}
+                        </button>
+                    )}
+                    <button
+                        type="button"
+                        className={s.btnSmall}
+                        onClick={onAddTraining}
+                    >
+                        + Treino
+                    </button>
+                </div>
             </div>
 
             {trainings.length === 0 && (
@@ -245,33 +665,43 @@ export default function TrainingsEditor({
             )}
 
             {trainings.length > 0 && (
-                <div className={s.dayChipRow}>
-                    {trainings.map((t, i) => {
-                        const full = trainingFullLabel(
-                            t,
-                            i,
-                            simpleMode,
-                            isNumbered,
-                        );
-                        return (
-                            <button
-                                key={t._id}
-                                type="button"
-                                className={
-                                    t._id === activeId
-                                        ? s.dayChipActive
-                                        : s.dayChip
-                                }
-                                title={full}
-                                aria-label={full}
-                                aria-pressed={t._id === activeId}
-                                onClick={() => setActiveId(t._id)}
-                            >
-                                {trainingTabLabel(t, i, simpleMode, isNumbered)}
-                            </button>
-                        );
-                    })}
-                </div>
+                <DndContext
+                    sensors={dragSensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleTrainingsDragEnd}
+                >
+                    <SortableContext
+                        items={trainings.map((t) => t._id)}
+                        strategy={rectSortingStrategy}
+                    >
+                        <div className={s.dayChipRow}>
+                            {trainings.map((t, i) => {
+                                const full = trainingFullLabel(
+                                    t,
+                                    i,
+                                    simpleMode,
+                                    isNumbered,
+                                );
+                                return (
+                                    <SortableDayChip
+                                        key={t._id}
+                                        id={t._id}
+                                        active={t._id === activeId}
+                                        label={trainingTabLabel(
+                                            t,
+                                            i,
+                                            simpleMode,
+                                            isNumbered,
+                                        )}
+                                        fullLabel={full}
+                                        reorderMode={reorderTrainingsMode}
+                                        onClick={() => setActiveId(t._id)}
+                                    />
+                                );
+                            })}
+                        </div>
+                    </SortableContext>
+                </DndContext>
             )}
 
             {active && (
@@ -332,7 +762,15 @@ export default function TrainingsEditor({
                             className={s.btnTiny}
                             style={{ color: 'var(--coral, #e74c3c)' }}
                             title="Remover treino"
-                            onClick={() => onRemoveTraining(active._id)}
+                            onClick={() => {
+                                if (
+                                    !confirm(
+                                        `Remover o treino "${active.reference || 'sem referência'}" e todos os seus exercícios? Essa ação não pode ser desfeita.`,
+                                    )
+                                )
+                                    return;
+                                onRemoveTraining(active._id);
+                            }}
                         >
                             ✕
                         </button>
@@ -340,145 +778,142 @@ export default function TrainingsEditor({
 
                     {/* Exercícios */}
                     {active.exercises.length > 0 && (
-                        <div className={s.exercisesStack}>
-                            {partitionExerciseGroups(active.exercises).map(
-                                (group) => {
-                                    const isCombo = group.length > 1;
-                                    const groupId = group[0].group_id;
-                                    const cards = group.map(
-                                        (ex, idxInGroup) => {
-                                            const globalIdx =
-                                                active.exercises.findIndex(
-                                                    (e) => e._id === ex._id,
-                                                );
-                                            const canCombine =
-                                                !ex.group_id && globalIdx > 0;
-                                            const isLastInGroup =
-                                                isCombo &&
-                                                idxInGroup ===
-                                                    group.length - 1;
-                                            return (
-                                                <div
-                                                    key={ex._id}
-                                                    className={
-                                                        s.exerciseEditCard
-                                                    }
-                                                >
-                                                    <div
-                                                        className={
-                                                            s.exerciseEditHeader
-                                                        }
-                                                    >
-                                                        <ExerciseThumbnail
-                                                            name={
-                                                                ex.name ||
-                                                                'Exercício'
-                                                            }
-                                                            videoThumb={
-                                                                ex.video_thumb
-                                                            }
-                                                            videoUrl={
-                                                                ex.video_url
-                                                            }
-                                                            width={48}
-                                                            height={48}
-                                                            borderRadius={8}
-                                                            captureFrame={
-                                                                false
-                                                            }
-                                                            lazyCapture
-                                                            className={
-                                                                s.exerciseEditThumb
-                                                            }
-                                                        />
-                                                        <input
-                                                            value={ex.name}
-                                                            onChange={(e) =>
-                                                                onUpdateExercise(
-                                                                    active._id,
-                                                                    ex._id,
-                                                                    'name',
-                                                                    e.target
-                                                                        .value,
-                                                                )
-                                                            }
-                                                            placeholder="Nome do exercício"
-                                                            className={
-                                                                s.formInput
-                                                            }
-                                                        />
-                                                        <button
-                                                            type="button"
-                                                            title="Remover exercício"
-                                                            className={
-                                                                s.btnRemoveExercise
-                                                            }
-                                                            onClick={() =>
-                                                                onRemoveExercise(
-                                                                    active._id,
-                                                                    ex._id,
-                                                                )
-                                                            }
-                                                        >
-                                                            ✕
-                                                        </button>
-                                                    </div>
+                        <>
+                            {onBulkFillPrescription && (
+                                <BulkPrescriptionFill
+                                    exerciseCount={active.exercises.length}
+                                    onApply={(fields) =>
+                                        onBulkFillPrescription(
+                                            active._id,
+                                            fields,
+                                        )
+                                    }
+                                />
+                            )}
 
-                                                    <div
-                                                        className={
-                                                            s.formGroup
-                                                        }
-                                                        style={{
-                                                            marginBottom: 0,
-                                                        }}
-                                                    >
-                                                        <label
+                            <div
+                                className={s.sectionHeaderRow}
+                                style={{ marginBottom: 8 }}
+                            >
+                                <p>Exercícios ({active.exercises.length})</p>
+                                {active.exercises.length > 1 && (
+                                    <button
+                                        type="button"
+                                        className={
+                                            reorderExercisesMode
+                                                ? s.btnSmallActive
+                                                : s.btnSmall
+                                        }
+                                        onClick={() =>
+                                            setReorderExercisesMode((v) => !v)
+                                        }
+                                    >
+                                        {reorderExercisesMode
+                                            ? 'Concluir ordenação'
+                                            : '⇅ Ordenar exercícios'}
+                                    </button>
+                                )}
+                            </div>
+
+                            <DndContext
+                                sensors={dragSensors}
+                                collisionDetection={closestCenter}
+                                onDragEnd={(event: DragEndEvent) => {
+                                    const { active: dragged, over } = event;
+                                    if (!over || dragged.id === over.id) return;
+                                    const groups = partitionExerciseGroups(
+                                        active.exercises,
+                                    );
+                                    const groupIds = groups.map(
+                                        (g) => g[0].group_id ?? g[0]._id,
+                                    );
+                                    const oldIndex = groupIds.indexOf(
+                                        String(dragged.id),
+                                    );
+                                    const newIndex = groupIds.indexOf(
+                                        String(over.id),
+                                    );
+                                    if (oldIndex === -1 || newIndex === -1)
+                                        return;
+                                    const reordered = arrayMove(
+                                        groups,
+                                        oldIndex,
+                                        newIndex,
+                                    );
+                                    onReorderExercises?.(
+                                        active._id,
+                                        reordered.flat().map((e) => e._id),
+                                    );
+                                }}
+                            >
+                                <SortableContext
+                                    items={partitionExerciseGroups(
+                                        active.exercises,
+                                    ).map((g) => g[0].group_id ?? g[0]._id)}
+                                    strategy={verticalListSortingStrategy}
+                                >
+                                    <div className={s.exercisesStack}>
+                                        {partitionExerciseGroups(
+                                            active.exercises,
+                                        ).map((group) => {
+                                            const isCombo = group.length > 1;
+                                            const groupId = group[0].group_id;
+                                            const sortId =
+                                                groupId ?? group[0]._id;
+                                            const cards = group.map(
+                                                (ex, idxInGroup) => {
+                                                    const globalIdx =
+                                                        active.exercises.findIndex(
+                                                            (e) =>
+                                                                e._id ===
+                                                                ex._id,
+                                                        );
+                                                    const canCombine =
+                                                        !ex.group_id &&
+                                                        globalIdx > 0;
+                                                    const isLastInGroup =
+                                                        isCombo &&
+                                                        idxInGroup ===
+                                                            group.length - 1;
+                                                    return (
+                                                        <div
+                                                            key={ex._id}
                                                             className={
-                                                                s.formLabel
+                                                                s.exerciseEditCard
                                                             }
                                                         >
-                                                            Séries
-                                                        </label>
-                                                        <select
-                                                            value={
-                                                                ex.series_mode
-                                                            }
-                                                            onChange={(e) =>
-                                                                onUpdateExercise(
-                                                                    active._id,
-                                                                    ex._id,
-                                                                    'series_mode',
-                                                                    e.target
-                                                                        .value,
-                                                                )
-                                                            }
-                                                            className={
-                                                                s.formSelect
-                                                            }
-                                                        >
-                                                            <option value="reps">
-                                                                Reps (séries ×
-                                                                repetições)
-                                                            </option>
-                                                            <option value="time">
-                                                                Tempo (min/seg)
-                                                            </option>
-                                                            <option value="free">
-                                                                Livre (texto)
-                                                            </option>
-                                                        </select>
-                                                        {ex.series_mode ===
-                                                            'reps' && (
                                                             <div
                                                                 className={
-                                                                    s.seriesSubfieldRow
+                                                                    s.exerciseEditHeader
                                                                 }
                                                             >
+                                                                <ExerciseThumbnail
+                                                                    name={
+                                                                        ex.name ||
+                                                                        'Exercício'
+                                                                    }
+                                                                    videoThumb={
+                                                                        ex.video_thumb
+                                                                    }
+                                                                    videoUrl={
+                                                                        ex.video_url
+                                                                    }
+                                                                    width={48}
+                                                                    height={48}
+                                                                    borderRadius={
+                                                                        8
+                                                                    }
+                                                                    captureFrame={
+                                                                        false
+                                                                    }
+                                                                    lazyCapture
+                                                                    className={
+                                                                        s.exerciseEditThumb
+                                                                    }
+                                                                />
                                                                 <input
-                                                                    type="number"
-                                                                    min="1"
                                                                     value={
-                                                                        ex.series_sets
+                                                                        ex.name
                                                                     }
                                                                     onChange={(
                                                                         e,
@@ -486,761 +921,771 @@ export default function TrainingsEditor({
                                                                         onUpdateExercise(
                                                                             active._id,
                                                                             ex._id,
-                                                                            'series_sets',
+                                                                            'name',
                                                                             e
                                                                                 .target
                                                                                 .value,
                                                                         )
                                                                     }
-                                                                    placeholder="Séries"
+                                                                    placeholder="Nome do exercício"
                                                                     className={
-                                                                        s.smallNumInput
+                                                                        s.formInput
                                                                     }
                                                                 />
-                                                                <span
+                                                                <button
+                                                                    type="button"
+                                                                    title="Remover exercício"
                                                                     className={
-                                                                        s.seriesTimesSign
+                                                                        s.btnRemoveExercise
                                                                     }
-                                                                >
-                                                                    ×
-                                                                </span>
-                                                                <input
-                                                                    type="number"
-                                                                    min="1"
-                                                                    value={
-                                                                        ex.series_value
-                                                                    }
-                                                                    onChange={(
-                                                                        e,
-                                                                    ) =>
-                                                                        onUpdateExercise(
+                                                                    onClick={() => {
+                                                                        if (
+                                                                            !confirm(
+                                                                                `Remover o exercício "${ex.name || 'sem nome'}" e suas séries? Essa ação não pode ser desfeita.`,
+                                                                            )
+                                                                        )
+                                                                            return;
+                                                                        onRemoveExercise(
                                                                             active._id,
                                                                             ex._id,
-                                                                            'series_value',
-                                                                            e
-                                                                                .target
-                                                                                .value,
-                                                                        )
-                                                                    }
-                                                                    placeholder="Reps"
-                                                                    className={
-                                                                        s.smallNumInput
-                                                                    }
-                                                                />
-                                                                <span
-                                                                    className={
-                                                                        s.seriesUnitLabel
-                                                                    }
+                                                                        );
+                                                                    }}
                                                                 >
-                                                                    reps
-                                                                </span>
+                                                                    ✕
+                                                                </button>
                                                             </div>
-                                                        )}
-                                                        {ex.series_mode ===
-                                                            'time' && (
+
                                                             <div
                                                                 className={
-                                                                    s.seriesSubfieldRow
-                                                                }
-                                                            >
-                                                                <input
-                                                                    type="number"
-                                                                    min="1"
-                                                                    value={
-                                                                        ex.series_sets
-                                                                    }
-                                                                    onChange={(
-                                                                        e,
-                                                                    ) =>
-                                                                        onUpdateExercise(
-                                                                            active._id,
-                                                                            ex._id,
-                                                                            'series_sets',
-                                                                            e
-                                                                                .target
-                                                                                .value,
-                                                                        )
-                                                                    }
-                                                                    placeholder="Séries"
-                                                                    className={
-                                                                        s.smallNumInput
-                                                                    }
-                                                                />
-                                                                <span
-                                                                    className={
-                                                                        s.seriesTimesSign
-                                                                    }
-                                                                >
-                                                                    ×
-                                                                </span>
-                                                                <input
-                                                                    type="number"
-                                                                    min="1"
-                                                                    value={
-                                                                        ex.series_value
-                                                                    }
-                                                                    onChange={(
-                                                                        e,
-                                                                    ) =>
-                                                                        onUpdateExercise(
-                                                                            active._id,
-                                                                            ex._id,
-                                                                            'series_value',
-                                                                            e
-                                                                                .target
-                                                                                .value,
-                                                                        )
-                                                                    }
-                                                                    placeholder="Segundos"
-                                                                    className={
-                                                                        s.smallNumInput
-                                                                    }
-                                                                />
-                                                                <span
-                                                                    className={
-                                                                        s.seriesUnitLabel
-                                                                    }
-                                                                >
-                                                                    seg
-                                                                </span>
-                                                            </div>
-                                                        )}
-                                                        {ex.series_mode ===
-                                                            'free' && (
-                                                            <input
-                                                                value={
-                                                                    ex.series_free
-                                                                }
-                                                                onChange={(
-                                                                    e,
-                                                                ) =>
-                                                                    onUpdateExercise(
-                                                                        active._id,
-                                                                        ex._id,
-                                                                        'series_free',
-                                                                        e
-                                                                            .target
-                                                                            .value,
-                                                                    )
-                                                                }
-                                                                placeholder="Ex: 3-4 × 10-12 reps"
-                                                                className={
-                                                                    s.formInput
+                                                                    s.formGroup
                                                                 }
                                                                 style={{
-                                                                    marginTop: 8,
+                                                                    marginBottom: 0,
                                                                 }}
-                                                            />
-                                                        )}
-                                                    </div>
+                                                            >
+                                                                <label
+                                                                    className={
+                                                                        s.formLabel
+                                                                    }
+                                                                >
+                                                                    Séries
+                                                                </label>
+                                                                <select
+                                                                    value={
+                                                                        ex.series_mode
+                                                                    }
+                                                                    onChange={(
+                                                                        e,
+                                                                    ) =>
+                                                                        onUpdateExercise(
+                                                                            active._id,
+                                                                            ex._id,
+                                                                            'series_mode',
+                                                                            e
+                                                                                .target
+                                                                                .value,
+                                                                        )
+                                                                    }
+                                                                    className={
+                                                                        s.formSelect
+                                                                    }
+                                                                >
+                                                                    <option value="reps">
+                                                                        Reps
+                                                                        (séries
+                                                                        ×
+                                                                        repetições)
+                                                                    </option>
+                                                                    <option value="time">
+                                                                        Tempo
+                                                                        (min/seg)
+                                                                    </option>
+                                                                    <option value="free">
+                                                                        Livre
+                                                                        (texto)
+                                                                    </option>
+                                                                </select>
+                                                                {ex.series_mode ===
+                                                                    'reps' && (
+                                                                    <div
+                                                                        className={
+                                                                            s.seriesSubfieldRow
+                                                                        }
+                                                                    >
+                                                                        <input
+                                                                            type="number"
+                                                                            min="1"
+                                                                            value={
+                                                                                ex.series_sets
+                                                                            }
+                                                                            onChange={(
+                                                                                e,
+                                                                            ) =>
+                                                                                onUpdateExercise(
+                                                                                    active._id,
+                                                                                    ex._id,
+                                                                                    'series_sets',
+                                                                                    e
+                                                                                        .target
+                                                                                        .value,
+                                                                                )
+                                                                            }
+                                                                            placeholder="Séries"
+                                                                            className={
+                                                                                s.smallNumInput
+                                                                            }
+                                                                        />
+                                                                        <span
+                                                                            className={
+                                                                                s.seriesTimesSign
+                                                                            }
+                                                                        >
+                                                                            ×
+                                                                        </span>
+                                                                        <input
+                                                                            type="number"
+                                                                            min="1"
+                                                                            value={
+                                                                                ex.series_value
+                                                                            }
+                                                                            onChange={(
+                                                                                e,
+                                                                            ) =>
+                                                                                onUpdateExercise(
+                                                                                    active._id,
+                                                                                    ex._id,
+                                                                                    'series_value',
+                                                                                    e
+                                                                                        .target
+                                                                                        .value,
+                                                                                )
+                                                                            }
+                                                                            placeholder="Reps"
+                                                                            className={
+                                                                                s.smallNumInput
+                                                                            }
+                                                                        />
+                                                                        <span
+                                                                            className={
+                                                                                s.seriesUnitLabel
+                                                                            }
+                                                                        >
+                                                                            reps
+                                                                        </span>
+                                                                    </div>
+                                                                )}
+                                                                {ex.series_mode ===
+                                                                    'time' && (
+                                                                    <div
+                                                                        className={
+                                                                            s.seriesSubfieldRow
+                                                                        }
+                                                                    >
+                                                                        <input
+                                                                            type="number"
+                                                                            min="1"
+                                                                            value={
+                                                                                ex.series_sets
+                                                                            }
+                                                                            onChange={(
+                                                                                e,
+                                                                            ) =>
+                                                                                onUpdateExercise(
+                                                                                    active._id,
+                                                                                    ex._id,
+                                                                                    'series_sets',
+                                                                                    e
+                                                                                        .target
+                                                                                        .value,
+                                                                                )
+                                                                            }
+                                                                            placeholder="Séries"
+                                                                            className={
+                                                                                s.smallNumInput
+                                                                            }
+                                                                        />
+                                                                        <span
+                                                                            className={
+                                                                                s.seriesTimesSign
+                                                                            }
+                                                                        >
+                                                                            ×
+                                                                        </span>
+                                                                        <input
+                                                                            type="number"
+                                                                            min="1"
+                                                                            value={
+                                                                                ex.series_value
+                                                                            }
+                                                                            onChange={(
+                                                                                e,
+                                                                            ) =>
+                                                                                onUpdateExercise(
+                                                                                    active._id,
+                                                                                    ex._id,
+                                                                                    'series_value',
+                                                                                    e
+                                                                                        .target
+                                                                                        .value,
+                                                                                )
+                                                                            }
+                                                                            placeholder="Segundos"
+                                                                            className={
+                                                                                s.smallNumInput
+                                                                            }
+                                                                        />
+                                                                        <span
+                                                                            className={
+                                                                                s.seriesUnitLabel
+                                                                            }
+                                                                        >
+                                                                            seg
+                                                                        </span>
+                                                                    </div>
+                                                                )}
+                                                                {ex.series_mode ===
+                                                                    'free' && (
+                                                                    <input
+                                                                        value={
+                                                                            ex.series_free
+                                                                        }
+                                                                        onChange={(
+                                                                            e,
+                                                                        ) =>
+                                                                            onUpdateExercise(
+                                                                                active._id,
+                                                                                ex._id,
+                                                                                'series_free',
+                                                                                e
+                                                                                    .target
+                                                                                    .value,
+                                                                            )
+                                                                        }
+                                                                        placeholder="Ex: 3-4 × 10-12 reps"
+                                                                        className={
+                                                                            s.formInput
+                                                                        }
+                                                                        style={{
+                                                                            marginTop: 8,
+                                                                        }}
+                                                                    />
+                                                                )}
+                                                            </div>
 
-                                                    {/* Descanso fica fora do
+                                                            {/* Descanso fica fora do
                                                         bloco recolhível: é o
                                                         campo de prescrição
                                                         mais usado e alimenta
                                                         o cronômetro do aluno. */}
-                                                    <div
-                                                        className={
-                                                            s.formGroup
-                                                        }
-                                                        style={{
-                                                            marginBottom: 0,
-                                                        }}
-                                                    >
-                                                        <label
-                                                            className={
-                                                                s.formLabel
-                                                            }
-                                                        >
-                                                            Descanso entre
-                                                            séries
-                                                        </label>
-                                                        <div
-                                                            className={
-                                                                s.seriesSubfieldRow
-                                                            }
-                                                        >
-                                                            <input
-                                                                type="number"
-                                                                min="0"
-                                                                step="5"
-                                                                value={
-                                                                    ex.rest_seconds
-                                                                }
-                                                                onChange={(e) =>
-                                                                    onUpdateExercise(
-                                                                        active._id,
-                                                                        ex._id,
-                                                                        'rest_seconds',
-                                                                        e.target
-                                                                            .value,
-                                                                    )
-                                                                }
-                                                                placeholder="90"
-                                                                className={
-                                                                    s.smallNumInput
-                                                                }
-                                                            />
-                                                            <span
-                                                                className={
-                                                                    s.seriesUnitLabel
-                                                                }
-                                                            >
-                                                                segundos
-                                                            </span>
-                                                        </div>
-                                                    </div>
-
-                                                    <div
-                                                        className={
-                                                            s.formGroup
-                                                        }
-                                                        style={{
-                                                            marginBottom: 0,
-                                                        }}
-                                                    >
-                                                        <label
-                                                            className={
-                                                                s.formLabel
-                                                            }
-                                                        >
-                                                            Variação
-                                                        </label>
-                                                        <input
-                                                            value={
-                                                                ex.variations
-                                                            }
-                                                            onChange={(e) =>
-                                                                onUpdateExercise(
-                                                                    active._id,
-                                                                    ex._id,
-                                                                    'variations',
-                                                                    e.target
-                                                                        .value,
-                                                                )
-                                                            }
-                                                            placeholder="Opcional"
-                                                            className={
-                                                                s.formInput
-                                                            }
-                                                        />
-                                                    </div>
-
-                                                    <div
-                                                        className={
-                                                            s.formGroup
-                                                        }
-                                                        style={{
-                                                            marginBottom: 0,
-                                                        }}
-                                                    >
-                                                        <label
-                                                            className={
-                                                                s.formLabel
-                                                            }
-                                                        >
-                                                            Observações
-                                                        </label>
-                                                        <textarea
-                                                            value={
-                                                                ex.observations
-                                                            }
-                                                            onChange={(e) =>
-                                                                onUpdateExercise(
-                                                                    active._id,
-                                                                    ex._id,
-                                                                    'observations',
-                                                                    e.target
-                                                                        .value,
-                                                                )
-                                                            }
-                                                            placeholder="Observações / instruções do personal (opcional)"
-                                                            className={
-                                                                s.formInput
-                                                            }
-                                                            rows={2}
-                                                            style={{
-                                                                resize:
-                                                                    'vertical',
-                                                            }}
-                                                        />
-                                                    </div>
-
-                                                    <div
-                                                        className={
-                                                            s.prescriptionCard
-                                                        }
-                                                    >
-                                                        <button
-                                                            type="button"
-                                                            onClick={() =>
-                                                                togglePrescription(
-                                                                    ex._id,
-                                                                )
-                                                            }
-                                                            aria-expanded={openPrescription.has(
-                                                                ex._id,
-                                                            )}
-                                                            className={
-                                                                s.prescriptionToggle
-                                                            }
-                                                        >
-                                                            <span>
-                                                                <span
-                                                                    className={
-                                                                        s.collapsibleTitle
-                                                                    }
-                                                                >
-                                                                    Prescrição
-                                                                </span>
-                                                                <span
-                                                                    className={
-                                                                        s.collapsibleSummary
-                                                                    }
-                                                                >
-                                                                    {prescriptionSummary(
-                                                                        ex,
-                                                                    )}
-                                                                </span>
-                                                            </span>
-                                                            <span
-                                                                aria-hidden
-                                                                className={
-                                                                    openPrescription.has(
-                                                                        ex._id,
-                                                                    )
-                                                                        ? s.collapsibleChevronOpen
-                                                                        : s.collapsibleChevron
-                                                                }
-                                                            >
-                                                                ▾
-                                                            </span>
-                                                        </button>
-
-                                                        {openPrescription.has(
-                                                            ex._id,
-                                                        ) && (
                                                             <div
                                                                 className={
-                                                                    s.prescriptionBody
+                                                                    s.formGroup
+                                                                }
+                                                                style={{
+                                                                    marginBottom: 0,
+                                                                }}
+                                                            >
+                                                                <label
+                                                                    className={
+                                                                        s.formLabel
+                                                                    }
+                                                                >
+                                                                    Descanso
+                                                                    entre séries
+                                                                </label>
+                                                                <div
+                                                                    className={
+                                                                        s.seriesSubfieldRow
+                                                                    }
+                                                                >
+                                                                    <input
+                                                                        type="number"
+                                                                        min="0"
+                                                                        step="5"
+                                                                        value={
+                                                                            ex.rest_seconds
+                                                                        }
+                                                                        onChange={(
+                                                                            e,
+                                                                        ) =>
+                                                                            onUpdateExercise(
+                                                                                active._id,
+                                                                                ex._id,
+                                                                                'rest_seconds',
+                                                                                e
+                                                                                    .target
+                                                                                    .value,
+                                                                            )
+                                                                        }
+                                                                        placeholder="90"
+                                                                        className={
+                                                                            s.smallNumInput
+                                                                        }
+                                                                    />
+                                                                    <span
+                                                                        className={
+                                                                            s.seriesUnitLabel
+                                                                        }
+                                                                    >
+                                                                        segundos
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+
+                                                            <div
+                                                                className={
+                                                                    s.formGroup
+                                                                }
+                                                                style={{
+                                                                    marginBottom: 0,
+                                                                }}
+                                                            >
+                                                                <label
+                                                                    className={
+                                                                        s.formLabel
+                                                                    }
+                                                                >
+                                                                    Variação
+                                                                </label>
+                                                                <input
+                                                                    value={
+                                                                        ex.variations
+                                                                    }
+                                                                    onChange={(
+                                                                        e,
+                                                                    ) =>
+                                                                        onUpdateExercise(
+                                                                            active._id,
+                                                                            ex._id,
+                                                                            'variations',
+                                                                            e
+                                                                                .target
+                                                                                .value,
+                                                                        )
+                                                                    }
+                                                                    placeholder="Opcional"
+                                                                    className={
+                                                                        s.formInput
+                                                                    }
+                                                                />
+                                                            </div>
+
+                                                            <div
+                                                                className={
+                                                                    s.formGroup
+                                                                }
+                                                                style={{
+                                                                    marginBottom: 0,
+                                                                }}
+                                                            >
+                                                                <label
+                                                                    className={
+                                                                        s.formLabel
+                                                                    }
+                                                                >
+                                                                    Observações
+                                                                </label>
+                                                                <textarea
+                                                                    value={
+                                                                        ex.observations
+                                                                    }
+                                                                    onChange={(
+                                                                        e,
+                                                                    ) =>
+                                                                        onUpdateExercise(
+                                                                            active._id,
+                                                                            ex._id,
+                                                                            'observations',
+                                                                            e
+                                                                                .target
+                                                                                .value,
+                                                                        )
+                                                                    }
+                                                                    placeholder="Observações / instruções do personal (opcional)"
+                                                                    className={
+                                                                        s.formInput
+                                                                    }
+                                                                    rows={2}
+                                                                    style={{
+                                                                        resize: 'vertical',
+                                                                    }}
+                                                                />
+                                                            </div>
+
+                                                            <div
+                                                                className={
+                                                                    s.prescriptionCard
                                                                 }
                                                             >
-                                                                <PrescriptionNumber
-                                                                    label="Carga"
-                                                                    unit="kg"
-                                                                    min="0"
-                                                                    step="0.5"
-                                                                    value={
-                                                                        ex.load_kg
-                                                                    }
-                                                                    onChange={(
-                                                                        v,
-                                                                    ) =>
-                                                                        onUpdateExercise(
-                                                                            active._id,
-                                                                            ex._id,
-                                                                            'load_kg',
-                                                                            v,
-                                                                        )
-                                                                    }
-                                                                />
-                                                                <PrescriptionNumber
-                                                                    label="% de 1RM"
-                                                                    unit="%"
-                                                                    min="0"
-                                                                    max="100"
-                                                                    value={
-                                                                        ex.load_percentage
-                                                                    }
-                                                                    onChange={(
-                                                                        v,
-                                                                    ) =>
-                                                                        onUpdateExercise(
-                                                                            active._id,
-                                                                            ex._id,
-                                                                            'load_percentage',
-                                                                            v,
-                                                                        )
-                                                                    }
-                                                                />
-                                                                <PrescriptionNumber
-                                                                    label="Cadência"
-                                                                    unit="seg"
-                                                                    min="0"
-                                                                    value={
-                                                                        ex.tempo_seconds
-                                                                    }
-                                                                    onChange={(
-                                                                        v,
-                                                                    ) =>
-                                                                        onUpdateExercise(
-                                                                            active._id,
-                                                                            ex._id,
-                                                                            'tempo_seconds',
-                                                                            v,
-                                                                        )
-                                                                    }
-                                                                />
-                                                                <PrescriptionNumber
-                                                                    label="RPE alvo"
-                                                                    unit="1-10"
-                                                                    min="1"
-                                                                    max="10"
-                                                                    value={
-                                                                        ex.rpe_target
-                                                                    }
-                                                                    onChange={(
-                                                                        v,
-                                                                    ) =>
-                                                                        onUpdateExercise(
-                                                                            active._id,
-                                                                            ex._id,
-                                                                            'rpe_target',
-                                                                            v,
-                                                                        )
-                                                                    }
-                                                                />
-                                                                <div
-                                                                    className={
-                                                                        s.prescriptionFieldWide
-                                                                    }
-                                                                >
-                                                                    <label
-                                                                        className={
-                                                                            s.formLabel
-                                                                        }
-                                                                    >
-                                                                        Grupo
-                                                                        muscular
-                                                                    </label>
-                                                                    <select
-                                                                        value={
-                                                                            ex.muscle_group
-                                                                        }
-                                                                        onChange={(
-                                                                            e,
-                                                                        ) =>
-                                                                            onUpdateExercise(
-                                                                                active._id,
-                                                                                ex._id,
-                                                                                'muscle_group',
-                                                                                e
-                                                                                    .target
-                                                                                    .value,
-                                                                            )
-                                                                        }
-                                                                        className={
-                                                                            s.formSelect
-                                                                        }
-                                                                    >
-                                                                        <option value="">
-                                                                            Não
-                                                                            definido
-                                                                        </option>
-                                                                        {MUSCLE_GROUPS.map(
-                                                                            (
-                                                                                g,
-                                                                            ) => (
-                                                                                <option
-                                                                                    key={
-                                                                                        g
-                                                                                    }
-                                                                                    value={
-                                                                                        g
-                                                                                    }
-                                                                                >
-                                                                                    {
-                                                                                        g
-                                                                                    }
-                                                                                </option>
-                                                                            ),
-                                                                        )}
-                                                                    </select>
-                                                                </div>
-                                                                <div
-                                                                    className={
-                                                                        s.prescriptionFieldWide
-                                                                    }
-                                                                >
-                                                                    <label
-                                                                        className={
-                                                                            s.formLabel
-                                                                        }
-                                                                    >
-                                                                        Técnica
-                                                                        avançada
-                                                                    </label>
-                                                                    <select
-                                                                        value={
-                                                                            ex.technique
-                                                                        }
-                                                                        onChange={(
-                                                                            e,
-                                                                        ) =>
-                                                                            onUpdateExercise(
-                                                                                active._id,
-                                                                                ex._id,
-                                                                                'technique',
-                                                                                e
-                                                                                    .target
-                                                                                    .value,
-                                                                            )
-                                                                        }
-                                                                        className={
-                                                                            s.formSelect
-                                                                        }
-                                                                    >
-                                                                        <option value="">
-                                                                            Nenhuma
-                                                                        </option>
-                                                                        {TECHNIQUE_CATEGORIES.map(
-                                                                            (
-                                                                                category,
-                                                                            ) => (
-                                                                                <optgroup
-                                                                                    key={
-                                                                                        category
-                                                                                    }
-                                                                                    label={
-                                                                                        category
-                                                                                    }
-                                                                                >
-                                                                                    {Object.entries(
-                                                                                        TECHNIQUE_CATALOG,
-                                                                                    )
-                                                                                        .filter(
-                                                                                            ([
-                                                                                                ,
-                                                                                                def,
-                                                                                            ]) =>
-                                                                                                def.category ===
-                                                                                                category,
-                                                                                        )
-                                                                                        .map(
-                                                                                            ([
-                                                                                                value,
-                                                                                                def,
-                                                                                            ]) => (
-                                                                                                <option
-                                                                                                    key={
-                                                                                                        value
-                                                                                                    }
-                                                                                                    value={
-                                                                                                        value
-                                                                                                    }
-                                                                                                >
-                                                                                                    {
-                                                                                                        def.label
-                                                                                                    }
-                                                                                                </option>
-                                                                                            ),
-                                                                                        )}
-                                                                                </optgroup>
-                                                                            ),
-                                                                        )}
-                                                                    </select>
-                                                                </div>
-                                                                {ex.technique &&
-                                                                    TECHNIQUE_CATALOG[
-                                                                        ex
-                                                                            .technique
-                                                                    ]?.fields.map(
-                                                                        (
-                                                                            f,
-                                                                        ) => (
-                                                                            <PrescriptionNumber
-                                                                                key={
-                                                                                    f.key
-                                                                                }
-                                                                                label={
-                                                                                    f.label
-                                                                                }
-                                                                                unit={
-                                                                                    f.unit
-                                                                                }
-                                                                                min={String(
-                                                                                    f.min,
-                                                                                )}
-                                                                                max={String(
-                                                                                    f.max,
-                                                                                )}
-                                                                                value={
-                                                                                    ex[
-                                                                                        TECHNIQUE_FIELD_MAP[
-                                                                                            f
-                                                                                                .key
-                                                                                        ]
-                                                                                    ] as string
-                                                                                }
-                                                                                onChange={(
-                                                                                    v,
-                                                                                ) =>
-                                                                                    onUpdateExercise(
-                                                                                        active._id,
-                                                                                        ex._id,
-                                                                                        TECHNIQUE_FIELD_MAP[
-                                                                                            f
-                                                                                                .key
-                                                                                        ],
-                                                                                        v,
-                                                                                    )
-                                                                                }
-                                                                            />
-                                                                        ),
-                                                                    )}
-                                                            </div>
-                                                        )}
-                                                    </div>
-
-                                                    {(canCombine ||
-                                                        isLastInGroup) && (
-                                                        <div
-                                                            className={
-                                                                s.comboActionsRow
-                                                            }
-                                                        >
-                                                            {canCombine && (
                                                                 <button
                                                                     type="button"
-                                                                    className={
-                                                                        s.linkBtnAccent
-                                                                    }
                                                                     onClick={() =>
-                                                                        onCombineWithPrevious?.(
-                                                                            active._id,
+                                                                        togglePrescription(
                                                                             ex._id,
                                                                         )
                                                                     }
+                                                                    aria-expanded={openPrescription.has(
+                                                                        ex._id,
+                                                                    )}
+                                                                    className={
+                                                                        s.prescriptionToggle
+                                                                    }
                                                                 >
-                                                                    🔗 Agrupar
-                                                                    com
-                                                                    exercício
-                                                                    anterior
+                                                                    <span>
+                                                                        <span
+                                                                            className={
+                                                                                s.collapsibleTitle
+                                                                            }
+                                                                        >
+                                                                            Prescrição
+                                                                        </span>
+                                                                        <span
+                                                                            className={
+                                                                                s.collapsibleSummary
+                                                                            }
+                                                                        >
+                                                                            {prescriptionSummary(
+                                                                                ex,
+                                                                            )}
+                                                                        </span>
+                                                                    </span>
+                                                                    <span
+                                                                        aria-hidden
+                                                                        className={
+                                                                            openPrescription.has(
+                                                                                ex._id,
+                                                                            )
+                                                                                ? s.collapsibleChevronOpen
+                                                                                : s.collapsibleChevron
+                                                                        }
+                                                                    >
+                                                                        ▾
+                                                                    </span>
                                                                 </button>
+
+                                                                {openPrescription.has(
+                                                                    ex._id,
+                                                                ) && (
+                                                                    <div
+                                                                        className={
+                                                                            s.prescriptionBody
+                                                                        }
+                                                                    >
+                                                                        <PrescriptionNumber
+                                                                            label="Carga"
+                                                                            unit="kg"
+                                                                            min="0"
+                                                                            step="0.5"
+                                                                            value={
+                                                                                ex.load_kg
+                                                                            }
+                                                                            onChange={(
+                                                                                v,
+                                                                            ) =>
+                                                                                onUpdateExercise(
+                                                                                    active._id,
+                                                                                    ex._id,
+                                                                                    'load_kg',
+                                                                                    v,
+                                                                                )
+                                                                            }
+                                                                        />
+                                                                        <PrescriptionNumber
+                                                                            label="% de 1RM"
+                                                                            unit="%"
+                                                                            min="0"
+                                                                            max="100"
+                                                                            value={
+                                                                                ex.load_percentage
+                                                                            }
+                                                                            onChange={(
+                                                                                v,
+                                                                            ) =>
+                                                                                onUpdateExercise(
+                                                                                    active._id,
+                                                                                    ex._id,
+                                                                                    'load_percentage',
+                                                                                    v,
+                                                                                )
+                                                                            }
+                                                                        />
+                                                                        <PrescriptionNumber
+                                                                            label="Cadência"
+                                                                            unit="seg"
+                                                                            min="0"
+                                                                            value={
+                                                                                ex.tempo_seconds
+                                                                            }
+                                                                            onChange={(
+                                                                                v,
+                                                                            ) =>
+                                                                                onUpdateExercise(
+                                                                                    active._id,
+                                                                                    ex._id,
+                                                                                    'tempo_seconds',
+                                                                                    v,
+                                                                                )
+                                                                            }
+                                                                        />
+                                                                        <PrescriptionNumber
+                                                                            label="RPE alvo"
+                                                                            unit="1-10"
+                                                                            min="1"
+                                                                            max="10"
+                                                                            value={
+                                                                                ex.rpe_target
+                                                                            }
+                                                                            onChange={(
+                                                                                v,
+                                                                            ) =>
+                                                                                onUpdateExercise(
+                                                                                    active._id,
+                                                                                    ex._id,
+                                                                                    'rpe_target',
+                                                                                    v,
+                                                                                )
+                                                                            }
+                                                                        />
+                                                                        <MuscleGroupSelect
+                                                                            value={
+                                                                                ex.muscle_group
+                                                                            }
+                                                                            onChange={(
+                                                                                v,
+                                                                            ) =>
+                                                                                onUpdateExercise(
+                                                                                    active._id,
+                                                                                    ex._id,
+                                                                                    'muscle_group',
+                                                                                    v,
+                                                                                )
+                                                                            }
+                                                                        />
+                                                                        <TechniqueBlock
+                                                                            technique={
+                                                                                ex.technique
+                                                                            }
+                                                                            onChangeTechnique={(
+                                                                                v,
+                                                                            ) =>
+                                                                                onUpdateExercise(
+                                                                                    active._id,
+                                                                                    ex._id,
+                                                                                    'technique',
+                                                                                    v,
+                                                                                )
+                                                                            }
+                                                                            getParamValue={(
+                                                                                key,
+                                                                            ) =>
+                                                                                ex[
+                                                                                    TECHNIQUE_FIELD_MAP[
+                                                                                        key
+                                                                                    ]
+                                                                                ] as string
+                                                                            }
+                                                                            onChangeParam={(
+                                                                                key,
+                                                                                v,
+                                                                            ) =>
+                                                                                onUpdateExercise(
+                                                                                    active._id,
+                                                                                    ex._id,
+                                                                                    TECHNIQUE_FIELD_MAP[
+                                                                                        key
+                                                                                    ],
+                                                                                    v,
+                                                                                )
+                                                                            }
+                                                                        />
+                                                                    </div>
+                                                                )}
+                                                            </div>
+
+                                                            {(canCombine ||
+                                                                isLastInGroup) && (
+                                                                <div
+                                                                    className={
+                                                                        s.comboActionsRow
+                                                                    }
+                                                                >
+                                                                    {canCombine && (
+                                                                        <button
+                                                                            type="button"
+                                                                            className={
+                                                                                s.linkBtnAccent
+                                                                            }
+                                                                            onClick={() =>
+                                                                                onCombineWithPrevious?.(
+                                                                                    active._id,
+                                                                                    ex._id,
+                                                                                )
+                                                                            }
+                                                                        >
+                                                                            🔗
+                                                                            Agrupar
+                                                                            com
+                                                                            exercício
+                                                                            anterior
+                                                                        </button>
+                                                                    )}
+                                                                    {isLastInGroup && (
+                                                                        <button
+                                                                            type="button"
+                                                                            className={
+                                                                                s.linkBtn
+                                                                            }
+                                                                            onClick={() =>
+                                                                                onRemoveLastFromGroup?.(
+                                                                                    active._id,
+                                                                                    ex._id,
+                                                                                )
+                                                                            }
+                                                                        >
+                                                                            Tirar
+                                                                            do
+                                                                            bloco
+                                                                        </button>
+                                                                    )}
+                                                                </div>
                                                             )}
-                                                            {isLastInGroup && (
+                                                        </div>
+                                                    );
+                                                },
+                                            );
+
+                                            if (!isCombo || !groupId) {
+                                                return (
+                                                    <SortableExerciseGroup
+                                                        key={sortId}
+                                                        id={sortId}
+                                                        reorderMode={
+                                                            reorderExercisesMode
+                                                        }
+                                                    >
+                                                        {cards}
+                                                    </SortableExerciseGroup>
+                                                );
+                                            }
+
+                                            return (
+                                                <SortableExerciseGroup
+                                                    key={sortId}
+                                                    id={sortId}
+                                                    reorderMode={
+                                                        reorderExercisesMode
+                                                    }
+                                                >
+                                                    <div
+                                                        className={s.comboGroup}
+                                                    >
+                                                        <div
+                                                            className={
+                                                                s.comboBracket
+                                                            }
+                                                        />
+                                                        <div
+                                                            className={
+                                                                s.comboBody
+                                                            }
+                                                        >
+                                                            <div
+                                                                className={
+                                                                    s.comboLabelRow
+                                                                }
+                                                            >
+                                                                <span
+                                                                    className={
+                                                                        s.comboChip
+                                                                    }
+                                                                >
+                                                                    🔗{' '}
+                                                                    {comboGroupLabel(
+                                                                        group.length,
+                                                                        group[0]
+                                                                            .group_technique,
+                                                                    )}
+                                                                </span>
+                                                                <select
+                                                                    value={
+                                                                        group[0]
+                                                                            .group_technique ??
+                                                                        ''
+                                                                    }
+                                                                    onChange={(
+                                                                        e,
+                                                                    ) => {
+                                                                        const value =
+                                                                            e
+                                                                                .target
+                                                                                .value;
+                                                                        group.forEach(
+                                                                            (
+                                                                                g,
+                                                                            ) =>
+                                                                                onUpdateExercise(
+                                                                                    active._id,
+                                                                                    g._id,
+                                                                                    'group_technique',
+                                                                                    value,
+                                                                                ),
+                                                                        );
+                                                                    }}
+                                                                    className={
+                                                                        s.formInput
+                                                                    }
+                                                                    style={{
+                                                                        maxWidth: 220,
+                                                                    }}
+                                                                >
+                                                                    <option value="">
+                                                                        Tipo de
+                                                                        combinação…
+                                                                    </option>
+                                                                    {GROUP_TECHNIQUE_CATALOG.map(
+                                                                        (
+                                                                            gt,
+                                                                        ) => (
+                                                                            <option
+                                                                                key={
+                                                                                    gt.value
+                                                                                }
+                                                                                value={
+                                                                                    gt.value
+                                                                                }
+                                                                            >
+                                                                                {
+                                                                                    gt.label
+                                                                                }
+                                                                            </option>
+                                                                        ),
+                                                                    )}
+                                                                </select>
                                                                 <button
                                                                     type="button"
                                                                     className={
                                                                         s.linkBtn
                                                                     }
                                                                     onClick={() =>
-                                                                        onRemoveLastFromGroup?.(
+                                                                        onUngroupExercises?.(
                                                                             active._id,
-                                                                            ex._id,
+                                                                            groupId,
                                                                         )
                                                                     }
                                                                 >
-                                                                    Tirar do
-                                                                    bloco
+                                                                    Desagrupar
                                                                 </button>
-                                                            )}
+                                                            </div>
+                                                            {cards}
                                                         </div>
-                                                    )}
-                                                </div>
+                                                    </div>
+                                                </SortableExerciseGroup>
                                             );
-                                        },
-                                    );
-
-                                    if (!isCombo || !groupId) {
-                                        return (
-                                            <React.Fragment key={group[0]._id}>
-                                                {cards}
-                                            </React.Fragment>
-                                        );
-                                    }
-
-                                    return (
-                                        <div
-                                            key={group[0]._id}
-                                            className={s.comboGroup}
-                                        >
-                                            <div
-                                                className={s.comboBracket}
-                                            />
-                                            <div className={s.comboBody}>
-                                                <div
-                                                    className={
-                                                        s.comboLabelRow
-                                                    }
-                                                >
-                                                    <span
-                                                        className={
-                                                            s.comboChip
-                                                        }
-                                                    >
-                                                        🔗{' '}
-                                                        {comboGroupLabel(
-                                                            group.length,
-                                                            group[0]
-                                                                .group_technique,
-                                                        )}
-                                                    </span>
-                                                    <select
-                                                        value={
-                                                            group[0]
-                                                                .group_technique ??
-                                                            ''
-                                                        }
-                                                        onChange={(e) => {
-                                                            const value =
-                                                                e.target.value;
-                                                            group.forEach(
-                                                                (g) =>
-                                                                    onUpdateExercise(
-                                                                        active._id,
-                                                                        g._id,
-                                                                        'group_technique',
-                                                                        value,
-                                                                    ),
-                                                            );
-                                                        }}
-                                                        className={
-                                                            s.formInput
-                                                        }
-                                                        style={{
-                                                            maxWidth: 220,
-                                                        }}
-                                                    >
-                                                        <option value="">
-                                                            Tipo de
-                                                            combinação…
-                                                        </option>
-                                                        {GROUP_TECHNIQUE_CATALOG.map(
-                                                            (gt) => (
-                                                                <option
-                                                                    key={
-                                                                        gt.value
-                                                                    }
-                                                                    value={
-                                                                        gt.value
-                                                                    }
-                                                                >
-                                                                    {gt.label}
-                                                                </option>
-                                                            ),
-                                                        )}
-                                                    </select>
-                                                    <button
-                                                        type="button"
-                                                        className={s.linkBtn}
-                                                        onClick={() =>
-                                                            onUngroupExercises?.(
-                                                                active._id,
-                                                                groupId,
-                                                            )
-                                                        }
-                                                    >
-                                                        Desagrupar
-                                                    </button>
-                                                </div>
-                                                {cards}
-                                            </div>
-                                        </div>
-                                    );
-                                },
-                            )}
-                        </div>
+                                        })}
+                                    </div>
+                                </SortableContext>
+                            </DndContext>
+                        </>
                     )}
 
                     <div style={{ display: 'flex', gap: 8 }}>

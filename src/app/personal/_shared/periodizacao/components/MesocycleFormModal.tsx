@@ -27,7 +27,9 @@ import {
     type LocalTraining,
 } from '../lib/mesocycleTransforms';
 import MicrocycleEditor from './MicrocycleEditor';
-import TrainingsEditor from './TrainingsEditor';
+import TrainingsEditor, {
+    type BulkPrescriptionFields,
+} from './TrainingsEditor';
 import Modal from '@/components/system/Modal';
 import s from '../builder.module.css';
 
@@ -66,15 +68,14 @@ export default function MesocycleFormModal({
     simpleMode,
     dayLabelStyle,
 }: Props) {
-    const [localTrainings, setLocalTrainings] = useState<LocalTraining[]>(
-        () => (meso ? responseToLocal(meso.trainings) : []),
+    const [localTrainings, setLocalTrainings] = useState<LocalTraining[]>(() =>
+        meso ? responseToLocal(meso.trainings) : [],
     );
-    const [localMicrocycles, setLocalMicrocycles] = useState<
-        LocalMicrocycle[]
-    >(() =>
-        meso
-            ? responseMicroToLocal(meso.microcycles, meso.duration_weeks)
-            : makeDefaultMicrocycles(4),
+    const [localMicrocycles, setLocalMicrocycles] = useState<LocalMicrocycle[]>(
+        () =>
+            meso
+                ? responseMicroToLocal(meso.microcycles, meso.duration_weeks)
+                : makeDefaultMicrocycles(4),
     );
     // Ajustes semanais ficam recolhidos por padrão: a prescrição de
     // exercícios é a informação mais consultada ao abrir o formulário.
@@ -344,8 +345,7 @@ export default function MesocycleFormModal({
                     if (t._id !== tid) return t;
                     const idx = t.exercises.findIndex((e) => e._id === eid);
                     if (idx <= 0) return t;
-                    const groupId =
-                        t.exercises[idx - 1].group_id ?? genId();
+                    const groupId = t.exercises[idx - 1].group_id ?? genId();
                     return {
                         ...t,
                         exercises: t.exercises.map((e, i) =>
@@ -400,6 +400,60 @@ export default function MesocycleFormModal({
                                 ? { ...e, group_id: undefined }
                                 : e,
                         ),
+                    };
+                }),
+            ),
+        [],
+    );
+
+    /* ── Ordenação por arrastar e soltar ── */
+    const reorderTrainings = useCallback(
+        (order: string[]) =>
+            setLocalTrainings((prev) => {
+                const byId = new Map(prev.map((t) => [t._id, t]));
+                return order
+                    .map((id) => byId.get(id))
+                    .filter((t): t is LocalTraining => Boolean(t));
+            }),
+        [],
+    );
+
+    const reorderExercises = useCallback(
+        (tid: string, exerciseIds: string[]) =>
+            setLocalTrainings((prev) =>
+                prev.map((t) => {
+                    if (t._id !== tid) return t;
+                    const byId = new Map(t.exercises.map((e) => [e._id, e]));
+                    return {
+                        ...t,
+                        exercises: exerciseIds
+                            .map((id) => byId.get(id))
+                            .filter((e): e is LocalExercise => Boolean(e)),
+                    };
+                }),
+            ),
+        [],
+    );
+
+    /* ── Prescrição geral do treino ── */
+    const bulkFillPrescription = useCallback(
+        (tid: string, fields: BulkPrescriptionFields) =>
+            setLocalTrainings((prev) =>
+                prev.map((t) => {
+                    if (t._id !== tid) return t;
+                    const entries = (
+                        Object.entries(fields) as [
+                            keyof BulkPrescriptionFields,
+                            string,
+                        ][]
+                    ).filter(([, value]) => value !== '');
+                    if (entries.length === 0) return t;
+                    return {
+                        ...t,
+                        exercises: t.exercises.map((e) => ({
+                            ...e,
+                            ...Object.fromEntries(entries),
+                        })),
                     };
                 }),
             ),
@@ -487,235 +541,232 @@ export default function MesocycleFormModal({
                 </>
             }
         >
-                <form id={MESOCYCLE_FORM_ID} onSubmit={handleSubmit(onSubmit)}>
-                    {!simpleMode && (
-                        <>
-                            {/* ── Phase info ── */}
-                            <div className={s.formGroup}>
-                                <label className={s.formLabel}>Nome *</label>
-                                <input
-                                    {...register('name')}
-                                    placeholder="Ex: Fase de Hipertrofia"
-                                    className={s.formInput}
-                                />
-                                {errors.name && (
-                                    <small className="text-danger">
-                                        {errors.name.message}
-                                    </small>
-                                )}
-                            </div>
+            <form id={MESOCYCLE_FORM_ID} onSubmit={handleSubmit(onSubmit)}>
+                {!simpleMode && (
+                    <>
+                        {/* ── Phase info ── */}
+                        <div className={s.formGroup}>
+                            <label className={s.formLabel}>Nome *</label>
+                            <input
+                                {...register('name')}
+                                placeholder="Ex: Fase de Hipertrofia"
+                                className={s.formInput}
+                            />
+                            {errors.name && (
+                                <small className="text-danger">
+                                    {errors.name.message}
+                                </small>
+                            )}
+                        </div>
 
-                            <div className={s.formRow}>
-                                <div className={s.formGroup}>
-                                    <label className={s.formLabel}>
-                                        Fase *
-                                    </label>
-                                    <select
-                                        {...register('phase')}
-                                        className={s.formSelect}
-                                    >
-                                        <option value="">Selecione</option>
-                                        <optgroup label="Clássica (Matveyev)">
-                                            {PHASES_MATVEYEV.map((p) => (
-                                                <option key={p} value={p}>
-                                                    {p}
-                                                </option>
-                                            ))}
-                                        </optgroup>
-                                        <optgroup label="Força / Bloco (Bompa)">
-                                            {PHASES_FORCE.map((p) => (
-                                                <option key={p} value={p}>
-                                                    {p}
-                                                </option>
-                                            ))}
-                                        </optgroup>
-                                    </select>
-                                    {errors.phase && (
-                                        <small className="text-danger">
-                                            {errors.phase.message}
-                                        </small>
-                                    )}
-                                </div>
-                                <div className={s.formGroup}>
-                                    <label className={s.formLabel}>
-                                        Duração{' '}
-                                        <span style={{ fontWeight: 400 }}>
-                                            (semanas = microciclos)
-                                        </span>{' '}
-                                        *
-                                    </label>
-                                    {/* Presets rápidos */}
-                                    <div
-                                        style={{
-                                            display: 'flex',
-                                            gap: 6,
-                                            marginBottom: 6,
-                                            flexWrap: 'wrap',
-                                        }}
-                                    >
-                                        {[3, 4, 5, 6].map((w) => {
-                                            const current =
-                                                watch('duration_weeks');
-                                            const active = current === w;
-                                            return (
-                                                <button
-                                                    key={w}
-                                                    type="button"
-                                                    onClick={() =>
-                                                        setValue(
-                                                            'duration_weeks',
-                                                            w,
-                                                            {
-                                                                shouldValidate:
-                                                                    true,
-                                                            },
-                                                        )
-                                                    }
-                                                    className={
-                                                        active
-                                                            ? s.presetChipActive
-                                                            : s.presetChip
-                                                    }
-                                                >
-                                                    {w} sem
-                                                    {w === 4 ? ' ⭐' : ''}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                    <input
-                                        {...register('duration_weeks', {
-                                            valueAsNumber: true,
-                                        })}
-                                        type="number"
-                                        min={1}
-                                        max={52}
-                                        className={s.formInput}
-                                        placeholder="Outra duração..."
-                                    />
-                                    <small
-                                        style={{
-                                            color: 'var(--text-muted)',
-                                            fontSize: '0.72rem',
-                                        }}
-                                    >
-                                        Recomendado: 3–6 semanas por fase
-                                    </small>
-                                    {errors.duration_weeks && (
-                                        <small className="text-danger d-block">
-                                            {errors.duration_weeks.message}
-                                        </small>
-                                    )}
-                                </div>
-                            </div>
-
+                        <div className={s.formRow}>
                             <div className={s.formGroup}>
-                                <label className={s.formLabel}>
-                                    Metodologia *
-                                </label>
+                                <label className={s.formLabel}>Fase *</label>
                                 <select
-                                    {...register('methodology')}
+                                    {...register('phase')}
                                     className={s.formSelect}
                                 >
                                     <option value="">Selecione</option>
-                                    {METHODOLOGIES.map((m) => (
-                                        <option key={m} value={m}>
-                                            {m}
-                                        </option>
-                                    ))}
+                                    <optgroup label="Clássica (Matveyev)">
+                                        {PHASES_MATVEYEV.map((p) => (
+                                            <option key={p} value={p}>
+                                                {p}
+                                            </option>
+                                        ))}
+                                    </optgroup>
+                                    <optgroup label="Força / Bloco (Bompa)">
+                                        {PHASES_FORCE.map((p) => (
+                                            <option key={p} value={p}>
+                                                {p}
+                                            </option>
+                                        ))}
+                                    </optgroup>
                                 </select>
-                                {errors.methodology && (
+                                {errors.phase && (
                                     <small className="text-danger">
-                                        {errors.methodology.message}
+                                        {errors.phase.message}
                                     </small>
                                 )}
                             </div>
-                        </>
-                    )}
-
-                    <TrainingsEditor
-                        trainings={localTrainings}
-                        onAddTraining={addTraining}
-                        onRemoveTraining={removeTraining}
-                        onDuplicateTraining={duplicateTraining}
-                        onUpdateTrainingRef={updateTrainingRef}
-                        onAddExercise={addExercise}
-                        onRemoveExercise={removeExercise}
-                        onUpdateExercise={updateExercise}
-                        pickerFor={pickerFor}
-                        onOpenPicker={openPicker}
-                        onClosePicker={closePicker}
-                        onPickExercise={pickExercise}
-                        simpleMode={simpleMode}
-                        dayLabelStyle={dayLabelStyle}
-                        onUpdateTrainingWeekday={updateTrainingWeekday}
-                        onCombineWithPrevious={combineWithPrevious}
-                        onUngroupExercises={ungroupExercises}
-                        onRemoveLastFromGroup={removeLastFromGroup}
-                    />
-
-                    <div className={s.collapsibleCard}>
-                        <button
-                            type="button"
-                            onClick={() => setAdjustmentsOpen((v) => !v)}
-                            aria-expanded={adjustmentsOpen}
-                            className={s.collapsibleToggle}
-                        >
-                            <span>
-                                <span className={s.collapsibleTitle}>
-                                    {simpleMode
-                                        ? 'Ajustes desta semana'
-                                        : 'Ajustes semanais'}
-                                </span>
-                                <span className={s.collapsibleSummary}>
-                                    {adjustmentsSummary}
-                                </span>
-                            </span>
-                            <span
-                                aria-hidden
-                                className={
-                                    adjustmentsOpen
-                                        ? s.collapsibleChevronOpen
-                                        : s.collapsibleChevron
-                                }
-                            >
-                                ▾
-                            </span>
-                        </button>
-
-                        {adjustmentsOpen && (
-                            <div className={s.collapsibleBody}>
-                                {suggestDeloadWarning && (
-                                    <div
-                                        className="alert alert-warning py-2 mb-3"
-                                        style={{ fontSize: '0.8rem' }}
-                                    >
-                                        ⚠️ Fase com {durationWeeksWatch}{' '}
-                                        semanas e nenhuma marcada como deload.
-                                        Blocos longos sem semana de descarga
-                                        aumentam o risco de overtraining —
-                                        considere marcar uma semana como
-                                        deload abaixo.
-                                    </div>
-                                )}
-                                <MicrocycleEditor
-                                    microcycles={localMicrocycles}
-                                    onUpdate={updateMicrocycle}
-                                    simpleMode={simpleMode}
+                            <div className={s.formGroup}>
+                                <label className={s.formLabel}>
+                                    Duração{' '}
+                                    <span style={{ fontWeight: 400 }}>
+                                        (semanas = microciclos)
+                                    </span>{' '}
+                                    *
+                                </label>
+                                {/* Presets rápidos */}
+                                <div
+                                    style={{
+                                        display: 'flex',
+                                        gap: 6,
+                                        marginBottom: 6,
+                                        flexWrap: 'wrap',
+                                    }}
+                                >
+                                    {[3, 4, 5, 6].map((w) => {
+                                        const current = watch('duration_weeks');
+                                        const active = current === w;
+                                        return (
+                                            <button
+                                                key={w}
+                                                type="button"
+                                                onClick={() =>
+                                                    setValue(
+                                                        'duration_weeks',
+                                                        w,
+                                                        {
+                                                            shouldValidate:
+                                                                true,
+                                                        },
+                                                    )
+                                                }
+                                                className={
+                                                    active
+                                                        ? s.presetChipActive
+                                                        : s.presetChip
+                                                }
+                                            >
+                                                {w} sem
+                                                {w === 4 ? ' ⭐' : ''}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                <input
+                                    {...register('duration_weeks', {
+                                        valueAsNumber: true,
+                                    })}
+                                    type="number"
+                                    min={1}
+                                    max={52}
+                                    className={s.formInput}
+                                    placeholder="Outra duração..."
                                 />
+                                <small
+                                    style={{
+                                        color: 'var(--text-muted)',
+                                        fontSize: '0.72rem',
+                                    }}
+                                >
+                                    Recomendado: 3–6 semanas por fase
+                                </small>
+                                {errors.duration_weeks && (
+                                    <small className="text-danger d-block">
+                                        {errors.duration_weeks.message}
+                                    </small>
+                                )}
                             </div>
-                        )}
-                    </div>
+                        </div>
 
-                    {saveError && (
-                        <div
-                            className="alert alert-danger py-2 mb-3"
-                            style={{ fontSize: '0.85rem' }}
+                        <div className={s.formGroup}>
+                            <label className={s.formLabel}>Metodologia *</label>
+                            <select
+                                {...register('methodology')}
+                                className={s.formSelect}
+                            >
+                                <option value="">Selecione</option>
+                                {METHODOLOGIES.map((m) => (
+                                    <option key={m} value={m}>
+                                        {m}
+                                    </option>
+                                ))}
+                            </select>
+                            {errors.methodology && (
+                                <small className="text-danger">
+                                    {errors.methodology.message}
+                                </small>
+                            )}
+                        </div>
+                    </>
+                )}
+
+                <TrainingsEditor
+                    trainings={localTrainings}
+                    onAddTraining={addTraining}
+                    onRemoveTraining={removeTraining}
+                    onDuplicateTraining={duplicateTraining}
+                    onUpdateTrainingRef={updateTrainingRef}
+                    onAddExercise={addExercise}
+                    onRemoveExercise={removeExercise}
+                    onUpdateExercise={updateExercise}
+                    pickerFor={pickerFor}
+                    onOpenPicker={openPicker}
+                    onClosePicker={closePicker}
+                    onPickExercise={pickExercise}
+                    simpleMode={simpleMode}
+                    dayLabelStyle={dayLabelStyle}
+                    onUpdateTrainingWeekday={updateTrainingWeekday}
+                    onCombineWithPrevious={combineWithPrevious}
+                    onUngroupExercises={ungroupExercises}
+                    onRemoveLastFromGroup={removeLastFromGroup}
+                    onReorderTrainings={reorderTrainings}
+                    onReorderExercises={reorderExercises}
+                    onBulkFillPrescription={bulkFillPrescription}
+                />
+
+                <div className={s.collapsibleCard}>
+                    <button
+                        type="button"
+                        onClick={() => setAdjustmentsOpen((v) => !v)}
+                        aria-expanded={adjustmentsOpen}
+                        className={s.collapsibleToggle}
+                    >
+                        <span>
+                            <span className={s.collapsibleTitle}>
+                                {simpleMode
+                                    ? 'Ajustes desta semana'
+                                    : 'Ajustes semanais'}
+                            </span>
+                            <span className={s.collapsibleSummary}>
+                                {adjustmentsSummary}
+                            </span>
+                        </span>
+                        <span
+                            aria-hidden
+                            className={
+                                adjustmentsOpen
+                                    ? s.collapsibleChevronOpen
+                                    : s.collapsibleChevron
+                            }
                         >
-                            {saveError}
+                            ▾
+                        </span>
+                    </button>
+
+                    {adjustmentsOpen && (
+                        <div className={s.collapsibleBody}>
+                            {suggestDeloadWarning && (
+                                <div
+                                    className="alert alert-warning py-2 mb-3"
+                                    style={{ fontSize: '0.8rem' }}
+                                >
+                                    ⚠️ Fase com {durationWeeksWatch} semanas e
+                                    nenhuma marcada como deload. Blocos longos
+                                    sem semana de descarga aumentam o risco de
+                                    overtraining — considere marcar uma semana
+                                    como deload abaixo.
+                                </div>
+                            )}
+                            <MicrocycleEditor
+                                microcycles={localMicrocycles}
+                                onUpdate={updateMicrocycle}
+                                simpleMode={simpleMode}
+                            />
                         </div>
                     )}
-                </form>
+                </div>
+
+                {saveError && (
+                    <div
+                        className="alert alert-danger py-2 mb-3"
+                        style={{ fontSize: '0.85rem' }}
+                    >
+                        {saveError}
+                    </div>
+                )}
+            </form>
         </Modal>
     );
 }
