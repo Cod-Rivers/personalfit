@@ -852,6 +852,60 @@
     padding: 14px;
 }
 
+/* ── Prescrição por exercício ──
+   Mesma linguagem do bloco "Ajustes semanais" (.collapsible*), só que aninhado
+   dentro do card do exercício: sem margem inferior e com fundo transparente,
+   para não empilhar duas superfícies elevadas uma dentro da outra. */
+.prescriptionCard {
+    composes: collapsibleCard;
+    margin-bottom: 0;
+}
+
+.prescriptionToggle {
+    composes: collapsibleToggle;
+    padding: 9px 12px;
+    background: transparent;
+}
+
+.prescriptionBody {
+    composes: collapsibleBody;
+    padding: 12px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+    gap: 12px;
+}
+
+.prescriptionField {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+/* Grupo muscular é um select com rótulos longos — ocupa a linha inteira. */
+.prescriptionFieldWide {
+    composes: prescriptionField;
+    grid-column: 1 / -1;
+}
+
+.prescriptionField .formLabel {
+    margin-bottom: 0;
+}
+
+.prescriptionInputRow {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+/* Dentro da grade os campos acompanham a coluna, ao contrário do .smallNumInput
+   de largura fixa usado na linha de séries. */
+.prescriptionInputRow .smallNumInput {
+    width: 100%;
+    min-width: 0;
+}
+
 /* ── Microciclo (ajustes semanais) ── */
 .microCard {
     background: var(--surface-2);

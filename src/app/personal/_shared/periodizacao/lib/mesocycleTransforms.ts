@@ -87,6 +87,13 @@ export type SeriesMode = 'reps' | 'time' | 'free';
 
 export interface LocalExercise {
     _id: string;
+    /** ID real do exercício no backend, presente só quando carregado da API
+     * (undefined para exercícios novos criados no cliente). Precisa ser
+     * reenviado no save, senão o backend gera um ObjectID novo e órfãa o
+     * histórico de séries e as anotações do aluno. */
+    id?: string;
+    /** Vínculo com exercise_library — passthrough, não editável na UI. */
+    exercise_library_id?: string;
     name: string;
     // Mode selector
     series_mode: SeriesMode;
@@ -98,6 +105,15 @@ export interface LocalExercise {
     // Observações do personal (campo comments no backend)
     observations: string;
     variations: string;
+    // Prescrição (opcionais). Guardados como string para casar direto com os
+    // inputs do form; '' = não preenchido e vira undefined no request, para o
+    // backend gravar omitempty em vez de zero.
+    rest_seconds: string;
+    load_kg: string;
+    load_percentage: string;
+    tempo_seconds: string;
+    rpe_target: string;
+    muscle_group: string;
     timed: boolean;
     video_url: string;
     video_thumb: string;
@@ -132,6 +148,27 @@ export interface LocalMicrocycle {
 
 export function genId() {
     return Math.random().toString(36).slice(2);
+}
+
+/** Número vindo da API → valor de input. Preserva o 0 (ex: descanso zerado é
+ * uma prescrição válida); só ausente/nulo vira campo vazio. */
+function numToField(value: number | null | undefined): string {
+    return value === null || value === undefined ? '' : String(value);
+}
+
+/** Valor de input → número para o request. Campo vazio vira undefined (e não 0)
+ * para o backend gravar omitempty em vez de sobrescrever com zero. */
+function fieldToNum(
+    raw: string,
+    { min, max, decimal }: { min: number; max: number; decimal?: boolean },
+): number | undefined {
+    const trimmed = raw.trim();
+    if (trimmed === '') return undefined;
+    const parsed = decimal
+        ? parseFloat(trimmed.replace(',', '.'))
+        : parseInt(trimmed, 10);
+    if (Number.isNaN(parsed)) return undefined;
+    return Math.max(min, Math.min(max, parsed));
 }
 
 /**
@@ -261,6 +298,8 @@ export function responseToLocal(trainings: TrainingResponse[]): LocalTraining[] 
 
             return {
                 _id: genId(),
+                id: ex.id,
+                exercise_library_id: ex.exercise_library_id,
                 name: ex.name,
                 series_mode: mode,
                 series_sets: sets,
@@ -268,6 +307,12 @@ export function responseToLocal(trainings: TrainingResponse[]): LocalTraining[] 
                 series_free: free,
                 observations: ex.comments ?? '',
                 variations: ex.variations ?? '',
+                rest_seconds: numToField(ex.rest_seconds),
+                load_kg: numToField(ex.load_kg),
+                load_percentage: numToField(ex.load_percentage),
+                tempo_seconds: numToField(ex.tempo_seconds),
+                rpe_target: numToField(ex.rpe_target),
+                muscle_group: ex.muscle_group ?? '',
                 timed,
                 video_url: ex.video_url ?? '',
                 video_thumb: ex.video_thumb ?? '',
@@ -348,6 +393,8 @@ export function localToMesoRequest(
                 }
 
                 return {
+                    id: ex.id,
+                    exercise_library_id: ex.exercise_library_id,
                     name: ex.name,
                     series,
                     variations: ex.variations,
@@ -356,6 +403,27 @@ export function localToMesoRequest(
                     video_url: ex.video_url,
                     video_thumb: ex.video_thumb,
                     timed,
+                    // Limites espelham os tipos do domínio Go (uint16/uint8/float64)
+                    // — ver training.Exercise em protocol.go.
+                    rest_seconds: fieldToNum(ex.rest_seconds, {
+                        min: 0,
+                        max: 65535,
+                    }),
+                    load_kg: fieldToNum(ex.load_kg, {
+                        min: 0,
+                        max: 999,
+                        decimal: true,
+                    }),
+                    load_percentage: fieldToNum(ex.load_percentage, {
+                        min: 0,
+                        max: 100,
+                    }),
+                    tempo_seconds: fieldToNum(ex.tempo_seconds, {
+                        min: 0,
+                        max: 65535,
+                    }),
+                    rpe_target: fieldToNum(ex.rpe_target, { min: 1, max: 10 }),
+                    muscle_group: ex.muscle_group || undefined,
                     group_id: ex.group_id,
                 };
             }),
@@ -386,6 +454,8 @@ export function mesoToRequest(meso: MesocycleResponse): MesocycleRequest {
             reference: t.reference,
             weekday: t.weekday,
             exercises: t.exercises.map((ex) => ({
+                id: ex.id,
+                exercise_library_id: ex.exercise_library_id,
                 name: ex.name,
                 series: ex.series,
                 variations: ex.variations,
@@ -426,6 +496,13 @@ export function duplicateMesoRequest(
         microcycles: (req.microcycles ?? []).map((m) => ({
             ...m,
             id: undefined,
+        })),
+        // Exercícios seguem a mesma regra dos microciclos: reaproveitar os ids
+        // faria a cópia compartilhar histórico de séries e anotações com o
+        // original (ambos referenciam o exercício por id).
+        trainings: req.trainings.map((t) => ({
+            ...t,
+            exercises: t.exercises.map((ex) => ({ ...ex, id: undefined })),
         })),
     };
 }

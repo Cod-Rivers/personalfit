@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import type { ExerciseLibraryItem } from '@/libs/planningService';
+import { MUSCLE_GROUPS, type ExerciseLibraryItem } from '@/libs/planningService';
 import {
     WEEKDAYS,
     weekdayLabel,
@@ -61,6 +61,58 @@ function trainingTabLabel(
     return t.reference || `T${index + 1}`;
 }
 
+/** Campo numérico do bloco de prescrição. Todos seguem o mesmo formato
+ * (rótulo + input estreito + unidade), então vale extrair em vez de repetir. */
+function PrescriptionNumber({
+    label,
+    unit,
+    value,
+    onChange,
+    min,
+    max,
+    step,
+}: {
+    label: string;
+    unit: string;
+    value: string;
+    onChange: (value: string) => void;
+    min?: string;
+    max?: string;
+    step?: string;
+}) {
+    return (
+        <div className={s.prescriptionField}>
+            <label className={s.formLabel}>{label}</label>
+            <div className={s.prescriptionInputRow}>
+                <input
+                    type="number"
+                    min={min}
+                    max={max}
+                    step={step}
+                    value={value}
+                    onChange={(e) => onChange(e.target.value)}
+                    className={s.smallNumInput}
+                />
+                <span className={s.seriesUnitLabel}>{unit}</span>
+            </div>
+        </div>
+    );
+}
+
+/** Resumo de 1 linha do bloco de prescrição recolhido — mesmo padrão do bloco
+ * "Ajustes semanais" do MesocycleFormModal. */
+function prescriptionSummary(ex: LocalExercise): string {
+    const parts: string[] = [];
+    if (ex.load_kg) parts.push(`${ex.load_kg} kg`);
+    if (ex.load_percentage) parts.push(`${ex.load_percentage}% 1RM`);
+    if (ex.tempo_seconds) parts.push(`Cadência ${ex.tempo_seconds}s`);
+    if (ex.rpe_target) parts.push(`RPE ${ex.rpe_target}`);
+    if (ex.muscle_group) parts.push(ex.muscle_group);
+    return parts.length > 0
+        ? parts.join(' · ')
+        : 'Opcional — carga, cadência, RPE e grupo muscular';
+}
+
 /** Rótulo por extenso — usado no title/aria-label da aba, igual nos 3 modos. */
 function trainingFullLabel(
     t: LocalTraining,
@@ -116,6 +168,20 @@ export default function TrainingsEditor({
 
     const active = trainings.find((t) => t._id === activeId) ?? null;
     const activeIndex = active ? trainings.indexOf(active) : -1;
+
+    // Bloco de prescrição por exercício — recolhido por padrão, como o
+    // "Ajustes semanais": são campos opcionais e o que mais se consulta ao
+    // abrir o treino é nome/séries/descanso.
+    const [openPrescription, setOpenPrescription] = useState<Set<string>>(
+        () => new Set(),
+    );
+    const togglePrescription = (eid: string) =>
+        setOpenPrescription((prev) => {
+            const next = new Set(prev);
+            if (next.has(eid)) next.delete(eid);
+            else next.add(eid);
+            return next;
+        });
 
     return (
         <div className={s.trainingsSection}>
@@ -526,6 +592,63 @@ export default function TrainingsEditor({
                                                         )}
                                                     </div>
 
+                                                    {/* Descanso fica fora do
+                                                        bloco recolhível: é o
+                                                        campo de prescrição
+                                                        mais usado e alimenta
+                                                        o cronômetro do aluno. */}
+                                                    <div
+                                                        className={
+                                                            s.formGroup
+                                                        }
+                                                        style={{
+                                                            marginBottom: 0,
+                                                        }}
+                                                    >
+                                                        <label
+                                                            className={
+                                                                s.formLabel
+                                                            }
+                                                        >
+                                                            Descanso entre
+                                                            séries
+                                                        </label>
+                                                        <div
+                                                            className={
+                                                                s.seriesSubfieldRow
+                                                            }
+                                                        >
+                                                            <input
+                                                                type="number"
+                                                                min="0"
+                                                                step="5"
+                                                                value={
+                                                                    ex.rest_seconds
+                                                                }
+                                                                onChange={(e) =>
+                                                                    onUpdateExercise(
+                                                                        active._id,
+                                                                        ex._id,
+                                                                        'rest_seconds',
+                                                                        e.target
+                                                                            .value,
+                                                                    )
+                                                                }
+                                                                placeholder="90"
+                                                                className={
+                                                                    s.smallNumInput
+                                                                }
+                                                            />
+                                                            <span
+                                                                className={
+                                                                    s.seriesUnitLabel
+                                                                }
+                                                            >
+                                                                segundos
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
                                                     <div
                                                         className={
                                                             s.formGroup
@@ -599,6 +722,201 @@ export default function TrainingsEditor({
                                                                     'vertical',
                                                             }}
                                                         />
+                                                    </div>
+
+                                                    <div
+                                                        className={
+                                                            s.prescriptionCard
+                                                        }
+                                                    >
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                togglePrescription(
+                                                                    ex._id,
+                                                                )
+                                                            }
+                                                            aria-expanded={openPrescription.has(
+                                                                ex._id,
+                                                            )}
+                                                            className={
+                                                                s.prescriptionToggle
+                                                            }
+                                                        >
+                                                            <span>
+                                                                <span
+                                                                    className={
+                                                                        s.collapsibleTitle
+                                                                    }
+                                                                >
+                                                                    Prescrição
+                                                                </span>
+                                                                <span
+                                                                    className={
+                                                                        s.collapsibleSummary
+                                                                    }
+                                                                >
+                                                                    {prescriptionSummary(
+                                                                        ex,
+                                                                    )}
+                                                                </span>
+                                                            </span>
+                                                            <span
+                                                                aria-hidden
+                                                                className={
+                                                                    openPrescription.has(
+                                                                        ex._id,
+                                                                    )
+                                                                        ? s.collapsibleChevronOpen
+                                                                        : s.collapsibleChevron
+                                                                }
+                                                            >
+                                                                ▾
+                                                            </span>
+                                                        </button>
+
+                                                        {openPrescription.has(
+                                                            ex._id,
+                                                        ) && (
+                                                            <div
+                                                                className={
+                                                                    s.prescriptionBody
+                                                                }
+                                                            >
+                                                                <PrescriptionNumber
+                                                                    label="Carga"
+                                                                    unit="kg"
+                                                                    min="0"
+                                                                    step="0.5"
+                                                                    value={
+                                                                        ex.load_kg
+                                                                    }
+                                                                    onChange={(
+                                                                        v,
+                                                                    ) =>
+                                                                        onUpdateExercise(
+                                                                            active._id,
+                                                                            ex._id,
+                                                                            'load_kg',
+                                                                            v,
+                                                                        )
+                                                                    }
+                                                                />
+                                                                <PrescriptionNumber
+                                                                    label="% de 1RM"
+                                                                    unit="%"
+                                                                    min="0"
+                                                                    max="100"
+                                                                    value={
+                                                                        ex.load_percentage
+                                                                    }
+                                                                    onChange={(
+                                                                        v,
+                                                                    ) =>
+                                                                        onUpdateExercise(
+                                                                            active._id,
+                                                                            ex._id,
+                                                                            'load_percentage',
+                                                                            v,
+                                                                        )
+                                                                    }
+                                                                />
+                                                                <PrescriptionNumber
+                                                                    label="Cadência"
+                                                                    unit="seg"
+                                                                    min="0"
+                                                                    value={
+                                                                        ex.tempo_seconds
+                                                                    }
+                                                                    onChange={(
+                                                                        v,
+                                                                    ) =>
+                                                                        onUpdateExercise(
+                                                                            active._id,
+                                                                            ex._id,
+                                                                            'tempo_seconds',
+                                                                            v,
+                                                                        )
+                                                                    }
+                                                                />
+                                                                <PrescriptionNumber
+                                                                    label="RPE alvo"
+                                                                    unit="1-10"
+                                                                    min="1"
+                                                                    max="10"
+                                                                    value={
+                                                                        ex.rpe_target
+                                                                    }
+                                                                    onChange={(
+                                                                        v,
+                                                                    ) =>
+                                                                        onUpdateExercise(
+                                                                            active._id,
+                                                                            ex._id,
+                                                                            'rpe_target',
+                                                                            v,
+                                                                        )
+                                                                    }
+                                                                />
+                                                                <div
+                                                                    className={
+                                                                        s.prescriptionFieldWide
+                                                                    }
+                                                                >
+                                                                    <label
+                                                                        className={
+                                                                            s.formLabel
+                                                                        }
+                                                                    >
+                                                                        Grupo
+                                                                        muscular
+                                                                    </label>
+                                                                    <select
+                                                                        value={
+                                                                            ex.muscle_group
+                                                                        }
+                                                                        onChange={(
+                                                                            e,
+                                                                        ) =>
+                                                                            onUpdateExercise(
+                                                                                active._id,
+                                                                                ex._id,
+                                                                                'muscle_group',
+                                                                                e
+                                                                                    .target
+                                                                                    .value,
+                                                                            )
+                                                                        }
+                                                                        className={
+                                                                            s.formSelect
+                                                                        }
+                                                                    >
+                                                                        <option value="">
+                                                                            Não
+                                                                            definido
+                                                                        </option>
+                                                                        {MUSCLE_GROUPS.map(
+                                                                            (
+                                                                                g,
+                                                                            ) => (
+                                                                                <option
+                                                                                    key={
+                                                                                        g
+                                                                                    }
+                                                                                    value={
+                                                                                        g
+                                                                                    }
+                                                                                >
+                                                                                    {
+                                                                                        g
+                                                                                    }
+                                                                                </option>
+                                                                            ),
+                                                                        )}
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                     </div>
 
                                                     {(canCombine ||

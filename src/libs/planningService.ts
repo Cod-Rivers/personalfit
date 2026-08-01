@@ -14,6 +14,9 @@ export interface ExerciseResponse {
     video_url: string;
     video_thumb: string;
     timed: boolean;
+    /** Vínculo com exercise_library, resolvido no seed/picker. Não é editável
+     * na UI, mas precisa sobreviver ao round-trip de edição do plano. */
+    exercise_library_id?: string;
     load_percentage?: number;
     load_kg?: number;
     rest_seconds?: number;
@@ -109,6 +112,13 @@ export interface MacrocycleResponse {
 /* ── Request types ── */
 
 export interface ExerciseRequest {
+    /** ID do exercício já existente. Reenviar é obrigatório para não órfãar o
+     * histórico de séries (ExercisePerformance) nem as anotações do aluno
+     * (ExerciseAnnotation), que referenciam o exercício por este ID.
+     * Omitir apenas para exercícios novos. */
+    id?: string;
+    /** Vínculo com exercise_library — passthrough, não editável na UI. */
+    exercise_library_id?: string;
     name: string;
     series: number[];
     variations: string;
