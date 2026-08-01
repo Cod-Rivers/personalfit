@@ -23,7 +23,9 @@ describe('resolveAutoregulationPolicy', () => {
             DEFAULT_AUTOREGULATION_POLICY.progressUpSmallPct,
         );
         expect(sources.progressUpSmallPct).toBe('app');
-        expect(policy.weeklyCapPct).toBe(DEFAULT_AUTOREGULATION_POLICY.weeklyCapPct);
+        expect(policy.maxDeviationFromPrescribedPct).toBe(
+            DEFAULT_AUTOREGULATION_POLICY.maxDeviationFromPrescribedPct,
+        );
     });
 
     it('respects an explicit 0 defined by the personal instead of falling back to default', () => {
@@ -37,16 +39,16 @@ describe('resolveAutoregulationPolicy', () => {
 
     it('lets micro override macro override personal, field by field, with partial layers', () => {
         const { policy, sources } = resolveAutoregulationPolicy({
-            personal: { progressDownPct: -8, weeklyCapPct: 12 },
-            macro: { weeklyCapPct: 6 },
+            personal: { progressDownPct: -8, maxDeviationFromPrescribedPct: 12 },
+            macro: { maxDeviationFromPrescribedPct: 6 },
             micro: { progressDownPct: -12 },
         });
 
         expect(policy.progressDownPct).toBe(-12);
         expect(sources.progressDownPct).toBe('micro');
 
-        expect(policy.weeklyCapPct).toBe(6);
-        expect(sources.weeklyCapPct).toBe('macro');
+        expect(policy.maxDeviationFromPrescribedPct).toBe(6);
+        expect(sources.maxDeviationFromPrescribedPct).toBe('macro');
 
         // Campo não tocado em nenhum nível continua no padrão do app.
         expect(policy.fatigueVolumePct).toBe(

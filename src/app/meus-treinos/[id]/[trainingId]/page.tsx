@@ -379,8 +379,15 @@ export default function MeusTreinosExercisesPage({
                 prescribedKg: exercise.plannedWeight,
                 history: loadHistoryByExercise[exercise.id] ?? [],
                 targetRPE,
+                // Topo da faixa de reps prescrita (dupla progressão): só
+                // conta como sessão qualificada se também bateu as reps.
+                plannedReps:
+                    exercise.series.length > 0
+                        ? Math.max(...exercise.series)
+                        : undefined,
                 autoregulationAdjustPct: decision.intraSessionLoadAdjustPct,
                 isDeload,
+                referenceDate: new Date().toISOString().slice(0, 10),
                 policy,
             });
         }

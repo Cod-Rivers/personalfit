@@ -130,6 +130,28 @@ const trainingScienceTerms: GlossaryTerm[] = [
         },
     },
     {
+        id: 'regra-2-for-2',
+        term: 'Regra "2-for-2"',
+        short: 'Só aumenta a carga depois de 2 sessões consecutivas dentro da meta de RPE/reps.',
+        long: 'A regra "2-for-2" (ACSM, "Progression Models in Resistance Training for Healthy Adults", 2009; NSCA, "Essentials of Strength Training and Conditioning") só libera um aumento de carga depois que o aluno bate a meta de RPE — e, quando há uma faixa de reps definida, também as reps — em 2 sessões consecutivas do mesmo exercício. Reduções de carga continuam imediatas, por segurança. No Venafit isso é configurável em Autorregulação → Progressão temporal.',
+        seeAlso: {
+            id: 'progressao-carga',
+            label: 'Sugestão de carga e progressão temporal',
+            audience: 'personal',
+        },
+    },
+    {
+        id: 'dupla-progressao',
+        term: 'Dupla Progressão',
+        short: 'Primeiro progride as repetições até o topo da faixa prescrita, só depois sobe a carga.',
+        long: 'Dupla progressão é o princípio de, dentro de uma faixa de repetições prescrita (ex.: 8-12), primeiro aumentar as repetições executadas até o topo da faixa em todas as séries, para só então aumentar a carga e voltar ao piso da faixa. No Venafit, a sugestão de carga só considera uma sessão "qualificada" para progressão se as reps executadas também bateram o alvo, não só o RPE.',
+        seeAlso: {
+            id: 'progressao-carga',
+            label: 'Sugestão de carga e progressão temporal',
+            audience: 'personal',
+        },
+    },
+    {
         id: 'intrassessao-intersessao',
         term: 'Intrassessão / Intersessão',
         short: 'Ajustes feitos durante o próprio treino (intrassessão) ou para os próximos dias (intersessão).',

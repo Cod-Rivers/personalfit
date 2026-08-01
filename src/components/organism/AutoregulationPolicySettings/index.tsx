@@ -20,8 +20,16 @@ const BASIC_FIELDS: Key[] = [
     'progressUpBigPct',
     'progressUpSmallPct',
     'progressDownPct',
-    'weeklyCapPct',
+    'maxDeviationFromPrescribedPct',
     'abovePrescribedTolerancePct',
+];
+
+/** Progressão temporal (ver /ajuda#progressao-carga para as fontes
+ * científicas completas): regra "2-for-2" (ACSM/NSCA) e teto de progressão
+ * por semana. */
+const TEMPORAL_FIELDS: Key[] = [
+    'minConsecutiveSessionsBeforeIncrease',
+    'weeklyProgressionCapPct',
 ];
 
 const ADVANCED_FIELDS: Key[] = [
@@ -180,6 +188,33 @@ export default function AutoregulationPolicySettings() {
                     seus alunos.
                 </p>
                 {BASIC_FIELDS.map((key) => (
+                    <FieldRow
+                        key={key}
+                        fieldKey={key}
+                        value={overrides[key]}
+                        onChange={(v) => setField(key, v)}
+                        onReset={() => setField(key, undefined)}
+                    />
+                ))}
+            </section>
+
+            <section className={styles.section}>
+                <h3 className={styles.sectionTitle}>Progressão temporal</h3>
+                <p className={styles.sectionDesc}>
+                    Controla a velocidade da progressão ao longo do tempo,
+                    não só a reação de cada sessão — baseado na regra
+                    &quot;2-for-2&quot; do ACSM/NSCA e num teto de
+                    progressão por semana.{' '}
+                    <a
+                        href="/ajuda#progressao-carga"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        Ver fontes científicas
+                    </a>
+                    .
+                </p>
+                {TEMPORAL_FIELDS.map((key) => (
                     <FieldRow
                         key={key}
                         fieldKey={key}

@@ -783,6 +783,153 @@ const personalSections: HelpSection[] = [
         ),
     },
     {
+        id: 'progressao-carga',
+        title: 'Sugestão de carga e progressão temporal',
+        body: (
+            <>
+                <p className="mb-3">
+                    Além do ajuste reativo por RPE (explicado em{' '}
+                    <Link href="#autorregulacao-rpe-rir">
+                        Periodização + Autorregulação por RPE/RIR
+                    </Link>
+                    ), a sugestão de carga que aparece no card do treino do
+                    aluno leva em conta{' '}
+                    <strong>há quanto tempo e com que consistência</strong> ele
+                    vem performando naquela carga — não só a última sessão
+                    isolada. Essas duas camadas adicionais são calibradas por
+                    literatura de treinamento resistido; esta página explica
+                    de onde vêm os números e onde eles são uma estimativa de
+                    engenharia, não uma citação literal.
+                </p>
+
+                <h3 className="h6 mt-3 mb-2">
+                    1.{' '}
+                    <GlossaryLink id="regra-2-for-2">
+                        Regra &quot;2-for-2&quot;
+                    </GlossaryLink>
+                    : aumento só após confirmação
+                </h3>
+                <p className="mb-2">
+                    Um aumento de carga só é sugerido depois que o aluno bate a
+                    meta de RPE (e, quando a prescrição tem uma faixa de
+                    repetições definida, também as reps — princípio de{' '}
+                    <GlossaryLink id="dupla-progressao">
+                        <strong>dupla progressão</strong>
+                    </GlossaryLink>
+                    ) em <strong>N sessões consecutivas</strong> do mesmo exercício
+                    — não a cada sessão isolada. O padrão é N = 2, o valor da
+                    regra original. Reduções de carga continuam imediatas
+                    (critério de segurança): a autorregulação nunca espera
+                    confirmação para proteger o aluno.
+                </p>
+                <p className="mb-3 small text-muted">
+                    Configurável em{' '}
+                    <strong>
+                        Autorregulação → Progressão temporal → Sessões
+                        consecutivas para liberar aumento
+                    </strong>
+                    . Definir como 1 restaura o comportamento reativo
+                    imediato (comportamento anterior a esta funcionalidade).
+                </p>
+
+                <h3 className="h6 mt-3 mb-2">
+                    2. Teto de progressão por semana
+                </h3>
+                <p className="mb-2">
+                    Mesmo com a regra 2-for-2 liberada, a carga de trabalho
+                    sugerida não sobe mais que um percentual definido dentro
+                    de uma janela móvel de <strong>7 dias corridos</strong> —
+                    evita que múltiplos eventos de progressão na mesma semana
+                    (por exemplo, o aluno treinando o mesmo exercício 3x) somem
+                    um salto de carga fora de controle.
+                </p>
+                <p className="mb-3 small text-muted">
+                    Configurável em{' '}
+                    <strong>
+                        Autorregulação → Progressão temporal → Teto de
+                        progressão por semana
+                    </strong>
+                    . Padrão: 5% / 7 dias.
+                </p>
+
+                <h3 className="h6 mt-3 mb-2">
+                    3. De onde vêm esses números (e onde não há consenso)
+                </h3>
+                <p className="mb-2">
+                    A literatura-âncora sobre progressão de carga (ACSM, NSCA)
+                    não expressa a taxa em &quot;% por semana&quot; — ela
+                    gateia por <strong>desempenho</strong> (ex.: 2 sessões
+                    consecutivas dentro da meta), não por calendário. Isso é
+                    importante para calibrar as expectativas:
+                </p>
+                <ul className="mb-2 ps-3">
+                    <li>
+                        <strong>Regra &quot;2-for-2&quot; e faixa de 2–10% por
+                        evento de progressão:</strong> ACSM, position stand
+                        &quot;Progression Models in Resistance Training for
+                        Healthy Adults&quot; (2009) — quando o aluno completa
+                        1–2 repetições a mais que o alvo em duas sessões
+                        consecutivas, aumenta-se a carga em 2–10% (menor para
+                        exercícios isoladores, maior para compostos). A NSCA
+                        (Essentials of Strength Training and Conditioning)
+                        descreve essencialmente a mesma regra.
+                    </li>
+                    <li>
+                        <strong>Progressão proporcional ao RIR:</strong> Helms,
+                        Morgan &amp; Valdez, &quot;The Muscle and Strength
+                        Pyramid&quot; — ajustar a carga em ~4% para cada
+                        repetição de RIR fora do alvo (reativo por sessão,
+                        proporcional ao desvio).
+                    </li>
+                    <li>
+                        <strong>Frequência de deload:</strong> pesquisa
+                        transversal com atletas competitivos publicada em
+                        Sports Medicine – Open (&quot;Deloading Practices in
+                        Strength and Physique Sports&quot;) reporta deload a
+                        cada 5,6 ± 2,3 semanas, durando 6,4 ± 1,7 dias —
+                        compatível com a heurística comum de 4–6 semanas. No
+                        Venafit o deload é reativo (por sinais de fadiga
+                        acumulada), não calendarizado por padrão.
+                    </li>
+                    <li>
+                        <strong>Dupla progressão:</strong> princípio
+                        estabelecido na literatura de treinamento (NSCA/
+                        Baechle &amp; Earle) — progredir repetições dentro da
+                        faixa prescrita até o topo, só então subir carga.
+                    </li>
+                </ul>
+                <p className="mb-0 small text-muted">
+                    <strong>O teto de progressão semanal (5%/7 dias) é uma
+                    tradução de engenharia</strong>, não um número citado
+                    literalmente por essas fontes: convertemos a faixa de
+                    evento (2–10% por progressão, tipicamente liberada a cada
+                    2–3 sessões numa frequência de treino comum) para uma
+                    janela de calendário. Fontes com identificador estável
+                    para consulta:{' '}
+                    <a
+                        href="https://pubmed.ncbi.nlm.nih.gov/19204579/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        ACSM 2009 (PubMed 19204579)
+                    </a>{' '}
+                    e{' '}
+                    <a
+                        href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7810043/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        revisão sistemática de autorregulação (PMC7810043)
+                    </a>
+                    . As demais (NSCA Essentials, Helms/Muscle and Strength
+                    Pyramid, o estudo de deload) são citadas por título/autor
+                    por não terem um identificador único e estável que
+                    pudéssemos confirmar para linkar diretamente.
+                </p>
+            </>
+        ),
+    },
+    {
         id: 'plano-alimentar-personal',
         title: 'Plano Alimentar do aluno',
         pro: true,
