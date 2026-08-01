@@ -377,6 +377,7 @@ export default function ExercisePicker({
                                                 height={40}
                                                 borderRadius={6}
                                                 captureFrame={false}
+                                                lazyCapture
                                             />
                                             <div
                                                 style={{ flex: 1, minWidth: 0 }}

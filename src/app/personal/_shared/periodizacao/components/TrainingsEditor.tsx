@@ -345,6 +345,7 @@ export default function TrainingsEditor({
                                                             captureFrame={
                                                                 false
                                                             }
+                                                            lazyCapture
                                                             className={
                                                                 s.exerciseEditThumb
                                                             }

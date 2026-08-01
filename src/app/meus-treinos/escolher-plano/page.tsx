@@ -140,6 +140,7 @@ export default function EscolherPlanoPage() {
                                         height="100%"
                                         borderRadius={10}
                                         captureFrame={false}
+                                        lazyCapture
                                         style={{
                                             position: 'absolute',
                                             inset: 0,

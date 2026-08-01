@@ -222,6 +222,65 @@ export function captureVideoThumbnail(file: File): Promise<Blob | null> {
     });
 }
 
+/**
+ * Mesma técnica de captureVideoThumbnail, mas a partir de uma URL remota já
+ * hospedada (R2/CDN) em vez de um File local — usada para gerar thumbnails
+ * sob demanda de exercícios cujo video_thumb salvo aponta pro próprio arquivo
+ * de vídeo (dado legado da migração GIF→MP4, que nunca gerou uma imagem
+ * estática separada). Exige que o CDN libere CORS pra origem atual, senão o
+ * canvas fica "tainted" e toBlob falha silenciosamente (retorna null) — o
+ * domínio de mídia do R2 já libera isso para a origem de produção.
+ */
+export function captureVideoFrameFromUrl(
+    videoUrl: string,
+    atSeconds = THUMBNAIL_CAPTURE_SECONDS,
+): Promise<Blob | null> {
+    return new Promise((resolve) => {
+        const video = document.createElement('video');
+        video.crossOrigin = 'anonymous';
+        video.preload = 'metadata';
+        video.muted = true;
+        video.playsInline = true;
+        video.src = videoUrl;
+
+        let settled = false;
+        const finish = (result: Blob | null) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timeout);
+            video.src = '';
+            resolve(result);
+        };
+        // Vídeo grande/rede lenta não deve travar a fila de captura indefinidamente.
+        const timeout = setTimeout(() => finish(null), 10_000);
+
+        video.onloadedmetadata = () => {
+            video.currentTime =
+                video.duration > 0
+                    ? Math.min(atSeconds, video.duration / 2)
+                    : 0;
+        };
+        video.onseeked = () => {
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const context = canvas.getContext('2d');
+                if (!context || canvas.width === 0 || canvas.height === 0) {
+                    finish(null);
+                    return;
+                }
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                canvas.toBlob((blob) => finish(blob), 'image/jpeg', 0.75);
+            } catch {
+                // SecurityError de canvas tainted (CORS ausente na origem atual).
+                finish(null);
+            }
+        };
+        video.onerror = () => finish(null);
+    });
+}
+
 /** Tamanho máximo de upload (20MB) — mantido em sincronia com storage.MaxUploadBytes no backend. */
 export const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
 

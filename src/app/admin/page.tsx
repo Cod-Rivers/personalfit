@@ -1209,6 +1209,7 @@ function ExercisesSection() {
                                     width={72}
                                     height={72}
                                     captureFrame={false}
+                                    lazyCapture
                                     className={s.exerciseThumb}
                                 />
                                 <div>

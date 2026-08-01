@@ -207,6 +207,7 @@ export default function ExercisePicker({ onPick, onClose }: Props) {
                             height={38}
                             borderRadius={5}
                             captureFrame={false}
+                            lazyCapture
                         />
                         <div style={{ flex: 1, minWidth: 0 }}>
                             <p

@@ -1,7 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { isSupportedExternalVideoUrl } from '@/libs/exerciseVideoService';
+import {
+    isSupportedExternalVideoUrl,
+    isVideoExtension,
+} from '@/libs/exerciseVideoService';
+import { useLazyVideoThumbnail } from '@/hooks/useLazyVideoThumbnail';
 
 interface ExerciseThumbnailProps {
     name: string;
@@ -10,10 +14,16 @@ interface ExerciseThumbnailProps {
     width?: number | string;
     height?: number | string;
     borderRadius?: number;
-    /** Captura um frame do vídeo (t=1s) quando não há video_thumb salvo. Desative
-     * em listas longas (ex.: picker da biblioteca inteira) para evitar montar
-     * um <video> por item. */
+    /** Captura um frame do vídeo (t=1s) imediatamente ao montar, quando não há
+     * video_thumb salvo. Desative em listas longas (ex.: picker da biblioteca
+     * inteira) para evitar montar um <video> por item de uma vez — use
+     * `lazyCapture` nesse caso. */
     captureFrame?: boolean;
+    /** Alternativa a captureFrame para listas longas: só captura o frame
+     * quando o item entra na viewport, e guarda o resultado em cache local
+     * (IndexedDB) pra não recapturar toda vez que a lista reabre. Ignorado se
+     * captureFrame estiver ligado (o modo eager já resolve sem precisar dele). */
+    lazyCapture?: boolean;
     className?: string;
     style?: React.CSSProperties;
 }
@@ -31,6 +41,7 @@ export default function ExerciseThumbnail({
     height = 60,
     borderRadius = 8,
     captureFrame = true,
+    lazyCapture = false,
     className,
     style,
 }: ExerciseThumbnailProps) {
@@ -44,8 +55,31 @@ export default function ExerciseThumbnail({
         ...style,
     };
 
+    // video_thumb às vezes é literalmente o arquivo de vídeo (dado legado da
+    // migração GIF→MP4, que nunca gerou uma imagem estática separada) — um
+    // <img src="....mp4"> nunca carrega. Tratar como "sem thumbnail salva" em
+    // vez de deixar isso falhar via onError evita um request condenado ao
+    // fracasso antes de cair no fallback certo.
     const hasHttpThumb =
-        !!videoThumb && videoThumb.startsWith('http') && !imgFailed;
+        !!videoThumb &&
+        videoThumb.startsWith('http') &&
+        !isVideoExtension(videoThumb) &&
+        !imgFailed;
+
+    // Frame do vídeo só é viável para arquivo hospedado direto (R2/CDN); links
+    // do YouTube/Vimeo/TikTok/Instagram não tocam via <video src>.
+    const canUseVideoUrl =
+        !!videoUrl && !isSupportedExternalVideoUrl(videoUrl);
+
+    // Hook precisa rodar sempre, antes de qualquer return — mas só ativa a
+    // captura de fato quando ainda falta thumbnail (nem imagem salva nem
+    // eager ligado); passar undefined desliga o efeito sem violar as regras
+    // de hooks.
+    const wantsLazyCapture =
+        lazyCapture && !hasHttpThumb && !captureFrame && canUseVideoUrl;
+    const { ref: lazyRef, objectUrl: lazyThumbUrl } = useLazyVideoThumbnail(
+        wantsLazyCapture ? videoUrl : undefined,
+    );
 
     if (hasHttpThumb) {
         return (
@@ -59,12 +93,18 @@ export default function ExerciseThumbnail({
         );
     }
 
-    // Frame do vídeo só é viável para arquivo hospedado direto (R2/CDN); links
-    // do YouTube/Vimeo/TikTok/Instagram não tocam via <video src>.
-    const canGrabFrame =
-        captureFrame && !!videoUrl && !isSupportedExternalVideoUrl(videoUrl);
+    if (lazyThumbUrl) {
+        return (
+            <img
+                src={lazyThumbUrl}
+                alt={`Thumbnail para ${name}`}
+                className={className}
+                style={{ ...box, objectFit: 'cover', background: '#000' }}
+            />
+        );
+    }
 
-    if (canGrabFrame) {
+    if (captureFrame && canUseVideoUrl) {
         return (
             <video
                 src={videoUrl}
@@ -82,6 +122,10 @@ export default function ExerciseThumbnail({
 
     return (
         <div
+            // Alvo observado pelo IntersectionObserver do lazyCapture: enquanto
+            // nada mais pode ser mostrado, este placeholder é o que existe na
+            // tela pra disparar a captura assim que entrar em vista.
+            ref={wantsLazyCapture ? lazyRef : undefined}
             className={className}
             style={{
                 ...box,

@@ -93,6 +93,7 @@ export default function ExercisesTab({ planType = 'free' }: ExercisesTabProps) {
                                 videoThumb={ex.video_thumb}
                                 videoUrl={ex.video_url}
                                 captureFrame={false}
+                                lazyCapture
                             />
                             <div style={{ flex: 1, minWidth: 0 }}>
                                 <p className={s.exCardName}>
