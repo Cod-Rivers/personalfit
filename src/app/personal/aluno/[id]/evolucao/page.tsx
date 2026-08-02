@@ -22,7 +22,7 @@ export default function PersonalEvolutionPage() {
                     </button>
                 </div>
 
-                <TrainingZonesCalculator />
+                <TrainingZonesCalculator studentId={studentId} />
                 <EvolutionTimeline studentId={studentId} />
             </div>
         </div>

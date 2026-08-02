@@ -1,5 +1,6 @@
 'use client';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { listEvolutionEntries } from '@/libs/evolutionService';
 import s from './TrainingZonesCalculator.module.css';
 
 interface Zone {
@@ -17,15 +18,50 @@ const ZONES: Zone[] = [
     { label: 'Z5 · Máximo', lowPct: 90, highPct: 100, color: '#f87171' },
 ];
 
+interface Props {
+    /** Presente = view do personal para um aluno específico; ausente = view do próprio aluno logado. */
+    studentId?: string;
+}
+
 /**
  * Calcula zonas-alvo de FC pelo método de Karvonen (usa FC de reserva quando a
  * FC de repouso é informada; senão, percentual direto da FC máxima).
  * FCmáx estimada por 208 − 0,7×idade (Tanaka) se não informada.
  */
-export default function TrainingZonesCalculator() {
+export default function TrainingZonesCalculator({ studentId }: Props) {
     const [age, setAge] = useState('');
     const [restHr, setRestHr] = useState('');
     const [maxHr, setMaxHr] = useState('');
+    const [autoFilled, setAutoFilled] = useState(false);
+
+    // Pré-preenche FC repouso/máxima com a última avaliação de evolução que
+    // as tiver registradas — evita redigitar dado que o aluno já informou.
+    useEffect(() => {
+        let cancelled = false;
+        listEvolutionEntries(studentId)
+            .then((entries) => {
+                if (cancelled) return;
+                const latest = entries
+                    .filter(
+                        (e) =>
+                            e.measurements?.fc_repouso != null ||
+                            e.measurements?.fc_maxima != null,
+                    )
+                    .sort((a, b) => b.date.localeCompare(a.date))[0];
+                if (!latest) return;
+                if (latest.measurements?.fc_repouso != null) {
+                    setRestHr(String(latest.measurements.fc_repouso));
+                }
+                if (latest.measurements?.fc_maxima != null) {
+                    setMaxHr(String(latest.measurements.fc_maxima));
+                }
+                setAutoFilled(true);
+            })
+            .catch(() => {});
+        return () => {
+            cancelled = true;
+        };
+    }, [studentId]);
 
     const result = useMemo(() => {
         const ageN = Number(age);
@@ -64,6 +100,12 @@ export default function TrainingZonesCalculator() {
                 Calcule as faixas de frequência cardíaca-alvo para prescrever
                 aeróbico com segurança.
             </p>
+            {autoFilled && (
+                <p className={s.meta}>
+                    FC repouso/máxima preenchidas com a última avaliação
+                    registrada — ajuste se necessário.
+                </p>
+            )}
 
             <div className={s.inputs}>
                 <div className={s.field}>
