@@ -159,6 +159,8 @@ export default function MesocycleSection({
                                                         videoUrl={
                                                             ex.video_url
                                                         }
+                                                        captureFrame={false}
+                                                        lazyCapture
                                                         className={
                                                             s.exerciseThumbnail
                                                         }
