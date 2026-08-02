@@ -1,14 +1,21 @@
 'use client';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import dynamic from 'next/dynamic';
 import {
     listEvolutionEntries,
     createEvolutionEntry,
+    updateEvolutionEntry,
     uploadEvolutionPhotos,
     deleteEvolutionEntry,
     type EvolutionEntry,
     type BodyFatMethod,
 } from '@/libs/evolutionService';
 import s from './EvolutionTimeline.module.css';
+
+const EvolutionChart = dynamic(
+    () => import('./EvolutionChart'),
+    { ssr: false },
+);
 
 interface Props {
     /** Presente = view do personal para um aluno específico; ausente = view do próprio aluno logado. */
@@ -77,29 +84,34 @@ export default function EvolutionTimeline({ studentId }: Props) {
     const [photos, setPhotos] = useState<File[]>([]);
     const [saving, setSaving] = useState(false);
 
-    // Comparação postural A/B (antes × depois)
+    // Comparação entre duas avaliações (antes × depois) — qualquer par, com
+    // ou sem foto, comparando todos os valores registrados.
     const [compareMode, setCompareMode] = useState(false);
     const [compareAId, setCompareAId] = useState('');
     const [compareBId, setCompareBId] = useState('');
 
-    // Entradas com foto, ordenadas por data crescente (antigas → recentes).
-    const entriesWithPhotos = useMemo(
-        () =>
-            entries
-                .filter((e) => e.photo_urls && e.photo_urls.length > 0)
-                .slice()
-                .sort((a, b) => a.date.localeCompare(b.date)),
+    // Todas as entradas, ordenadas por data crescente (antigas → recentes).
+    const sortedEntries = useMemo(
+        () => entries.slice().sort((a, b) => a.date.localeCompare(b.date)),
         [entries],
     );
 
-    const entryA = entriesWithPhotos.find((e) => e.id === compareAId);
-    const entryB = entriesWithPhotos.find((e) => e.id === compareBId);
+    const entryA = sortedEntries.find((e) => e.id === compareAId);
+    const entryB = sortedEntries.find((e) => e.id === compareBId);
+
+    // União das medidas presentes em A e/ou B, na ordem canônica de MEASUREMENT_FIELDS.
+    const compareMeasurementFields = useMemo(() => {
+        const keys = new Set<string>();
+        if (entryA?.measurements) Object.keys(entryA.measurements).forEach((k) => keys.add(k));
+        if (entryB?.measurements) Object.keys(entryB.measurements).forEach((k) => keys.add(k));
+        return MEASUREMENT_FIELDS.filter((f) => keys.has(f.key));
+    }, [entryA, entryB]);
 
     const toggleCompare = () => {
         if (!compareMode) {
-            // Padrão: A = mais antiga com foto, B = mais recente com foto.
-            const first = entriesWithPhotos[0];
-            const last = entriesWithPhotos[entriesWithPhotos.length - 1];
+            // Padrão: A = avaliação mais antiga, B = mais recente.
+            const first = sortedEntries[0];
+            const last = sortedEntries[sortedEntries.length - 1];
             setCompareAId(first?.id ?? '');
             setCompareBId(last?.id ?? '');
         }
@@ -177,11 +189,14 @@ export default function EvolutionTimeline({ studentId }: Props) {
             .map(([k, v]) => [k, Number(v)] as const);
         const hasMeasurements = measurementEntries.length > 0;
 
+        const hasExistingPhotos =
+            !!editingEntry?.photo_urls && editingEntry.photo_urls.length > 0;
         if (
             photos.length === 0 &&
             !weightKg &&
             !bodyFatPercent &&
-            !hasMeasurements
+            !hasMeasurements &&
+            !hasExistingPhotos
         ) {
             setError(
                 'Adicione ao menos uma foto, peso, %gordura ou uma medida.',
@@ -193,40 +208,31 @@ export default function EvolutionTimeline({ studentId }: Props) {
         try {
             const photoKeys = await uploadEvolutionPhotos(photos, studentId);
 
-            await createEvolutionEntry(
-                {
-                    date,
-                    photo_keys: photoKeys,
-                    weight_kg: weightKg ? Number(weightKg) : undefined,
-                    body_fat_percent: bodyFatPercent
-                        ? Number(bodyFatPercent)
-                        : undefined,
-                    body_fat_method: bodyFatMethod || undefined,
-                    measurements: hasMeasurements
-                        ? Object.fromEntries(measurementEntries)
-                        : undefined,
-                    notes,
-                },
-                studentId,
-            );
+            const payload = {
+                date,
+                photo_keys: photoKeys,
+                weight_kg: weightKg ? Number(weightKg) : undefined,
+                body_fat_percent: bodyFatPercent
+                    ? Number(bodyFatPercent)
+                    : undefined,
+                body_fat_method: bodyFatMethod || undefined,
+                measurements: hasMeasurements
+                    ? Object.fromEntries(measurementEntries)
+                    : undefined,
+                notes,
+            };
 
-            let staleDeleteFailed = false;
             if (editingEntry) {
-                try {
-                    await deleteEvolutionEntry(editingEntry.id, studentId);
-                } catch {
-                    staleDeleteFailed = true;
-                }
+                // Fotos novas em photo_keys são somadas às já salvas no
+                // backend — as fotos existentes nunca são perdidas aqui.
+                await updateEvolutionEntry(editingEntry.id, payload, studentId);
+            } else {
+                await createEvolutionEntry(payload, studentId);
             }
 
             resetForm();
             setShowForm(false);
             await load();
-            if (staleDeleteFailed) {
-                setError(
-                    'A nova avaliação foi salva, mas não foi possível remover a antiga. Exclua-a manualmente.',
-                );
-            }
         } catch (err) {
             setError(extractErrorMessage(err, 'Erro ao salvar entrada.'));
         } finally {
@@ -275,18 +281,25 @@ export default function EvolutionTimeline({ studentId }: Props) {
                 >
                     {showForm ? 'Cancelar' : '+ Nova avaliação'}
                 </button>
-                {entriesWithPhotos.length >= 2 && (
+                {sortedEntries.length >= 2 && (
                     <button
                         type="button"
                         className={compareMode ? s.btnCompareActive : s.btnCompare}
                         onClick={toggleCompare}
                     >
-                        {compareMode ? '✕ Fechar comparação' : '🔀 Comparar fotos'}
+                        {compareMode ? '✕ Fechar comparação' : '📊 Comparar avaliações'}
                     </button>
                 )}
             </div>
 
-            {compareMode && entriesWithPhotos.length >= 2 && (
+            {sortedEntries.length >= 2 && (
+                <div className={s.card}>
+                    <h3 className={s.chartTitle}>📈 Evolução ao longo do tempo</h3>
+                    <EvolutionChart entries={sortedEntries} />
+                </div>
+            )}
+
+            {compareMode && sortedEntries.length >= 2 && (
                 <div className={s.card}>
                     <div className={s.compareSelects}>
                         <div className={s.formGroup}>
@@ -296,7 +309,7 @@ export default function EvolutionTimeline({ studentId }: Props) {
                                 value={compareAId}
                                 onChange={(e) => setCompareAId(e.target.value)}
                             >
-                                {entriesWithPhotos.map((e) => (
+                                {sortedEntries.map((e) => (
                                     <option key={e.id} value={e.id}>
                                         {formatDate(e.date)}
                                     </option>
@@ -310,7 +323,7 @@ export default function EvolutionTimeline({ studentId }: Props) {
                                 value={compareBId}
                                 onChange={(e) => setCompareBId(e.target.value)}
                             >
-                                {entriesWithPhotos.map((e) => (
+                                {sortedEntries.map((e) => (
                                     <option key={e.id} value={e.id}>
                                         {formatDate(e.date)}
                                     </option>
@@ -319,52 +332,78 @@ export default function EvolutionTimeline({ studentId }: Props) {
                         </div>
                     </div>
 
-                    <div className={s.compareGrid}>
-                        {[entryA, entryB].map((entry, col) => (
-                            <div key={col} className={s.compareCol}>
-                                <div className={s.compareColHeader}>
-                                    <strong>{col === 0 ? 'Antes' : 'Depois'}</strong>
-                                    {entry && (
-                                        <span>{formatDate(entry.date)}</span>
-                                    )}
+                    {(entryA?.photo_urls?.length || entryB?.photo_urls?.length) ? (
+                        <div className={s.compareGrid}>
+                            {[entryA, entryB].map((entry, col) => (
+                                <div key={col} className={s.compareCol}>
+                                    <div className={s.compareColHeader}>
+                                        <strong>{col === 0 ? 'Antes' : 'Depois'}</strong>
+                                        {entry && (
+                                            <span>{formatDate(entry.date)}</span>
+                                        )}
+                                    </div>
+                                    {entry?.photo_urls?.map((url, i) => (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img
+                                            key={i}
+                                            src={url}
+                                            alt={`Comparação ${col === 0 ? 'antes' : 'depois'} ${i + 1}`}
+                                            className={s.comparePhoto}
+                                        />
+                                    ))}
                                 </div>
-                                {entry?.photo_urls?.map((url, i) => (
-                                    // eslint-disable-next-line @next/next/no-img-element
-                                    <img
-                                        key={i}
-                                        src={url}
-                                        alt={`Comparação ${col === 0 ? 'antes' : 'depois'} ${i + 1}`}
-                                        className={s.comparePhoto}
-                                    />
-                                ))}
-                                <div className={s.compareStats}>
-                                    {entry?.weight_kg != null && (
-                                        <span>{entry.weight_kg} kg</span>
-                                    )}
-                                    {entry?.body_fat_percent != null && (
-                                        <span>
-                                            {entry.body_fat_percent}% gordura
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    ) : null}
 
-                    {entryA &&
-                        entryB &&
-                        entryA.weight_kg != null &&
-                        entryB.weight_kg != null && (
-                            <p className={s.compareDelta}>
-                                Variação de peso:{' '}
-                                <strong>
-                                    {(
-                                        entryB.weight_kg - entryA.weight_kg
-                                    ).toFixed(1)}{' '}
-                                    kg
-                                </strong>
-                            </p>
-                        )}
+                    <table className={s.compareTable}>
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>{entryA ? formatDate(entryA.date) : 'Antes'}</th>
+                                <th>{entryB ? formatDate(entryB.date) : 'Depois'}</th>
+                                <th>Δ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Peso</td>
+                                <td>{entryA?.weight_kg != null ? `${entryA.weight_kg} kg` : '—'}</td>
+                                <td>{entryB?.weight_kg != null ? `${entryB.weight_kg} kg` : '—'}</td>
+                                <td>
+                                    {entryA?.weight_kg != null && entryB?.weight_kg != null
+                                        ? `${(entryB.weight_kg - entryA.weight_kg > 0 ? '+' : '')}${(entryB.weight_kg - entryA.weight_kg).toFixed(1)} kg`
+                                        : '—'}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>% gordura</td>
+                                <td>{entryA?.body_fat_percent != null ? `${entryA.body_fat_percent}%` : '—'}</td>
+                                <td>{entryB?.body_fat_percent != null ? `${entryB.body_fat_percent}%` : '—'}</td>
+                                <td>
+                                    {entryA?.body_fat_percent != null && entryB?.body_fat_percent != null
+                                        ? `${(entryB.body_fat_percent - entryA.body_fat_percent > 0 ? '+' : '')}${(entryB.body_fat_percent - entryA.body_fat_percent).toFixed(1)}%`
+                                        : '—'}
+                                </td>
+                            </tr>
+                            {compareMeasurementFields.map((f) => {
+                                const a = entryA?.measurements?.[f.key];
+                                const b = entryB?.measurements?.[f.key];
+                                return (
+                                    <tr key={f.key}>
+                                        <td>{f.label}</td>
+                                        <td>{a != null ? a : '—'}</td>
+                                        <td>{b != null ? b : '—'}</td>
+                                        <td>
+                                            {a != null && b != null
+                                                ? `${(b - a > 0 ? '+' : '')}${(b - a).toFixed(1)}`
+                                                : '—'}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
                 </div>
             )}
 
@@ -373,14 +412,31 @@ export default function EvolutionTimeline({ studentId }: Props) {
                     {editingEntry && (
                         <p className={s.editNotice}>
                             Editando avaliação de {formatDate(editingEntry.date)}.
-                            Ao salvar, este registro substitui o antigo
-                            {editingEntry.photo_urls &&
-                            editingEntry.photo_urls.length > 0
-                                ? ' — as fotos antigas não são copiadas, envie novas abaixo se quiser mantê-las'
-                                : ''}
-                            .
+                            Peso, %gordura, medidas e observações serão
+                            substituídos pelos novos valores; fotos enviadas
+                            abaixo são adicionadas às já salvas (nenhuma foto
+                            existente é removida por aqui).
                         </p>
                     )}
+                    {editingEntry?.photo_urls &&
+                        editingEntry.photo_urls.length > 0 && (
+                            <div className={s.formGroup}>
+                                <label className={s.formLabel}>
+                                    Fotos já salvas (mantidas)
+                                </label>
+                                <div className={s.photoGrid}>
+                                    {editingEntry.photo_urls.map((url, i) => (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img
+                                            key={i}
+                                            src={url}
+                                            alt={`Foto já salva ${i + 1}`}
+                                            className={s.photoThumb}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     <div className={s.formRow}>
                         <div className={s.formGroup}>
                             <label className={s.formLabel}>Data</label>
@@ -458,7 +514,9 @@ export default function EvolutionTimeline({ studentId }: Props) {
                     </div>
 
                     <div className={s.formGroup}>
-                        <label className={s.formLabel}>Fotos</label>
+                        <label className={s.formLabel}>
+                            {editingEntry ? 'Adicionar fotos' : 'Fotos'}
+                        </label>
                         <input
                             type="file"
                             accept="image/jpeg,image/png,image/webp"

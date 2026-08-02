@@ -130,7 +130,20 @@ export default function VitrinePage() {
         return <div className={styles.loading}>Carregando…</div>;
     }
 
-    const sec = showcase.sections;
+    // Uma vitrine recém-criada não tem especialidades nem resultados, e campos
+    // de lista vazios podem chegar ausentes da API. Esta tela é a primeira do
+    // aluno depois do login: qualquer acesso desprotegido aqui derruba a
+    // entrada inteira no app, então as listas são normalizadas antes do uso.
+    const sec = showcase.sections ?? {
+        bio: true,
+        specialties: true,
+        stats: true,
+        social: true,
+        results: true,
+        testimonial: true,
+    };
+    const specialties = showcase.specialties ?? [];
+    const results = showcase.results ?? [];
     const canEdit = !!showcase.can_edit;
 
     // Cada ícone só aparece se o personal informou a URL correspondente.
@@ -293,9 +306,9 @@ export default function VitrinePage() {
                         <p className={styles.bio}>{showcase.bio}</p>
                     )}
 
-                    {sec.specialties && showcase.specialties.length > 0 && (
+                    {sec.specialties && specialties.length > 0 && (
                         <div className={styles.chips}>
-                            {showcase.specialties.map((sp) => (
+                            {specialties.map((sp) => (
                                 <span key={sp} className={styles.chip}>
                                     {sp}
                                 </span>
@@ -303,13 +316,13 @@ export default function VitrinePage() {
                         </div>
                     )}
 
-                    {sec.results && showcase.results.length > 0 && (
+                    {sec.results && results.length > 0 && (
                         <div className={styles.section}>
                             <div className={styles.sectionTitle}>
                                 Resultados de alunos
                             </div>
                             <div className={styles.carousel}>
-                                {showcase.results.map((r, i) => (
+                                {results.map((r, i) => (
                                     <div
                                         key={r.photo_key || i}
                                         className={styles.resultCard}

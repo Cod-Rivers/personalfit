@@ -83,6 +83,19 @@ export async function createEvolutionEntry(
     return data;
 }
 
+/** Fotos novas em photo_keys são ADICIONADAS às já salvas — nunca removidas por aqui. */
+export async function updateEvolutionEntry(
+    entryId: string,
+    payload: CreateEvolutionEntryPayload,
+    studentId?: string,
+): Promise<EvolutionEntry> {
+    const { data } = await Api.patch<EvolutionEntry>(
+        `${basePath(studentId)}/${entryId}`,
+        payload,
+    );
+    return data;
+}
+
 export async function deleteEvolutionEntry(
     entryId: string,
     studentId?: string,
