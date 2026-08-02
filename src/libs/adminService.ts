@@ -134,6 +134,7 @@ export interface UserListItem {
     email: string;
     role: string;
     active: boolean;
+    plan_type: string;
     created_at: string;
 }
 
@@ -314,6 +315,11 @@ export async function updateUserRole(id: string, role: string): Promise<{ id: st
 
 export async function setUserActive(id: string, active: boolean): Promise<{ id: string; active: boolean }> {
     const { data } = await Api.patch(`/admin/users/${id}/active`, { active });
+    return data;
+}
+
+export async function updateUserPlan(id: string, planType: string): Promise<{ id: string; plan_type: string }> {
+    const { data } = await Api.patch(`/admin/users/${id}/plan`, { plan_type: planType });
     return data;
 }
 

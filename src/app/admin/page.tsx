@@ -1840,6 +1840,22 @@ function UsersSection({ currentUserId }: { currentUserId: string }) {
         }
     };
 
+    const handlePlanChange = async (id: string, planType: string) => {
+        setError('');
+        setBusyId(id);
+        try {
+            await adminService.updateUserPlan(id, planType);
+            await fetchUsers();
+        } catch (err) {
+            const msg = isAxiosError(err)
+                ? (err.response?.data?.error ?? err.message)
+                : 'Erro ao alterar o plano do usuário.';
+            setError(msg);
+        } finally {
+            setBusyId(null);
+        }
+    };
+
     const handleToggleActive = async (id: string, active: boolean) => {
         setError('');
         setBusyId(id);
@@ -1920,6 +1936,7 @@ function UsersSection({ currentUserId }: { currentUserId: string }) {
                             <th>Email</th>
                             <th>Role</th>
                             <th>Status</th>
+                            <th>Plano</th>
                             <th>Criado em</th>
                             <th>Ações</th>
                         </tr>
@@ -1945,6 +1962,17 @@ function UsersSection({ currentUserId }: { currentUserId: string }) {
                                         ) : (
                                             <span className={s.badgeDanger}>
                                                 Inativo
+                                            </span>
+                                        )}
+                                    </td>
+                                    <td>
+                                        {u.plan_type === 'pro' ? (
+                                            <span className={s.badgeSuccess}>
+                                                PRO
+                                            </span>
+                                        ) : (
+                                            <span className={s.badgeWarning}>
+                                                free
                                             </span>
                                         )}
                                     </td>
@@ -1989,6 +2017,29 @@ function UsersSection({ currentUserId }: { currentUserId: string }) {
                                                 </option>
                                                 <option value="admin">
                                                     admin
+                                                </option>
+                                            </select>
+                                            <select
+                                                className={s.formSelect}
+                                                value={u.plan_type || 'free'}
+                                                disabled={isBusy}
+                                                title="Alterar plano"
+                                                onChange={(e) =>
+                                                    handlePlanChange(
+                                                        u.id,
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                style={{
+                                                    padding: '4px 8px',
+                                                    fontSize: '0.8rem',
+                                                }}
+                                            >
+                                                <option value="free">
+                                                    free
+                                                </option>
+                                                <option value="pro">
+                                                    pro
                                                 </option>
                                             </select>
                                             <button
