@@ -187,7 +187,7 @@
 
 .ganttContainer :global(.gantt_grid_head_cell) {
     background-color: rgba(61,255,208,0.06) !important;
-    color: var(--mint) !important;
+    color: var(--mint-text) !important;
     font-weight: 700;
     font-size: 0.8rem;
     letter-spacing: 0.05em;
@@ -240,14 +240,14 @@
     font-weight: 700;
     letter-spacing: 0.04em;
     font-size: 0.82rem;
-    color: var(--mint) !important;
+    color: var(--mint-text) !important;
     border-bottom: 1px solid rgba(61,255,208,0.2) !important;
 }
 
 .ganttContainer :global(.gantt_scale_row:last-child .gantt_scale_cell) {
     background-color: rgba(0,0,0,0.15) !important;
     font-size: 0.75rem;
-    color: rgba(255,255,255,0.55) !important;
+    color: var(--text-secondary) !important;
 }
 
 /* Separador visual entre grid e timeline */

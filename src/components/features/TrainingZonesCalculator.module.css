@@ -44,7 +44,7 @@
     border-radius: 8px;
     font-size: 1rem;
     color: inherit;
-    background: var(--surface-1);
+    background: var(--mil-blue);
     width: 100%;
 }
 .input:focus {
