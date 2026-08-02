@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import styles from './Toast.module.css';
 
-type ToastType = 'success' | 'error';
+type ToastType = 'success' | 'error' | 'warning';
 interface ToastState {
     id: number;
     type: ToastType;
@@ -31,6 +31,11 @@ export function useToast(durationMs = 4000) {
             setToast({ id: Date.now(), type: 'error', message }),
         [],
     );
+    const showWarning = useCallback(
+        (message: string) =>
+            setToast({ id: Date.now(), type: 'warning', message }),
+        [],
+    );
     const dismiss = useCallback(() => setToast(null), []);
 
     const ToastSlot =
@@ -41,7 +46,9 @@ export function useToast(durationMs = 4000) {
                           className={
                               toast.type === 'success'
                                   ? styles.toastSuccess
-                                  : styles.toastError
+                                  : toast.type === 'warning'
+                                    ? styles.toastWarning
+                                    : styles.toastError
                           }
                       >
                           <span>{toast.message}</span>
@@ -59,5 +66,5 @@ export function useToast(durationMs = 4000) {
               )
             : null;
 
-    return { showSuccess, showError, dismiss, ToastSlot };
+    return { showSuccess, showError, showWarning, dismiss, ToastSlot };
 }

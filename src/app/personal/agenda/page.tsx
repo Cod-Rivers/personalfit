@@ -28,8 +28,21 @@ import {
     type CreateRecurrenceRequest,
 } from '@/libs/appointmentService';
 import { Api } from '@/libs/api';
+import { getPersonalSlots, type DaySlots, type Slot } from '@/libs/availabilityService';
 import Modal from '@/components/system/Modal';
+import { useToast } from '@/components/system/Toast';
+import AvailabilityEditor from '@/components/agenda/AvailabilityEditor';
+import SlotPicker from '@/components/agenda/SlotPicker';
 import s from './agenda.module.css';
+
+function todayStr(): string {
+    return new Date().toISOString().slice(0, 10);
+}
+function addDaysStr(days: number): string {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    return d.toISOString().slice(0, 10);
+}
 
 interface UserData {
     id: string;
@@ -80,8 +93,10 @@ export default function AgendaPage() {
     const [cancelAdvanceHours, setCancelAdvanceHours] = useState(24);
     const [savingAdvanceHours, setSavingAdvanceHours] = useState(false);
 
-    type Tab = 'appointments' | 'recurrences';
+    type Tab = 'appointments' | 'recurrences' | 'availability';
     const [tab, setTab] = useState<Tab>('appointments');
+
+    const { showWarning, ToastSlot } = useToast();
 
     // Filter
     const [filterFrom, setFilterFrom] = useState(() => {
@@ -99,6 +114,13 @@ export default function AgendaPage() {
     const [showApptModal, setShowApptModal] = useState(false);
     const [showRecModal, setShowRecModal] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+
+    // Preview de horários (grade de disponibilidade) no modal "+ Agendar" —
+    // o personal pode clicar num slot para preencher início/fim, ou ignorar
+    // e preencher manualmente (ele pode furar a própria grade).
+    const [apptSlots, setApptSlots] = useState<DaySlots[]>([]);
+    const [apptSlotsLoading, setApptSlotsLoading] = useState(false);
+    const [apptSelectedSlot, setApptSelectedSlot] = useState<Slot | null>(null);
 
     const [apptForm, setApptForm] = useState<CreateAppointmentRequest>({
         student_id: '',
@@ -192,12 +214,38 @@ export default function AgendaPage() {
         fetchRecurrences();
     }, [user, fetchAppointments, fetchRecurrences]);
 
+    const fetchApptSlots = useCallback(async () => {
+        setApptSlotsLoading(true);
+        setApptSelectedSlot(null);
+        try {
+            const data = await getPersonalSlots(todayStr(), addDaysStr(59));
+            setApptSlots(data ?? []);
+        } catch {
+            setApptSlots([]);
+        } finally {
+            setApptSlotsLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (showApptModal) fetchApptSlots();
+    }, [showApptModal, fetchApptSlots]);
+
+    function handleApptSlotSelect(slot: Slot) {
+        setApptSelectedSlot(slot);
+        setApptForm((f) => ({
+            ...f,
+            start_at: slot.start_at.slice(0, 16),
+            end_at: slot.end_at.slice(0, 16),
+        }));
+    }
+
     /* ── Handlers ── */
     async function handleCreateAppointment(e: React.FormEvent) {
         e.preventDefault();
         setSubmitting(true);
         try {
-            await createAppointment({
+            const result = await createAppointment({
                 ...apptForm,
                 start_at: new Date(apptForm.start_at).toISOString(),
                 end_at: new Date(apptForm.end_at).toISOString(),
@@ -212,6 +260,9 @@ export default function AgendaPage() {
                 notes: '',
             });
             fetchAppointments();
+            if (result.warning) {
+                showWarning(result.warning);
+            }
         } catch {
             setError('Erro ao criar agendamento.');
         } finally {
@@ -389,9 +440,16 @@ export default function AgendaPage() {
                     >
                         Recorrências
                     </button>
+                    <button
+                        className={`${s.tabBtn} ${tab === 'availability' ? s.tabActive : ''}`}
+                        onClick={() => setTab('availability')}
+                    >
+                        Disponibilidade
+                    </button>
                 </div>
 
                 {/* ── Configuração: antecedência para cancelamento ── */}
+                {tab !== 'availability' && (
                 <div className={s.advanceConfig}>
                     <span className={s.advanceConfigLabel}>
                         Antecedência mínima para cancelamento sem débito:
@@ -415,6 +473,10 @@ export default function AgendaPage() {
                         {savingAdvanceHours ? 'Salvando...' : 'Salvar'}
                     </button>
                 </div>
+                )}
+
+                {/* ── AVAILABILITY TAB ── */}
+                {tab === 'availability' && <AvailabilityEditor />}
 
                 {/* ── APPOINTMENTS TAB ── */}
                 {tab === 'appointments' && (
@@ -913,6 +975,23 @@ export default function AgendaPage() {
                             </option>
                         </select>
                     </label>
+
+                    {apptSlotsLoading ? (
+                        <p className={s.loadingMsg}>Carregando horários...</p>
+                    ) : apptSlots.length > 0 ? (
+                        <div>
+                            <p className={s.apptNotes}>
+                                Clique num horário livre para preencher início/fim
+                                automaticamente, ou ajuste manualmente abaixo.
+                            </p>
+                            <SlotPicker
+                                daySlots={apptSlots}
+                                selectedSlot={apptSelectedSlot}
+                                onSelect={handleApptSlotSelect}
+                            />
+                        </div>
+                    ) : null}
+
                     <label className={s.label}>
                         Início
                         <input
@@ -1291,6 +1370,8 @@ export default function AgendaPage() {
                     </label>
                 </div>
             </Modal>
+
+            {ToastSlot}
         </div>
     );
 }

@@ -15,8 +15,25 @@ import {
     type AppointmentType,
     type StudentCreateAppointmentRequest,
 } from '@/libs/appointmentService';
+import {
+    getMyPersonalAvailability,
+    isAvailabilityDisabled,
+    type MyAvailabilityResult,
+    type Slot,
+} from '@/libs/availabilityService';
 import Modal from '@/components/system/Modal';
+import { useToast } from '@/components/system/Toast';
+import SlotPicker from '@/components/agenda/SlotPicker';
 import s from './agendamentos.module.css';
+
+function todayStr(): string {
+    return new Date().toISOString().slice(0, 10);
+}
+function addDaysStr(days: number): string {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    return d.toISOString().slice(0, 10);
+}
 
 interface UserData {
     id: string;
@@ -81,6 +98,11 @@ export default function AgendamentosPage() {
         notes: '',
     });
 
+    const [availability, setAvailability] = useState<MyAvailabilityResult | null>(null);
+    const [availabilityLoading, setAvailabilityLoading] = useState(false);
+    const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
+    const { showError: showToastError, ToastSlot } = useToast();
+
     /* ── Auth guard ── */
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -117,6 +139,27 @@ export default function AgendamentosPage() {
         fetchAppointments();
     }, [user, fetchAppointments]);
 
+    /* ── Disponibilidade do personal (grade de horários, se ativa) ── */
+    const fetchAvailability = useCallback(async () => {
+        setAvailabilityLoading(true);
+        setSelectedSlot(null);
+        try {
+            const result = await getMyPersonalAvailability(todayStr(), addDaysStr(59));
+            setAvailability(result);
+        } catch {
+            // Se a consulta falhar, cai no formulário livre em vez de travar o modal.
+            setAvailability({ enabled: false, message: '' });
+        } finally {
+            setAvailabilityLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (showModal) fetchAvailability();
+    }, [showModal, fetchAvailability]);
+
+    const usingSlotGrid = availability !== null && !isAvailabilityDisabled(availability);
+
     /* ── Handlers ── */
     async function handleRequest(e: React.FormEvent) {
         e.preventDefault();
@@ -124,11 +167,20 @@ export default function AgendamentosPage() {
         setError('');
         setNotice('');
         try {
-            const result = await requestAppointment({
-                ...form,
-                start_at: new Date(form.start_at).toISOString(),
-                end_at: new Date(form.end_at).toISOString(),
-            });
+            const payload: StudentCreateAppointmentRequest = usingSlotGrid
+                ? {
+                      type: form.type,
+                      start_at: selectedSlot!.start_at,
+                      notes: form.notes,
+                  }
+                : {
+                      ...form,
+                      start_at: new Date(form.start_at).toISOString(),
+                      end_at: form.end_at
+                          ? new Date(form.end_at).toISOString()
+                          : undefined,
+                  };
+            const result = await requestAppointment(payload);
             setShowModal(false);
             setForm({
                 type: 'presencial',
@@ -137,6 +189,7 @@ export default function AgendamentosPage() {
                 meeting_link: '',
                 notes: '',
             });
+            setSelectedSlot(null);
             // Personal ainda não é PRO: nenhum agendamento foi criado, mas ele
             // foi avisado do interesse. Informamos o aluno em vez de recarregar.
             if (isPendingProResponse(result)) {
@@ -144,8 +197,28 @@ export default function AgendamentosPage() {
             } else {
                 fetchAppointments();
             }
-        } catch {
-            setError('Erro ao solicitar agendamento.');
+        } catch (err: unknown) {
+            const axiosErr = err as {
+                response?: { status?: number; data?: { error?: string; code?: string } };
+            };
+            const code = axiosErr?.response?.data?.code;
+            if (axiosErr?.response?.status === 409 && code === 'slot_indisponivel') {
+                showToastError('Esse horário acabou de ser reservado. Escolha outro.');
+                setSelectedSlot(null);
+                fetchAvailability();
+            } else if (
+                axiosErr?.response?.status === 422 &&
+                (code === 'horario_fora_da_grade' || code === 'tipo_nao_permitido')
+            ) {
+                showToastError(
+                    axiosErr.response?.data?.error ??
+                        'A grade de horários mudou. Escolha outro horário.',
+                );
+                setSelectedSlot(null);
+                fetchAvailability();
+            } else {
+                setError('Erro ao solicitar agendamento.');
+            }
         } finally {
             setSubmitting(false);
         }
@@ -402,9 +475,16 @@ export default function AgendamentosPage() {
                             type="submit"
                             form="solicitar-agendamento-form"
                             className={s.btnPrimary}
-                            disabled={submitting}
+                            disabled={
+                                submitting ||
+                                (usingSlotGrid && !selectedSlot)
+                            }
                         >
-                            {submitting ? 'Enviando...' : 'Solicitar'}
+                            {submitting
+                                ? 'Enviando...'
+                                : usingSlotGrid && selectedSlot
+                                  ? `Solicitar ${selectedSlot.start_at.slice(8, 10)}/${selectedSlot.start_at.slice(5, 7)} às ${selectedSlot.start_at.slice(11, 16)}`
+                                  : 'Solicitar'}
                         </button>
                     </>
                 }
@@ -437,66 +517,82 @@ export default function AgendamentosPage() {
                                     </option>
                                 </select>
                             </label>
-                            <label className={s.label}>
-                                Data e hora de início
-                                <input
-                                    type="datetime-local"
-                                    className={s.input}
-                                    value={form.start_at}
-                                    onChange={(e) => {
-                                        const start = e.target.value;
-                                        setForm((f) => {
-                                            let end = f.end_at;
-                                            if (start) {
-                                                const d = new Date(start);
-                                                d.setHours(d.getHours() + 1);
-                                                const pad = (n: number) =>
-                                                    String(n).padStart(2, '0');
-                                                end = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+                            {availabilityLoading ? (
+                                <p className={s.loadingMsg}>
+                                    Carregando horários disponíveis...
+                                </p>
+                            ) : availability && !isAvailabilityDisabled(availability) ? (
+                                <SlotPicker
+                                    daySlots={availability}
+                                    selectedSlot={selectedSlot}
+                                    onSelect={setSelectedSlot}
+                                />
+                            ) : (
+                                <>
+                                    <label className={s.label}>
+                                        Data e hora de início
+                                        <input
+                                            type="datetime-local"
+                                            className={s.input}
+                                            value={form.start_at}
+                                            onChange={(e) => {
+                                                const start = e.target.value;
+                                                setForm((f) => {
+                                                    let end = f.end_at;
+                                                    if (start) {
+                                                        const d = new Date(start);
+                                                        d.setHours(d.getHours() + 1);
+                                                        const pad = (n: number) =>
+                                                            String(n).padStart(2, '0');
+                                                        end = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                                                    }
+                                                    return {
+                                                        ...f,
+                                                        start_at: start,
+                                                        end_at: end,
+                                                    };
+                                                });
+                                            }}
+                                            required
+                                        />
+                                    </label>
+                                    <label className={s.label}>
+                                        Data e hora de fim
+                                        <input
+                                            type="datetime-local"
+                                            className={s.input}
+                                            value={form.end_at}
+                                            min={form.start_at || undefined}
+                                            onChange={(e) =>
+                                                setForm((f) => ({
+                                                    ...f,
+                                                    end_at: e.target.value,
+                                                }))
                                             }
-                                            return {
-                                                ...f,
-                                                start_at: start,
-                                                end_at: end,
-                                            };
-                                        });
-                                    }}
-                                    required
-                                />
-                            </label>
-                            <label className={s.label}>
-                                Data e hora de fim
-                                <input
-                                    type="datetime-local"
-                                    className={s.input}
-                                    value={form.end_at}
-                                    min={form.start_at || undefined}
-                                    onChange={(e) =>
-                                        setForm((f) => ({
-                                            ...f,
-                                            end_at: e.target.value,
-                                        }))
-                                    }
-                                    required
-                                />
-                            </label>
-                            {form.type === 'online' && (
-                                <label className={s.label}>
-                                    Link da reunião (opcional)
-                                    <input
-                                        type="url"
-                                        className={s.input}
-                                        placeholder="https://..."
-                                        value={form.meeting_link}
-                                        onChange={(e) =>
-                                            setForm((f) => ({
-                                                ...f,
-                                                meeting_link: e.target.value,
-                                            }))
-                                        }
-                                    />
-                                </label>
+                                            required
+                                        />
+                                    </label>
+                                    {form.type === 'online' && (
+                                        <label className={s.label}>
+                                            Link da reunião (opcional)
+                                            <input
+                                                type="url"
+                                                className={s.input}
+                                                placeholder="https://..."
+                                                value={form.meeting_link}
+                                                onChange={(e) =>
+                                                    setForm((f) => ({
+                                                        ...f,
+                                                        meeting_link: e.target.value,
+                                                    }))
+                                                }
+                                            />
+                                        </label>
+                                    )}
+                                </>
                             )}
+
                             <label className={s.label}>
                                 Observações
                                 <textarea
@@ -513,6 +609,8 @@ export default function AgendamentosPage() {
                             </label>
                         </form>
             </Modal>
+
+            {ToastSlot}
         </div>
     );
 }

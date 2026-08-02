@@ -39,6 +39,13 @@
     color: var(--coral);
 }
 
+.toastWarning {
+    composes: toast;
+    background: var(--surface-1);
+    border: 1px solid rgba(255, 193, 7, 0.4);
+    color: #ffc107;
+}
+
 .toast span:first-child {
     flex: 1;
 }

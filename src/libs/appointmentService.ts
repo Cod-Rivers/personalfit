@@ -84,15 +84,24 @@ export interface CreateRecurrenceExceptionRequest {
 export interface StudentCreateAppointmentRequest {
     type: AppointmentType;
     start_at: string;
-    end_at: string;
+    // Opcional quando o personal tem uma grade de disponibilidade ativa: o
+    // backend deriva o fim a partir da duração do slot configurada por ele.
+    end_at?: string;
     meeting_link?: string;
     notes?: string;
 }
 
 // ── Personal API ──
 
-export async function createAppointment(data: CreateAppointmentRequest): Promise<AppointmentResponse> {
-    const res = await Api.post<AppointmentResponse>('/appointments', data);
+/** Resposta do POST /appointments: o personal pode furar a própria agenda, então
+ *  um conflito com outro agendamento vem como aviso não-bloqueante, não erro. */
+export interface CreateAppointmentResult {
+    appointment: AppointmentResponse;
+    warning?: string;
+}
+
+export async function createAppointment(data: CreateAppointmentRequest): Promise<CreateAppointmentResult> {
+    const res = await Api.post<CreateAppointmentResult>('/appointments', data);
     return res.data;
 }
 

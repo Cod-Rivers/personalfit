@@ -87,13 +87,27 @@ const studentSections: HelpSection[] = [
         id: 'agendamentos',
         title: 'Agendamentos',
         body: (
-            <p className="mb-0">
-                Em <strong>Meus Agendamentos</strong> você visualiza suas
-                sessões marcadas com o personal (presencial, online ou
-                consultoria), solicita novos horários, confirma presença ou
-                cancela — cancelamentos feitos com antecedência mínima não
-                descontam a sessão do seu plano.
-            </p>
+            <>
+                <p className="mb-2">
+                    Em <strong>Meus Agendamentos</strong> você visualiza suas
+                    sessões marcadas com o personal (presencial, online ou
+                    consultoria), solicita novos horários, confirma presença ou
+                    cancela — cancelamentos feitos com antecedência mínima não
+                    descontam a sessão do seu plano.
+                </p>
+                <p className="mb-0">
+                    Se o seu personal configurou uma{' '}
+                    <GlossaryLink id="janela-de-disponibilidade">
+                        grade de horários
+                    </GlossaryLink>
+                    , ao solicitar você escolhe a data num calendário e depois
+                    um horário entre os que aparecem. Horários riscados já
+                    estão reservados por outra pessoa (ou fora do prazo/regra
+                    do personal) — passe o dedo ou o mouse sobre eles para ver
+                    o motivo. Se o seu personal ainda não configurou uma
+                    grade, você digita a data e hora livremente, como antes.
+                </p>
+            </>
         ),
     },
     {
@@ -979,7 +993,57 @@ const personalSections: HelpSection[] = [
                     Quando o aluno solicita um horário, a sessão aparece
                     marcada como <strong>(solicitado pelo aluno)</strong>. A
                     Agenda é um recurso do{' '}
-                    <Link href="#plano-pro">plano PRO</Link>.
+                    <Link href="#plano-pro">plano PRO</Link>. Para limitar os
+                    horários que o aluno pode escolher, veja{' '}
+                    <Link href="#disponibilidade">Disponibilidade</Link>.
+                </p>
+            </>
+        ),
+    },
+    {
+        id: 'disponibilidade',
+        title: 'Disponibilidade: horários que o aluno pode escolher',
+        pro: true,
+        body: (
+            <>
+                <p className="mb-2">
+                    Na aba <strong>Disponibilidade</strong> da Agenda você
+                    define quais horários o aluno pode escolher ao solicitar
+                    um agendamento, em vez de ele digitar qualquer data e
+                    hora livremente. Isso funciona em três camadas:
+                </p>
+                <ul className="mb-2 pl-4">
+                    <li className="mb-1">
+                        <strong>Grade semanal (geral):</strong> os dias e
+                        horários em que você atende normalmente — por
+                        exemplo, segunda a sexta das 6h às 11h e das 14h às
+                        20h. Configure também a duração de cada atendimento,
+                        o intervalo entre eles, a antecedência mínima para
+                        solicitar, até quantos dias no futuro o aluno pode
+                        marcar e quantos alunos cabem no mesmo horário
+                        (use mais de um para treino em dupla ou turma).
+                    </li>
+                    <li className="mb-1">
+                        <strong>Exceção de data (pontual):</strong> muda a
+                        grade normal de um dia específico — marcar um feriado
+                        como fechado, ou abrir um horário diferente naquele
+                        dia.
+                    </li>
+                    <li className="mb-1">
+                        <strong>Bloqueio (pontual):</strong> reserva um
+                        intervalo de tempo específico, como uma consulta
+                        médica ou uma viagem de vários dias, sem mexer na
+                        grade semanal.
+                    </li>
+                </ul>
+                <p className="mb-0">
+                    Enquanto você não ativa o interruptor{' '}
+                    <strong>“Deixar o aluno escolher o horário na minha
+                    grade”</strong>, o aluno continua digitando a data e hora
+                    livremente, como sempre funcionou. Você também pode
+                    encaixar agendamentos manualmente fora da grade a
+                    qualquer momento — só o aluno é limitado aos horários
+                    livres.
                 </p>
             </>
         ),

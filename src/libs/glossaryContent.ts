@@ -220,6 +220,72 @@ const productTerms: GlossaryTerm[] = [
             audience: 'student',
         },
     },
+    {
+        id: 'janela-de-disponibilidade',
+        term: 'Janela de disponibilidade',
+        short: 'Um intervalo de horário em que o personal atende, dentro da grade semanal.',
+        long: 'Uma janela de disponibilidade é um intervalo de horário (por exemplo, 06:00–11:00) em que o personal atende num dia da semana. A grade semanal completa é formada por uma ou mais janelas por dia; dias sem nenhuma janela ficam fechados para agendamento.',
+        seeAlso: {
+            id: 'disponibilidade',
+            label: 'Disponibilidade: horários que o aluno pode escolher',
+            audience: 'personal',
+        },
+    },
+    {
+        id: 'slot',
+        term: 'Slot (horário)',
+        short: 'Cada horário individual gerado a partir das janelas de disponibilidade.',
+        long: 'Um slot é cada horário individual que o app calcula a partir das janelas de disponibilidade, da duração do atendimento e do intervalo entre sessões configurados pelo personal. É o que o aluno vê como um botão de horário ao solicitar um agendamento — disponível ou já reservado.',
+        seeAlso: {
+            id: 'disponibilidade',
+            label: 'Disponibilidade: horários que o aluno pode escolher',
+            audience: 'personal',
+        },
+    },
+    {
+        id: 'antecedencia-minima',
+        term: 'Antecedência mínima',
+        short: 'Prazo mínimo antes de um horário para o aluno ainda poder solicitá-lo.',
+        long: 'A antecedência mínima é o número de horas de antecedência que o aluno precisa dar para solicitar um horário. Um slot dentro desse prazo aparece indisponível, mesmo que ainda esteja livre — evita agendamentos de última hora que o personal não teria como se preparar.',
+        seeAlso: {
+            id: 'disponibilidade',
+            label: 'Disponibilidade: horários que o aluno pode escolher',
+            audience: 'personal',
+        },
+    },
+    {
+        id: 'excecao-de-data',
+        term: 'Exceção de data',
+        short: 'Mudança pontual na grade normal de um dia específico (fechado ou horário diferente).',
+        long: 'Uma exceção de data altera a grade semanal normal num dia específico — por exemplo, marcar um feriado como fechado, ou abrir um horário diferente naquele dia (inclusive um dia que normalmente é fechado, como um sábado extra).',
+        seeAlso: {
+            id: 'disponibilidade',
+            label: 'Disponibilidade: horários que o aluno pode escolher',
+            audience: 'personal',
+        },
+    },
+    {
+        id: 'bloqueio-disponibilidade',
+        term: 'Bloqueio',
+        short: 'Reserva um intervalo de tempo específico, sem mexer na grade semanal.',
+        long: 'Um bloqueio reserva um intervalo de tempo específico — uma consulta médica, uma viagem de vários dias — sem precisar alterar a grade semanal nem criar uma exceção de data. Qualquer slot que caia dentro do intervalo bloqueado fica indisponível para o aluno.',
+        seeAlso: {
+            id: 'disponibilidade',
+            label: 'Disponibilidade: horários que o aluno pode escolher',
+            audience: 'personal',
+        },
+    },
+    {
+        id: 'capacidade-do-horario',
+        term: 'Capacidade do horário',
+        short: 'Quantos alunos podem ocupar o mesmo horário — 1 é individual, mais que isso é turma.',
+        long: 'A capacidade do horário define quantos alunos cabem no mesmo slot. O padrão é 1 (atendimento individual); um valor maior libera o mesmo horário para vários alunos escolherem, útil para treino em dupla ou turma. O slot só fica indisponível quando todas as vagas são preenchidas.',
+        seeAlso: {
+            id: 'disponibilidade',
+            label: 'Disponibilidade: horários que o aluno pode escolher',
+            audience: 'personal',
+        },
+    },
 ];
 
 const microcycleDerivedTerms: GlossaryTerm[] = microcycleHelpTopics.map((topic) => ({

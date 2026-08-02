@@ -1,0 +1,146 @@
+.wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.calHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.monthLabel {
+    font-weight: 700;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    text-transform: capitalize;
+}
+
+.navBtn {
+    background: var(--surface-2);
+    border: 1px solid var(--surface-3);
+    color: var(--text-primary);
+    width: 2rem;
+    height: 2rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    line-height: 1;
+    transition: border-color 0.2s, color 0.2s;
+}
+.navBtn:hover:not(:disabled) { border-color: var(--mint); color: var(--mint); }
+.navBtn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.weekLabels {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.2rem;
+}
+
+.weekLabel {
+    text-align: center;
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.calGrid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.25rem;
+}
+
+.dayCellBlank {
+    aspect-ratio: 1;
+}
+
+.dayCell {
+    aspect-ratio: 1;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.2s, background 0.2s, color 0.2s;
+}
+
+.dayCellAvailable {
+    background: rgba(15,252,190,0.1);
+    color: var(--mint);
+    font-weight: 600;
+}
+.dayCellAvailable:hover { border-color: var(--mint); }
+
+.dayCellUnavailable {
+    background: transparent;
+    color: var(--text-secondary);
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.dayCellSelected {
+    background: var(--grad-mint);
+    color: #000;
+    border-color: var(--mint);
+}
+
+.slotsSection {
+    border-top: 1px solid var(--surface-3);
+    padding-top: 0.75rem;
+}
+
+.slotsTitle {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin: 0 0 0.6rem;
+}
+
+.emptyMsg {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.slotsGrid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.slotChip {
+    background: var(--surface-2);
+    border: 1px solid var(--surface-3);
+    color: var(--text-primary);
+    padding: 0.45rem 0.8rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+    transition: border-color 0.2s, background 0.2s;
+}
+.slotChip:hover:not(:disabled) { border-color: var(--mint); color: var(--mint); }
+
+.slotChipSelected {
+    background: var(--grad-mint);
+    border-color: var(--mint);
+    color: #000;
+}
+
+.slotChipDisabled {
+    text-decoration: line-through;
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.slotRemaining {
+    font-size: 0.65rem;
+    font-weight: 500;
+    opacity: 0.8;
+    text-decoration: none;
+}
