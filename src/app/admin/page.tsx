@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
 import { isAxiosError } from 'axios';
 import s from './admin.module.css';
 import * as adminService from '@/libs/adminService';
@@ -9,20 +10,29 @@ import * as videoService from '@/libs/exerciseVideoService';
 import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
 import ExerciseDetailCard from '@/components/features/ExerciseDetailCard';
 import type { ExerciseLog } from '@/components/features/types';
-import AdminAdvertisements from '@/components/organism/AdminAdvertisements';
-import AdminReferralPartners from '@/components/organism/AdminReferralPartners';
-import AdminProtocols from '@/components/organism/AdminProtocols';
 import Modal from '@/components/system/Modal';
-import {
-    ResponsiveContainer,
-    BarChart,
-    Bar,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    Legend,
-} from 'recharts';
+
+/**
+ * Abas raramente abertas do admin — carregadas sob demanda (client-only,
+ * sem SSR) para não pesar o bundle inicial de /admin. Mesmo padrão de
+ * GanttPlanningResponsive.tsx.
+ */
+const AdminAdvertisements = dynamic(
+    () => import('@/components/organism/AdminAdvertisements'),
+    { ssr: false, loading: () => <div className="text-center py-4">Carregando…</div> },
+);
+const AdminReferralPartners = dynamic(
+    () => import('@/components/organism/AdminReferralPartners'),
+    { ssr: false, loading: () => <div className="text-center py-4">Carregando…</div> },
+);
+const AdminProtocols = dynamic(
+    () => import('@/components/organism/AdminProtocols'),
+    { ssr: false, loading: () => <div className="text-center py-4">Carregando…</div> },
+);
+const AdminSubscriptionChart = dynamic(
+    () => import('./_components/AdminSubscriptionChart'),
+    { ssr: false, loading: () => <div style={{ height: 260 }} /> },
+);
 
 type Section =
     | 'metrics'
@@ -2302,64 +2312,9 @@ function RelatoriosSection() {
                                 >
                                     Evolução Diária
                                 </h2>
-                                <ResponsiveContainer width="100%" height={260}>
-                                    <BarChart
-                                        data={summary.daily_counts}
-                                        margin={{
-                                            top: 4,
-                                            right: 16,
-                                            left: 0,
-                                            bottom: 4,
-                                        }}
-                                    >
-                                        <CartesianGrid
-                                            strokeDasharray="3 3"
-                                            stroke="#2d3a5e"
-                                        />
-                                        <XAxis
-                                            dataKey="date"
-                                            tick={{
-                                                fill: '#8892b0',
-                                                fontSize: 11,
-                                            }}
-                                            tickFormatter={(d) => d.slice(5)}
-                                        />
-                                        <YAxis
-                                            tick={{
-                                                fill: '#8892b0',
-                                                fontSize: 11,
-                                            }}
-                                            allowDecimals={false}
-                                        />
-                                        <Tooltip
-                                            contentStyle={{
-                                                background: '#1a2035',
-                                                border: '1px solid #2d3a5e',
-                                                borderRadius: 8,
-                                            }}
-                                            labelStyle={{ color: '#ccd6f6' }}
-                                            itemStyle={{ color: '#ccd6f6' }}
-                                        />
-                                        <Legend
-                                            wrapperStyle={{
-                                                color: '#8892b0',
-                                                fontSize: 12,
-                                            }}
-                                        />
-                                        <Bar
-                                            dataKey="subscriptions"
-                                            name="Assinaturas"
-                                            fill="#0d6efd"
-                                            radius={[4, 4, 0, 0]}
-                                        />
-                                        <Bar
-                                            dataKey="cancellations"
-                                            name="Cancelamentos"
-                                            fill="#dc3545"
-                                            radius={[4, 4, 0, 0]}
-                                        />
-                                    </BarChart>
-                                </ResponsiveContainer>
+                                <AdminSubscriptionChart
+                                    dailyCounts={summary.daily_counts}
+                                />
                             </div>
                         )}
 
