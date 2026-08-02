@@ -45,7 +45,7 @@ const TLogin: FC = () => {
                     window.location.href = '/selecionar-perfil';
                     return;
                 }
-                saveSession(data.token, data.user);
+                saveSession(data.token, data.user, data.refresh_token);
                 window.location.href =
                     redirectTarget || landingRouteFor(data.user);
             }

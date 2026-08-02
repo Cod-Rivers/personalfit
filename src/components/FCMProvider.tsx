@@ -2,8 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { useFCMToken } from '@/hooks/useFCMToken';
+import { useVisiblePolling } from '@/hooks/useVisiblePolling';
 import { listenNativePushToken } from '@/libs/nativePush';
-import { refreshNativeAuthToken } from '@/libs/session';
+import { getToken, refreshNativeAuthToken } from '@/libs/session';
+import { renewSession } from '@/libs/sessionHeartbeat';
+
+const SESSION_HEARTBEAT_INTERVAL_MS = 30 * 60 * 1000;
 
 export default function FCMProvider({
     children,
@@ -23,6 +27,21 @@ export default function FCMProvider({
     useEffect(() => {
         refreshNativeAuthToken();
     }, []);
+
+    // Heartbeat de sessão: renova o access token em silêncio a cada 30min
+    // com a página aberta (pausa em aba oculta, renova na volta do foco —
+    // ver useVisiblePolling). Roda igual no navegador e no app Android, já
+    // que o app é a mesma página carregada dentro de uma WebView. `enabled`
+    // só fica true após um carregamento com sessão salva (login/reload) —
+    // como este app navega entre telas autenticadas via window.location,
+    // isso é reavaliado a cada troca de estado logado/deslogado.
+    useVisiblePolling(
+        () => {
+            void renewSession();
+        },
+        SESSION_HEARTBEAT_INTERVAL_MS,
+        Boolean(getToken()),
+    );
 
     const showBlocked = permissionState === 'denied' && !dismissed;
     const showOptIn = permissionState === 'default' && !dismissed;

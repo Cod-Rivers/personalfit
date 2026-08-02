@@ -35,8 +35,20 @@ declare global {
 
 const TOKEN_KEY = 'token';
 const USER_KEY = 'user';
+const REFRESH_TOKEN_KEY = 'refresh_token';
 const AUTH_COOKIE = 'vf_auth';
 const ROLE_COOKIE = 'vf_role';
+
+/**
+ * Teto absoluto da sessão (ver RefreshSessionMaxDays no backend): o access
+ * token em si dura só 45min, mas é renovado em silêncio pelo heartbeat
+ * (ver renewSession em sessionHeartbeat.ts, chamado pelo FCMProvider)
+ * enquanto o refresh token continuar válido. O cookie de presença precisa
+ * acompanhar esse teto, não a duração curta do access token — senão o
+ * middleware trataria o usuário como deslogado no meio de uma sessão que na
+ * verdade ainda é válida.
+ */
+const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 
 /**
  * Prefixo do cache local (localStorage) de "Minhas Anotações" por exercício
@@ -64,22 +76,36 @@ function deleteCookie(name: string): void {
     document.cookie = `${name}=; Path=/; Max-Age=0; SameSite=Lax`;
 }
 
-/** Salva a sessão (localStorage + cookies de presença/papel). */
-export function saveSession(token: string, user: SessionUser): void {
+/**
+ * Salva a sessão (localStorage + cookies de presença/papel). Chamada tanto
+ * no login quanto a cada renovação silenciosa do heartbeat — por isso
+ * refreshToken é opcional (o heartbeat sempre passa um; alguns fluxos
+ * legados de troca de perfil podem não ter um novo no momento).
+ */
+export function saveSession(
+    token: string,
+    user: SessionUser,
+    refreshToken?: string,
+): void {
     if (typeof window === 'undefined') return;
     localStorage.setItem(TOKEN_KEY, token);
     localStorage.setItem(USER_KEY, JSON.stringify(user));
-    // Cookies expiram junto com a validade típica do access token (3h).
-    setCookie(AUTH_COOKIE, '1', 60 * 60 * 3);
-    setCookie(ROLE_COOKIE, String(user.role ?? ''), 60 * 60 * 3);
+    if (refreshToken) localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+    setCookie(AUTH_COOKIE, '1', SESSION_MAX_AGE_SECONDS);
+    setCookie(ROLE_COOKIE, String(user.role ?? ''), SESSION_MAX_AGE_SECONDS);
     window.VenafitAuth?.save(token);
+}
+
+export function getRefreshToken(): string | null {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem(REFRESH_TOKEN_KEY);
 }
 
 /**
  * Reenvia o token atual (se houver) para a bridge nativa. Chamada no boot da
- * app (FCMProvider), não só no login — como o token não tem refresh, isso é
- * o que mantém o widget funcionando enquanto o usuário reabre o app de vez
- * em quando (ver AuthBridge.kt).
+ * app (FCMProvider), não só no login/heartbeat — cobre o caso do processo
+ * nativo ter sido reiniciado e perdido o último token salvo (ver
+ * AuthBridge.kt e WorkoutCalendarSyncWorker).
  */
 export function refreshNativeAuthToken(): void {
     if (typeof window === 'undefined') return;
@@ -140,6 +166,7 @@ export async function clearSession(): Promise<void> {
     if (typeof window === 'undefined') return;
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
     deleteCookie(AUTH_COOKIE);
     deleteCookie(ROLE_COOKIE);
     window.VenafitAuth?.clear();

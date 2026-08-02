@@ -15,6 +15,7 @@ interface PendingAuth {
     refresh_token: string;
     user: UserData;
     alt_token: string;
+    alt_refresh_token: string;
     alt_user: UserData;
 }
 
@@ -32,8 +33,7 @@ export default function SelecionarPerfil() {
     }, [router]);
 
     const choose = (user: UserData, token: string, refreshToken: string) => {
-        saveSession(token, user);
-        localStorage.setItem('refresh_token', refreshToken);
+        saveSession(token, user, refreshToken);
         sessionStorage.removeItem('pending_auth');
         window.location.href = landingRouteFor(user);
     };
@@ -105,7 +105,7 @@ export default function SelecionarPerfil() {
                             choose(
                                 pending.alt_user,
                                 pending.alt_token,
-                                pending.refresh_token,
+                                pending.alt_refresh_token,
                             )
                         }
                         style={cardStyle}
