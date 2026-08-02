@@ -14,6 +14,18 @@
  * parâmetro extra: já são bem representadas pelos campos de prescrição
  * existentes (Cadência, Séries, % de 1RM, Descanso) — a técnica funciona só
  * como rótulo/instrução para o aluno.
+ *
+ * Escopo desta feature (decisão consciente, não pendência — ver
+ * Todo/TAREFAS_PENDENTES.md > Concluídas > "Técnicas de treinamento
+ * avançadas", 2026-08-01):
+ * - Só o sistema de macrociclo/periodização usa este catálogo. O sistema
+ *   legado `trainingprotocol` (templates admin/anamnese) não recebeu
+ *   Technique/TechniqueParams/GroupTechnique.
+ * - WorkoutLogger não registra sub-série estruturada (ex: cada "queda" de um
+ *   dropset) — o aluno só vê a técnica como badge/instrução aqui e em
+ *   ExerciseDetailCard; o registro de série continua 1 linha por série.
+ * - Progressão de carga por série em pirâmide/onda não é um array
+ *   estruturado — continua em texto livre (SeriesLabel/Comments).
  */
 
 export type TechniqueParamKey =
