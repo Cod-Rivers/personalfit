@@ -11,6 +11,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useBranding } from '@/context/BrandingContext';
 import AvatarUpload from '@/components/molecules/AvatarUpload';
 import { clearSession } from '@/libs/session';
+import { useVisiblePolling } from '@/hooks/useVisiblePolling';
 
 const Header: React.FC = () => {
     const { theme, toggleTheme } = useTheme();
@@ -66,21 +67,14 @@ const Header: React.FC = () => {
     }, []);
 
     useEffect(checkUser, []);
-    useEffect(() => {
-        fetchNotifications();
-        // Polling a cada 30 segundos para notificações em tempo real
-        const interval = setInterval(fetchNotifications, 30000);
-        return () => clearInterval(interval);
-    }, [fetchNotifications]);
 
-    useEffect(() => {
-        // Buscamos independentemente da role: uma conta admin/personal pode
-        // também ter um vínculo de aluno na mesma conta.
-        if (!user.name) return;
-        fetchLinkStatus();
-        const interval = setInterval(fetchLinkStatus, 30000);
-        return () => clearInterval(interval);
-    }, [user.name, fetchLinkStatus]);
+    // Polling a cada 30 segundos para notificações em tempo real, pausado
+    // enquanto a aba está em background.
+    useVisiblePolling(fetchNotifications, 30000);
+
+    // Buscamos independentemente da role: uma conta admin/personal pode
+    // também ter um vínculo de aluno na mesma conta.
+    useVisiblePolling(fetchLinkStatus, 30000, !!user.name);
 
     const isOnStudentArea =
         pathname.startsWith('/app') ||
