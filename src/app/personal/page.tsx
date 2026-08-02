@@ -1,6 +1,20 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import {
+    FiUsers,
+    FiTrendingUp,
+    FiActivity,
+    FiDroplet,
+    FiSliders,
+    FiSpeaker,
+    FiCalendar,
+    FiExternalLink,
+    FiAward,
+    FiBookOpen,
+    FiGlobe,
+    FiLock,
+} from 'react-icons/fi';
 
 import { usePersonalStudents } from '@/hooks/usePersonalStudents';
 import s from './personal.module.css';
@@ -67,7 +81,7 @@ export default function PersonalDashboard() {
                 {/* Page title */}
                 <div className={s.header}>
                     <div>
-                        <h1 className={s.headerTitle}>💪 Área do Personal</h1>
+                        <h1 className={s.headerTitle}>Área do Personal</h1>
                         <p className={s.headerSub}>Olá, {user.name}</p>
                     </div>
                 </div>
@@ -92,25 +106,29 @@ export default function PersonalDashboard() {
                         className={tab === 'students' ? s.tabActive : s.tab}
                         onClick={() => setTab('students')}
                     >
+                        <FiUsers className={s.tabIcon} />
                         Meus Alunos
                     </button>
                     <button
                         className={tab === 'retention' ? s.tabActive : s.tab}
                         onClick={() => setTab('retention')}
                     >
-                        📊 Retenção
+                        <FiTrendingUp className={s.tabIcon} />
+                        Retenção
                     </button>
                     <button
                         className={tab === 'exercises' ? s.tabActive : s.tab}
                         onClick={() => setTab('exercises')}
                     >
+                        <FiActivity className={s.tabIcon} />
                         Meus Exercícios
                     </button>
                     <button
                         className={tab === 'branding' ? s.tabActive : s.tab}
                         onClick={() => setTab('branding')}
                     >
-                        🎨 Personalização
+                        <FiDroplet className={s.tabIcon} />
+                        Personalização
                     </button>
                     <button
                         className={
@@ -118,14 +136,16 @@ export default function PersonalDashboard() {
                         }
                         onClick={() => setTab('autoregulation')}
                     >
-                        ⚙️ Autorregulação
+                        <FiSliders className={s.tabIcon} />
+                        Autorregulação
                     </button>
                     {planType === 'pro' && (
                         <button
                             className={tab === 'ads' ? s.tabActive : s.tab}
                             onClick={() => setTab('ads')}
                         >
-                            📢 Meus Anúncios
+                            <FiSpeaker className={s.tabIcon} />
+                            Meus Anúncios
                         </button>
                     )}
                     <button
@@ -143,7 +163,11 @@ export default function PersonalDashboard() {
                                 : 'Recurso exclusivo do plano PRO'
                         }
                     >
-                        📅 Agenda{planType === 'pro' ? '' : ' 🔒'}
+                        <FiCalendar className={s.tabIcon} />
+                        Agenda
+                        {planType !== 'pro' && (
+                            <FiLock className={s.tabLock} />
+                        )}
                     </button>
                     <button
                         className={s.tab}
@@ -160,19 +184,25 @@ export default function PersonalDashboard() {
                                 : 'Recurso exclusivo do plano PRO'
                         }
                     >
-                        ✨ Minha Página{planType === 'pro' ? '' : ' 🔒'}
+                        <FiExternalLink className={s.tabIcon} />
+                        Minha Página
+                        {planType !== 'pro' && (
+                            <FiLock className={s.tabLock} />
+                        )}
                     </button>
                     <button
                         className={s.tab}
                         onClick={() => router.push('/personal/desafios')}
                     >
-                        🏆 Desafios
+                        <FiAward className={s.tabIcon} />
+                        Desafios
                     </button>
                     <button
                         className={tab === 'ciclos' ? s.tabActive : s.tab}
                         onClick={() => setTab('ciclos')}
                     >
-                        📚 Minha Periodização / Treinos
+                        <FiBookOpen className={s.tabIcon} />
+                        Minha Periodização / Treinos
                     </button>
                     <button
                         className={
@@ -180,7 +210,8 @@ export default function PersonalDashboard() {
                         }
                         onClick={() => setTab('_publicTemplates')}
                     >
-                        🌐 Biblioteca Pública
+                        <FiGlobe className={s.tabIcon} />
+                        Biblioteca Pública
                     </button>
                 </div>
 

@@ -576,7 +576,10 @@
 }
 
 .tab {
-    padding: 10px 22px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 18px;
     background: none;
     border: none;
     color: var(--text-muted);
@@ -597,6 +600,21 @@
     border-bottom-color: var(--mint);
 }
 .tabActive:hover { color: var(--mint); }
+
+.tabIcon {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    opacity: 0.85;
+}
+
+.tabLock {
+    flex-shrink: 0;
+    width: 12px;
+    height: 12px;
+    margin-left: 2px;
+    color: var(--amber);
+}
 
 /* ── Exercise cards (Meus Exercícios) ── */
 .exSearch {
