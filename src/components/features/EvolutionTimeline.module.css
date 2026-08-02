@@ -169,6 +169,26 @@
     cursor: not-allowed;
 }
 
+.btnEdit {
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    color: var(--text-primary);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    cursor: pointer;
+}
+
+.editNotice {
+    background: rgba(61, 255, 208, 0.08);
+    border: 1px solid var(--mint);
+    color: var(--text-primary);
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    margin-bottom: 14px;
+}
+
 .formGroup {
     margin-bottom: 14px;
 }

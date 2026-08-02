@@ -62,6 +62,9 @@ export default function EvolutionTimeline({ studentId }: Props) {
     const [deletingId, setDeletingId] = useState<string | null>(null);
 
     const [showForm, setShowForm] = useState(false);
+    const [editingEntry, setEditingEntry] = useState<EvolutionEntry | null>(
+        null,
+    );
     const [date, setDate] = useState(todayISO());
     const [weightKg, setWeightKg] = useState('');
     const [bodyFatPercent, setBodyFatPercent] = useState('');
@@ -128,6 +131,7 @@ export default function EvolutionTimeline({ studentId }: Props) {
     }, [load]);
 
     const resetForm = () => {
+        setEditingEntry(null);
         setDate(todayISO());
         setWeightKg('');
         setBodyFatPercent('');
@@ -135,6 +139,33 @@ export default function EvolutionTimeline({ studentId }: Props) {
         setMeasurements({});
         setNotes('');
         setPhotos([]);
+    };
+
+    // Repositório de evolução é append-only (sem update) — "editar" aqui
+    // reabre o formulário pré-preenchido; ao salvar, cria uma entrada nova e
+    // apaga a antiga. Fotos não são copiadas (a API não expõe as photo_keys
+    // originais, só URLs assinadas), por isso o aviso no formulário.
+    const startEdit = (entry: EvolutionEntry) => {
+        setEditingEntry(entry);
+        setDate(entry.date);
+        setWeightKg(entry.weight_kg != null ? String(entry.weight_kg) : '');
+        setBodyFatPercent(
+            entry.body_fat_percent != null
+                ? String(entry.body_fat_percent)
+                : '',
+        );
+        setBodyFatMethod(entry.body_fat_method ?? '');
+        setMeasurements(
+            Object.fromEntries(
+                Object.entries(entry.measurements ?? {}).map(([k, v]) => [
+                    k,
+                    String(v),
+                ]),
+            ),
+        );
+        setNotes(entry.notes ?? '');
+        setPhotos([]);
+        setShowForm(true);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -179,9 +210,23 @@ export default function EvolutionTimeline({ studentId }: Props) {
                 studentId,
             );
 
+            let staleDeleteFailed = false;
+            if (editingEntry) {
+                try {
+                    await deleteEvolutionEntry(editingEntry.id, studentId);
+                } catch {
+                    staleDeleteFailed = true;
+                }
+            }
+
             resetForm();
             setShowForm(false);
             await load();
+            if (staleDeleteFailed) {
+                setError(
+                    'A nova avaliação foi salva, mas não foi possível remover a antiga. Exclua-a manualmente.',
+                );
+            }
         } catch (err) {
             setError(extractErrorMessage(err, 'Erro ao salvar entrada.'));
         } finally {
@@ -325,6 +370,17 @@ export default function EvolutionTimeline({ studentId }: Props) {
 
             {showForm && (
                 <form className={s.card} onSubmit={handleSubmit}>
+                    {editingEntry && (
+                        <p className={s.editNotice}>
+                            Editando avaliação de {formatDate(editingEntry.date)}.
+                            Ao salvar, este registro substitui o antigo
+                            {editingEntry.photo_urls &&
+                            editingEntry.photo_urls.length > 0
+                                ? ' — as fotos antigas não são copiadas, envie novas abaixo se quiser mantê-las'
+                                : ''}
+                            .
+                        </p>
+                    )}
                     <div className={s.formRow}>
                         <div className={s.formGroup}>
                             <label className={s.formLabel}>Data</label>
@@ -461,8 +517,16 @@ export default function EvolutionTimeline({ studentId }: Props) {
                                     : 'Aluno'}
                                 <button
                                     type="button"
-                                    className={s.btnDanger}
+                                    className={s.btnEdit}
                                     style={{ marginLeft: 10 }}
+                                    onClick={() => startEdit(entry)}
+                                >
+                                    Editar
+                                </button>
+                                <button
+                                    type="button"
+                                    className={s.btnDanger}
+                                    style={{ marginLeft: 6 }}
                                     disabled={deletingId === entry.id}
                                     onClick={() => handleDelete(entry.id)}
                                 >
