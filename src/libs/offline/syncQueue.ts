@@ -43,9 +43,24 @@ export function enqueueSkip(mutation: Omit<NewMutation, 'type' | 'completeBody'>
     return enqueue({ ...mutation, type: 'skip' });
 }
 
-export async function getPendingMutationsCount(): Promise<number> {
+/** Lista completa da fila, para telas que precisam distinguir mutações
+ * realmente pendentes (aguardando conexão) das que já falharam de vez (ex:
+ * 400 de validação — reenviar o mesmo corpo nunca vai funcionar, ver
+ * discardMutation). */
+export async function getPendingMutations(): Promise<PendingMutation[]> {
     const db = await getOfflineDB();
-    return db.count('pendingMutations');
+    return db.getAll('pendingMutations');
+}
+
+/** Remove uma mutação da fila sem reenviá-la — usado quando uma mutação
+ * 'failed' (rejeição de validação, não falta de conexão) nunca vai ter
+ * sucesso ao ser reenviada como está, e ficaria pendurada na fila para
+ * sempre do contrário. O aluno perde esse registro específico e precisa
+ * refazer o treino manualmente. */
+export async function discardMutation(id: number): Promise<void> {
+    const db = await getOfflineDB();
+    await db.delete('pendingMutations', id);
+    notifyQueueChanged();
 }
 
 let isProcessing = false;

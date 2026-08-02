@@ -45,6 +45,14 @@ const ROLE_COOKIE = 'vf_role';
  */
 export const EXERCISE_NOTE_CACHE_PREFIX = 'vf_exercise_note:';
 
+/**
+ * Prefixo do cache local (localStorage) da carga ("Peso (KG)") que o aluno
+ * definiu por exercício (ver exerciseWeightService.ts). Mesmo motivo do
+ * prefixo de anotações acima: dado sensível de treino, precisa ser limpo no
+ * logout.
+ */
+export const EXERCISE_WEIGHT_CACHE_PREFIX = 'vf_exercise_weight:';
+
 function setCookie(name: string, value: string, maxAgeSeconds: number): void {
     if (typeof document === 'undefined') return;
     const secure = window.location.protocol === 'https:' ? '; Secure' : '';
@@ -136,10 +144,13 @@ export async function clearSession(): Promise<void> {
     deleteCookie(ROLE_COOKIE);
     window.VenafitAuth?.clear();
 
-    // Anotações de exercício cacheadas localmente (dado sensível de treino)
+    // Anotações e carga de exercício cacheadas localmente (dado sensível de treino)
     for (let i = localStorage.length - 1; i >= 0; i--) {
         const key = localStorage.key(i);
-        if (key?.startsWith(EXERCISE_NOTE_CACHE_PREFIX)) {
+        if (
+            key?.startsWith(EXERCISE_NOTE_CACHE_PREFIX) ||
+            key?.startsWith(EXERCISE_WEIGHT_CACHE_PREFIX)
+        ) {
             localStorage.removeItem(key);
         }
     }

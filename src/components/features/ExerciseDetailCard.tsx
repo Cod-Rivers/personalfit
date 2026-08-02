@@ -21,6 +21,12 @@ import {
     getCachedAnnotationNote,
     setCachedAnnotationNote,
 } from '@/libs/exerciseAnnotationService';
+import {
+    getExerciseWeight,
+    saveExerciseWeight,
+    getCachedWeight,
+    setCachedWeight,
+} from '@/libs/exerciseWeightService';
 import { LoadSuggestion } from '@/libs/loadSuggestion';
 
 interface ExerciseDetailCardProps {
@@ -96,6 +102,9 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
     const [weightValue, setWeightValue] = useState<number | string>(
         exercise.weight > 0 ? exercise.weight : '',
     ); // Novo estado para o valor do peso
+    const [weightSaveStatus, setWeightSaveStatus] = useState<
+        'idle' | 'saved' | 'saved-offline' | 'error'
+    >('idle');
     // --- Efeitos ---
     Racional: useEffect(() => {
         // Lógica do cronômetro
@@ -142,6 +151,33 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
             .catch(() => {
                 // Offline ou exercício ainda sem contrapartida no backend:
                 // mantém o valor do cache local já aplicado acima.
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [exercise.id]);
+
+    useEffect(() => {
+        // Mesmo padrão otimista das anotações acima: cache local primeiro
+        // (funciona offline e evita "piscar" vazio), servidor sobrescreve
+        // assim que responder. Antes disso o campo só vivia em estado local
+        // do React e se perdia ao fechar o card ou recarregar a página.
+        setWeightSaveStatus('idle');
+        const cachedWeight = getCachedWeight(exercise.id);
+        if (cachedWeight != null) setWeightValue(cachedWeight);
+
+        let cancelled = false;
+        getExerciseWeight(exercise.id)
+            .then((res) => {
+                if (cancelled) return;
+                if (res.weight_kg > 0) {
+                    setWeightValue(res.weight_kg);
+                    setCachedWeight(exercise.id, res.weight_kg);
+                }
+            })
+            .catch(() => {
+                // Offline ou ainda sem preferência salva no backend: mantém
+                // o valor do cache local (ou o padrão vindo de exercise.weight).
             });
         return () => {
             cancelled = true;
@@ -329,9 +365,30 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
         return Math.round(adjusted * 2) / 2;
     }, [loadSuggestion, exercise.plannedWeight, loadAdjustPct]);
 
+    const persistWeight = (weight: number) => {
+        if (!(weight > 0)) return;
+        // Cache local primeiro: garante que o valor não se perde mesmo se a
+        // chamada ao servidor falhar (offline) ou o usuário fechar o card
+        // logo em seguida (mesmo padrão de handleSaveAnnotations acima).
+        setCachedWeight(exercise.id, weight);
+        saveExerciseWeight(exercise.id, weight)
+            .then(() => setWeightSaveStatus('saved'))
+            .catch((err) => {
+                if (axios.isAxiosError(err) && !err.response) {
+                    setWeightSaveStatus('saved-offline');
+                } else {
+                    setWeightSaveStatus('error');
+                }
+            })
+            .finally(() => {
+                setTimeout(() => setWeightSaveStatus('idle'), 3000);
+            });
+    };
+
     const handleApplyRecommendedWeight = () => {
         if (recommendedWeight == null) return;
         setWeightValue(recommendedWeight);
+        persistWeight(recommendedWeight);
     };
 
     // --- Lógica de Renderização ---
@@ -352,7 +409,11 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
 
     const handleWeightEditEnd = () => {
         setIsWeightEditing(false);
-        // TODO: persistir o novo valor do peso no backend.
+        const numericWeight =
+            typeof weightValue === 'number' ? weightValue : parseFloat(weightValue);
+        if (Number.isFinite(numericWeight)) {
+            persistWeight(numericWeight);
+        }
     };
 
     const handleWeightKeyDown = (
@@ -529,6 +590,23 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                             </button>
                                         )}
                                         </div>
+                                        {weightSaveStatus !== 'idle' && (
+                                            <p
+                                                className={
+                                                    weightSaveStatus === 'error'
+                                                        ? styles.annotationsStatusError
+                                                        : styles.annotationsStatus
+                                                }
+                                            >
+                                                {weightSaveStatus === 'saved' &&
+                                                    '✓ Peso salvo.'}
+                                                {weightSaveStatus ===
+                                                    'saved-offline' &&
+                                                    '💾 Salvo neste dispositivo — sem conexão para sincronizar agora.'}
+                                                {weightSaveStatus === 'error' &&
+                                                    'Não foi possível salvar o peso. Tente novamente.'}
+                                            </p>
+                                        )}
                                         {loadSuggestion?.abovePrescribed && (
                                             <p
                                                 className="small"

@@ -90,9 +90,15 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                 name: ex.name,
                 groupId: ex.group_id,
                 plannedSeries: ex.series,
-                series: ex.series.map((_, i) => ({
+                series: ex.series.map((plannedReps, i) => ({
                     seriesNum: i + 1,
-                    reps: 0,
+                    // Pré-preenche com a rep prescrita em vez de 0 — o
+                    // backend rejeita a submissão inteira (400) quando
+                    // qualquer série chega com reps=0 (binding:"required"
+                    // em campo numérico), então deixar em branco aqui fazia
+                    // o treino inteiro falhar ao salvar se o aluno esquecesse
+                    // de preencher reps em uma única série de aquecimento.
+                    reps: plannedReps || 0,
                     loadKg: ex.load_kg
                         ? Math.round(ex.load_kg * loadAdjust * 2) / 2
                         : 0,
