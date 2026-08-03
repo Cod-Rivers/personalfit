@@ -1,6 +1,7 @@
 'use client';
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { FiX } from 'react-icons/fi';
 import styles from './Modal.module.css';
 
 interface ModalProps {
@@ -62,7 +63,7 @@ export default function Modal({
                             onClick={onClose}
                             aria-label="Fechar"
                         >
-                            ✕
+                            <FiX />
                         </button>
                     </div>
                 )}

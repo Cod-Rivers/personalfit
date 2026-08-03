@@ -2,6 +2,14 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
+    FiArrowLeft,
+    FiLink,
+    FiCheck,
+    FiX,
+    FiTrash2,
+    FiSkipBack,
+} from 'react-icons/fi';
+import {
     listPersonalAppointments,
     listAllRecurrences,
     createAppointment,
@@ -420,7 +428,7 @@ export default function AgendaPage() {
                         className={s.btnBack}
                         onClick={() => router.push('/personal')}
                     >
-                        ← Voltar
+                        <FiArrowLeft /> Voltar
                     </button>
                 </div>
 
@@ -571,7 +579,7 @@ export default function AgendaPage() {
                                                 target="_blank"
                                                 rel="noreferrer"
                                             >
-                                                🔗 Entrar na reunião
+                                                <FiLink /> Entrar na reunião
                                             </a>
                                         )}
                                         {a.notes && (
@@ -590,7 +598,7 @@ export default function AgendaPage() {
                                                     )
                                                 }
                                             >
-                                                ✓ Presente
+                                                <FiCheck /> Presente
                                             </button>
                                             <button
                                                 className={s.btnMissed}
@@ -598,7 +606,7 @@ export default function AgendaPage() {
                                                     handleStatus(a.id, 'missed')
                                                 }
                                             >
-                                                ✗ Faltou
+                                                <FiX /> Faltou
                                             </button>
                                             <button
                                                 className={s.btnConfirm}
@@ -632,7 +640,7 @@ export default function AgendaPage() {
                                                 }
                                                 title="Cancelou com antecedência — aula não descontada"
                                             >
-                                                ⏮ Antecipado
+                                                <FiSkipBack /> Antecipado
                                             </button>
                                             <button
                                                 className={s.btnDelete}
@@ -640,7 +648,7 @@ export default function AgendaPage() {
                                                     handleDeleteAppt(a.id)
                                                 }
                                             >
-                                                🗑
+                                                <FiTrash2 />
                                             </button>
                                         </div>
                                     </div>
@@ -712,7 +720,7 @@ export default function AgendaPage() {
                                                 target="_blank"
                                                 rel="noreferrer"
                                             >
-                                                🔗 Link
+                                                <FiLink /> Link
                                             </a>
                                         )}
 
@@ -849,7 +857,7 @@ export default function AgendaPage() {
                                                                         )
                                                                     }
                                                                 >
-                                                                    ✓ Aceitar
+                                                                    <FiCheck /> Aceitar
                                                                 </button>
                                                                 <button
                                                                     className={
@@ -862,7 +870,7 @@ export default function AgendaPage() {
                                                                         )
                                                                     }
                                                                 >
-                                                                    ✗ Rejeitar
+                                                                    <FiX /> Rejeitar
                                                                 </button>
                                                             </div>
                                                         )}
@@ -887,7 +895,7 @@ export default function AgendaPage() {
                                                     handleDeleteRec(r.id)
                                                 }
                                             >
-                                                🗑 Remover
+                                                <FiTrash2 /> Remover
                                             </button>
                                         </div>
                                     </div>

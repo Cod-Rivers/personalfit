@@ -2,6 +2,13 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
+    FiAward,
+    FiArrowLeft,
+    FiSend,
+    FiLink,
+    FiCheck,
+} from 'react-icons/fi';
+import {
     listChallenges,
     createChallenge,
     deleteChallenge,
@@ -109,7 +116,7 @@ export default function DesafiosPage() {
             <div className={s.container}>
                 <div className={s.header}>
                     <div>
-                        <h1 className={s.headerTitle}>🏆 Grupos de Desafio</h1>
+                        <h1 className={s.headerTitle}><FiAward /> Grupos de Desafio</h1>
                         <p className={s.headerSub}>
                             Crie um desafio, compartilhe o link no Instagram ou
                             WhatsApp e converta os participantes em alunos.
@@ -120,7 +127,7 @@ export default function DesafiosPage() {
                             className={s.btnBack}
                             onClick={() => router.push('/personal')}
                         >
-                            ← Voltar
+                            <FiArrowLeft /> Voltar
                         </button>
                         <button
                             className={s.btnPrimary}
@@ -225,7 +232,7 @@ export default function DesafiosPage() {
                 ) : challenges.length === 0 ? (
                     <div className={s.empty}>
                         Você ainda não criou nenhum desafio. Crie o primeiro e
-                        comece a captar leads! 🚀
+                        comece a captar leads! <FiSend />
                     </div>
                 ) : (
                     <div className={s.list}>
@@ -267,7 +274,7 @@ export default function DesafiosPage() {
                                         className={s.btnAction}
                                         onClick={() => copyLink(c.public_token)}
                                     >
-                                        🔗 Copiar link
+                                        <FiLink /> Copiar link
                                     </button>
                                     <button
                                         className={s.btnAction}
@@ -337,7 +344,7 @@ export default function DesafiosPage() {
                                                                     s.convertedTag
                                                                 }
                                                             >
-                                                                ✓ Convertido
+                                                                <FiCheck /> Convertido
                                                             </span>
                                                         ) : (
                                                             <button

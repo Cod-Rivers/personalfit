@@ -1,6 +1,13 @@
 'use client';
 import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import {
+    FiHeart,
+    FiArrowLeft,
+    FiUnlock,
+    FiFileText,
+    FiChevronRight,
+} from 'react-icons/fi';
 import { Api } from '@/libs/api';
 import Modal from '@/components/system/Modal';
 import QuestionsRenderer from '@/components/organism/QuestionsRenderer';
@@ -188,14 +195,14 @@ export default function PersonalStudentAnamnesePage() {
             <div className={s.container}>
                 <div className={s.header}>
                     <div>
-                        <h1 className={s.headerTitle}>🩺 Triagem/Anamnese</h1>
+                        <h1 className={s.headerTitle}><FiHeart /> Triagem/Anamnese</h1>
                         <p className={s.headerSub}>
                             Gerencie a triagem de saúde (PAR-Q) e a anamnese
                             deste aluno
                         </p>
                     </div>
                     <button className={s.btnBack} onClick={() => router.back()}>
-                        ← Voltar
+                        <FiArrowLeft /> Voltar
                     </button>
                 </div>
 
@@ -207,7 +214,7 @@ export default function PersonalStudentAnamnesePage() {
                     >
                         <div className={s.cardInfo}>
                             <p className={s.cardName}>
-                                🔓 Liberar para o aluno preencher
+                                <FiUnlock /> Liberar para o aluno preencher
                             </p>
                             <p className={s.cardMeta}>
                                 O aluno passa a poder preencher a própria
@@ -217,20 +224,28 @@ export default function PersonalStudentAnamnesePage() {
                             </p>
                         </div>
                         <span className={s.btnAction}>
-                            {granting ? 'Concedendo...' : 'Liberar acesso →'}
+                            {granting ? (
+                                'Concedendo...'
+                            ) : (
+                                <>
+                                    Liberar acesso <FiChevronRight />
+                                </>
+                            )}
                         </span>
                     </div>
 
                     <div className={s.card} onClick={openFillModal}>
                         <div className={s.cardInfo}>
-                            <p className={s.cardName}>📝 Preencher agora</p>
+                            <p className={s.cardName}><FiFileText /> Preencher agora</p>
                             <p className={s.cardMeta}>
                                 Você preenche a triagem e a anamnese em nome
                                 do aluno, com uma declaração de
                                 responsabilidade.
                             </p>
                         </div>
-                        <span className={s.btnAction}>Preencher →</span>
+                        <span className={s.btnAction}>
+                            Preencher <FiChevronRight />
+                        </span>
                     </div>
                 </div>
             </div>

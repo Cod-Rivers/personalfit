@@ -41,6 +41,9 @@
     cursor: pointer;
     font-size: 0.875rem;
     font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     box-shadow: 0 2px 10px rgba(240,165,0,0.3);
     transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
 }
@@ -269,7 +272,9 @@
 }
 
 .meetingLink {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
     font-size: 0.85rem;
     color: var(--mint);
     text-decoration: none;
@@ -300,6 +305,9 @@
     cursor: pointer;
     font-size: 0.8rem;
     font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
     transition: background 0.2s;
 }
 .btnAttended:hover { background: rgba(50,200,100,0.25); }
@@ -313,6 +321,9 @@
     cursor: pointer;
     font-size: 0.8rem;
     font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
     transition: background 0.2s;
 }
 .btnMissed:hover { background: rgba(255,80,80,0.2); }
@@ -351,6 +362,9 @@
     cursor: pointer;
     font-size: 0.8rem;
     transition: background 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
 }
 .btnCancelAdvance:hover { background: rgba(255,180,0,0.2); }
 
@@ -363,6 +377,9 @@
     padding: 0.3rem 0.5rem;
     border-radius: 6px;
     transition: background 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     margin-left: auto;
 }
 .btnDelete:hover { background: rgba(255,80,80,0.12); }
@@ -555,6 +572,9 @@
     font-size: 0.75rem;
     font-weight: 600;
     transition: background 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
 }
 .btnAccept:hover { background: rgba(15,252,190,0.2); }
 
@@ -568,5 +588,8 @@
     font-size: 0.75rem;
     font-weight: 600;
     transition: background 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
 }
 .btnReject:hover { background: rgba(255,80,80,0.2); }

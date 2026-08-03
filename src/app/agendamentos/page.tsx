@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { FiArrowLeft, FiLink, FiCheck, FiSkipBack } from 'react-icons/fi';
 import {
     listMyAppointments,
     requestAppointment,
@@ -319,7 +320,7 @@ export default function AgendamentosPage() {
                             )
                         }
                     >
-                        ← Voltar
+                        <FiArrowLeft /> Voltar
                     </button>
                 </div>
 
@@ -404,7 +405,7 @@ export default function AgendamentosPage() {
                                         target="_blank"
                                         rel="noreferrer"
                                     >
-                                        🔗 Entrar na reunião
+                                        <FiLink /> Entrar na reunião
                                     </a>
                                 )}
                                 {a.notes && (
@@ -418,9 +419,13 @@ export default function AgendamentosPage() {
                                             onClick={() => handleConfirm(a.id)}
                                             disabled={actionId !== null}
                                         >
-                                            {actionId === a.id
-                                                ? 'Confirmando...'
-                                                : '✓ Confirmar presença'}
+                                            {actionId === a.id ? (
+                                                'Confirmando...'
+                                            ) : (
+                                                <>
+                                                    <FiCheck /> Confirmar presença
+                                                </>
+                                            )}
                                         </button>
                                     )}
                                     {(a.status === 'pending' ||
@@ -445,9 +450,13 @@ export default function AgendamentosPage() {
                                             disabled={actionId !== null}
                                             title="Cancelar com antecedência — aula não descontada"
                                         >
-                                            {actionId === a.id
-                                                ? 'Cancelando...'
-                                                : '⏮ Cancelar c/ antecedência'}
+                                            {actionId === a.id ? (
+                                                'Cancelando...'
+                                            ) : (
+                                                <>
+                                                    <FiSkipBack /> Cancelar c/ antecedência
+                                                </>
+                                            )}
                                         </button>
                                     )}
                                 </div>

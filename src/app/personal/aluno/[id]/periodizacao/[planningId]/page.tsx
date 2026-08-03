@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
+import { FiArrowLeft } from 'react-icons/fi';
 import {
     getMacrocycle,
     updateMacrocycle,
@@ -285,7 +286,7 @@ export default function PeriodizacaoDetalhePage() {
                         <p className={s.headerSub}>{macro.goal}</p>
                     </div>
                     <button className={s.btnBack} onClick={() => router.back()}>
-                        ← Voltar
+                        <FiArrowLeft /> Voltar
                     </button>
                 </div>
 

@@ -1,5 +1,6 @@
 'use client';
 import React, { useEffect, useMemo, useState } from 'react';
+import { FiCheck } from 'react-icons/fi';
 import {
     AUTOREGULATION_POLICY_RANGES,
     AutoregulationPolicy,
@@ -280,7 +281,7 @@ export default function AutoregulationPolicySettings() {
             {error && <p className={styles.error}>{error}</p>}
             {success && (
                 <p className={styles.successMsg}>
-                    ✓ Parâmetros de autorregulação salvos com sucesso!
+                    <FiCheck /> Parâmetros de autorregulação salvos com sucesso!
                 </p>
             )}
             <button

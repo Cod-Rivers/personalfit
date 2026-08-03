@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { FiCheckCircle, FiBell } from 'react-icons/fi';
 import {
     getRetentionOverview,
     type RetentionOverview,
@@ -27,7 +28,7 @@ export default function RetentionTab() {
         setRemindingId(studentId);
         try {
             await sendStudentReminder(studentId, 'workout');
-            alert('Lembrete enviado! 💪');
+            alert('Lembrete enviado!');
         } catch {
             alert('Não foi possível enviar o lembrete agora.');
         } finally {
@@ -97,8 +98,9 @@ export default function RetentionTab() {
 
             {atRisk.length === 0 ? (
                 <div className={s.empty}>
-                    🎉 Nenhum aluno ativo está parado há mais de{' '}
-                    {data.risk_days} dias. Bom trabalho!
+                    <FiCheckCircle className={s.emptyIcon} /> Nenhum aluno
+                    ativo está parado há mais de {data.risk_days} dias. Bom
+                    trabalho!
                 </div>
             ) : (
                 <div className={s.list}>
@@ -131,9 +133,13 @@ export default function RetentionTab() {
                                     onClick={() => remind(st.id)}
                                     disabled={remindingId === st.id}
                                 >
-                                    {remindingId === st.id
-                                        ? 'Enviando…'
-                                        : '🔔 Lembrete'}
+                                    {remindingId === st.id ? (
+                                        'Enviando…'
+                                    ) : (
+                                        <>
+                                            <FiBell /> Lembrete
+                                        </>
+                                    )}
                                 </button>
                                 <button
                                     className={s.btn}

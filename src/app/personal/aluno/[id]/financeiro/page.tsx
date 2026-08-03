@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { FiDollarSign, FiArrowLeft, FiCheck } from 'react-icons/fi';
 import {
     listInvoices,
     createInvoice,
@@ -90,13 +91,13 @@ export default function StudentFinanceiroPage() {
             <div className={s.container}>
                 <div className={s.header}>
                     <div>
-                        <h1 className={s.headerTitle}>💰 Financeiro do aluno</h1>
+                        <h1 className={s.headerTitle}><FiDollarSign /> Financeiro do aluno</h1>
                         <p className={s.headerSub}>
                             Controle de mensalidades, vencimentos e pagamentos
                         </p>
                     </div>
                     <button className={s.btnBack} onClick={() => router.back()}>
-                        ← Voltar
+                        <FiArrowLeft /> Voltar
                     </button>
                 </div>
 
@@ -227,7 +228,7 @@ export default function StudentFinanceiroPage() {
                                             className={s.btn}
                                             onClick={() => pay(inv.id)}
                                         >
-                                            ✓ Marcar pago
+                                            <FiCheck /> Marcar pago
                                         </button>
                                     )}
                                     <button

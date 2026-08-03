@@ -1,6 +1,7 @@
 ﻿'use client';
 import React, { useEffect, useState, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
+import { FiBell, FiHelpCircle, FiMoon, FiSun, FiArrowLeft } from 'react-icons/fi';
 
 import './styles.css';
 import { IUser } from './types';
@@ -345,7 +346,7 @@ const Header: React.FC = () => {
                                 onClick={() => setShowNotif(!showNotif)}
                                 aria-label="Notificações"
                             >
-                                🔔
+                                <FiBell />
                                 {unreadCount > 0 && (
                                     <span className="notif-badge">
                                         {unreadCount}
@@ -435,9 +436,13 @@ const Header: React.FC = () => {
                                 }
                                 className="btn-luxe"
                             >
-                                {isOnStudentArea
-                                    ? '← Voltar ao Painel'
-                                    : 'Ver como Aluno'}
+                                {isOnStudentArea ? (
+                                    <>
+                                        <FiArrowLeft /> Voltar ao Painel
+                                    </>
+                                ) : (
+                                    'Ver como Aluno'
+                                )}
                             </Link>
                         )}
                         <Link
@@ -446,7 +451,7 @@ const Header: React.FC = () => {
                             aria-label="Central de Ajuda"
                             title="Central de Ajuda"
                         >
-                            ❓
+                            <FiHelpCircle />
                         </Link>
                         <button
                             className="btn-icon-luxe"
@@ -454,7 +459,7 @@ const Header: React.FC = () => {
                             onClick={toggleTheme}
                             aria-label="Alternar tema"
                         >
-                            {theme === 'light' ? '🌙' : '☀️'}
+                            {theme === 'light' ? <FiMoon /> : <FiSun />}
                         </button>
                         <button
                             className="btn-luxe"

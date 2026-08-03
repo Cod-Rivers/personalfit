@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { createNewTemplate } from '@/libs/planningService';
+import { FiArrowLeft } from 'react-icons/fi';
 import s from './novo.module.css';
 
 const schema = z.object({
@@ -59,7 +60,7 @@ export default function NovoTemplatePage() {
                         className={s.btnBack}
                         onClick={() => router.back()}
                     >
-                        ← Voltar
+                        <FiArrowLeft /> Voltar
                     </button>
                 </div>
 

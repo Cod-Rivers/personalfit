@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { FiGlobe, FiStar, FiX } from 'react-icons/fi';
 import {
     searchExercises,
     getMyExercises,
@@ -84,9 +85,20 @@ export default function ExercisePicker({ onPick, onClose }: Props) {
                             fontSize: '0.78rem',
                             fontWeight: 600,
                             cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 5,
                         }}
                     >
-                        {t === 'all' ? '🌐 Globais' : '⭐ Meus exercícios'}
+                        {t === 'all' ? (
+                            <>
+                                <FiGlobe /> Globais
+                            </>
+                        ) : (
+                            <>
+                                <FiStar /> Meus exercícios
+                            </>
+                        )}
                     </button>
                 ))}
                 <button
@@ -100,9 +112,11 @@ export default function ExercisePicker({ onPick, onClose }: Props) {
                         cursor: 'pointer',
                         fontSize: '1rem',
                         lineHeight: 1,
+                        display: 'inline-flex',
+                        alignItems: 'center',
                     }}
                 >
-                    ✕
+                    <FiX />
                 </button>
             </div>
 

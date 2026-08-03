@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { createMacrocycle } from '@/libs/planningService';
+import { FiArrowLeft } from 'react-icons/fi';
 import s from './novo.module.css';
 
 const schema = z
@@ -77,7 +78,7 @@ export default function NovoPeriodizacaoPage() {
                 <div className={s.header}>
                     <h1 className={s.headerTitle}>Novo Macrociclo</h1>
                     <button className={s.btnBack} onClick={() => router.back()}>
-                        ← Voltar
+                        <FiArrowLeft /> Voltar
                     </button>
                 </div>
 

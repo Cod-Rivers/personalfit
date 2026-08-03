@@ -38,6 +38,7 @@ import {
     formatTechniqueSummary,
     type TechniqueParamKey,
 } from '@/libs/trainingTechniques';
+import { FiMove, FiCopy, FiX, FiLink } from 'react-icons/fi';
 import s from '../builder.module.css';
 
 /** Mapeia a chave genérica do catálogo (rounds/round_reduction_pct/...) para
@@ -642,9 +643,13 @@ export default function TrainingsEditor({
                             }
                             onClick={() => setReorderTrainingsMode((v) => !v)}
                         >
-                            {reorderTrainingsMode
-                                ? 'Concluir ordenação'
-                                : '⇅ Ordenar treinos'}
+                            {reorderTrainingsMode ? (
+                                'Concluir ordenação'
+                            ) : (
+                                <>
+                                    <FiMove /> Ordenar treinos
+                                </>
+                            )}
                         </button>
                     )}
                     <button
@@ -755,7 +760,7 @@ export default function TrainingsEditor({
                             title="Duplicar treino"
                             onClick={() => onDuplicateTraining(active._id)}
                         >
-                            🧬
+                            <FiCopy />
                         </button>
                         <button
                             type="button"
@@ -772,7 +777,7 @@ export default function TrainingsEditor({
                                 onRemoveTraining(active._id);
                             }}
                         >
-                            ✕
+                            <FiX />
                         </button>
                     </div>
 
@@ -808,9 +813,13 @@ export default function TrainingsEditor({
                                             setReorderExercisesMode((v) => !v)
                                         }
                                     >
-                                        {reorderExercisesMode
-                                            ? 'Concluir ordenação'
-                                            : '⇅ Ordenar exercícios'}
+                                        {reorderExercisesMode ? (
+                                            'Concluir ordenação'
+                                        ) : (
+                                            <>
+                                                <FiMove /> Ordenar exercícios
+                                            </>
+                                        )}
                                     </button>
                                 )}
                             </div>
@@ -951,7 +960,7 @@ export default function TrainingsEditor({
                                                                         );
                                                                     }}
                                                                 >
-                                                                    ✕
+                                                                    <FiX />
                                                                 </button>
                                                             </div>
 
@@ -1522,7 +1531,7 @@ export default function TrainingsEditor({
                                                                                 )
                                                                             }
                                                                         >
-                                                                            🔗
+                                                                            <FiLink />
                                                                             Agrupar
                                                                             com
                                                                             exercício
@@ -1599,7 +1608,7 @@ export default function TrainingsEditor({
                                                                         s.comboChip
                                                                     }
                                                                 >
-                                                                    🔗{' '}
+                                                                    <FiLink />{' '}
                                                                     {comboGroupLabel(
                                                                         group.length,
                                                                         group[0]

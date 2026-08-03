@@ -100,6 +100,10 @@
     font-weight: 700;
     cursor: pointer;
     margin-top: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
 
 .btn:disabled {

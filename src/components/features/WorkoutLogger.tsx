@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback } from 'react';
 import axios from 'axios';
-import { FiX, FiCheck, FiAlertCircle, FiLoader } from 'react-icons/fi';
+import { FiX, FiCheck, FiAlertCircle, FiLoader, FiLink } from 'react-icons/fi';
 import {
     TrainingResponse,
     MesocycleResponse,
@@ -518,8 +518,8 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                                 key={members[0].exerciseId}
                                 className={`${s.exerciseBlock} ${s.comboBlock}`}
                             >
-                                <h3>
-                                    🔗{' '}
+                                <h3 style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <FiLink />{' '}
                                     {comboGroupLabel(
                                         block.length,
                                         members[0].groupTechnique,

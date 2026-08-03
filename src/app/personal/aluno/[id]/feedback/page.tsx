@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { FiMessageCircle, FiArrowLeft } from 'react-icons/fi';
 import {
     getStudentFeedback,
     type StudentFeedback,
@@ -62,14 +63,14 @@ export default function StudentFeedbackPage() {
             <div className={s.container}>
                 <div className={s.header}>
                     <div>
-                        <h1 className={s.headerTitle}>💬 Feedback do aluno</h1>
+                        <h1 className={s.headerTitle}><FiMessageCircle /> Feedback do aluno</h1>
                         <p className={s.headerSub}>
                             Avaliações dos ciclos e esforço percebido (RPE) nas
                             sessões
                         </p>
                     </div>
                     <button className={s.btnBack} onClick={() => router.back()}>
-                        ← Voltar
+                        <FiArrowLeft /> Voltar
                     </button>
                 </div>
 

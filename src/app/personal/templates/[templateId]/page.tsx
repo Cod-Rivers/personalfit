@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { FiArrowLeft } from 'react-icons/fi';
 import {
     getTemplate,
     updateTemplate,
@@ -216,7 +217,7 @@ export default function TemplateDetalhePage() {
                         <p className={s.headerSub}>{macro.goal}</p>
                     </div>
                     <button className={s.btnBack} onClick={() => router.back()}>
-                        ← Voltar
+                        <FiArrowLeft /> Voltar
                     </button>
                 </div>
 

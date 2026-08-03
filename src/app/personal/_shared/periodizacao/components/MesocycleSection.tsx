@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { FiEdit3, FiCopy, FiTrash2, FiChevronRight } from 'react-icons/fi';
 import type { MesocycleResponse } from '@/libs/planningService';
 import { formatDate, weekdayLabel } from '../lib/mesocycleTransforms';
 import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
@@ -71,7 +72,7 @@ export default function MesocycleSection({
                             onEdit();
                         }}
                     >
-                        ✏️ Editar
+                        <FiEdit3 /> Editar
                     </button>
                     {onDuplicate && (
                         <button
@@ -81,7 +82,7 @@ export default function MesocycleSection({
                                 onDuplicate();
                             }}
                         >
-                            🧬 Duplicar
+                            <FiCopy /> Duplicar
                         </button>
                     )}
                     <button
@@ -95,10 +96,10 @@ export default function MesocycleSection({
                             onDelete();
                         }}
                     >
-                        🗑️ Excluir
+                        <FiTrash2 /> Excluir
                     </button>
                     <span className={open ? s.mesoToggleOpen : s.mesoToggle}>
-                        ▶
+                        <FiChevronRight />
                     </span>
                 </div>
             </div>
@@ -112,7 +113,7 @@ export default function MesocycleSection({
                                 fontSize: '0.85rem',
                             }}
                         >
-                            Nenhum treino cadastrado. Clique em ✏️ Editar para
+                            Nenhum treino cadastrado. Clique em &quot;Editar&quot; para
                             adicionar.
                         </p>
                     ) : (

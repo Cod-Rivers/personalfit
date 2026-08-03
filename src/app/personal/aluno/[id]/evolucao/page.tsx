@@ -1,5 +1,6 @@
 'use client';
 import { useRouter, useParams } from 'next/navigation';
+import { FiTrendingUp, FiArrowLeft } from 'react-icons/fi';
 import EvolutionTimeline from '@/components/features/EvolutionTimeline';
 import TrainingZonesCalculator from '@/components/features/TrainingZonesCalculator';
 import s from '../periodizacao/periodizacao.module.css';
@@ -14,11 +15,11 @@ export default function PersonalEvolutionPage() {
             <div className={s.container}>
                 <div className={s.header}>
                     <div>
-                        <h1 className={s.headerTitle}>📈 Evolução</h1>
+                        <h1 className={s.headerTitle}><FiTrendingUp /> Evolução</h1>
                         <p className={s.headerSub}>Fotos e avaliação física do aluno ao longo do tempo</p>
                     </div>
                     <button className={s.btnBack} onClick={() => router.back()}>
-                        ← Voltar
+                        <FiArrowLeft /> Voltar
                     </button>
                 </div>
 

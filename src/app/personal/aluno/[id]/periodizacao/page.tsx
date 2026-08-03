@@ -2,6 +2,14 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import {
+    FiClipboard,
+    FiArrowLeft,
+    FiFolder,
+    FiChevronRight,
+    FiEdit3,
+    FiTrash2,
+} from 'react-icons/fi';
+import {
     getStudentPlannings,
     deleteMacrocycle,
     saveAsTemplate,
@@ -243,7 +251,7 @@ export default function PeriodizacaoPage() {
                 <div className={s.container}>
                     <div className={s.header}>
                         <div>
-                            <h1 className={s.headerTitle}>📋 Periodização</h1>
+                            <h1 className={s.headerTitle}><FiClipboard /> Periodização</h1>
                             <p className={s.headerSub}>Macrociclos do aluno</p>
                         </div>
                         <div style={{ display: 'flex', gap: 10 }}>
@@ -251,13 +259,13 @@ export default function PeriodizacaoPage() {
                                 className={s.btnBack}
                                 onClick={() => router.back()}
                             >
-                                ← Voltar
+                                <FiArrowLeft /> Voltar
                             </button>
                             <button
                                 className={s.btnSecondary}
                                 onClick={openTemplateModal}
                             >
-                                📂 De Modelo
+                                <FiFolder /> De Modelo
                             </button>
                             <button
                                 className={s.btnAdd}
@@ -336,7 +344,7 @@ export default function PeriodizacaoPage() {
                                     </div>
                                     <div className={s.cardActions}>
                                         <span className={s.btnAction}>
-                                            Ver detalhes →
+                                            Ver detalhes <FiChevronRight />
                                         </span>
                                         <button
                                             className={s.btnSecondary}
@@ -344,7 +352,7 @@ export default function PeriodizacaoPage() {
                                                 openEditModal(e, m)
                                             }
                                         >
-                                            ✏️ Editar
+                                            <FiEdit3 /> Editar
                                         </button>
                                         <button
                                             className={s.btnSecondary}
@@ -353,9 +361,13 @@ export default function PeriodizacaoPage() {
                                                 handleSaveAsTemplate(e, m)
                                             }
                                         >
-                                            {savingTemplate === m.id
-                                                ? '...'
-                                                : '📋 Modelo'}
+                                            {savingTemplate === m.id ? (
+                                                '...'
+                                            ) : (
+                                                <>
+                                                    <FiClipboard /> Modelo
+                                                </>
+                                            )}
                                         </button>
                                         <button
                                             className={s.btnDanger}
@@ -364,9 +376,13 @@ export default function PeriodizacaoPage() {
                                                 handleDelete(e, m.id)
                                             }
                                         >
-                                            {deleting === m.id
-                                                ? '...'
-                                                : '🗑️ Excluir'}
+                                            {deleting === m.id ? (
+                                                '...'
+                                            ) : (
+                                                <>
+                                                    <FiTrash2 /> Excluir
+                                                </>
+                                            )}
                                         </button>
                                     </div>
                                 </div>
@@ -465,7 +481,11 @@ export default function PeriodizacaoPage() {
             <Modal
                 open={showTemplateModal}
                 onClose={() => setShowTemplateModal(false)}
-                title="📂 Aplicar Modelo de Macrociclo"
+                title={
+                    <>
+                        <FiFolder /> Aplicar Modelo de Macrociclo
+                    </>
+                }
                 footer={
                     <button
                         className="btn btn-secondary"
@@ -487,7 +507,7 @@ export default function PeriodizacaoPage() {
                     templates.length === 0 && (
                         <p className="text-muted text-center py-3">
                             Nenhum modelo salvo ainda. Use o
-                            botão &quot;📋 Modelo&quot; em um
+                            botão &quot;Modelo&quot; em um
                             macrociclo para criar o primeiro.
                         </p>
                     )}
@@ -541,7 +561,7 @@ export default function PeriodizacaoPage() {
                                         {deletingTemplate ===
                                         t.id
                                             ? '...'
-                                            : '🗑️'}
+                                            : <FiTrash2 />}
                                     </button>
                                 </div>
                             </li>

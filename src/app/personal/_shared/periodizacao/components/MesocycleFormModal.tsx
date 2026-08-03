@@ -31,6 +31,7 @@ import TrainingsEditor, {
     type BulkPrescriptionFields,
 } from './TrainingsEditor';
 import Modal from '@/components/system/Modal';
+import { FiStar, FiChevronDown, FiAlertTriangle } from 'react-icons/fi';
 import s from '../builder.module.css';
 
 const MESOCYCLE_FORM_ID = 'mesocycle-form-modal';
@@ -629,7 +630,11 @@ export default function MesocycleFormModal({
                                                 }
                                             >
                                                 {w} sem
-                                                {w === 4 ? ' ⭐' : ''}
+                                                {w === 4 ? (
+                                                    <FiStar style={{ fill: 'currentColor' }} />
+                                                ) : (
+                                                    ''
+                                                )}
                                             </button>
                                         );
                                     })}
@@ -731,7 +736,7 @@ export default function MesocycleFormModal({
                                     : s.collapsibleChevron
                             }
                         >
-                            ▾
+                            <FiChevronDown />
                         </span>
                     </button>
 
@@ -742,7 +747,7 @@ export default function MesocycleFormModal({
                                     className="alert alert-warning py-2 mb-3"
                                     style={{ fontSize: '0.8rem' }}
                                 >
-                                    ⚠️ Fase com {durationWeeksWatch} semanas e
+                                    <FiAlertTriangle /> Fase com {durationWeeksWatch} semanas e
                                     nenhuma marcada como deload. Blocos longos
                                     sem semana de descarga aumentam o risco de
                                     overtraining — considere marcar uma semana

@@ -36,6 +36,9 @@
     font-size: 1.1rem;
     font-weight: 700;
     color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .closeBtn {
@@ -48,6 +51,9 @@
     padding: 6px;
     border-radius: 8px;
     transition: background 0.15s, color 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 .closeBtn:hover {
     background: var(--surface-2);

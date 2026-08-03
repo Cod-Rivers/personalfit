@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { FiFileText, FiVideo } from 'react-icons/fi';
 import { MUSCLE_GROUPS, type ExerciseLibraryItem } from '@/libs/planningService';
 import { usePersonalExercises } from '@/hooks/usePersonalExercises';
 import VideoUploadModal from '@/components/features/VideoUploadModal';
@@ -75,7 +76,7 @@ export default function ExercisesTab({ planType = 'free' }: ExercisesTabProps) {
                 <p className={s.loading}>Carregando...</p>
             ) : myExercises.length === 0 ? (
                 <div className={s.empty}>
-                    <div className={s.emptyIcon}>📝</div>
+                    <div className={s.emptyIcon}><FiFileText /></div>
                     <h3 className={s.emptyTitle}>
                         Nenhum exercício personalizado
                     </h3>
@@ -113,7 +114,7 @@ export default function ExercisesTab({ planType = 'free' }: ExercisesTabProps) {
                                     className={s.btnAction}
                                     title="Definir vídeo/mídia"
                                 >
-                                    🎥 Vídeo
+                                    <FiVideo /> Vídeo
                                 </button>
                                 <button
                                     onClick={() => openExEdit(ex)}

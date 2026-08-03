@@ -2,6 +2,15 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
+import {
+    FiImage,
+    FiMusic,
+    FiVideo,
+    FiActivity,
+    FiCheck,
+    FiSave,
+    FiChevronRight,
+} from 'react-icons/fi';
 import { ExerciseLog } from './types';
 import styles from './ExerciseDetailCard.module.css';
 import Modal from '@/components/system/Modal';
@@ -504,13 +513,15 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                 />
                             ) : exercise.video_url && isExternalRedirectOnly ? (
                                 <div className={styles.thumbnailPlaceholder}>
-                                    {isInstagramUrl(exercise.video_url)
-                                        ? '📷'
-                                        : '🎵'}
+                                    {isInstagramUrl(exercise.video_url) ? (
+                                        <FiImage />
+                                    ) : (
+                                        <FiMusic />
+                                    )}
                                 </div>
                             ) : (
                                 <div className={styles.thumbnailPlaceholder}>
-                                    {exercise.video_url ? '🎬' : '🏋️'}
+                                    {exercise.video_url ? <FiVideo /> : <FiActivity />}
                                 </div>
                             )}
                         </div>

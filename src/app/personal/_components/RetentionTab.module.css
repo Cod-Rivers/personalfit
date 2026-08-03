@@ -118,6 +118,9 @@
     cursor: pointer;
     font-size: 0.82rem;
     white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
 }
 .btn:disabled {
     opacity: 0.5;
@@ -131,6 +134,16 @@
     background: var(--surface-1);
     border: 1px dashed var(--border-subtle);
     border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.emptyIcon {
+    flex-shrink: 0;
+    color: var(--mint);
 }
 
 .loading {

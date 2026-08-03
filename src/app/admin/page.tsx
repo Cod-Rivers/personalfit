@@ -11,6 +11,31 @@ import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
 import ExerciseDetailCard from '@/components/features/ExerciseDetailCard';
 import type { ExerciseLog } from '@/components/features/types';
 import Modal from '@/components/system/Modal';
+import {
+    FiMenu,
+    FiSettings,
+    FiBarChart2,
+    FiClipboard,
+    FiStar,
+    FiActivity,
+    FiBell,
+    FiFileText,
+    FiUsers,
+    FiSpeaker,
+    FiShare2,
+    FiLayers,
+    FiTrendingUp,
+    FiHeart,
+    FiDownload,
+    FiX,
+    FiCheck,
+    FiAward,
+    FiUpload,
+    FiLink,
+    FiChevronLeft,
+    FiChevronRight,
+} from 'react-icons/fi';
+import type { IconType } from 'react-icons';
 
 /**
  * Abas raramente abertas do admin — carregadas sob demanda (client-only,
@@ -93,44 +118,44 @@ export default function AdminDashboard() {
     const allNavItems: {
         key: Section;
         label: string;
-        icon: string;
+        icon: IconType;
         fullAdminOnly?: boolean;
     }[] = [
-        { key: 'metrics', label: 'Dashboard', icon: '📊', fullAdminOnly: true },
-        { key: 'templates', label: 'Templates', icon: '📋' },
-        { key: 'ratings', label: 'Avaliações', icon: '⭐' },
-        { key: 'exercises', label: 'Exercícios', icon: '🏋️' },
+        { key: 'metrics', label: 'Dashboard', icon: FiBarChart2, fullAdminOnly: true },
+        { key: 'templates', label: 'Templates', icon: FiClipboard },
+        { key: 'ratings', label: 'Avaliações', icon: FiStar },
+        { key: 'exercises', label: 'Exercícios', icon: FiActivity },
         {
             key: 'notifications',
             label: 'Notificações',
-            icon: '🔔',
+            icon: FiBell,
             fullAdminOnly: true,
         },
-        { key: 'logs', label: 'Logs', icon: '📝', fullAdminOnly: true },
-        { key: 'users', label: 'Usuários', icon: '👥', fullAdminOnly: true },
-        { key: 'ads', label: 'Anúncios', icon: '📢', fullAdminOnly: true },
+        { key: 'logs', label: 'Logs', icon: FiFileText, fullAdminOnly: true },
+        { key: 'users', label: 'Usuários', icon: FiUsers, fullAdminOnly: true },
+        { key: 'ads', label: 'Anúncios', icon: FiSpeaker, fullAdminOnly: true },
         {
             key: 'referral-partners',
             label: 'Parceiros de Indicação',
-            icon: '🤝',
+            icon: FiShare2,
             fullAdminOnly: true,
         },
         {
             key: 'protocols',
             label: 'Protocolos de Treino',
-            icon: '🏋️‍♂️',
+            icon: FiLayers,
             fullAdminOnly: true,
         },
         {
             key: 'relatorios',
             label: 'Relatórios BI',
-            icon: '📈',
+            icon: FiTrendingUp,
             fullAdminOnly: true,
         },
         {
             key: 'diagnostics',
             label: 'Diagnóstico',
-            icon: '🩺',
+            icon: FiHeart,
             fullAdminOnly: true,
         },
     ];
@@ -147,9 +172,11 @@ export default function AdminDashboard() {
                     aria-label="Abrir menu"
                     aria-expanded={menuOpen}
                 >
-                    ☰
+                    <FiMenu />
                 </button>
-                <h1 className={s.mobileTopbarTitle}>⚙️ Admin</h1>
+                <h1 className={s.mobileTopbarTitle}>
+                    <FiSettings className={s.titleIcon} /> Admin
+                </h1>
             </header>
 
             {menuOpen && (
@@ -164,7 +191,9 @@ export default function AdminDashboard() {
                 className={`${s.sidebar} ${menuOpen ? s.sidebarOpen : ''}`}
             >
                 <div className={s.sidebarHeader}>
-                    <h2 className={s.sidebarTitle}>⚙️ Admin</h2>
+                    <h2 className={s.sidebarTitle}>
+                        <FiSettings className={s.titleIcon} /> Admin
+                    </h2>
                     <p className={s.sidebarSub}>
                         {user.name}
                         {!isFullAdmin && ' · Editor de Conteúdo'}
@@ -184,7 +213,7 @@ export default function AdminDashboard() {
                                 setMenuOpen(false);
                             }}
                         >
-                            {item.icon} {item.label}
+                            <item.icon className={s.navIcon} /> {item.label}
                         </li>
                     ))}
                 </ul>
@@ -249,7 +278,9 @@ function MetricsSection() {
     return (
         <>
             <div className={s.sectionHeader}>
-                <h1 className={s.sectionTitle}>📊 Dashboard</h1>
+                <h1 className={s.sectionTitle}>
+                    <FiBarChart2 className={s.titleIcon} /> Dashboard
+                </h1>
                 <div className={s.btnGroup}>
                     <button
                         onClick={() =>
@@ -257,7 +288,7 @@ function MetricsSection() {
                         }
                         className={s.btnOutline}
                     >
-                        📥 Exportar Usuários
+                        <FiDownload className={s.btnIcon} /> Exportar Usuários
                     </button>
                     <button
                         onClick={() =>
@@ -265,7 +296,7 @@ function MetricsSection() {
                         }
                         className={s.btnOutline}
                     >
-                        📥 Exportar Avaliações
+                        <FiDownload className={s.btnIcon} /> Exportar Avaliações
                     </button>
                 </div>
             </div>
@@ -448,7 +479,9 @@ function TemplatesSection({ canManageUsers }: { canManageUsers: boolean }) {
     return (
         <>
             <div className={s.sectionHeader}>
-                <h1 className={s.sectionTitle}>📋 Templates de Macrociclo</h1>
+                <h1 className={s.sectionTitle}>
+                    <FiClipboard className={s.titleIcon} /> Templates de Macrociclo
+                </h1>
                 <button
                     onClick={() => setShowCreate(true)}
                     className={s.btnPrimary}
@@ -491,7 +524,7 @@ function TemplatesSection({ canManageUsers }: { canManageUsers: boolean }) {
                     <p className={s.loading}>Carregando...</p>
                 ) : sortedTemplates.length === 0 ? (
                     <div className={s.empty}>
-                        <div className={s.emptyIcon}>📋</div>
+                        <div className={s.emptyIcon}><FiClipboard /></div>
                         <h3 className={s.emptyTitle}>
                             Nenhum template criado
                         </h3>
@@ -506,7 +539,12 @@ function TemplatesSection({ canManageUsers }: { canManageUsers: boolean }) {
                             <div className={s.cardHeader}>
                                 <div>
                                     <h3 className={s.cardTitle}>
-                                        {t.featured && '⭐ '}
+                                        {t.featured && (
+                                            <FiStar
+                                                className={s.featuredStar}
+                                                style={{ fill: 'currentColor' }}
+                                            />
+                                        )}{' '}
                                         {t.name}{' '}
                                         {t.created_by_admin ? (
                                             <span className={s.badgeInfo}>
@@ -552,9 +590,19 @@ function TemplatesSection({ canManageUsers }: { canManageUsers: boolean }) {
                                                 : 'Destacar na biblioteca pública'
                                         }
                                     >
-                                        {t.featured
-                                            ? '⭐ Destacado'
-                                            : '☆ Destacar'}
+                                        {t.featured ? (
+                                            <>
+                                                <FiStar
+                                                    className={s.btnIcon}
+                                                    style={{ fill: 'currentColor' }}
+                                                />{' '}
+                                                Destacado
+                                            </>
+                                        ) : (
+                                            <>
+                                                <FiStar className={s.btnIcon} /> Destacar
+                                            </>
+                                        )}
                                     </button>
                                     {!t.created_by_admin && (
                                         <button
@@ -563,7 +611,7 @@ function TemplatesSection({ canManageUsers }: { canManageUsers: boolean }) {
                                             className={`${s.btnDanger} ${s.btnSmall}`}
                                             title="Remove o ciclo da biblioteca pública; o personal pode reenviar para revisão editando-o novamente"
                                         >
-                                            ✕ Revogar
+                                            <FiX className={s.btnIcon} /> Revogar
                                         </button>
                                     )}
                                     {canManageUsers && (
@@ -589,7 +637,7 @@ function TemplatesSection({ canManageUsers }: { canManageUsers: boolean }) {
                 )
             ) : pending.length === 0 ? (
                 <div className={s.empty}>
-                    <div className={s.emptyIcon}>✅</div>
+                    <div className={s.emptyIcon}><FiCheck /></div>
                     <h3 className={s.emptyTitle}>
                         Nenhum template pendente
                     </h3>
@@ -638,14 +686,14 @@ function TemplatesSection({ canManageUsers }: { canManageUsers: boolean }) {
                                     disabled={busyId === t.id}
                                     className={`${s.btnPrimary} ${s.btnSmall}`}
                                 >
-                                    ✓ Aprovar
+                                    <FiCheck className={s.btnIcon} /> Aprovar
                                 </button>
                                 <button
                                     onClick={() => handleReject(t.id)}
                                     disabled={busyId === t.id}
                                     className={`${s.btnDanger} ${s.btnSmall}`}
                                 >
-                                    ✕ Rejeitar
+                                    <FiX className={s.btnIcon} /> Rejeitar
                                 </button>
                             </div>
                         </div>
@@ -811,13 +859,15 @@ function RatingsSection() {
     return (
         <>
             <div className={s.sectionHeader}>
-                <h1 className={s.sectionTitle}>⭐ Avaliações</h1>
+                <h1 className={s.sectionTitle}>
+                    <FiStar className={s.titleIcon} /> Avaliações
+                </h1>
             </div>
 
             {topRated.length > 0 && (
                 <>
-                    <h2 style={{ fontSize: '1.1rem', marginBottom: 16 }}>
-                        🏆 Mais Bem Avaliados
+                    <h2 style={{ fontSize: '1.1rem', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <FiAward /> Mais Bem Avaliados
                     </h2>
                     <div className={s.statsGrid}>
                         {topRated.map((t) => (
@@ -846,7 +896,7 @@ function RatingsSection() {
             </h2>
             {ratings.length === 0 ? (
                 <div className={s.empty}>
-                    <div className={s.emptyIcon}>⭐</div>
+                    <div className={s.emptyIcon}><FiStar /></div>
                     <h3 className={s.emptyTitle}>Nenhuma avaliação ainda</h3>
                     <p className={s.emptyText}>
                         As avaliações dos alunos aparecerão aqui.
@@ -1153,7 +1203,9 @@ function ExercisesSection() {
     return (
         <>
             <div className={s.sectionHeader}>
-                <h1 className={s.sectionTitle}>🏋️ Biblioteca de Exercícios</h1>
+                <h1 className={s.sectionTitle}>
+                    <FiActivity className={s.titleIcon} /> Biblioteca de Exercícios
+                </h1>
                 <button onClick={openCreate} className={s.btnPrimary}>
                     + Novo Exercício
                 </button>
@@ -1176,7 +1228,7 @@ function ExercisesSection() {
                 <p className={s.loading}>Carregando...</p>
             ) : exercises.length === 0 ? (
                 <div className={s.empty}>
-                    <div className={s.emptyIcon}>🏋️</div>
+                    <div className={s.emptyIcon}><FiActivity /></div>
                     <h3 className={s.emptyTitle}>
                         Nenhum exercício encontrado
                     </h3>
@@ -1347,7 +1399,7 @@ function ExercisesSection() {
                                     : s.btnOutline
                             }
                         >
-                            🔗 Link (YouTube/Vimeo/TikTok/Instagram)
+                            <FiLink className={s.btnIcon} /> Link (YouTube/Vimeo/TikTok/Instagram)
                         </button>
                         <button
                             type="button"
@@ -1358,7 +1410,7 @@ function ExercisesSection() {
                                     : s.btnOutline
                             }
                         >
-                            ⬆️ Upload de arquivo
+                            <FiUpload className={s.btnIcon} /> Upload de arquivo
                         </button>
                     </div>
                     {uploadMode === 'youtube' ? (
@@ -1548,7 +1600,9 @@ function NotificationsSection() {
     return (
         <>
             <div className={s.sectionHeader}>
-                <h1 className={s.sectionTitle}>🔔 Notificações</h1>
+                <h1 className={s.sectionTitle}>
+                    <FiBell className={s.titleIcon} /> Notificações
+                </h1>
                 <button
                     onClick={() => setShowForm(true)}
                     className={s.btnPrimary}
@@ -1561,7 +1615,7 @@ function NotificationsSection() {
                 <p className={s.loading}>Carregando...</p>
             ) : notifications.length === 0 ? (
                 <div className={s.empty}>
-                    <div className={s.emptyIcon}>🔔</div>
+                    <div className={s.emptyIcon}><FiBell /></div>
                     <h3 className={s.emptyTitle}>Nenhuma notificação</h3>
                     <p className={s.emptyText}>
                         Envie notificações para usuários.
@@ -1709,14 +1763,16 @@ function LogsSection() {
     return (
         <>
             <div className={s.sectionHeader}>
-                <h1 className={s.sectionTitle}>📝 Logs de Auditoria</h1>
+                <h1 className={s.sectionTitle}>
+                    <FiFileText className={s.titleIcon} /> Logs de Auditoria
+                </h1>
             </div>
 
             {loading ? (
                 <p className={s.loading}>Carregando...</p>
             ) : !data || data.logs.length === 0 ? (
                 <div className={s.empty}>
-                    <div className={s.emptyIcon}>📝</div>
+                    <div className={s.emptyIcon}><FiFileText /></div>
                     <h3 className={s.emptyTitle}>Nenhum log registrado</h3>
                 </div>
             ) : (
@@ -1768,7 +1824,7 @@ function LogsSection() {
                             className={s.btnOutline}
                             disabled={page <= 1}
                         >
-                            ← Anterior
+                            <FiChevronLeft className={s.btnIcon} /> Anterior
                         </button>
                         <span className={s.pageInfo}>
                             Página {data.page} de {data.total_pages}
@@ -1778,7 +1834,7 @@ function LogsSection() {
                             className={s.btnOutline}
                             disabled={page >= data.total_pages}
                         >
-                            Próxima →
+                            Próxima <FiChevronRight className={s.btnIcon} />
                         </button>
                     </div>
                 </>
@@ -1906,7 +1962,9 @@ function UsersSection({ currentUserId }: { currentUserId: string }) {
     return (
         <>
             <div className={s.sectionHeader}>
-                <h1 className={s.sectionTitle}>👥 Usuários</h1>
+                <h1 className={s.sectionTitle}>
+                    <FiUsers className={s.titleIcon} /> Usuários
+                </h1>
             </div>
 
             <div className={s.searchBar}>
@@ -1924,7 +1982,7 @@ function UsersSection({ currentUserId }: { currentUserId: string }) {
                 <p className={s.loading}>Carregando...</p>
             ) : filtered.length === 0 ? (
                 <div className={s.empty}>
-                    <div className={s.emptyIcon}>👥</div>
+                    <div className={s.emptyIcon}><FiUsers /></div>
                     <h3 className={s.emptyTitle}>Nenhum usuário encontrado</h3>
                 </div>
             ) : (
@@ -2223,7 +2281,7 @@ function RelatoriosSection() {
         <>
             <div className={s.sectionHeader}>
                 <h1 className={s.sectionTitle}>
-                    📈 Relatórios BI — Assinaturas
+                    <FiTrendingUp className={s.titleIcon} /> Relatórios BI — Assinaturas
                 </h1>
             </div>
 
@@ -2388,7 +2446,7 @@ function RelatoriosSection() {
                         </div>
                     ) : events.length === 0 ? (
                         <div className={s.empty}>
-                            <div className={s.emptyIcon}>📋</div>
+                            <div className={s.emptyIcon}><FiClipboard /></div>
                             <h3 className={s.emptyTitle}>
                                 Nenhum evento no período
                             </h3>
@@ -2449,7 +2507,7 @@ function RelatoriosSection() {
                                         disabled={page <= 1}
                                         onClick={() => setPage((p) => p - 1)}
                                     >
-                                        ← Anterior
+                                        <FiChevronLeft className={s.btnIcon} /> Anterior
                                     </button>
                                     <span
                                         style={{
@@ -2464,7 +2522,7 @@ function RelatoriosSection() {
                                         disabled={page >= totalPages}
                                         onClick={() => setPage((p) => p + 1)}
                                     >
-                                        Próxima →
+                                        Próxima <FiChevronRight className={s.btnIcon} />
                                     </button>
                                 </div>
                             )}
@@ -2579,7 +2637,7 @@ function DiagnosticsSection() {
         <>
             <div className={s.sectionHeader}>
                 <h1 className={s.sectionTitle}>
-                    🩺 Diagnóstico de Usuários
+                    <FiHeart className={s.titleIcon} /> Diagnóstico de Usuários
                 </h1>
             </div>
 

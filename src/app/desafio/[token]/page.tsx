@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import { FiAward, FiSend } from 'react-icons/fi';
 import {
     getPublicChallenge,
     joinChallenge,
@@ -109,7 +110,7 @@ export default function PublicChallengePage() {
 
                 {done ? (
                     <div className={s.success}>
-                        <div className={s.successIcon}>🎉</div>
+                        <div className={s.successIcon}><FiAward /></div>
                         <div className={s.successTitle}>Inscrição confirmada!</div>
                         <p className={s.successText}>
                             {challenge.personal_name} vai entrar em contato com
@@ -157,7 +158,13 @@ export default function PublicChallengePage() {
                             type="submit"
                             disabled={submitting}
                         >
-                            {submitting ? 'Enviando…' : 'Quero participar 🚀'}
+                            {submitting ? (
+                                'Enviando…'
+                            ) : (
+                                <>
+                                    Quero participar <FiSend />
+                                </>
+                            )}
                         </button>
                     </form>
                 ) : (

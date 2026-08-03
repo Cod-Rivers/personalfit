@@ -3,10 +3,11 @@
 /* Sidebar */
 .sidebar { width: 260px; background: var(--surface-1); border-right: 1px solid var(--border-subtle); padding: 24px 0; display: flex; flex-direction: column; position: fixed; top: 0; bottom: 0; overflow-y: auto; }
 .sidebarHeader { padding: 0 20px 20px; border-bottom: 1px solid var(--border-subtle); margin-bottom: 12px; }
-.sidebarTitle { margin: 0; font-size: 1.2rem; color: var(--mint); text-shadow: 0 0 10px rgba(61,255,208,0.3); }
+.sidebarTitle { margin: 0; font-size: 1.2rem; color: var(--mint); text-shadow: 0 0 10px rgba(61,255,208,0.3); display: flex; align-items: center; gap: 8px; }
 .sidebarSub { margin: 4px 0 0; font-size: 0.8rem; color: var(--text-muted); }
 .navList { list-style: none; padding: 0; margin: 0; flex: 1; }
-.navItem { padding: 12px 20px; cursor: pointer; font-size: 0.9rem; color: var(--text-muted); transition: background 0.2s, color 0.2s; border-left: 3px solid transparent; }
+.navItem { padding: 12px 20px; cursor: pointer; font-size: 0.9rem; color: var(--text-muted); transition: background 0.2s, color 0.2s; border-left: 3px solid transparent; display: flex; align-items: center; gap: 10px; }
+.navIcon { flex-shrink: 0; width: 16px; height: 16px; opacity: 0.85; }
 .navItem:hover { background: rgba(61,255,208,0.07); color: var(--text-primary); }
 .navItemActive { composes: navItem; background: rgba(61,255,208,0.1); color: var(--mint); border-left-color: var(--mint); font-weight: 600; }
 .sidebarFooter { padding: 16px 20px; border-top: 1px solid var(--border-subtle); }
@@ -18,7 +19,10 @@
 
 /* Section header */
 .sectionHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
-.sectionTitle { margin: 0; font-size: 1.4rem; }
+.sectionTitle { margin: 0; font-size: 1.4rem; display: flex; align-items: center; gap: 10px; }
+.titleIcon { flex-shrink: 0; opacity: 0.85; }
+.btnIcon { flex-shrink: 0; vertical-align: -2px; margin-right: 2px; }
+.featuredStar { flex-shrink: 0; vertical-align: -2px; color: var(--amber); }
 
 /* Stats Grid */
 .statsGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 32px; }
@@ -142,7 +146,7 @@
         border-radius: 8px;
         cursor: pointer;
     }
-    .mobileTopbarTitle { margin: 0; font-size: 1.05rem; color: var(--mint); }
+    .mobileTopbarTitle { margin: 0; font-size: 1.05rem; color: var(--mint); display: flex; align-items: center; gap: 8px; }
 
     /* Sidebar becomes an off-canvas drawer */
     .sidebar {

@@ -1,5 +1,6 @@
 'use client';
 import { useRouter, useParams } from 'next/navigation';
+import { FiCoffee, FiArrowLeft } from 'react-icons/fi';
 import MealPlanEditor from '@/components/features/MealPlanEditor';
 import s from '../periodizacao/periodizacao.module.css';
 
@@ -13,11 +14,11 @@ export default function PersonalMealPlanPage() {
             <div className={s.container}>
                 <div className={s.header}>
                     <div>
-                        <h1 className={s.headerTitle}>🍽️ Plano Alimentar</h1>
+                        <h1 className={s.headerTitle}><FiCoffee /> Plano Alimentar</h1>
                         <p className={s.headerSub}>Registro e acompanhamento do plano de alimentação do aluno</p>
                     </div>
                     <button className={s.btnBack} onClick={() => router.back()}>
-                        ← Voltar
+                        <FiArrowLeft /> Voltar
                     </button>
                 </div>
 

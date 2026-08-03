@@ -2,6 +2,17 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import {
+    FiGlobe,
+    FiStar,
+    FiSettings,
+    FiClipboard,
+    FiEdit3,
+    FiCopy,
+    FiTrash2,
+    FiArrowLeft,
+    FiBookOpen,
+} from 'react-icons/fi';
 import { usePersonalTemplates } from '@/hooks/usePersonalTemplates';
 import type { Student } from '@/hooks/usePersonalStudents';
 import type { MacrocycleResponse } from '@/libs/planningService';
@@ -102,12 +113,12 @@ export default function CiclosTab({ view, students, planType = 'free', onBack }:
                         </span>
                         {isPublic && tpl.is_public && (
                             <span className={s.badgePublic} title="Público">
-                                🌐
+                                <FiGlobe />
                             </span>
                         )}
                         {tpl.featured && (
                             <span className={s.badgePublic} title="Destaque">
-                                ⭐
+                                <FiStar style={{ fill: 'currentColor' }} />
                             </span>
                         )}
                         {!isPublic && tpl.is_public && (
@@ -156,14 +167,14 @@ export default function CiclosTab({ view, students, planType = 'free', onBack }:
                             }
                             className={s.btnEdit}
                         >
-                            🛠 Configurar treinos
+                            <FiSettings /> Configurar treinos
                         </button>
                     )}
                     <button
                         onClick={() => openApply(tpl)}
                         className={s.btnApply}
                     >
-                        📋 Aplicar
+                        <FiClipboard /> Aplicar
                     </button>
                     {!isPublic && (
                         <>
@@ -171,22 +182,26 @@ export default function CiclosTab({ view, students, planType = 'free', onBack }:
                                 onClick={() => openEdit(tpl)}
                                 className={s.btnCancel}
                             >
-                                ✏️ Editar
+                                <FiEdit3 /> Editar
                             </button>
                             <button
                                 onClick={() => duplicateTpl(tpl)}
                                 disabled={duplicatingId === tpl.id}
                                 className={s.btnCancel}
                             >
-                                {duplicatingId === tpl.id
-                                    ? 'Duplicando...'
-                                    : '🧬 Duplicar'}
+                                {duplicatingId === tpl.id ? (
+                                    'Duplicando...'
+                                ) : (
+                                    <>
+                                        <FiCopy /> Duplicar
+                                    </>
+                                )}
                             </button>
                             <button
                                 onClick={() => openDelete(tpl)}
                                 className={s.btnCancel}
                             >
-                                🗑 Remover
+                                <FiTrash2 /> Remover
                             </button>
                         </>
                     )}
@@ -200,13 +215,17 @@ export default function CiclosTab({ view, students, planType = 'free', onBack }:
         <>
             <div className={s.toolbar}>
                 <h2 className={s.sectionTitle}>
-                    {isPublic
-                        ? '🌐 Biblioteca Pública'
-                        : 'Minha Periodização / Treinos'}
+                    {isPublic ? (
+                        <>
+                            <FiGlobe /> Biblioteca Pública
+                        </>
+                    ) : (
+                        'Minha Periodização / Treinos'
+                    )}
                 </h2>
                 {isPublic ? (
                     <button onClick={onBack} className={s.btnCancel}>
-                        ← Voltar aos Próprios
+                        <FiArrowLeft /> Voltar aos Próprios
                     </button>
                 ) : (
                     <button
@@ -245,7 +264,7 @@ export default function CiclosTab({ view, students, planType = 'free', onBack }:
                 </p>
             ) : templates.length === 0 ? (
                 <div className={s.empty}>
-                    <div className={s.emptyIcon}>{isPublic ? '🌐' : '📚'}</div>
+                    <div className={s.emptyIcon}>{isPublic ? <FiGlobe /> : <FiBookOpen />}</div>
                     <h3 className={s.emptyTitle}>
                         {isPublic
                             ? 'Nenhum ciclo público disponível'

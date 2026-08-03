@@ -16,7 +16,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiEdit2 } from 'react-icons/fi';
+import { FiArrowLeft, FiEdit2 } from 'react-icons/fi';
 import { getStudentHomeRoute, getUser } from '@/libs/session';
 import { getLinkedShowcase, Showcase } from '@/libs/showcaseService';
 import { showcaseThemeStyle } from '@/libs/showcaseThemes';
@@ -213,6 +213,23 @@ export default function VitrinePage() {
                     <div className={styles.coverScrim} />
 
                     <div className={styles.coverTop}>
+                        {/*
+                         * Só o personal tem para onde voltar: ele chega aqui
+                         * pelo "Minha Página" do painel. Para o aluno esta É a
+                         * tela inicial depois do login — um "voltar" ali não
+                         * teria destino.
+                         */}
+                        {canEdit && (
+                            <button
+                                type="button"
+                                className={styles.backBtn}
+                                onClick={() => router.push('/personal')}
+                                title="Voltar ao painel"
+                            >
+                                <FiArrowLeft size={15} />
+                                <span>Voltar</span>
+                            </button>
+                        )}
                         {canEdit && (
                             <button
                                 type="button"
@@ -407,7 +424,12 @@ export default function VitrinePage() {
                             className={styles.cta}
                             onClick={goToTreinos}
                         >
-                            Acessar meus treinos
+                            {/* O destino já muda por papel (painel x treinos);
+                             * o rótulo precisa acompanhar, senão o personal lê
+                             * "meus treinos" e cai no painel dele. */}
+                            {canEdit
+                                ? 'Voltar ao painel'
+                                : 'Acessar meus treinos'}
                         </button>
                         <div className={styles.credit}>
                             Treinador · {showcase.personal_name} · powered by

@@ -2,6 +2,17 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import {
+    FiActivity,
+    FiEye,
+    FiClipboard,
+    FiCoffee,
+    FiTrendingUp,
+    FiDollarSign,
+    FiHeart,
+    FiMessageCircle,
+    FiCheck,
+} from 'react-icons/fi';
 import AvatarUpload from '@/components/molecules/AvatarUpload';
 import Modal from '@/components/system/Modal';
 import { usePersonalStudents } from '@/hooks/usePersonalStudents';
@@ -57,7 +68,7 @@ export default function StudentsTab({ state }: Props) {
                 <p className={s.loading}>Carregando...</p>
             ) : students.length === 0 ? (
                 <div className={s.empty}>
-                    <div className={s.emptyIcon}>🏋️</div>
+                    <div className={s.emptyIcon}><FiActivity /></div>
                     <h3 className={s.emptyTitle}>Nenhum aluno cadastrado</h3>
                     <p className={s.emptyText}>
                         Clique em &quot;+ Convidar Aluno&quot; para gerar um
@@ -177,7 +188,7 @@ export default function StudentsTab({ state }: Props) {
                                     }
                                     className={s.ctaPrimary}
                                 >
-                                    👁️ Ver Treino
+                                    <FiEye /> Ver Treino
                                 </button>
 
                                 <div className={s.actionsGrid}>
@@ -193,7 +204,7 @@ export default function StudentsTab({ state }: Props) {
                                             color: '#5bc0be',
                                         }}
                                     >
-                                        📋 Periodização
+                                        <FiClipboard /> Periodização
                                     </button>
                                     <button
                                         onClick={() =>
@@ -203,7 +214,7 @@ export default function StudentsTab({ state }: Props) {
                                         }
                                         className={s.gridAction}
                                     >
-                                        🍽️ Plano Alimentar
+                                        <FiCoffee /> Plano Alimentar
                                     </button>
                                     <button
                                         onClick={() =>
@@ -213,7 +224,7 @@ export default function StudentsTab({ state }: Props) {
                                         }
                                         className={s.gridAction}
                                     >
-                                        📈 Evolução
+                                        <FiTrendingUp /> Evolução
                                     </button>
                                     <button
                                         onClick={() =>
@@ -227,7 +238,7 @@ export default function StudentsTab({ state }: Props) {
                                             color: '#2e9e77',
                                         }}
                                     >
-                                        💰 Financeiro
+                                        <FiDollarSign /> Financeiro
                                     </button>
                                     <button
                                         onClick={() =>
@@ -241,7 +252,7 @@ export default function StudentsTab({ state }: Props) {
                                             color: '#e0a03c',
                                         }}
                                     >
-                                        🩺 Triagem/Anamnese
+                                        <FiHeart /> Triagem/Anamnese
                                     </button>
                                 </div>
 
@@ -263,7 +274,7 @@ export default function StudentsTab({ state }: Props) {
                                         className={s.footLink}
                                         style={{ color: '#8b5cf6' }}
                                     >
-                                        💬 Feedback
+                                        <FiMessageCircle /> Feedback
                                     </button>
                                 </div>
                             </div>
@@ -284,7 +295,13 @@ export default function StudentsTab({ state }: Props) {
                                 Fechar
                             </button>
                             <button onClick={copyLink} className={s.btnSubmit}>
-                                {copied ? '✓ Copiado!' : 'Copiar Link'}
+                                {copied ? (
+                                    <>
+                                        <FiCheck /> Copiado!
+                                    </>
+                                ) : (
+                                    'Copiar Link'
+                                )}
                             </button>
                         </>
                     ) : undefined

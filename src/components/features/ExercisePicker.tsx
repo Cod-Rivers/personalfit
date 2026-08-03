@@ -10,6 +10,7 @@ import {
 import VideoUploadModal from '@/components/features/VideoUploadModal';
 import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
 import Modal from '@/components/system/Modal';
+import { FiPlus, FiVideo } from 'react-icons/fi';
 
 interface ExercisePickerProps {
     onSelect: (exercise: ExerciseLibraryItem) => void;
@@ -184,9 +185,13 @@ export default function ExercisePicker({
                                     cursor: 'pointer',
                                     fontSize: 13,
                                     width: '100%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: 6,
                                 }}
                             >
-                                ➕ Novo exercício personalizado
+                                <FiPlus /> Novo exercício personalizado
                             </button>
                         ) : (
                             <div
@@ -440,9 +445,12 @@ export default function ExercisePicker({
                                                         cursor: 'pointer',
                                                         fontSize: 14,
                                                         flexShrink: 0,
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
                                                     }}
                                                 >
-                                                    🎥
+                                                    <FiVideo />
                                                 </button>
                                             )}
                                         </button>
