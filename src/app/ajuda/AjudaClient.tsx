@@ -1240,9 +1240,9 @@ export default function AjudaClient() {
                 <div className="d-flex gap-2">
                     <Link
                         href="#glossario"
-                        className="btn btn-outline-secondary btn-sm"
+                        className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2"
                     >
-                        📖 Glossário
+                        <FiBookOpen /> Glossário
                     </Link>
                     <Link
                         href={isPersonal ? '/personal' : '/meus-treinos'}
@@ -1293,7 +1293,7 @@ export default function AjudaClient() {
                         <a
                             key={s.id}
                             href={`#${s.id}`}
-                            className="btn btn-outline-secondary btn-sm"
+                            className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2"
                         >
                             {s.title}
                             {s.pro && <ProBadge />}
@@ -1370,7 +1370,9 @@ export default function AjudaClient() {
 
             <section id="glossario" className="card mb-3">
                 <div className="card-body">
-                    <h2 className="h6">📖 Glossário</h2>
+                    <h2 className="h6 d-flex align-items-center gap-2">
+                        <FiBookOpen /> Glossário
+                    </h2>
                     <p className="text-muted small mb-3">
                         Explicação rápida dos termos técnicos usados nesta
                         Central de Ajuda, de RPE e periodização a recursos do
