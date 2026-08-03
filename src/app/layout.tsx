@@ -50,7 +50,7 @@ export default async function RootLayout({
     return (
         <html
             lang={locale}
-            data-theme="light"
+            data-theme="dark"
             className={inter.variable}
             suppressHydrationWarning
         >

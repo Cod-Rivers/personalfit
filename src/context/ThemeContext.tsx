@@ -15,16 +15,16 @@ interface ThemeCtx {
 }
 
 const ThemeContext = createContext<ThemeCtx>({
-    theme: 'light',
+    theme: 'dark',
     toggleTheme: () => {},
 });
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-    const [theme, setTheme] = useState<Theme>('light');
+    const [theme, setTheme] = useState<Theme>('dark');
 
     useEffect(() => {
         const stored = localStorage.getItem('theme') as Theme | null;
-        const initial = stored === 'dark' ? 'dark' : 'light';
+        const initial = stored === 'light' ? 'light' : 'dark';
         setTheme(initial);
         document.documentElement.setAttribute('data-theme', initial);
     }, []);
