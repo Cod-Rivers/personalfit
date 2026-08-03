@@ -618,11 +618,17 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                                         : styles.annotationsStatus
                                                 }
                                             >
-                                                {weightSaveStatus === 'saved' &&
-                                                    '✓ Peso salvo.'}
+                                                {weightSaveStatus === 'saved' && (
+                                                    <>
+                                                        <FiCheck /> Peso salvo.
+                                                    </>
+                                                )}
                                                 {weightSaveStatus ===
-                                                    'saved-offline' &&
-                                                    '💾 Salvo neste dispositivo — sem conexão para sincronizar agora.'}
+                                                    'saved-offline' && (
+                                                    <>
+                                                        <FiSave /> Salvo neste dispositivo — sem conexão para sincronizar agora.
+                                                    </>
+                                                )}
                                                 {weightSaveStatus === 'error' &&
                                                     'Não foi possível salvar o peso. Tente novamente.'}
                                             </p>
