@@ -317,6 +317,43 @@ export function groupTechniqueLabel(value?: string): string | undefined {
     return GROUP_TECHNIQUE_CATALOG.find((g) => g.value === value)?.label;
 }
 
+/** Rótulo do bloco combinado: usa a variante explícita (group_technique)
+ * quando marcada, senão cai no heurístico por número de exercícios. Usado
+ * tanto no editor do personal quanto na execução do aluno. */
+export function comboGroupLabel(size: number, groupTechnique?: string): string {
+    const explicit = groupTechniqueLabel(groupTechnique);
+    if (explicit) return explicit;
+    if (size <= 2) return 'Bissérie';
+    if (size === 3) return 'Trissérie';
+    return 'Superssérie';
+}
+
+/**
+ * Particiona uma lista de itens (exercícios do personal ou logs do aluno) em
+ * blocos: cada bloco é uma sequência consecutiva com o mesmo group_id
+ * (bissérie/trissérie/superssérie), ou um único item avulso. A ordem de
+ * execução dentro de um bloco é a ordem na lista de entrada — não há campo de
+ * ordem separado.
+ */
+export function partitionExerciseGroups<T extends { group_id?: string }>(
+    items: T[],
+): T[][] {
+    const groups: T[][] = [];
+    for (const item of items) {
+        const last = groups[groups.length - 1];
+        if (
+            item.group_id &&
+            last &&
+            last[last.length - 1].group_id === item.group_id
+        ) {
+            last.push(item);
+        } else {
+            groups.push([item]);
+        }
+    }
+    return groups;
+}
+
 export interface TechniqueParamsValue {
     rounds?: number;
     round_reduction_pct?: number;

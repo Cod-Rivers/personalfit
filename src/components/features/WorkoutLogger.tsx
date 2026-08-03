@@ -18,6 +18,10 @@ import {
 import { getPendingWorkoutLogId } from '@/libs/offline/downloadManager';
 import { enqueueCompletion, enqueueSkip } from '@/libs/offline/syncQueue';
 import Modal from '@/components/system/Modal';
+import {
+    partitionExerciseGroups,
+    comboGroupLabel,
+} from '@/libs/trainingTechniques';
 import s from './WorkoutLogger.module.css';
 
 const OFFLINE_NO_PRECREATED_LOG_MESSAGE =
@@ -52,6 +56,8 @@ interface ExerciseLog {
      * plano (ExerciseResponse.group_id) — repassado ao registrar o treino
      * para o histórico poder exibir as séries executadas agrupadas. */
     groupId?: string;
+    /** Variante do bloco (ver GROUP_TECHNIQUE_CATALOG), só para exibição. */
+    groupTechnique?: string;
     plannedSeries: number[];
     series: Array<{
         seriesNum: number;
@@ -89,6 +95,7 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                 exerciseId: ex.id,
                 name: ex.name,
                 groupId: ex.group_id,
+                groupTechnique: ex.group_technique,
                 plannedSeries: ex.series,
                 series: ex.series.map((plannedReps, i) => ({
                     seriesNum: i + 1,
@@ -314,6 +321,87 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
         onQueued,
     ]);
 
+    // Blocos de bi-set/triset/superset: exercícios consecutivos com o mesmo
+    // groupId (ver libs/trainingTechniques.ts). Bloco de tamanho 1 = avulso.
+    const blocks = partitionExerciseGroups(
+        logs.map((l, idx) => ({ group_id: l.groupId, idx })),
+    );
+
+    const renderSeriesRow = (
+        exIdx: number,
+        seriesIdx: number,
+        sr: ExerciseLog['series'][number],
+        label: React.ReactNode,
+    ) => (
+        <div key={`${exIdx}-${seriesIdx}`} className={s.seriesRow}>
+            <label className={s.label}>{label}</label>
+            <div className={s.inputs}>
+                <input
+                    type="number"
+                    placeholder="Reps"
+                    value={sr.reps || ''}
+                    onChange={(e) =>
+                        updateSeriesLog(
+                            exIdx,
+                            seriesIdx,
+                            'reps',
+                            parseInt(e.target.value) || 0,
+                        )
+                    }
+                    disabled={loading}
+                />
+                <input
+                    type="number"
+                    placeholder="Kg"
+                    step="0.5"
+                    value={sr.loadKg || ''}
+                    onChange={(e) =>
+                        updateSeriesLog(
+                            exIdx,
+                            seriesIdx,
+                            'loadKg',
+                            parseFloat(e.target.value) || 0,
+                        )
+                    }
+                    disabled={loading}
+                />
+                <select
+                    value={sr.rpe}
+                    onChange={(e) =>
+                        updateSeriesLog(
+                            exIdx,
+                            seriesIdx,
+                            'rpe',
+                            parseInt(e.target.value),
+                        )
+                    }
+                    disabled={loading}
+                >
+                    {/* RPE 1-10 */}
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((r) => (
+                        <option key={r} value={r}>
+                            RPE {r}
+                        </option>
+                    ))}
+                </select>
+                <input
+                    type="text"
+                    placeholder="Notas"
+                    value={sr.notes}
+                    onChange={(e) =>
+                        updateSeriesLog(
+                            exIdx,
+                            seriesIdx,
+                            'notes',
+                            e.target.value,
+                        )
+                    }
+                    disabled={loading}
+                />
+            </div>
+        </div>
+    );
+
     const footer = (
         <div className={s.actions}>
             <button
@@ -368,96 +456,85 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                         </p>
                     )}
 
-                    {logs.map((ex, exIdx) => (
-                        <div key={ex.exerciseId} className={s.exerciseBlock}>
-                            <h3>{ex.name}</h3>
-                            <div className={s.seriesGrid}>
-                                {ex.series.map((sr, seriesIdx) => (
-                                    <div
-                                        key={seriesIdx}
-                                        className={s.seriesRow}
-                                    >
-                                        <label className={s.label}>
-                                            Série {sr.seriesNum}
-                                        </label>
-                                        <div className={s.inputs}>
-                                            <input
-                                                type="number"
-                                                placeholder="Reps"
-                                                value={sr.reps || ''}
-                                                onChange={(e) =>
-                                                    updateSeriesLog(
-                                                        exIdx,
-                                                        seriesIdx,
-                                                        'reps',
-                                                        parseInt(
-                                                            e.target.value,
-                                                        ) || 0,
-                                                    )
-                                                }
-                                                disabled={loading}
-                                            />
-                                            <input
-                                                type="number"
-                                                placeholder="Kg"
-                                                step="0.5"
-                                                value={sr.loadKg || ''}
-                                                onChange={(e) =>
-                                                    updateSeriesLog(
-                                                        exIdx,
-                                                        seriesIdx,
-                                                        'loadKg',
-                                                        parseFloat(
-                                                            e.target.value,
-                                                        ) || 0,
-                                                    )
-                                                }
-                                                disabled={loading}
-                                            />
-                                            <select
-                                                value={sr.rpe}
-                                                onChange={(e) =>
-                                                    updateSeriesLog(
-                                                        exIdx,
-                                                        seriesIdx,
-                                                        'rpe',
-                                                        parseInt(
-                                                            e.target.value,
-                                                        ),
-                                                    )
-                                                }
-                                                disabled={loading}
-                                            >
-                                                {/* RPE 1-10 */}
-                                                {[
-                                                    1, 2, 3, 4, 5, 6, 7, 8, 9,
-                                                    10,
-                                                ].map((r) => (
-                                                    <option key={r} value={r}>
-                                                        RPE {r}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                            <input
-                                                type="text"
-                                                placeholder="Notas"
-                                                value={sr.notes}
-                                                onChange={(e) =>
-                                                    updateSeriesLog(
-                                                        exIdx,
-                                                        seriesIdx,
-                                                        'notes',
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                disabled={loading}
-                                            />
-                                        </div>
+                    {blocks.map((block) => {
+                        if (block.length === 1) {
+                            const exIdx = block[0].idx;
+                            const ex = logs[exIdx];
+                            return (
+                                <div
+                                    key={ex.exerciseId}
+                                    className={s.exerciseBlock}
+                                >
+                                    <h3>{ex.name}</h3>
+                                    <div className={s.seriesGrid}>
+                                        {ex.series.map((sr, seriesIdx) =>
+                                            renderSeriesRow(
+                                                exIdx,
+                                                seriesIdx,
+                                                sr,
+                                                `Série ${sr.seriesNum}`,
+                                            ),
+                                        )}
                                     </div>
-                                ))}
+                                </div>
+                            );
+                        }
+
+                        // Bloco combinado: séries intercaladas por rodada
+                        // (Série 1 de A, Série 1 de B, Série 2 de A, ...) —
+                        // é assim que bi-set/triset/superset são executados
+                        // de fato, sem descanso entre os exercícios do bloco.
+                        const members = block.map((b) => logs[b.idx]);
+                        const maxRounds = Math.max(
+                            ...members.map((m) => m.series.length),
+                        );
+                        const rows: React.ReactNode[] = [];
+                        for (let round = 0; round < maxRounds; round++) {
+                            block.forEach((b) => {
+                                const ex = logs[b.idx];
+                                const sr = ex.series[round];
+                                if (!sr) return;
+                                rows.push(
+                                    renderSeriesRow(
+                                        b.idx,
+                                        round,
+                                        sr,
+                                        <>
+                                            <span
+                                                className={
+                                                    s.comboSeriesLabel
+                                                }
+                                            >
+                                                {ex.name}
+                                            </span>{' '}
+                                            · Série {sr.seriesNum}
+                                        </>,
+                                    ),
+                                );
+                            });
+                        }
+                        return (
+                            <div
+                                key={members[0].exerciseId}
+                                className={`${s.exerciseBlock} ${s.comboBlock}`}
+                            >
+                                <h3>
+                                    🔗{' '}
+                                    {comboGroupLabel(
+                                        block.length,
+                                        members[0].groupTechnique,
+                                    )}
+                                </h3>
+                                <p className={s.comboMembers}>
+                                    {members
+                                        .map((m) => m.name)
+                                        .join(' + ')}{' '}
+                                    — sem descanso entre as séries abaixo
+                                </p>
+                                <div className={s.seriesGrid}>{rows}</div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
 
                     <div className={s.footerSection}>
                         <label>

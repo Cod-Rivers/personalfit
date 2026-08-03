@@ -1,7 +1,7 @@
 // src/app/app/treino/[id]/page.tsx
 'use client';
 
-import React, { use, useEffect, useState } from 'react';
+import React, { use, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import ExerciseDetailCard from '@/components/features/ExerciseDetailCard';
@@ -45,6 +45,25 @@ export default function TreinoPage({ params: paramsPromise }: TreinoPageProps) {
         }
         setTraining(found);
     }, [id, router]);
+
+    // Próximo exercício do mesmo bloco de bi-set/triset/superset do
+    // exercício aberto no detail card — troca o timer de descanso por um
+    // atalho "sem descanso, siga direto" (ver ExerciseDetailCard).
+    const nextInGroup = useMemo(() => {
+        if (!selectedExercise || !training) return null;
+        const exercises = training.exercise_logs;
+        const idx = exercises.findIndex((e) => e.id === selectedExercise.id);
+        if (idx === -1) return null;
+        const next = exercises[idx + 1];
+        if (
+            next &&
+            selectedExercise.group_id &&
+            next.group_id === selectedExercise.group_id
+        ) {
+            return next;
+        }
+        return null;
+    }, [training, selectedExercise]);
 
     if (notFound) {
         return (
@@ -138,6 +157,8 @@ export default function TreinoPage({ params: paramsPromise }: TreinoPageProps) {
                 <ExerciseDetailCard
                     exercise={selectedExercise}
                     onClose={() => setSelectedExercise(null)}
+                    nextInGroup={nextInGroup}
+                    onSelectExercise={setSelectedExercise}
                 />
             )}
         </div>

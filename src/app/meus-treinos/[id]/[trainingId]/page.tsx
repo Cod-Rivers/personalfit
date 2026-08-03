@@ -4,6 +4,14 @@
 import React, { useEffect, useMemo, useState, use } from 'react';
 import Link from 'next/link';
 import axios from 'axios';
+import {
+    FiArrowLeft,
+    FiWifiOff,
+    FiInfo,
+    FiLink,
+    FiCheck,
+    FiSave,
+} from 'react-icons/fi';
 import { getStudentHomeRoute } from '@/libs/session';
 import {
     getMyMacrocycle,
@@ -39,6 +47,10 @@ import {
     LoadHistoryEntry,
     LoadSuggestion,
 } from '@/libs/loadSuggestion';
+import {
+    partitionExerciseGroups,
+    comboGroupLabel,
+} from '@/libs/trainingTechniques';
 
 interface TrainingPageParams {
     id: string; // macrocycle ID
@@ -69,6 +81,7 @@ function toExerciseLog(ex: ExerciseResponse): ExerciseLog {
         technique: ex.technique,
         technique_params: ex.technique_params,
         group_technique: ex.group_technique,
+        group_id: ex.group_id,
     };
 }
 
@@ -398,6 +411,31 @@ export default function MeusTreinosExercisesPage({
         return map;
     }, [exercises, loadHistoryByExercise, currentMicro, decision, policy]);
 
+    // Blocos de bi-set/trisset/superset: exercícios consecutivos com o mesmo
+    // group_id (ver libs/trainingTechniques.ts). Bloco de tamanho 1 = avulso.
+    const exerciseGroups = useMemo(
+        () => partitionExerciseGroups(exercises),
+        [exercises],
+    );
+
+    // Próximo exercício do mesmo bloco do exercício aberto no detail card —
+    // usado para trocar o timer de descanso por um atalho "sem descanso,
+    // siga direto" (ver ExerciseDetailCard).
+    const nextInGroup = useMemo(() => {
+        if (!selectedExercise) return null;
+        const idx = exercises.findIndex((e) => e.id === selectedExercise.id);
+        if (idx === -1) return null;
+        const next = exercises[idx + 1];
+        if (
+            next &&
+            selectedExercise.group_id &&
+            next.group_id === selectedExercise.group_id
+        ) {
+            return next;
+        }
+        return null;
+    }, [exercises, selectedExercise]);
+
     if (isLoading) {
         return <div className="p-6 text-center">Carregando exercícios...</div>;
     }
@@ -414,18 +452,18 @@ export default function MeusTreinosExercisesPage({
                 <div className="d-flex justify-content-between align-items-center mb-2">
                     <Link
                         href={getStudentHomeRoute()}
-                        className="btn btn-outline-secondary btn-sm"
+                        className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2"
                     >
-                        ← Voltar para Meus Treinos
+                        <FiArrowLeft /> Voltar para Meus Treinos
                     </Link>
                     <SyncPendingBadge />
                 </div>
                 {isOffline && (
                     <div
-                        className="alert alert-warning py-2 px-3 mb-3"
+                        className="alert alert-warning py-2 px-3 mb-3 d-flex align-items-center gap-2"
                         style={{ fontSize: '0.85rem' }}
                     >
-                        📴 Exibindo treino salvo offline (sem conexão no momento).
+                        <FiWifiOff /> Exibindo treino salvo offline (sem conexão no momento).
                     </div>
                 )}
                 <div className="mb-8">
@@ -501,8 +539,8 @@ export default function MeusTreinosExercisesPage({
 
                     {microPanelOpen && (
                     <div className="card-body pt-0">
-                        <p className="small alert alert-info py-2 px-3 mb-3">
-                            💡 Preencha estes campos todos os dias antes de
+                        <p className="small alert alert-info py-2 px-3 mb-3 d-flex align-items-start gap-2">
+                            <FiInfo className="flex-shrink-0 mt-1" /> Preencha estes campos todos os dias antes de
                             treinar e sempre finalize o treino pelo app (não
                             deixe pendente) — é isso que alimenta o histórico
                             usado para calcular e evoluir a sugestão de carga.
@@ -727,85 +765,109 @@ export default function MeusTreinosExercisesPage({
                 </div>
                 {exercises.length > 0 ? (
                     <ul className={`${styles.exerciseListContainer} space-y-3`}>
-                        {exercises.map((exercise) => {
-                            const suggestion = loadSuggestions[exercise.id];
-                            return (
-                            <li key={exercise.id}>
-                                <button
-                                    onClick={() =>
-                                        handleExerciseClick(exercise)
-                                    }
-                                    className={`${styles.cardButton} ${styles.exerciseItemContainer}`}
-                                >
-                                    <div className="flex items-center">
-                                        <ExerciseThumbnail
-                                            name={exercise.name}
-                                            videoThumb={exercise.video_thumb}
-                                            videoUrl={exercise.video_url}
-                                            className={
-                                                styles.exerciseThumbnail
-                                            }
-                                            style={{ marginRight: 16 }}
-                                        />
-                                        <div className="flex-grow">
-                                            <span
-                                                className="text-xl font-semibold"
-                                                style={{
-                                                    color: 'var(--text-primary)',
-                                                    display: 'block',
-                                                }}
-                                            >
-                                                {exercise.name}
-                                            </span>
-                                            {suggestion?.suggestedKg != null ? (
+                        {exerciseGroups.map((group) => {
+                            const isCombo = group.length > 1;
+                            const items = group.map((exercise) => {
+                                const suggestion = loadSuggestions[exercise.id];
+                                return (
+                                    <button
+                                        key={exercise.id}
+                                        onClick={() =>
+                                            handleExerciseClick(exercise)
+                                        }
+                                        className={`${styles.cardButton} ${styles.exerciseItemContainer}`}
+                                    >
+                                        <div className="flex items-center">
+                                            <ExerciseThumbnail
+                                                name={exercise.name}
+                                                videoThumb={exercise.video_thumb}
+                                                videoUrl={exercise.video_url}
+                                                className={
+                                                    styles.exerciseThumbnail
+                                                }
+                                                style={{ marginRight: 16 }}
+                                            />
+                                            <div className="flex-grow">
                                                 <span
-                                                    className="small"
+                                                    className="text-xl font-semibold"
                                                     style={{
-                                                        color: suggestion.abovePrescribed
-                                                            ? 'var(--coral, #ff6b6b)'
-                                                            : 'var(--mint, #3dffd0)',
+                                                        color: 'var(--text-primary)',
+                                                        display: 'block',
                                                     }}
-                                                    title={suggestion.reason}
                                                 >
-                                                    Sugerido hoje:{' '}
-                                                    {suggestion.suggestedKg} kg
-                                                    {suggestion.source === 'ambos'
-                                                        ? ' · base: você + personal'
-                                                        : suggestion.source === 'aluno'
-                                                          ? ' · base: seu histórico'
-                                                          : ' · base: personal'}
+                                                    {exercise.name}
                                                 </span>
-                                            ) : (
-                                                exercise.plannedWeight == null && (
+                                                {suggestion?.suggestedKg != null ? (
                                                     <span
                                                         className="small"
                                                         style={{
-                                                            color: 'var(--text-muted)',
+                                                            color: suggestion.abovePrescribed
+                                                                ? 'var(--coral, #ff6b6b)'
+                                                                : 'var(--mint, #3dffd0)',
                                                         }}
+                                                        title={suggestion.reason}
                                                     >
-                                                        Sem carga registrada ainda
+                                                        Sugerido hoje:{' '}
+                                                        {suggestion.suggestedKg} kg
+                                                        {suggestion.source === 'ambos'
+                                                            ? ' · base: você + personal'
+                                                            : suggestion.source === 'aluno'
+                                                              ? ' · base: seu histórico'
+                                                              : ' · base: personal'}
                                                     </span>
-                                                )
-                                            )}
+                                                ) : (
+                                                    exercise.plannedWeight == null && (
+                                                        <span
+                                                            className="small"
+                                                            style={{
+                                                                color: 'var(--text-muted)',
+                                                            }}
+                                                        >
+                                                            Sem carga registrada ainda
+                                                        </span>
+                                                    )
+                                                )}
+                                            </div>
                                         </div>
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            className={styles.cardIcon}
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            stroke="currentColor"
+                                            aria-hidden="true"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M9 5l7 7-7 7"
+                                            />
+                                        </svg>
+                                    </button>
+                                );
+                            });
+
+                            if (!isCombo) {
+                                return <li key={group[0].id}>{items}</li>;
+                            }
+                            return (
+                                <li
+                                    key={group[0].id}
+                                    className={styles.exerciseGroupBlock}
+                                >
+                                    <div className={styles.exerciseGroupBadge}>
+                                        <FiLink />{' '}
+                                        {comboGroupLabel(
+                                            group.length,
+                                            group[0].group_technique,
+                                        )}{' '}
+                                        — sem descanso entre os exercícios
                                     </div>
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        className={styles.cardIcon}
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                        aria-hidden="true"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M9 5l7 7-7 7"
-                                        />
-                                    </svg>
-                                </button>
-                            </li>
+                                    <div className={styles.exerciseGroupItems}>
+                                        {items}
+                                    </div>
+                                </li>
                             );
                         })}
                     </ul>
@@ -832,16 +894,18 @@ export default function MeusTreinosExercisesPage({
                         onClose={handleCloseDetailCard}
                         loadAdjustPct={decision.intraSessionLoadAdjustPct}
                         loadSuggestion={loadSuggestions[selectedExercise.id]}
+                        nextInGroup={nextInGroup}
+                        onSelectExercise={handleExerciseClick}
                     />
                 )}
                 <div className={styles.finalizarContainer}>
                     {sendStatus === 'success' ? (
                         <p className={styles.finalizarSuccess}>
-                            ✓ Treino finalizado com sucesso!
+                            <FiCheck /> Treino finalizado com sucesso!
                         </p>
                     ) : sendStatus === 'queued' ? (
                         <p className={styles.finalizarSuccess}>
-                            💾 Salvo localmente — será sincronizado quando a
+                            <FiSave /> Salvo localmente — será sincronizado quando a
                             internet voltar.
                         </p>
                     ) : (

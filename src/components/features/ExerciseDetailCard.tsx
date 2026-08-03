@@ -41,6 +41,13 @@ interface ExerciseDetailCardProps {
      * combinando prescrição do personal com o histórico do aluno. Tem
      * prioridade sobre loadAdjustPct quando presente. */
     loadSuggestion?: LoadSuggestion;
+    /** Próximo exercício do mesmo bloco de bi-set/triset/superset (mesmo
+     * group_id), quando existir. Presente = este NÃO é o último exercício do
+     * bloco, então não há descanso antes dele — troca o timer por um atalho
+     * direto para o próximo. */
+    nextInGroup?: ExerciseLog | null;
+    /** Abre outro exercício no lugar deste (usado pelo atalho do bloco). */
+    onSelectExercise?: (exercise: ExerciseLog) => void;
 }
 
 const getEmbedUrl = (url: string): string | null => {
@@ -79,6 +86,8 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
     onClose,
     loadAdjustPct,
     loadSuggestion,
+    nextInGroup,
+    onSelectExercise,
 }) => {
     // --- Estados ---
     const [timerValue, setTimerValue] = useState<number>(
@@ -771,8 +780,30 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                         </div>
                                     )}
                                 </div>
-                                {/* Tempo de Descanso e Cronômetro */}
-                                {(exercise.restTime ?? 0) > 0 && (
+                                {/* Bloco de bi-set/triset/superset: sem descanso até o
+                                    último exercício do bloco — troca o timer por um
+                                    atalho direto para o próximo. */}
+                                {nextInGroup ? (
+                                    <div className={styles.restTimerSection}>
+                                        <p className={styles.noRestNotice}>
+                                            <strong>Sem descanso</strong> —
+                                            siga direto para o próximo
+                                            exercício do bloco.
+                                        </p>
+                                        <button
+                                            type="button"
+                                            className={styles.timerButton}
+                                            onClick={() =>
+                                                onSelectExercise?.(
+                                                    nextInGroup,
+                                                )
+                                            }
+                                        >
+                                            Ir para {nextInGroup.name} →
+                                        </button>
+                                    </div>
+                                ) : (
+                                    (exercise.restTime ?? 0) > 0 && (
                                     <div className={styles.restTimerSection}>
                                         <div className={styles.timerDisplay}>
                                             {formatTime(timerValue)}
@@ -814,6 +845,7 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                             </button>
                                         </div>
                                     </div>
+                                    )
                                 )}
                             </div>
                         </div>

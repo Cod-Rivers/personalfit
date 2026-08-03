@@ -128,6 +128,10 @@
     color: var(--mint);
     text-align: center;
     padding: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
 
 .finalizarError {
@@ -152,4 +156,28 @@
     flex-shrink: 0;
     transition: transform 0.15s;
     transform: rotate(180deg);
+}
+
+.exerciseGroupBlock {
+    border-left: 3px solid var(--mint);
+    border-radius: 10px;
+    padding-left: 0.75rem;
+    margin-bottom: 0.5rem;
+    background: rgba(61, 255, 208, 0.04);
+}
+
+.exerciseGroupBadge {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--mint);
+    padding: 0.6rem 0.25rem 0;
+    letter-spacing: 0.02em;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.exerciseGroupItems .cardButton {
+    margin-top: 0.35rem;
+    margin-bottom: 0.35rem;
 }

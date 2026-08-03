@@ -4,7 +4,9 @@ import type {
     MesocycleRequest,
     TrainingResponse,
 } from '@/libs/planningService';
-import { groupTechniqueLabel } from '@/libs/trainingTechniques';
+import { partitionExerciseGroups, comboGroupLabel } from '@/libs/trainingTechniques';
+
+export { partitionExerciseGroups, comboGroupLabel };
 
 export const STATUS_LABEL: Record<string, string> = {
     draft: 'Rascunho',
@@ -182,41 +184,6 @@ function fieldToNum(
         : parseInt(trimmed, 10);
     if (Number.isNaN(parsed)) return undefined;
     return Math.max(min, Math.min(max, parsed));
-}
-
-/**
- * Particiona os exercícios de um treino em blocos: cada bloco é uma sequência
- * consecutiva de exercícios com o mesmo group_id (bissérie/trissérie/
- * superssérie), ou um único exercício avulso. A ordem de execução dentro de
- * um bloco é a ordem em `exercises` — não há campo de ordem separado.
- */
-export function partitionExerciseGroups(
-    exercises: LocalExercise[],
-): LocalExercise[][] {
-    const groups: LocalExercise[][] = [];
-    for (const ex of exercises) {
-        const last = groups[groups.length - 1];
-        if (
-            ex.group_id &&
-            last &&
-            last[last.length - 1].group_id === ex.group_id
-        ) {
-            last.push(ex);
-        } else {
-            groups.push([ex]);
-        }
-    }
-    return groups;
-}
-
-/** Rótulo do bloco combinado: usa a variante explícita (group_technique)
- * quando marcada, senão cai no heurístico por número de exercícios. */
-export function comboGroupLabel(size: number, groupTechnique?: string): string {
-    const explicit = groupTechniqueLabel(groupTechnique);
-    if (explicit) return explicit;
-    if (size <= 2) return 'Bissérie';
-    if (size === 3) return 'Trissérie';
-    return 'Superssérie';
 }
 
 export function makeDefaultMicrocycles(durationWeeks: number): LocalMicrocycle[] {

@@ -27,6 +27,9 @@ export interface ExerciseLog {
     };
     /** Variante do bloco de bi-set/superset (ver GROUP_TECHNIQUE_CATALOG). */
     group_technique?: string;
+    /** Agrupa exercícios executados em sequência, sem descanso entre si.
+     * Exercícios consecutivos com o mesmo group_id formam um bloco. */
+    group_id?: string;
     // Adicione outros campos se existirem
 }
 
