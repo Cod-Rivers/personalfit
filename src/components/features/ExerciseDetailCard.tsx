@@ -829,12 +829,16 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                     (exercise.restTime ?? 0) > 0 && (
                                     <div className={styles.restTimerSection}>
                                         <div className={styles.timerDisplay}>
-                                            {formatTime(timerValue)}
-                                            <p>
-                                                <strong>
-                                                    (descanso entre exercicios)
-                                                </strong>{' '}
-                                            </p>
+                                            <span
+                                                className={styles.timerValue}
+                                            >
+                                                {formatTime(timerValue)}
+                                            </span>
+                                            <span
+                                                className={styles.timerLabel}
+                                            >
+                                                Descanso entre exercícios
+                                            </span>
                                         </div>
                                         <div className={styles.timerControls}>
                                             {!isTimerRunning &&
