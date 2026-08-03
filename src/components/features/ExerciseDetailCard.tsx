@@ -784,11 +784,17 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                                     }
                                                 >
                                                     {annotationsStatus ===
-                                                        'saved' &&
-                                                        '✓ Anotações salvas.'}
+                                                        'saved' && (
+                                                        <>
+                                                            <FiCheck /> Anotações salvas.
+                                                        </>
+                                                    )}
                                                     {annotationsStatus ===
-                                                        'saved-offline' &&
-                                                        '💾 Salvo neste dispositivo — sem conexão para sincronizar agora.'}
+                                                        'saved-offline' && (
+                                                        <>
+                                                            <FiSave /> Salvo neste dispositivo — sem conexão para sincronizar agora.
+                                                        </>
+                                                    )}
                                                     {annotationsStatus ===
                                                         'error' &&
                                                         'Não foi possível salvar. Tente novamente.'}
@@ -816,7 +822,7 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                                 )
                                             }
                                         >
-                                            Ir para {nextInGroup.name} →
+                                            Ir para {nextInGroup.name} <FiChevronRight />
                                         </button>
                                     </div>
                                 ) : (

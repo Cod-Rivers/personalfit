@@ -1,6 +1,7 @@
 ﻿'use client';
 import { useTranslations } from 'next-intl';
 import React, { FC, useEffect, useState } from 'react';
+import { FiAlertTriangle } from 'react-icons/fi';
 import Input from '@/components/molecules/Input';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -95,8 +96,8 @@ const TLogin: FC = () => {
                 />
                 <h1>{t('title')}</h1>
                 {info && (
-                    <p className="w-100 alert alert-warning text-center">
-                        ⚠️ {info}
+                    <p className="w-100 alert alert-warning text-center d-flex align-items-center justify-content-center gap-2">
+                        <FiAlertTriangle /> {info}
                     </p>
                 )}
                 <form

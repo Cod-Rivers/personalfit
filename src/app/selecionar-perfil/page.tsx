@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { FiShield, FiBriefcase, FiUser } from 'react-icons/fi';
 import { landingRouteFor, saveSession } from '@/libs/session';
 
 interface UserData {
@@ -83,12 +84,14 @@ export default function SelecionarPerfil() {
                         }
                         style={cardStyle}
                     >
-                        <span style={{ fontSize: 40 }}>
-                            {pending.user.role === 'admin'
-                                ? '🛡️'
-                                : pending.user.role === 'personal'
-                                  ? '💪'
-                                  : '🏃'}
+                        <span style={{ fontSize: 40, display: 'flex' }}>
+                            {pending.user.role === 'admin' ? (
+                                <FiShield />
+                            ) : pending.user.role === 'personal' ? (
+                                <FiBriefcase />
+                            ) : (
+                                <FiUser />
+                            )}
                         </span>
                         <strong style={{ fontSize: 18, marginTop: 8 }}>
                             {pending.user.name}
@@ -110,12 +113,14 @@ export default function SelecionarPerfil() {
                         }
                         style={cardStyle}
                     >
-                        <span style={{ fontSize: 40 }}>
-                            {pending.alt_user.role === 'admin'
-                                ? '🛡️'
-                                : pending.alt_user.role === 'personal'
-                                  ? '💪'
-                                  : '🏃'}
+                        <span style={{ fontSize: 40, display: 'flex' }}>
+                            {pending.alt_user.role === 'admin' ? (
+                                <FiShield />
+                            ) : pending.alt_user.role === 'personal' ? (
+                                <FiBriefcase />
+                            ) : (
+                                <FiUser />
+                            )}
                         </span>
                         <strong style={{ fontSize: 18, marginTop: 8 }}>
                             {pending.alt_user.name}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { FiBookOpen } from 'react-icons/fi';
 import { microcycleHelpTopics } from '@/libs/microcycleHelpContent';
 import { getSortedGlossaryTerms } from '@/libs/glossaryContent';
 import GlossaryLink from '@/components/atoms/GlossaryLink';
@@ -1212,15 +1213,24 @@ export default function AjudaClient() {
     const isPersonal = audience === 'personal';
     const sections = isPersonal ? personalSections : studentSections;
 
+    const glossarioTocItem = {
+        id: 'glossario',
+        title: (
+            <>
+                <FiBookOpen /> Glossário
+            </>
+        ),
+        pro: false,
+    };
     const tocSections = isPersonal
         ? [
-              ...sections.map((s) => ({ id: s.id, title: s.title, pro: s.pro })),
-              { id: 'glossario', title: '📖 Glossário', pro: false },
+              ...sections.map((s) => ({ id: s.id, title: s.title as React.ReactNode, pro: s.pro })),
+              glossarioTocItem,
           ]
         : [
-              { id: 'autorregulacao', title: 'Controle do Microciclo', pro: false },
-              ...sections.map((s) => ({ id: s.id, title: s.title, pro: s.pro })),
-              { id: 'glossario', title: '📖 Glossário', pro: false },
+              { id: 'autorregulacao', title: 'Controle do Microciclo' as React.ReactNode, pro: false },
+              ...sections.map((s) => ({ id: s.id, title: s.title as React.ReactNode, pro: s.pro })),
+              glossarioTocItem,
           ];
 
     return (
