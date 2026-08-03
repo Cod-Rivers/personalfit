@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Image from 'next/image';
+import { FiLink, FiMusic, FiUpload, FiCheckCircle, FiVideo } from 'react-icons/fi';
 import * as videoService from '@/libs/exerciseVideoService';
 import Modal from '@/components/system/Modal';
 
@@ -242,15 +243,15 @@ export default function VideoUploadModal({
                 <ul className="nav nav-tabs mb-3">
                     <li className="nav-item">
                         <button
-                            className={`nav-link ${tab === 'link' ? 'active' : ''}`}
+                            className={`nav-link d-inline-flex align-items-center gap-1 ${tab === 'link' ? 'active' : ''}`}
                             onClick={() => setTab('link')}
                         >
-                            🔗 Link
+                            <FiLink /> Link
                         </button>
                     </li>
                     <li className="nav-item">
                         <button
-                            className={`nav-link ${tab === 'tiktok' ? 'active' : ''} ${!isPro ? 'disabled text-muted' : ''}`}
+                            className={`nav-link d-inline-flex align-items-center gap-1 ${tab === 'tiktok' ? 'active' : ''} ${!isPro ? 'disabled text-muted' : ''}`}
                             onClick={() =>
                                 isPro && setTab('tiktok')
                             }
@@ -260,7 +261,7 @@ export default function VideoUploadModal({
                                     : undefined
                             }
                         >
-                            🎵 TikTok
+                            <FiMusic /> TikTok
                             {!isPro && (
                                 <span className="badge bg-warning text-dark ms-1 small">
                                     Pro
@@ -270,7 +271,7 @@ export default function VideoUploadModal({
                     </li>
                     <li className="nav-item">
                         <button
-                            className={`nav-link ${tab === 'upload' ? 'active' : ''} ${!isPro ? 'disabled text-muted' : ''}`}
+                            className={`nav-link d-inline-flex align-items-center gap-1 ${tab === 'upload' ? 'active' : ''} ${!isPro ? 'disabled text-muted' : ''}`}
                             onClick={() =>
                                 isPro && setTab('upload')
                             }
@@ -280,7 +281,7 @@ export default function VideoUploadModal({
                                     : undefined
                             }
                         >
-                            ⬆️ Upload de arquivo
+                            <FiUpload /> Upload de arquivo
                             {!isPro && (
                                 <span className="badge bg-warning text-dark ms-1 small">
                                     Pro
@@ -299,7 +300,9 @@ export default function VideoUploadModal({
 
             {uploadDone ? (
                 <div className="text-center py-4">
-                    <div style={{ fontSize: 40 }}>✅</div>
+                    <div style={{ fontSize: 40, display: 'flex', justifyContent: 'center', color: 'var(--mint, #0fac9b)' }}>
+                        <FiCheckCircle />
+                    </div>
                     <p className="mb-0 mt-2 fw-semibold">
                         Upload realizado com sucesso!
                     </p>
@@ -375,8 +378,8 @@ export default function VideoUploadModal({
                         s de vídeo · Formatos: MP4, WebM, JPG,
                         PNG, WebP
                     </small>
-                    <small className="text-muted d-block mt-1">
-                        📹 Grave em formato quadrado (1:1) ou
+                    <small className="text-muted d-flex align-items-center gap-1 mt-1">
+                        <FiVideo /> Grave em formato quadrado (1:1) ou
                         horizontal (16:9) — são os dois formatos
                         suportados. O app reconhece automaticamente
                         qual foi usado e ajusta a moldura; outras

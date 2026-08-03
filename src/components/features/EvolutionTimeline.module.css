@@ -21,6 +21,9 @@
     font-weight: 700;
     font-size: 0.9rem;
     cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .btnCompareActive {
@@ -91,6 +94,9 @@
     font-size: 1.05rem;
     font-weight: 700;
     color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .compareTable {

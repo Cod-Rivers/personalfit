@@ -120,6 +120,9 @@
     padding: 0.2rem 0.4rem;
     border-radius: 6px;
     transition: background 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 .btnIconRemove:hover { background: rgba(255,80,80,0.12); }
 

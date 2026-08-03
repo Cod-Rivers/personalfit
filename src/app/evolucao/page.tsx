@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { FiTrendingUp, FiArrowLeft } from 'react-icons/fi';
 import EvolutionTimeline from '@/components/features/EvolutionTimeline';
 import TrainingZonesCalculator from '@/components/features/TrainingZonesCalculator';
 import s from '../agendamentos/agendamentos.module.css';
@@ -40,7 +41,7 @@ export default function MyEvolutionPage() {
             <div className={s.container}>
                 <div className={s.header}>
                     <div>
-                        <h1 className={s.headerTitle}>📈 Evolução</h1>
+                        <h1 className={s.headerTitle}><FiTrendingUp /> Evolução</h1>
                         <p className={s.headerSub}>
                             Fotos e avaliação física ao longo do tempo — você
                             ou seu personal podem registrar
@@ -54,7 +55,7 @@ export default function MyEvolutionPage() {
                             )
                         }
                     >
-                        ← Voltar
+                        <FiArrowLeft /> Voltar
                     </button>
                 </div>
 

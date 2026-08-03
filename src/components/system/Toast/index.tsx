@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { FiX, FiCheckCircle, FiAlertTriangle, FiXCircle } from 'react-icons/fi';
 import styles from './Toast.module.css';
 
 type ToastType = 'success' | 'error' | 'warning';
@@ -51,6 +52,13 @@ export function useToast(durationMs = 4000) {
                                     : styles.toastError
                           }
                       >
+                          {toast.type === 'success' ? (
+                              <FiCheckCircle className={styles.toastIcon} />
+                          ) : toast.type === 'warning' ? (
+                              <FiAlertTriangle className={styles.toastIcon} />
+                          ) : (
+                              <FiXCircle className={styles.toastIcon} />
+                          )}
                           <span>{toast.message}</span>
                           <button
                               type="button"
@@ -58,7 +66,7 @@ export function useToast(durationMs = 4000) {
                               onClick={dismiss}
                               aria-label="Fechar"
                           >
-                              ✕
+                              <FiX />
                           </button>
                       </div>
                   </div>,

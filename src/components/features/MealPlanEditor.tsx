@@ -1,5 +1,6 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
+import { FiFileText } from 'react-icons/fi';
 import {
     getCurrentMealPlan,
     getMealPlanHistory,
@@ -244,7 +245,7 @@ export default function MealPlanEditor({ studentId }: Props) {
                         ))}
                         {plan.current.pdf_url && (
                             <p className={s.pdfRow}>
-                                📄{' '}
+                                <FiFileText />{' '}
                                 <a
                                     className={s.pdfLink}
                                     href={plan.current.pdf_url}

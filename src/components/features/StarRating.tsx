@@ -1,5 +1,6 @@
 'use client';
 import React, { useState } from 'react';
+import { FiCheckCircle, FiStar } from 'react-icons/fi';
 
 interface StarRatingProps {
     initialValue?: number;
@@ -34,7 +35,9 @@ export default function StarRating({
     if (submitted) {
         return (
             <div style={styles.container}>
-                <p style={styles.thanks}>✅ Avaliação enviada! Obrigado.</p>
+                <p style={{ ...styles.thanks, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <FiCheckCircle /> Avaliação enviada! Obrigado.
+                </p>
             </div>
         );
     }
@@ -51,12 +54,20 @@ export default function StarRating({
                             color:
                                 n <= (hover || stars) ? '#f1c40f' : '#4a5568',
                             cursor: disabled ? 'default' : 'pointer',
+                            display: 'inline-flex',
                         }}
                         onClick={() => !disabled && setStars(n)}
                         onMouseEnter={() => !disabled && setHover(n)}
                         onMouseLeave={() => !disabled && setHover(0)}
                     >
-                        ★
+                        <FiStar
+                            style={{
+                                fill:
+                                    n <= (hover || stars)
+                                        ? 'currentColor'
+                                        : 'none',
+                            }}
+                        />
                     </span>
                 ))}
             </div>

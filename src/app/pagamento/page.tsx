@@ -2,6 +2,7 @@
 import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { FiArrowLeft } from 'react-icons/fi';
 
 import './styles.css';
 import { Api } from '@/libs/api';
@@ -326,7 +327,7 @@ function PaymentPageInner() {
 
                 <div className="mx-3">
                     <button
-                        className="btn btn-outline-secondary btn-sm mb-3"
+                        className="btn btn-outline-secondary btn-sm mb-3 d-inline-flex align-items-center gap-2"
                         onClick={() =>
                             router.push(
                                 produto === 'pro'
@@ -335,7 +336,7 @@ function PaymentPageInner() {
                             )
                         }
                     >
-                        ← Voltar
+                        <FiArrowLeft /> Voltar
                     </button>
                 </div>
 

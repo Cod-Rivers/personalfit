@@ -1,6 +1,7 @@
 ﻿'use client';
 import { useTranslations } from 'next-intl';
 import React, { FC, useState } from 'react';
+import { FiUser, FiBriefcase } from 'react-icons/fi';
 import Input from '@/components/molecules/Input';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -148,7 +149,7 @@ const TSignUp: FC = () => {
 
                     <div className="d-flex gap-3">
                         <div
-                            className={`flex-fill text-center py-3 rounded border ${
+                            className={`flex-fill text-center py-3 rounded border d-flex align-items-center justify-content-center gap-2 ${
                                 role === 'student'
                                     ? 'border-warning bg-warning bg-opacity-10 fw-bold'
                                     : 'border-secondary'
@@ -156,10 +157,10 @@ const TSignUp: FC = () => {
                             style={{ cursor: 'pointer' }}
                             onClick={() => setRole('student')}
                         >
-                            🏃 Aluno
+                            <FiUser /> Aluno
                         </div>
                         <div
-                            className={`flex-fill text-center py-3 rounded border ${
+                            className={`flex-fill text-center py-3 rounded border d-flex align-items-center justify-content-center gap-2 ${
                                 role === 'personal'
                                     ? 'border-warning bg-warning bg-opacity-10 fw-bold'
                                     : 'border-secondary'
@@ -167,7 +168,7 @@ const TSignUp: FC = () => {
                             style={{ cursor: 'pointer' }}
                             onClick={() => setRole('personal')}
                         >
-                            💪 Personal Trainer
+                            <FiBriefcase /> Personal Trainer
                         </div>
                     </div>
                     <p
@@ -179,10 +180,16 @@ const TSignUp: FC = () => {
                         }}
                     >
                         Perfil selecionado:{' '}
-                        <strong>
-                            {role === 'personal'
-                                ? '💪 Personal Trainer'
-                                : '🏃 Aluno'}
+                        <strong className="d-inline-flex align-items-center gap-1">
+                            {role === 'personal' ? (
+                                <>
+                                    <FiBriefcase /> Personal Trainer
+                                </>
+                            ) : (
+                                <>
+                                    <FiUser /> Aluno
+                                </>
+                            )}
                         </strong>
                     </p>
 

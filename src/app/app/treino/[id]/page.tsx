@@ -4,6 +4,7 @@
 import React, { use, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { FiArrowLeft } from 'react-icons/fi';
 import ExerciseDetailCard from '@/components/features/ExerciseDetailCard';
 import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
 import { ApiTrainingProgress, ExerciseLog } from '@/components/features/types';
@@ -73,10 +74,10 @@ export default function TreinoPage({ params: paramsPromise }: TreinoPageProps) {
             >
                 <p>Treino não encontrado.</p>
                 <button
-                    className="btn btn-link"
+                    className="btn btn-link d-inline-flex align-items-center gap-2"
                     onClick={() => router.push('/app')}
                 >
-                    ← Voltar para meus treinos
+                    <FiArrowLeft /> Voltar para meus treinos
                 </button>
             </div>
         );
@@ -96,10 +97,10 @@ export default function TreinoPage({ params: paramsPromise }: TreinoPageProps) {
     return (
         <div className="container py-5">
             <button
-                className="btn btn-outline-secondary btn-sm mb-3"
+                className="btn btn-outline-secondary btn-sm mb-3 d-inline-flex align-items-center gap-2"
                 onClick={() => router.push('/app')}
             >
-                ← Voltar para Meus Treinos
+                <FiArrowLeft /> Voltar para Meus Treinos
             </button>
             <div className="d-flex align-items-center gap-3 mb-4">
                 <Image

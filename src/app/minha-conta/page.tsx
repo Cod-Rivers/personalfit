@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { FiArrowLeft } from 'react-icons/fi';
 import { Api } from '@/libs/api';
 import { useRouter } from 'next/navigation';
 import Modal from '@/components/system/Modal';
@@ -114,10 +115,10 @@ export default function MinhaContaPage() {
         <>
             <div className="container py-5" style={{ maxWidth: 600 }}>
                 <button
-                    className="btn btn-outline-secondary btn-sm mb-4"
+                    className="btn btn-outline-secondary btn-sm mb-4 d-inline-flex align-items-center gap-2"
                     onClick={() => router.push(homeRoute)}
                 >
-                    ← Voltar
+                    <FiArrowLeft /> Voltar
                 </button>
                 <h1 className="mb-1 fw-bold">Minha Conta</h1>
                 <p className="text-secondary mb-4">

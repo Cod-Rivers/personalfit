@@ -46,7 +46,11 @@
     color: #ffc107;
 }
 
-.toast span:first-child {
+.toastIcon {
+    flex-shrink: 0;
+}
+
+.toast span {
     flex: 1;
 }
 
@@ -60,6 +64,8 @@
     cursor: pointer;
     padding: 2px;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
 }
 .closeBtn:hover {
     opacity: 1;

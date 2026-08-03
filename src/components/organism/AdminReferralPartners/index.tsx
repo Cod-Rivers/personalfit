@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { FiShare2 } from 'react-icons/fi';
 import {
     ReferralPartner,
     CreateReferralPartnerRequest,
@@ -112,7 +113,7 @@ export default function AdminReferralPartners() {
     return (
         <div className={styles.container}>
             <div className={styles.header}>
-                <h2 className={styles.title}>🤝 Parceiros de Indicação</h2>
+                <h2 className={styles.title}><FiShare2 /> Parceiros de Indicação</h2>
                 {tab === 'list' && (
                     <button onClick={openCreate} className={styles.btnAdd}>
                         + Novo Parceiro

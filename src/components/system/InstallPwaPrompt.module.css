@@ -24,6 +24,9 @@
     color: var(--text-muted);
     cursor: pointer;
     padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .text {

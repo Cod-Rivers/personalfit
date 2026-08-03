@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { FiAlertTriangle } from 'react-icons/fi';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Api } from '@/libs/api';
@@ -307,7 +308,7 @@ export default function InviteRegisterPage() {
         return (
             <div className={s.page}>
                 <div className={`${s.card} ${s.invalidCard}`}>
-                    <div className={s.invalidIcon}>⚠️</div>
+                    <div className={s.invalidIcon}><FiAlertTriangle /></div>
                     <h1 className={s.invalidTitle}>Convite inválido ou expirado</h1>
                     <p className={s.invalidText}>
                         Peça um novo link de convite ao seu personal trainer.

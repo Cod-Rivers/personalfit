@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
+import { FiHeart } from 'react-icons/fi';
 import { listEvolutionEntries } from '@/libs/evolutionService';
 import s from './TrainingZonesCalculator.module.css';
 
@@ -95,7 +96,7 @@ export default function TrainingZonesCalculator({ studentId }: Props) {
 
     return (
         <div className={s.card}>
-            <h3 className={s.title}>❤️ Zonas de treino (FC)</h3>
+            <h3 className={s.title}><FiHeart /> Zonas de treino (FC)</h3>
             <p className={s.sub}>
                 Calcule as faixas de frequência cardíaca-alvo para prescrever
                 aeróbico com segurança.

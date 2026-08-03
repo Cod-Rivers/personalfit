@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { FiVideo, FiActivity } from 'react-icons/fi';
 import {
     isSupportedExternalVideoUrl,
     isVideoExtension,
@@ -140,7 +141,7 @@ export default function ExerciseThumbnail({
             }}
             aria-hidden="true"
         >
-            {videoUrl ? '🎬' : '🏋️'}
+            {videoUrl ? <FiVideo /> : <FiActivity />}
         </div>
     );
 }

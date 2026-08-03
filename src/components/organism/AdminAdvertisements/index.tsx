@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { FiSpeaker, FiImage, FiVideo, FiArrowUp, FiArrowDown } from 'react-icons/fi';
 import {
     Advertisement,
     CreateAdvertisementRequest,
@@ -101,7 +102,7 @@ export default function AdminAdvertisements() {
     return (
         <div className={styles.container}>
             <div className={styles.header}>
-                <h2 className={styles.title}>📢 Anúncios Globais</h2>
+                <h2 className={styles.title}><FiSpeaker /> Anúncios Globais</h2>
                 <button onClick={openCreate} className={styles.btnAdd}>
                     + Novo Anúncio
                 </button>
@@ -135,14 +136,26 @@ export default function AdminAdvertisements() {
                             <tr key={ad.id}>
                                 <td>{ad.title}</td>
                                 <td>
-                                    {ad.type === 'image'
-                                        ? '🖼 Imagem'
-                                        : '🎬 Vídeo'}
+                                    {ad.type === 'image' ? (
+                                        <>
+                                            <FiImage /> Imagem
+                                        </>
+                                    ) : (
+                                        <>
+                                            <FiVideo /> Vídeo
+                                        </>
+                                    )}
                                 </td>
                                 <td>
-                                    {ad.placement === 'top'
-                                        ? '⬆ Topo'
-                                        : '⬇ Rodapé'}
+                                    {ad.placement === 'top' ? (
+                                        <>
+                                            <FiArrowUp /> Topo
+                                        </>
+                                    ) : (
+                                        <>
+                                            <FiArrowDown /> Rodapé
+                                        </>
+                                    )}
                                 </td>
                                 <td>
                                     {ad.is_active ? (

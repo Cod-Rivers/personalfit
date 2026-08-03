@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { FiZap, FiAward, FiLock } from 'react-icons/fi';
 import {
     getGamification,
     type Gamification,
@@ -35,7 +36,7 @@ export default function GamificationBanner() {
             <div className={s.top}>
                 <div className={s.streak}>
                     <span className={s.streakNum}>
-                        🔥 {data.current_streak_weeks}
+                        <FiZap /> {data.current_streak_weeks}
                     </span>
                     <span className={s.streakLabel}>
                         {data.current_streak_weeks === 1
@@ -73,7 +74,7 @@ export default function GamificationBanner() {
                                 key={a.code}
                                 title={a.description}
                             >
-                                🏅 {a.title}
+                                <FiAward /> {a.title}
                             </span>
                         ))}
                         {nextLocked && (
@@ -81,7 +82,7 @@ export default function GamificationBanner() {
                                 className={`${s.chip} ${s.chipLocked}`}
                                 title={nextLocked.description}
                             >
-                                🔒 {nextLocked.title}
+                                <FiLock /> {nextLocked.title}
                             </span>
                         )}
                     </div>

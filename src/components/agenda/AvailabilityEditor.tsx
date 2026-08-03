@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
+import { FiX, FiTrash2 } from 'react-icons/fi';
 import {
     getAvailability,
     saveAvailability,
@@ -373,7 +374,7 @@ export default function AvailabilityEditor() {
                                                     onClick={() => removeWindow(day, idx)}
                                                     aria-label="Remover janela"
                                                 >
-                                                    ✕
+                                                    <FiX />
                                                 </button>
                                             </div>
                                         ))}
@@ -552,7 +553,7 @@ export default function AvailabilityEditor() {
                                         onClick={() => handleDeleteOverride(o.id)}
                                         aria-label="Remover"
                                     >
-                                        🗑
+                                        <FiTrash2 />
                                     </button>
                                 </li>
                             ))}
@@ -589,7 +590,7 @@ export default function AvailabilityEditor() {
                                         onClick={() => handleDeleteBlock(b.id)}
                                         aria-label="Remover"
                                     >
-                                        🗑
+                                        <FiTrash2 />
                                     </button>
                                 </li>
                             ))}

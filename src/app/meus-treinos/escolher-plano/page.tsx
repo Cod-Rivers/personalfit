@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { FiArrowLeft } from 'react-icons/fi';
 import {
     getCelebrityTemplates,
     MacrocycleResponse,
@@ -104,9 +105,9 @@ export default function EscolherPlanoPage() {
         <div className="container mx-auto p-4">
             <Link
                 href={getStudentHomeRoute()}
-                className="btn btn-outline-secondary btn-sm mb-3"
+                className="btn btn-outline-secondary btn-sm mb-3 d-inline-flex align-items-center gap-2"
             >
-                ← Voltar para Meus Treinos
+                <FiArrowLeft /> Voltar para Meus Treinos
             </Link>
             <div className={s.header}>
                 <div>

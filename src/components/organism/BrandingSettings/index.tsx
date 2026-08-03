@@ -1,5 +1,6 @@
 'use client';
 import React, { useEffect, useRef, useState } from 'react';
+import { FiStar, FiX, FiCheck } from 'react-icons/fi';
 import {
     UpdateBrandingPayload,
     updateBranding,
@@ -120,7 +121,7 @@ export default function BrandingSettings({ planType }: Props) {
             {!isPro && (
                 <div className={styles.gateOverlay}>
                     <div className={styles.gateBox}>
-                        <span className={styles.gateIcon}>⭐</span>
+                        <span className={styles.gateIcon}><FiStar style={{ fill: 'currentColor' }} /></span>
                         <h3 className={styles.gateTitle}>Recurso Premium</h3>
                         <p className={styles.gateText}>
                             Personalize o visual do seu espaço para os alunos
@@ -156,7 +157,7 @@ export default function BrandingSettings({ planType }: Props) {
                                     className={styles.removeBtn}
                                     title="Remover logo"
                                 >
-                                    ✕
+                                    <FiX />
                                 </button>
                             </div>
                         ) : (
@@ -293,7 +294,7 @@ export default function BrandingSettings({ planType }: Props) {
                 {error && <p className={styles.error}>{error}</p>}
                 {success && (
                     <p className={styles.successMsg}>
-                        ✓ Branding salvo com sucesso!
+                        <FiCheck /> Branding salvo com sucesso!
                     </p>
                 )}
                 <button

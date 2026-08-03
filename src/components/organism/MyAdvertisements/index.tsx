@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { FiSpeaker, FiImage, FiVideo, FiArrowUp, FiArrowDown } from 'react-icons/fi';
 import {
     Advertisement,
     CreateAdvertisementRequest,
@@ -101,7 +102,7 @@ export default function MyAdvertisements() {
     return (
         <div className={styles.container}>
             <div className={styles.header}>
-                <h2 className={styles.title}>📢 Meus Anúncios</h2>
+                <h2 className={styles.title}><FiSpeaker /> Meus Anúncios</h2>
                 <button onClick={openCreate} className={styles.btnAdd}>
                     + Novo Anúncio
                 </button>
@@ -125,13 +126,25 @@ export default function MyAdvertisements() {
                                     {ad.title}
                                 </span>
                                 <span className={styles.adMeta}>
-                                    {ad.type === 'image'
-                                        ? '🖼 Imagem'
-                                        : '🎬 Vídeo'}{' '}
+                                    {ad.type === 'image' ? (
+                                        <>
+                                            <FiImage /> Imagem
+                                        </>
+                                    ) : (
+                                        <>
+                                            <FiVideo /> Vídeo
+                                        </>
+                                    )}{' '}
                                     •{' '}
-                                    {ad.placement === 'top'
-                                        ? '⬆ Topo'
-                                        : '⬇ Rodapé'}{' '}
+                                    {ad.placement === 'top' ? (
+                                        <>
+                                            <FiArrowUp /> Topo
+                                        </>
+                                    ) : (
+                                        <>
+                                            <FiArrowDown /> Rodapé
+                                        </>
+                                    )}{' '}
                                     •{' '}
                                     {ad.is_active ? (
                                         <span className={styles.active}>

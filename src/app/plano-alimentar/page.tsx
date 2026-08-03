@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { FiCoffee, FiArrowLeft } from 'react-icons/fi';
 import MealPlanEditor from '@/components/features/MealPlanEditor';
 import s from '../agendamentos/agendamentos.module.css';
 
@@ -39,7 +40,7 @@ export default function MyMealPlanPage() {
             <div className={s.container}>
                 <div className={s.header}>
                     <div>
-                        <h1 className={s.headerTitle}>🍽️ Plano Alimentar</h1>
+                        <h1 className={s.headerTitle}><FiCoffee /> Plano Alimentar</h1>
                         <p className={s.headerSub}>
                             Seu plano de alimentação, registrado e acompanhado
                             ao longo do tempo
@@ -53,7 +54,7 @@ export default function MyMealPlanPage() {
                             )
                         }
                     >
-                        ← Voltar
+                        <FiArrowLeft /> Voltar
                     </button>
                 </div>
 

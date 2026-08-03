@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { FiLayers } from 'react-icons/fi';
 import {
     Protocol,
     ProtocolFolder,
@@ -234,7 +235,7 @@ export default function AdminProtocols() {
     return (
         <div className={styles.container}>
             <div className={styles.header}>
-                <h2 className={styles.title}>🏋️‍♂️ Protocolos de Treino</h2>
+                <h2 className={styles.title}><FiLayers /> Protocolos de Treino</h2>
                 {tab === 'avançado' && (
                     <button onClick={openCreate} className={styles.btnAdd}>
                         + Novo Protocolo Avançado

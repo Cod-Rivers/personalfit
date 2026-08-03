@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { FiX, FiUpload } from 'react-icons/fi';
 import { isInsideNativeApp } from '@/libs/androidApp';
 import s from './InstallPwaPrompt.module.css';
 
@@ -89,14 +90,14 @@ export default function InstallPwaPrompt() {
                 onClick={dismiss}
                 aria-label="Fechar"
             >
-                ×
+                <FiX />
             </button>
             {mode === 'ios' ? (
                 <p className={s.text}>
                     Instale o Venafit na tela de início: toque em{' '}
                     <strong>Compartilhar</strong>{' '}
                     <span className={s.shareIcon} aria-hidden="true">
-                        ⬆
+                        <FiUpload />
                     </span>{' '}
                     e depois em <strong>Adicionar à Tela de Início</strong>.
                 </p>

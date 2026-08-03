@@ -120,6 +120,9 @@
     padding: 4px 9px;
     border-radius: 999px;
     white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
 }
 .statusBadge[data-tone='completed'] {
     color: var(--mint-text);

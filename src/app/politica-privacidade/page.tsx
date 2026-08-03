@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { FiArrowLeft } from 'react-icons/fi';
 
 export const metadata = {
     title: 'Política de Privacidade — Venafit',
@@ -144,8 +145,8 @@ export default function PoliticaPrivacidadePage() {
                 </p>
             </section>
 
-            <Link href="/minha-conta" className="btn btn-outline-secondary btn-sm">
-                ← Voltar para Minha Conta
+            <Link href="/minha-conta" className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2">
+                <FiArrowLeft /> Voltar para Minha Conta
             </Link>
         </div>
     );

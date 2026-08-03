@@ -182,7 +182,7 @@ const studentSections: HelpSection[] = [
         title: 'Tema claro/escuro',
         body: (
             <p className="mb-0">
-                O botão 🌙 / ☀️ no menu superior alterna entre tema claro e
+                O botão de tema (lua/sol) no menu superior alterna entre tema claro e
                 escuro. A escolha fica salva no aparelho e é aplicada
                 automaticamente nas próximas vezes que você abrir o app.
             </p>
@@ -246,16 +246,16 @@ const personalSections: HelpSection[] = [
                     <strong>Aguardando confirmação</strong> (o aluno ainda
                     precisa aceitar a reativação) ou <strong>Inativo</strong>.
                     Nos cartões você acessa{' '}
-                    <strong>👁️ Ver Treino</strong>, que leva direto para o
+                    <strong>Ver Treino</strong>, que leva direto para o
                     treino ativo do aluno (com todo o CRUD de mesociclos e
                     treinos), além de{' '}
-                    <Link href="#periodizacao-aluno">📋 Periodização</Link>,{' '}
+                    <Link href="#periodizacao-aluno">Periodização</Link>,{' '}
                     <Link href="#plano-alimentar-personal">
-                        🍽️ Plano Alimentar
+                        Plano Alimentar
                     </Link>
-                    , <Link href="#evolucao-personal">📈 Evolução</Link>,{' '}
-                    <Link href="#financeiro-personal">💰 Financeiro</Link> e{' '}
-                    <Link href="#feedback-personal">💬 Feedback</Link> do
+                    , <Link href="#evolucao-personal">Evolução</Link>,{' '}
+                    <Link href="#financeiro-personal">Financeiro</Link> e{' '}
+                    <Link href="#feedback-personal">Feedback</Link> do
                     aluno.
                 </p>
                 <p className="mb-0">
@@ -278,7 +278,7 @@ const personalSections: HelpSection[] = [
         title: 'Retenção',
         body: (
             <p className="mb-0">
-                Na aba <strong>📊 Retenção</strong> você vê há quantos dias
+                Na aba <strong>Retenção</strong> você vê há quantos dias
                 cada aluno não registra um treino, para agir antes que ele
                 abandone o acompanhamento. Direto da lista você pode{' '}
                 <strong>enviar um lembrete</strong> ao aluno.
@@ -290,7 +290,7 @@ const personalSections: HelpSection[] = [
         title: 'Financeiro do aluno',
         body: (
             <p className="mb-0">
-                Pelo cartão do aluno em <strong>💰 Financeiro</strong> você
+                Pelo cartão do aluno em <strong>Financeiro</strong> você
                 lança cobranças (mensalidade, pacote de sessões etc.), marca
                 como pagas, reabre ou exclui um lançamento — um controle
                 simples de cobrança por aluno, sem meio de pagamento
@@ -303,7 +303,7 @@ const personalSections: HelpSection[] = [
         title: 'Feedback do aluno',
         body: (
             <p className="mb-0">
-                Pelo cartão do aluno em <strong>💬 Feedback</strong> você vê a
+                Pelo cartão do aluno em <strong>Feedback</strong> você vê a
                 nota que o aluno deu para cada{' '}
                 <GlossaryLink id="macrociclo">macrociclo</GlossaryLink>,{' '}
                 <GlossaryLink id="mesociclo">mesociclo</GlossaryLink> e{' '}
@@ -341,7 +341,7 @@ const personalSections: HelpSection[] = [
         title: 'Autorregulação (configurações)',
         body: (
             <p className="mb-0">
-                Na aba <strong>⚙️ Autorregulação</strong> você ajusta os
+                Na aba <strong>Autorregulação</strong> você ajusta os
                 parâmetros que definem as zonas de{' '}
                 <GlossaryLink id="autorregulacao">autorregulação</GlossaryLink>{' '}
                 dos seus alunos — por exemplo, a partir de qual diferença
@@ -372,7 +372,7 @@ const personalSections: HelpSection[] = [
                     — monte uma vez e aplique em vários alunos. Em{' '}
                     <strong>+ Novo Ciclo</strong> você cria o{' '}
                     <GlossaryLink id="macrociclo">macrociclo</GlossaryLink>;
-                    depois use <strong>🛠 Configurar treinos</strong> para
+                    depois use <strong>Configurar treinos</strong> para
                     montar <GlossaryLink id="mesociclo">mesociclos</GlossaryLink>
                     ,{' '}
                     <GlossaryLink id="microciclo-periodo">
@@ -381,10 +381,10 @@ const personalSections: HelpSection[] = [
                     e os exercícios de cada treino.
                 </p>
                 <p className="mb-2">
-                    Para cada ciclo você pode <strong>📋 Aplicar</strong> a um
-                    aluno, <strong>✏️ Editar</strong> os dados (nome, objetivo,
-                    visibilidade), <strong>🧬 Duplicar</strong> ou{' '}
-                    <strong>🗑 Remover</strong>. O selo de usos mostra quantas
+                    Para cada ciclo você pode <strong>Aplicar</strong> a um
+                    aluno, <strong>Editar</strong> os dados (nome, objetivo,
+                    visibilidade), <strong>Duplicar</strong> ou{' '}
+                    <strong>Remover</strong>. O selo de usos mostra quantas
                     vezes o ciclo já foi aplicado, e você pode ordenar por{' '}
                     <strong>mais usados</strong>.
                 </p>
@@ -407,7 +407,7 @@ const personalSections: HelpSection[] = [
             <p className="mb-0">
                 Reúne ciclos que outros personals escolheram compartilhar e que
                 foram aprovados pela equipe Venafit. Você pode buscar por nome
-                ou objetivo e <strong>📋 Aplicar</strong> um deles direto a um
+                ou objetivo e <strong>Aplicar</strong> um deles direto a um
                 aluno seu — um bom atalho para começar rápido e depois ajustar.
             </p>
         ),
@@ -418,7 +418,7 @@ const personalSections: HelpSection[] = [
         body: (
             <>
                 <p className="mb-2">
-                    O botão <strong>👁️ Ver Treino</strong> no cartão do aluno é
+                    O botão <strong>Ver Treino</strong> no cartão do aluno é
                     um atalho: ele pula direto para o{' '}
                     <GlossaryLink id="macrociclo">macrociclo</GlossaryLink>{' '}
                     ativo do aluno (ou o mais recente, se nenhum estiver
@@ -427,10 +427,10 @@ const personalSections: HelpSection[] = [
                     abaixo para criar o primeiro.
                 </p>
                 <p className="mb-2">
-                    Pelo cartão do aluno em <strong>📋 Periodização</strong>{' '}
+                    Pelo cartão do aluno em <strong>Periodização</strong>{' '}
                     você vê os macrociclos dele. Crie um do zero em{' '}
                     <strong>+ Novo Macrociclo</strong> ou parta de um modelo em{' '}
-                    <strong>📂 De Modelo</strong>. Cada macrociclo tem
+                    <strong>De Modelo</strong>. Cada macrociclo tem
                     objetivo, datas e status (<strong>Rascunho</strong>,{' '}
                     <strong>Ativo</strong> ou <strong>Concluído</strong>).
                 </p>
@@ -441,7 +441,7 @@ const personalSections: HelpSection[] = [
                         microciclos
                     </GlossaryLink>{' '}
                     e os treinos. Um bom macrociclo pode virar modelo
-                    reutilizável com <strong>📋 Modelo</strong> — ele passa a
+                    reutilizável com <strong>Modelo</strong> — ele passa a
                     aparecer na sua{' '}
                     <Link href="#periodizacao-biblioteca">
                         Minha Periodização / Treinos
@@ -758,7 +758,7 @@ const personalSections: HelpSection[] = [
                 <ol className="mb-2 ps-3">
                     <li>
                         Crie o macrociclo do aluno em{' '}
-                        <strong>📋 Periodização → + Novo Macrociclo</strong>{' '}
+                        <strong>Periodização → + Novo Macrociclo</strong>{' '}
                         (ou parta de um modelo).
                     </li>
                     <li>
@@ -950,7 +950,7 @@ const personalSections: HelpSection[] = [
         pro: true,
         body: (
             <p className="mb-0">
-                Pelo cartão do aluno em <strong>🍽️ Plano Alimentar</strong>{' '}
+                Pelo cartão do aluno em <strong>Plano Alimentar</strong>{' '}
                 você monta e acompanha as refeições do aluno — inclusive
                 anexando um PDF do plano. Este recurso é do{' '}
                 <Link href="#plano-pro">plano PRO</Link>: os alunos vinculados a
@@ -964,7 +964,7 @@ const personalSections: HelpSection[] = [
         title: 'Evolução do aluno',
         body: (
             <p className="mb-0">
-                Pelo cartão do aluno em <strong>📈 Evolução</strong> você
+                Pelo cartão do aluno em <strong>Evolução</strong> você
                 acompanha medidas e fotos ao longo do tempo, para comparar o
                 antes e o depois. O acompanhamento de evolução é gratuito — o
                 próprio aluno também registra as medidas dele.
@@ -978,19 +978,19 @@ const personalSections: HelpSection[] = [
         body: (
             <>
                 <p className="mb-2">
-                    Em <strong>📅 Agenda</strong> você marca sessões{' '}
+                    Em <strong>Agenda</strong> você marca sessões{' '}
                     <strong>presenciais</strong>, <strong>online</strong>{' '}
                     (com link de reunião), de <strong>consultoria</strong> ou
                     de <strong>avaliação física</strong>. Filtre por período
                     e, em cada sessão, registre a situação:{' '}
-                    <strong>Confirmar</strong>, <strong>✓ Presente</strong>,{' '}
-                    <strong>✗ Faltou</strong> ou <strong>Cancelar</strong>.
+                    <strong>Confirmar</strong>, <strong>Presente</strong>,{' '}
+                    <strong>Faltou</strong> ou <strong>Cancelar</strong>.
                 </p>
                 <p className="mb-0">
                     Você define a <strong>antecedência mínima</strong> para um
                     cancelamento não descontar a sessão do plano do aluno.
                     Cancelamentos feitos dentro desse prazo usam o{' '}
-                    <strong>⏮ Antecipado</strong> e não pesam para o aluno.
+                    <strong>Antecipado</strong> e não pesam para o aluno.
                     Quando o aluno solicita um horário, a sessão aparece
                     marcada como <strong>(solicitado pelo aluno)</strong>. A
                     Agenda é um recurso do{' '}
@@ -1065,7 +1065,7 @@ const personalSections: HelpSection[] = [
                     daquela recorrência (novo dia/horário ou cancelamento
                     pontual). Quando o aluno pede uma remarcação, ela chega
                     como <strong>Pendente</strong> e você{' '}
-                    <strong>✓ Aceita</strong> ou <strong>✗ Rejeita</strong>.
+                    <strong>Aceita</strong> ou <strong>Rejeita</strong>.
                 </p>
             </>
         ),
@@ -1076,7 +1076,7 @@ const personalSections: HelpSection[] = [
         body: (
             <>
                 <p className="mb-2">
-                    Em <strong>🏆 Desafios</strong> você cria uma campanha
+                    Em <strong>Desafios</strong> você cria uma campanha
                     pública com um link para divulgar seu trabalho — quem
                     ainda não é seu aluno pode participar informando nome,
                     e-mail e telefone, sem precisar ter conta no Venafit.
@@ -1095,7 +1095,7 @@ const personalSections: HelpSection[] = [
         pro: true,
         body: (
             <p className="mb-0">
-                Na aba <strong>🎨 Personalização</strong> você aplica a sua
+                Na aba <strong>Personalização</strong> você aplica a sua
                 identidade no app dos alunos: <strong>logo</strong>,{' '}
                 <strong>cores</strong> primária e secundária e uma{' '}
                 <strong>mensagem de boas-vindas</strong>. Há uma
@@ -1111,7 +1111,7 @@ const personalSections: HelpSection[] = [
         pro: true,
         body: (
             <p className="mb-0">
-                Na aba <strong>📢 Meus Anúncios</strong> você divulga o seu
+                Na aba <strong>Meus Anúncios</strong> você divulga o seu
                 trabalho para os seus alunos dentro do app. Disponível no{' '}
                 <Link href="#plano-pro">plano PRO</Link> — e, como assinante
                 PRO, nem você nem seus alunos veem anúncios de terceiros.

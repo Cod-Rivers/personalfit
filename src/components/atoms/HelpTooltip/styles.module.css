@@ -118,6 +118,9 @@
     font-weight: 700;
     color: var(--mint-text) !important;
     white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
 }
 
 .bubbleTail {

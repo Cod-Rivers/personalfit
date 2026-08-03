@@ -7,6 +7,7 @@ import {
     GiAbdominalArmor,
     GiBodyBalance,
 } from 'react-icons/gi';
+import { FiCheck } from 'react-icons/fi';
 import { TrainingCardProps } from './types';
 import styles from './TrainingCard.module.css';
 import { formatRelativeDays } from '@/libs/trainingSummary';
@@ -39,7 +40,7 @@ const TrainingCard: React.FC<TrainingCardProps> = ({
     const isCompleted = status === 'completed';
 
     const badge = isCompleted
-        ? { text: '✓ Concluído', tone: 'completed' }
+        ? { text: 'Concluído', tone: 'completed' }
         : scheduledToday
           ? { text: 'Hoje', tone: 'today' }
           : status === 'pending'
@@ -85,6 +86,7 @@ const TrainingCard: React.FC<TrainingCardProps> = ({
             </div>
             {badge && (
                 <span className={styles.statusBadge} data-tone={badge.tone}>
+                    {badge.tone === 'completed' && <FiCheck />}
                     {badge.text}
                 </span>
             )}

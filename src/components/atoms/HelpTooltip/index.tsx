@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
+import { FiX, FiChevronRight } from 'react-icons/fi';
 import styles from './styles.module.css';
 
 interface HelpTooltipProps {
@@ -76,7 +77,7 @@ export default function HelpTooltip({
                         setOpen(false);
                     }}
                 >
-                    ×
+                    <FiX />
                 </button>
                 <span className={styles.bubbleText}>{text}</span>
                 <Link
@@ -84,7 +85,7 @@ export default function HelpTooltip({
                     className={styles.bubbleLink}
                     onClick={() => setOpen(false)}
                 >
-                    {linkLabel} →
+                    {linkLabel} <FiChevronRight />
                 </Link>
                 <span className={styles.bubbleTail} aria-hidden="true" />
             </span>

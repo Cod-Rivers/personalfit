@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
+import { FiX, FiBarChart2, FiTrendingUp } from 'react-icons/fi';
 import {
     listEvolutionEntries,
     createEvolutionEntry,
@@ -287,14 +288,22 @@ export default function EvolutionTimeline({ studentId }: Props) {
                         className={compareMode ? s.btnCompareActive : s.btnCompare}
                         onClick={toggleCompare}
                     >
-                        {compareMode ? '✕ Fechar comparação' : '📊 Comparar avaliações'}
+                        {compareMode ? (
+                            <>
+                                <FiX /> Fechar comparação
+                            </>
+                        ) : (
+                            <>
+                                <FiBarChart2 /> Comparar avaliações
+                            </>
+                        )}
                     </button>
                 )}
             </div>
 
             {sortedEntries.length >= 2 && (
                 <div className={s.card}>
-                    <h3 className={s.chartTitle}>📈 Evolução ao longo do tempo</h3>
+                    <h3 className={s.chartTitle}><FiTrendingUp /> Evolução ao longo do tempo</h3>
                     <EvolutionChart entries={sortedEntries} />
                 </div>
             )}

@@ -1,6 +1,7 @@
 'use client';
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { FiAlertTriangle, FiEdit3 } from 'react-icons/fi';
 import { uploadAvatar } from '@/libs/avatarService';
 import styles from './AvatarUpload.module.css';
 
@@ -313,7 +314,7 @@ export default function AvatarUpload({
                             title={error || 'Alterar foto'}
                             aria-label="Alterar foto de perfil"
                         >
-                            {error ? '⚠️' : '✏️'}
+                            {error ? <FiAlertTriangle /> : <FiEdit3 />}
                         </button>
                         <input
                             ref={inputRef}
