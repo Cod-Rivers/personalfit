@@ -20,6 +20,7 @@ const BASIC_FIELDS: Key[] = [
     'progressUpBigPct',
     'progressUpSmallPct',
     'progressDownPct',
+    'firstSuggestionNudgePct',
     'maxDeviationFromPrescribedPct',
     'abovePrescribedTolerancePct',
 ];

@@ -3,7 +3,26 @@ import { computeLoadSuggestion } from './loadSuggestion';
 import { DEFAULT_AUTOREGULATION_POLICY } from './autoregulationPolicy';
 
 describe('computeLoadSuggestion', () => {
-    it('uses the prescribed load as-is when there is no execution history', () => {
+    it('uses the prescribed load as-is when there is no execution history and the nudge is disabled', () => {
+        const result = computeLoadSuggestion({
+            prescribedKg: 40,
+            history: [],
+            targetRPE: 8,
+            autoregulationAdjustPct: 0,
+            policy: {
+                ...DEFAULT_AUTOREGULATION_POLICY,
+                firstSuggestionNudgePct: 0,
+            },
+        });
+
+        expect(result.source).toBe('personal');
+        expect(result.suggestedKg).toBe(40);
+        expect(result.abovePrescribed).toBe(false);
+        expect(result.progressionGated).toBe(false);
+        expect(result.weeklyCapped).toBe(false);
+    });
+
+    it('applies the default first-suggestion nudge on top of the prescribed load when there is no history yet', () => {
         const result = computeLoadSuggestion({
             prescribedKg: 40,
             history: [],
@@ -12,10 +31,21 @@ describe('computeLoadSuggestion', () => {
         });
 
         expect(result.source).toBe('personal');
-        expect(result.suggestedKg).toBe(40);
-        expect(result.abovePrescribed).toBe(false);
-        expect(result.progressionGated).toBe(false);
-        expect(result.weeklyCapped).toBe(false);
+        // 40 * 1.025 (firstSuggestionNudgePct padrão) = 41
+        expect(result.suggestedKg).toBe(41);
+        expect(result.reason).toContain('progressão inicial padrão');
+    });
+
+    it('stops applying the first-suggestion nudge as soon as real history exists', () => {
+        const result = computeLoadSuggestion({
+            prescribedKg: 40,
+            history: [{ date: '2026-07-20', loadKg: 40, reps: 8, rpe: 7 }],
+            targetRPE: 7,
+            autoregulationAdjustPct: 0,
+        });
+
+        expect(result.source).toBe('ambos');
+        expect(result.reason).not.toContain('progressão inicial padrão');
     });
 
     it('returns no suggestion when there is neither prescription nor history', () => {

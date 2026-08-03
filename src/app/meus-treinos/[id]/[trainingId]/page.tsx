@@ -501,6 +501,12 @@ export default function MeusTreinosExercisesPage({
 
                     {microPanelOpen && (
                     <div className="card-body pt-0">
+                        <p className="small alert alert-info py-2 px-3 mb-3">
+                            💡 Preencha estes campos todos os dias antes de
+                            treinar e sempre finalize o treino pelo app (não
+                            deixe pendente) — é isso que alimenta o histórico
+                            usado para calcular e evoluir a sugestão de carga.
+                        </p>
                         {currentMeso && currentMicro && (
                             <p className="small text-muted mb-2">
                                 {currentMeso.name} · foco:{' '}

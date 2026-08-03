@@ -24,6 +24,12 @@ export interface AutoregulationPolicy {
     progressUpBigPct: number;
     progressUpSmallPct: number;
     progressDownPct: number;
+    /** Ajuste aplicado só na primeira sugestão de um exercício, quando ainda
+     * não há nenhuma sessão concluída no histórico (source 'personal' puro
+     * em loadSuggestion.ts) — sem isso, a primeira sugestão é sempre uma
+     * cópia idêntica da carga prescrita, o que passa a impressão de que o
+     * motor de progressão "não faz nada" até o aluno acumular histórico. */
+    firstSuggestionNudgePct: number;
     /** Até quanto a sugestão pode se afastar da carga prescrita pelo
      * personal (%), sem dimensão de tempo — renomeado de "weeklyCapPct",
      * que nunca teve componente temporal apesar do nome (ver
@@ -67,6 +73,7 @@ export const DEFAULT_AUTOREGULATION_POLICY: AutoregulationPolicy = {
     progressUpBigPct: 5,
     progressUpSmallPct: 2.5,
     progressDownPct: -5,
+    firstSuggestionNudgePct: 2.5,
     maxDeviationFromPrescribedPct: 10,
     abovePrescribedTolerancePct: 10,
     // ACSM 2009 / NSCA "2-for-2 rule": 2 sessões consecutivas dentro da meta.
@@ -96,6 +103,7 @@ export const AUTOREGULATION_POLICY_RANGES: Record<
     progressUpBigPct: { min: 0, max: 15, label: 'Progressão de carga (folga grande)' },
     progressUpSmallPct: { min: 0, max: 15, label: 'Progressão de carga (folga pequena)' },
     progressDownPct: { min: -30, max: 0, label: 'Redução de carga (RPE acima do alvo)' },
+    firstSuggestionNudgePct: { min: 0, max: 10, label: 'Progressão da primeira sugestão (sem histórico)' },
     maxDeviationFromPrescribedPct: { min: 0, max: 25, label: 'Margem de desvio da carga prescrita' },
     abovePrescribedTolerancePct: { min: 0, max: 30, label: 'Margem acima do prescrito' },
     minConsecutiveSessionsBeforeIncrease: { min: 1, max: 4, label: 'Sessões consecutivas para liberar aumento' },

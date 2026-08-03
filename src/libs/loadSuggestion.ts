@@ -250,9 +250,19 @@ export function computeLoadSuggestion(
         source = 'aluno';
         reason = alunoReason;
     } else {
-        baseKg = prescribedKg as number;
+        // Sem nenhuma sessão concluída ainda: sem o nudge, a primeira
+        // sugestão seria idêntica ao prescrito, dando a impressão de que o
+        // motor "não faz nada" até acumular histórico. O nudge é só
+        // cosmético/motivacional (não é progressão real baseada em
+        // desempenho) — some assim que houver histórico real, quando a
+        // progressão passa a ser guiada pelo RPE das sessões.
+        const nudgePct = policy.firstSuggestionNudgePct;
+        baseKg = (prescribedKg as number) * (1 + nudgePct / 100);
         source = 'personal';
-        reason = `carga prescrita pelo personal (${prescribedKg}kg), sem histórico ainda`;
+        reason =
+            nudgePct > 0
+                ? `carga prescrita pelo personal (${prescribedKg}kg) + progressão inicial padrão (+${nudgePct}%), sem histórico ainda`
+                : `carga prescrita pelo personal (${prescribedKg}kg), sem histórico ainda`;
     }
 
     if (weeklyCapped) {
