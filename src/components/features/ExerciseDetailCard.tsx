@@ -10,6 +10,7 @@ import {
     FiCheck,
     FiSave,
     FiChevronRight,
+    FiAlertCircle,
 } from 'react-icons/fi';
 import { ExerciseLog } from './types';
 import styles from './ExerciseDetailCard.module.css';
@@ -37,6 +38,8 @@ import {
     setCachedWeight,
 } from '@/libs/exerciseWeightService';
 import { LoadSuggestion } from '@/libs/loadSuggestion';
+import HelpTooltip from '@/components/atoms/HelpTooltip';
+import { getGlossaryTerm } from '@/libs/glossaryContent';
 
 interface ExerciseDetailCardProps {
     exercise: ExerciseLog;
@@ -57,6 +60,10 @@ interface ExerciseDetailCardProps {
     nextInGroup?: ExerciseLog | null;
     /** Abre outro exercício no lugar deste (usado pelo atalho do bloco). */
     onSelectExercise?: (exercise: ExerciseLog) => void;
+    /** Abre o fluxo de Substituição Inteligente de Exercícios para este
+     * exercício. Opcional: o fluxo legado (/app/treino) também renderiza este
+     * componente e não deve ganhar o botão. */
+    onEquipmentUnavailable?: (exercise: ExerciseLog) => void;
 }
 
 const getEmbedUrl = (url: string): string | null => {
@@ -97,6 +104,7 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
     loadSuggestion,
     nextInGroup,
     onSelectExercise,
+    onEquipmentUnavailable,
 }) => {
     // --- Estados ---
     const [timerValue, setTimerValue] = useState<number>(
@@ -534,6 +542,11 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                             <div className={styles.detailRow}>
                                     <div className={styles.repet}>
                                         <strong>Repetições:</strong>{' '}
+                                        <HelpTooltip
+                                            text={getGlossaryTerm('series-repeticoes').short}
+                                            href="/ajuda#glossario-series-repeticoes"
+                                            label="Ajuda sobre séries e repetições"
+                                        />
                                         <div className={styles.valueBox}>
                                             <span>
                                                 {exercise.series_label
@@ -550,6 +563,11 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                     </div>
                                     <div>
                                         <strong>Peso (KG):</strong>{' '}
+                                        <HelpTooltip
+                                            text={getGlossaryTerm('carga').short}
+                                            href="/ajuda#glossario-carga"
+                                            label="Ajuda sobre carga"
+                                        />
                                         <div
                                             style={{
                                                 display: 'flex',
@@ -648,10 +666,34 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                         )}
                                     </div>
                                 </div>
+                                {onEquipmentUnavailable && (
+                                    <button
+                                        type="button"
+                                        className={styles.watchVideoLink}
+                                        style={{
+                                            background: 'none',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: '0.35rem',
+                                            padding: 0,
+                                            marginTop: '0.5rem',
+                                        }}
+                                        onClick={() => onEquipmentUnavailable(exercise)}
+                                    >
+                                        <FiAlertCircle /> Equipamento indisponível?
+                                    </button>
+                                )}
                                 {exercise.variations && (
                                     <div className={styles.detailRow}>
                                         <p>
                                             <strong>Variações:</strong>{' '}
+                                            <HelpTooltip
+                                                text={getGlossaryTerm('variacoes').short}
+                                                href="/ajuda#glossario-variacoes"
+                                                label="Ajuda sobre variações"
+                                            />{' '}
                                             {exercise.variations}
                                         </p>
                                     </div>
@@ -692,7 +734,12 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                 {exercise.technique && (
                                     <div className={styles.notesSection}>
                                         <p>
-                                            <strong>Técnica:</strong>
+                                            <strong>Técnica:</strong>{' '}
+                                            <HelpTooltip
+                                                text={getGlossaryTerm('tecnica').short}
+                                                href="/ajuda#glossario-tecnica"
+                                                label="Ajuda sobre técnica de treinamento"
+                                            />
                                         </p>
                                         <p>
                                             {formatTechniqueSummary(
@@ -705,7 +752,12 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                 {exercise.group_technique && (
                                     <div className={styles.notesSection}>
                                         <p>
-                                            <strong>Combinação:</strong>
+                                            <strong>Combinação:</strong>{' '}
+                                            <HelpTooltip
+                                                text={getGlossaryTerm('combinacao').short}
+                                                href="/ajuda#glossario-combinacao"
+                                                label="Ajuda sobre combinação de exercícios"
+                                            />
                                         </p>
                                         <p>
                                             {groupTechniqueLabel(
@@ -837,7 +889,12 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                             <span
                                                 className={styles.timerLabel}
                                             >
-                                                Descanso entre exercícios
+                                                Descanso entre exercícios{' '}
+                                                <HelpTooltip
+                                                    text={getGlossaryTerm('descanso').short}
+                                                    href="/ajuda#glossario-descanso"
+                                                    label="Ajuda sobre descanso entre exercícios"
+                                                />
                                             </span>
                                         </div>
                                         <div className={styles.timerControls}>

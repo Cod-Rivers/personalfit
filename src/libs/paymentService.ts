@@ -18,6 +18,7 @@ export interface PlanCatalog {
     pro: PlanCatalogItem[];
     early_anamnesis: PlanCatalogItem;
     library_plan: PlanCatalogItem;
+    ai_substitution: PlanCatalogItem;
 }
 
 export async function getPlans(): Promise<PlanCatalog> {
@@ -84,6 +85,20 @@ export async function subscribeProCard(
 
 export async function cancelSubscription(): Promise<void> {
     await Api.post('/user/cancel-subscribe');
+}
+
+/* ── Substituição Inteligente de Exercícios: assinatura avulsa (aluno sem personal) ── */
+/* Só cartão de crédito — PIX no Asaas é cobrança única, não assinatura recorrente. */
+
+export async function subscribeAISubstitutionCard(
+    card: CardSubscriptionForm,
+): Promise<SubscribeCardResponse> {
+    const res = await Api.post<SubscribeCardResponse>('/me/ai-substitution/subscribe', card);
+    return res.data;
+}
+
+export async function cancelAISubstitution(): Promise<void> {
+    await Api.post('/me/ai-substitution/cancel');
 }
 
 /* ── Nova anamnese (aluno free) via PIX ── */

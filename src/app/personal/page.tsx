@@ -14,12 +14,14 @@ import {
     FiBookOpen,
     FiGlobe,
     FiLock,
+    FiRefreshCw,
 } from 'react-icons/fi';
 
 import { usePersonalStudents } from '@/hooks/usePersonalStudents';
 import s from './personal.module.css';
 import BrandingSettings from '@/components/organism/BrandingSettings';
 import AutoregulationPolicySettings from '@/components/organism/AutoregulationPolicySettings';
+import AISubstitutionSettings from '@/components/organism/AISubstitutionSettings';
 import MyAdvertisements from '@/components/organism/MyAdvertisements';
 import StudentsTab from './_components/StudentsTab';
 import ExercisesTab from './_components/ExercisesTab';
@@ -40,6 +42,7 @@ type Tab =
     | 'exercises'
     | 'branding'
     | 'autoregulation'
+    | 'ai-substitution'
     | 'ads'
     | 'ciclos'
     | '_publicTemplates';
@@ -139,6 +142,15 @@ export default function PersonalDashboard() {
                         <FiSliders className={s.tabIcon} />
                         Autorregulação
                     </button>
+                    <button
+                        className={
+                            tab === 'ai-substitution' ? s.tabActive : s.tab
+                        }
+                        onClick={() => setTab('ai-substitution')}
+                    >
+                        <FiRefreshCw className={s.tabIcon} />
+                        Substituição por IA
+                    </button>
                     {planType === 'pro' && (
                         <button
                             className={tab === 'ads' ? s.tabActive : s.tab}
@@ -232,6 +244,7 @@ export default function PersonalDashboard() {
                 )}
 
                 {tab === 'autoregulation' && <AutoregulationPolicySettings />}
+                {tab === 'ai-substitution' && <AISubstitutionSettings />}
 
                 {tab === 'ads' && planType === 'pro' && <MyAdvertisements />}
 

@@ -25,7 +25,9 @@ import {
 } from '@/libs/planningService';
 import { ExerciseLog } from '../../../../components/features/types';
 import ExerciseDetailCard from '../../../../components/features/ExerciseDetailCard';
+import ExerciseSubstitutionModal from '../../../../components/features/ExerciseSubstitutionModal';
 import WorkoutLogger from '../../../../components/features/WorkoutLogger';
+import { SubstitutionSuggestion } from '@/libs/aiSubstitutionAccessService';
 import SyncPendingBadge from '../../../../components/features/SyncPendingBadge';
 import styles from './TrainingPage.module.css';
 import ImageComponent from 'next/image';
@@ -39,6 +41,7 @@ import { computeAutoregulationDecision } from '@/libs/microcycleAutoregulation';
 import { getOfflineMacrocycle } from '@/libs/offline/downloadManager';
 import HelpTooltip from '@/components/atoms/HelpTooltip';
 import { getMicrocycleHelpTopic } from '@/libs/microcycleHelpContent';
+import { markWorkoutStartIfNeeded } from '@/libs/workoutSessionTimer';
 import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
 import { resolveAutoregulationPolicy } from '@/libs/autoregulationPolicy';
 import { getEffectiveAutoregulationPolicy } from '@/libs/autoregulationPolicyService';
@@ -76,12 +79,13 @@ function toExerciseLog(ex: ExerciseResponse): ExerciseLog {
         // instruções do personal e vão no campo certo, não sobrescrevem notes.
         notes: '',
         comments: ex.comments,
-        restTime: ex.rest_seconds ?? 90,
+        restTime: ex.rest_seconds ?? 60,
         plannedWeight: ex.load_kg,
         technique: ex.technique,
         technique_params: ex.technique_params,
         group_technique: ex.group_technique,
         group_id: ex.group_id,
+        muscle_group: ex.muscle_group,
     };
 }
 
@@ -132,6 +136,9 @@ export default function MeusTreinosExercisesPage({
     const [trainingRef, setTrainingRef] = useState(trainingId);
     const [selectedExercise, setSelectedExercise] =
         useState<ExerciseLog | null>(null);
+    const [substitutionFor, setSubstitutionFor] = useState<ExerciseLog | null>(
+        null,
+    );
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [sendStatus, setSendStatus] = useState<
@@ -328,11 +335,78 @@ export default function MeusTreinosExercisesPage({
     }, []);
 
     const handleExerciseClick = (exercise: ExerciseLog) => {
+        if (currentMicro) {
+            markWorkoutStartIfNeeded(currentMicro.id, trainingRef);
+        }
         setSelectedExercise(exercise);
     };
 
     const handleCloseDetailCard = () => {
         setSelectedExercise(null);
+    };
+
+    /** Aplica um substituto sugerido pela IA só para a sessão de hoje — não
+     * persiste nada, recarregar a página restaura a prescrição original. O
+     * `id` do exercício é preservado de propósito: histórico de carga,
+     * anotações e o log do treino continuam apontando para o exercício
+     * PRESCRITO (ver Todo/PLANO_SUBSTITUICAO_EXERCICIOS_IA.md §3.5). */
+    const handleApplySubstitution = (suggestion: SubstitutionSuggestion) => {
+        const targetId = substitutionFor?.id;
+        if (!targetId) return;
+
+        setExercises((prev) =>
+            prev.map((e) =>
+                e.id === targetId
+                    ? {
+                          ...e,
+                          name: suggestion.nome_exercicio,
+                          muscle_group: suggestion.grupo_muscular,
+                          video_url: '',
+                          video_thumb: '',
+                          variations: '',
+                          substitutedFrom: e.substitutedFrom ?? e.name,
+                      }
+                    : e,
+            ),
+        );
+
+        // O WorkoutLogger monta os logs a partir de currentTraining.exercises,
+        // não do estado `exercises` acima — sem atualizar os dois, o aluno
+        // registraria a série sob o nome do exercício antigo.
+        setCurrentTraining((prev) =>
+            prev
+                ? {
+                      ...prev,
+                      exercises: prev.exercises.map((x) =>
+                          x.id === targetId
+                              ? {
+                                    ...x,
+                                    name: suggestion.nome_exercicio,
+                                    muscle_group: suggestion.grupo_muscular,
+                                }
+                              : x,
+                      ),
+                  }
+                : prev,
+        );
+
+        if (selectedExercise?.id === targetId) {
+            setSelectedExercise((prev) =>
+                prev
+                    ? {
+                          ...prev,
+                          name: suggestion.nome_exercicio,
+                          muscle_group: suggestion.grupo_muscular,
+                          video_url: '',
+                          video_thumb: '',
+                          variations: '',
+                          substitutedFrom: prev.substitutedFrom ?? prev.name,
+                      }
+                    : prev,
+            );
+        }
+
+        setSubstitutionFor(null);
     };
 
     // Resolve os parâmetros de autorregulação: config do personal (quando
@@ -896,6 +970,17 @@ export default function MeusTreinosExercisesPage({
                         loadSuggestion={loadSuggestions[selectedExercise.id]}
                         nextInGroup={nextInGroup}
                         onSelectExercise={handleExerciseClick}
+                        onEquipmentUnavailable={setSubstitutionFor}
+                    />
+                )}
+                {substitutionFor && (
+                    <ExerciseSubstitutionModal
+                        open
+                        exercise={substitutionFor}
+                        planningId={macrocycleId}
+                        trainingId={trainingId}
+                        onClose={() => setSubstitutionFor(null)}
+                        onApply={handleApplySubstitution}
                     />
                 )}
                 <div className={styles.finalizarContainer}>

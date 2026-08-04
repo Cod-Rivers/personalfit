@@ -17,10 +17,12 @@ import {
     purchaseEarlyAnamnesisPix,
     purchaseLibraryPlanCard,
     purchaseLibraryPlanPix,
+    subscribeAISubstitutionCard,
     subscribeProCard,
     subscribeProPix,
     verifyGooglePlayPurchase,
 } from '@/libs/paymentService';
+import { getAISubstitutionAccess } from '@/libs/aiSubstitutionAccessService';
 import {
     ReferralPartnerPublic,
     getActiveReferralPartners,
@@ -31,7 +33,7 @@ import { getStudentHomeRoute } from '@/libs/session';
 // backend/estatísticas (ver ReferralPartnerController.GetIndicationStats).
 const INDICATION_NONE = 'none';
 
-type Produto = 'pro' | 'anamnese' | 'plano';
+type Produto = 'pro' | 'anamnese' | 'plano' | 'ia-substituicao';
 type Metodo = 'pix' | 'card' | 'google';
 
 const CYCLE_LABELS: Record<string, string> = {
@@ -68,6 +70,14 @@ const PLANO_BENEFITS = [
     'Baixe para treinar offline, onde e quando quiser',
 ];
 
+// Benefícios da assinatura avulsa da Substituição Inteligente de Exercícios
+// (aluno sem personal vinculado).
+const IA_SUBSTITUICAO_BENEFITS = [
+    'Sugestões de exercícios substitutos quando o equipamento prescrito está indisponível',
+    'Considera seu nível, objetivo do treino e restrições relatadas',
+    'Cancele quando quiser, sem fidelidade',
+];
+
 function formatBRL(value: number): string {
     return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
@@ -87,7 +97,9 @@ function PaymentPageInner() {
             ? 'anamnese'
             : produtoParam === 'plano'
               ? 'plano'
-              : 'pro';
+              : produtoParam === 'ia-substituicao'
+                ? 'ia-substituicao'
+                : 'pro';
     const templateId = searchParams.get('templateId') ?? '';
     // Guarda o macrociclo ativo ANTES da compra de um plano, para detectar a
     // troca (webhook aplica o plano comprado) durante o polling do PIX.
@@ -95,7 +107,11 @@ function PaymentPageInner() {
 
     const [catalog, setCatalog] = useState<PlanCatalog | null>(null);
     const [cycle, setCycle] = useState('MONTHLY');
-    const [metodo, setMetodo] = useState<Metodo>('pix');
+    // Substituição por IA só vende cartão (assinatura recorrente — PIX no
+    // Asaas é cobrança única, não recorrente).
+    const [metodo, setMetodo] = useState<Metodo>(
+        produto === 'ia-substituicao' ? 'card' : 'pix',
+    );
     const [googleAvailable, setGoogleAvailable] = useState(false);
     const [partners, setPartners] = useState<ReferralPartnerPublic[]>([]);
     const [indicationReceiver, setIndicationReceiver] = useState(INDICATION_NONE);
@@ -127,19 +143,25 @@ function PaymentPageInner() {
             ? selectedProPlan?.value
             : produto === 'plano'
               ? catalog?.library_plan.value
-              : catalog?.early_anamnesis.value;
+              : produto === 'ia-substituicao'
+                ? catalog?.ai_substitution.value
+                : catalog?.early_anamnesis.value;
     const productTitle =
         produto === 'pro'
             ? `Plano PRO — ${CYCLE_LABELS[cycle] ?? cycle}`
             : produto === 'plano'
               ? 'Plano de treino selecionado'
-              : 'Novo plano de treino';
+              : produto === 'ia-substituicao'
+                ? 'Substituição Inteligente de Exercícios — Mensal'
+                : 'Novo plano de treino';
     const benefits =
         produto === 'pro'
             ? PRO_BENEFITS
             : produto === 'plano'
               ? PLANO_BENEFITS
-              : ANAMNESE_BENEFITS;
+              : produto === 'ia-substituicao'
+                ? IA_SUBSTITUICAO_BENEFITS
+                : ANAMNESE_BENEFITS;
     const benefitsTitle =
         produto === 'pro'
             ? 'O que o PRO desbloqueia para você (personal):'
@@ -167,6 +189,12 @@ function PaymentPageInner() {
                     // O webhook troca o macrociclo ativo pelo plano comprado.
                     const { data } = await Api.get<{ id?: string }>('/my-planning/active');
                     if (data?.id && data.id !== planoActiveBefore.current) {
+                        setConfirmed(true);
+                        if (pollingRef.current) clearInterval(pollingRef.current);
+                    }
+                } else if (produto === 'ia-substituicao') {
+                    const access = await getAISubstitutionAccess();
+                    if (access.allowed) {
                         setConfirmed(true);
                         if (pollingRef.current) clearInterval(pollingRef.current);
                     }
@@ -287,7 +315,9 @@ function PaymentPageInner() {
                             ? 'Seu plano PRO está ativo. Aproveite todos os recursos.'
                             : produto === 'plano'
                               ? 'Seu novo plano de treino está ativo. Bora treinar!'
-                              : 'Sua nova anamnese foi liberada. Você já pode preenchê-la.'}
+                              : produto === 'ia-substituicao'
+                                ? 'Sua assinatura está ativa. Já pode usar a Substituição Inteligente de Exercícios nos seus treinos.'
+                                : 'Sua nova anamnese foi liberada. Você já pode preenchê-la.'}
                     </p>
                     <button
                         className="btn btn-gold mt-2"
@@ -295,7 +325,7 @@ function PaymentPageInner() {
                             router.push(
                                 produto === 'pro'
                                     ? '/'
-                                    : produto === 'plano'
+                                    : produto === 'plano' || produto === 'ia-substituicao'
                                       ? '/meus-treinos'
                                       : '/anamnese',
                             )
@@ -303,7 +333,7 @@ function PaymentPageInner() {
                     >
                         {produto === 'pro'
                             ? 'Ir para o início'
-                            : produto === 'plano'
+                            : produto === 'plano' || produto === 'ia-substituicao'
                               ? 'Ver meus treinos'
                               : 'Fazer nova anamnese'}
                     </button>
@@ -435,7 +465,7 @@ function PaymentPageInner() {
                     </div>
 
                     <div className="col-12 col-md-6">
-                        {!pix && (
+                        {!pix && produto !== 'ia-substituicao' && (
                             <div className="d-flex gap-2 flex-wrap">
                                 <button
                                     className={`btn btn-${metodo !== 'pix' ? 'outline-' : ''}gold flex-fill`}
@@ -464,9 +494,14 @@ function PaymentPageInner() {
                                 )}
                             </div>
                         )}
+                        {produto === 'ia-substituicao' && (
+                            <p className="small text-muted mb-2">
+                                Somente cartão de crédito para esta assinatura.
+                            </p>
+                        )}
 
                         {/* PIX */}
-                        {metodo === 'pix' && (
+                        {metodo === 'pix' && produto !== 'ia-substituicao' && (
                             <div className="text-center mt-3">
                                 {!pix ? (
                                     <button
@@ -579,8 +614,32 @@ function PaymentPageInner() {
                             />
                         )}
 
+                        {/* Cartão de crédito — assinatura avulsa da Substituição por IA (recorrente) */}
+                        {metodo === 'card' && produto === 'ia-substituicao' && (
+                            <CardForm
+                                disabled={loading}
+                                submitLabel="Assinar"
+                                onSubmit={async (form) => {
+                                    setError('');
+                                    setLoading(true);
+                                    try {
+                                        const res = await subscribeAISubstitutionCard(form);
+                                        setLoading(false);
+                                        if (res.status === 'ACTIVE') {
+                                            setConfirmed(true);
+                                        } else {
+                                            startPolling();
+                                        }
+                                    } catch (err: unknown) {
+                                        setLoading(false);
+                                        setError(extractApiError(err));
+                                    }
+                                }}
+                            />
+                        )}
+
                         {/* Google Play */}
-                        {metodo === 'google' && (
+                        {metodo === 'google' && produto !== 'ia-substituicao' && (
                             <div className="text-center mt-3">
                                 <button
                                     className="btn btn-lg btn-gold w-100"
