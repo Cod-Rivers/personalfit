@@ -65,6 +65,15 @@ export const EXERCISE_NOTE_CACHE_PREFIX = 'vf_exercise_note:';
  */
 export const EXERCISE_WEIGHT_CACHE_PREFIX = 'vf_exercise_weight:';
 
+/**
+ * Prefixo do cache local (localStorage) do timestamp de início do treino
+ * (ver workoutSessionTimer.ts), usado para calcular a duração automática.
+ * Não é dado sensível de saúde, mas segue o mesmo padrão de higiene dos
+ * prefixos acima: limpo no logout para não vazar entre usuários no mesmo
+ * dispositivo.
+ */
+export const WORKOUT_START_CACHE_PREFIX = 'vf_workout_start:';
+
 function setCookie(name: string, value: string, maxAgeSeconds: number): void {
     if (typeof document === 'undefined') return;
     const secure = window.location.protocol === 'https:' ? '; Secure' : '';
@@ -176,7 +185,8 @@ export async function clearSession(): Promise<void> {
         const key = localStorage.key(i);
         if (
             key?.startsWith(EXERCISE_NOTE_CACHE_PREFIX) ||
-            key?.startsWith(EXERCISE_WEIGHT_CACHE_PREFIX)
+            key?.startsWith(EXERCISE_WEIGHT_CACHE_PREFIX) ||
+            key?.startsWith(WORKOUT_START_CACHE_PREFIX)
         ) {
             localStorage.removeItem(key);
         }
