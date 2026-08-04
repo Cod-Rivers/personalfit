@@ -528,3 +528,32 @@
         flex-direction: column;
     }
 }
+
+.gridHeader {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 2fr;
+    gap: 8px;
+}
+
+.gridHeaderLabel {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.durationHint {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+@media (max-width: 768px) {
+    .gridHeader {
+        grid-template-columns: 1fr 1fr;
+    }
+}

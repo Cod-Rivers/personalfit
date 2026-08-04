@@ -22,6 +22,13 @@ import {
     partitionExerciseGroups,
     comboGroupLabel,
 } from '@/libs/trainingTechniques';
+import {
+    getWorkoutStart,
+    computeElapsedMinutes,
+    clearWorkoutStart,
+} from '@/libs/workoutSessionTimer';
+import HelpTooltip from '@/components/atoms/HelpTooltip';
+import { getGlossaryTerm } from '@/libs/glossaryContent';
 import s from './WorkoutLogger.module.css';
 
 const OFFLINE_NO_PRECREATED_LOG_MESSAGE =
@@ -116,7 +123,13 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
         }),
     );
 
-    const [duration, setDuration] = useState<number | null>(null);
+    // Pré-preenchido a partir de quando o aluno abriu o 1º exercício da
+    // sessão (ver workoutSessionTimer.ts); permanece editável para o aluno
+    // corrigir se pausou o treino por muito tempo.
+    const [duration, setDuration] = useState<number | null>(() => {
+        const start = getWorkoutStart(microcycle.id, training.reference);
+        return start ? computeElapsedMinutes(start) : null;
+    });
     const [notes, setNotes] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -179,6 +192,7 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                         preCreatedId,
                         body,
                     );
+                    clearWorkoutStart(microcycle.id, training.reference);
                     onComplete(completed);
                 } catch (err) {
                     if (axios.isAxiosError(err) && !err.response) {
@@ -190,6 +204,7 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                             workoutLogId: preCreatedId,
                             completeBody: body,
                         });
+                        clearWorkoutStart(microcycle.id, training.reference);
                         onQueued();
                         return;
                     }
@@ -218,6 +233,7 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                 newLog.id,
                 body,
             );
+            clearWorkoutStart(microcycle.id, training.reference);
             onComplete(completed);
         } catch (err) {
             if (axios.isAxiosError(err) && !err.response) {
@@ -263,6 +279,7 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                         preCreatedId,
                         reason,
                     );
+                    clearWorkoutStart(microcycle.id, training.reference);
                     onComplete(skipped);
                 } catch (err) {
                     if (axios.isAxiosError(err) && !err.response) {
@@ -274,6 +291,7 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                             workoutLogId: preCreatedId,
                             skipReason: reason,
                         });
+                        clearWorkoutStart(microcycle.id, training.reference);
                         onQueued();
                         return;
                     }
@@ -300,6 +318,7 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                 newLog.id,
                 reason,
             );
+            clearWorkoutStart(microcycle.id, training.reference);
             onComplete(skipped);
         } catch (err) {
             if (axios.isAxiosError(err) && !err.response) {
@@ -325,6 +344,22 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
     // groupId (ver libs/trainingTechniques.ts). Bloco de tamanho 1 = avulso.
     const blocks = partitionExerciseGroups(
         logs.map((l, idx) => ({ group_id: l.groupId, idx })),
+    );
+
+    const seriesGridHeader = (
+        <div className={s.gridHeader}>
+            <span className={s.gridHeaderLabel}>Reps</span>
+            <span className={s.gridHeaderLabel}>Kg</span>
+            <span className={s.gridHeaderLabel}>
+                RPE
+                <HelpTooltip
+                    text={getGlossaryTerm('rpe').short}
+                    href="/ajuda#glossario-rpe"
+                    label="Ajuda sobre RPE"
+                />
+            </span>
+            <span className={s.gridHeaderLabel}>Notas</span>
+        </div>
     );
 
     const renderSeriesRow = (
@@ -467,6 +502,7 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                                 >
                                     <h3>{ex.name}</h3>
                                     <div className={s.seriesGrid}>
+                                        {seriesGridHeader}
                                         {ex.series.map((sr, seriesIdx) =>
                                             renderSeriesRow(
                                                 exIdx,
@@ -531,7 +567,10 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                                         .join(' + ')}{' '}
                                     — sem descanso entre as séries abaixo
                                 </p>
-                                <div className={s.seriesGrid}>{rows}</div>
+                                <div className={s.seriesGrid}>
+                                    {seriesGridHeader}
+                                    {rows}
+                                </div>
                             </div>
                         );
                     })}
@@ -549,6 +588,13 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                                 }
                                 disabled={loading}
                             />
+                            {duration !== null && (
+                                <span className={s.durationHint}>
+                                    Calculado a partir de quando você abriu o
+                                    1º exercício. Ajuste se pausou o treino
+                                    por muito tempo.
+                                </span>
+                            )}
                         </label>
                         <label>
                             Notas Gerais:

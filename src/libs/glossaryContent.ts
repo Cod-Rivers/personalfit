@@ -288,6 +288,58 @@ const productTerms: GlossaryTerm[] = [
     },
 ];
 
+// Termos dos campos do card de detalhe do exercício e do registro de treino
+// (WorkoutLogger) — ver ExerciseDetailCard.tsx e WorkoutLogger.tsx, onde
+// HelpTooltip aponta para /ajuda#glossario-<id> de cada um destes.
+const trainingFieldTerms: GlossaryTerm[] = [
+    {
+        id: 'carga',
+        term: 'Carga (Kg)',
+        short: 'O peso que você vai usar no exercício, em quilos. Você pode editar a qualquer momento; o app pode sugerir um valor com base na prescrição e no seu histórico.',
+        long: 'Carga é o peso, em quilos, prescrito ou registrado para o exercício. Você pode editar o valor a qualquer momento tocando nele; quando o Controle do Microciclo sugere um ajuste, aparece um chip "Sugerido: X kg" que aplica o valor com um toque. O RPE registrado em cada série ajuda o app a refinar essa sugestão nas próximas vezes.',
+        seeAlso: {
+            id: 'progressao-carga',
+            label: 'Sugestão de carga e progressão temporal',
+            audience: 'personal',
+        },
+    },
+    {
+        id: 'series-repeticoes',
+        term: 'Séries e Repetições',
+        short: 'Quantas séries fazer e quantas repetições em cada uma — a prescrição do seu personal (ou do plano aplicado) para este exercício.',
+        long: 'Séries são os "blocos" de execução do exercício (ex.: 3 séries); repetições são quantas vezes você repete o movimento dentro de cada série (ex.: 10-12 reps). Quando há uma faixa de repetições, a ideia geral é subir até o topo da faixa antes de aumentar a carga.',
+        seeAlso: {
+            id: 'dupla-progressao',
+            label: 'Dupla Progressão',
+            audience: 'personal',
+        },
+    },
+    {
+        id: 'descanso',
+        term: 'Descanso entre exercícios',
+        short: 'Tempo de pausa recomendado antes do próximo exercício (ou entre séries), para o músculo se recuperar parcialmente.',
+        long: 'O descanso é o tempo de pausa entre séries ou exercícios, prescrito pelo personal (ou pelo padrão do app quando não especificado). Em blocos de bissérie/trissérie/superssérie não há descanso entre os exercícios do bloco — só ao final dele.',
+    },
+    {
+        id: 'tecnica',
+        term: 'Técnica de treinamento',
+        short: 'Uma variação avançada de execução (ex.: dropset, rest-pause, isometria) marcada pelo personal para intensificar este exercício.',
+        long: 'A técnica de treinamento é uma variação avançada de execução — como dropset, rest-pause, cluster set ou isometria — marcada pelo personal, com parâmetros específicos (nº de reduções, pausa, repetições extras etc.). Indica como executar as séries com mais intensidade.',
+    },
+    {
+        id: 'combinacao',
+        term: 'Combinação (bissérie/trissérie/superssérie)',
+        short: 'Este exercício faz parte de um bloco com outro(s), executados em sequência e sem descanso entre eles.',
+        long: 'Combinação indica que este exercício faz parte de um bloco — bissérie (2 exercícios), trissérie (3) ou superssérie/giant set (mais) — executados em sequência, sem descanso entre eles, só ao final do bloco inteiro.',
+    },
+    {
+        id: 'variacoes',
+        term: 'Variações',
+        short: 'Ajustes ou opções de execução do exercício sugeridos pelo personal (ex.: pegada, amplitude, equipamento alternativo).',
+        long: 'Variações são observações do personal sobre formas alternativas de executar o exercício — por exemplo, mudar a pegada, a amplitude de movimento, ou usar um equipamento diferente do padrão.',
+    },
+];
+
 const microcycleDerivedTerms: GlossaryTerm[] = microcycleHelpTopics.map((topic) => ({
     id: topic.id,
     term: topic.label,
@@ -303,6 +355,7 @@ const microcycleDerivedTerms: GlossaryTerm[] = microcycleHelpTopics.map((topic) 
 export const glossaryTerms: GlossaryTerm[] = [
     ...microcycleDerivedTerms,
     ...trainingScienceTerms,
+    ...trainingFieldTerms,
     ...productTerms,
 ];
 
