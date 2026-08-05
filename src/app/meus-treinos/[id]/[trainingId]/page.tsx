@@ -329,6 +329,18 @@ export default function MeusTreinosExercisesPage({
         const targetId = substitutionFor?.id;
         if (!targetId) return;
 
+        // A sugestão agora vem vinculada ao catálogo real do app, então tem
+        // mídia própria — zerá-la (comportamento da v1) escondia justamente o
+        // vídeo demonstrativo do substituto. Continua vazia quando a sugestão
+        // veio da tabela estática do backend, que não tem mídia.
+        // `variations` segue zerado de propósito: a prescrição de variação do
+        // exercício original não vale para o substituto.
+        const substituteMedia = {
+            video_url: suggestion.video_url ?? '',
+            video_thumb: suggestion.video_thumb ?? '',
+            variations: '',
+        };
+
         setExercises((prev) =>
             prev.map((e) =>
                 e.id === targetId
@@ -336,9 +348,7 @@ export default function MeusTreinosExercisesPage({
                           ...e,
                           name: suggestion.nome_exercicio,
                           muscle_group: suggestion.grupo_muscular,
-                          video_url: '',
-                          video_thumb: '',
-                          variations: '',
+                          ...substituteMedia,
                           substitutedFrom: e.substitutedFrom ?? e.name,
                       }
                     : e,
@@ -372,9 +382,7 @@ export default function MeusTreinosExercisesPage({
                           ...prev,
                           name: suggestion.nome_exercicio,
                           muscle_group: suggestion.grupo_muscular,
-                          video_url: '',
-                          video_thumb: '',
-                          variations: '',
+                          ...substituteMedia,
                           substitutedFrom: prev.substitutedFrom ?? prev.name,
                       }
                     : prev,

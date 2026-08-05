@@ -5,11 +5,15 @@ import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import { FiAlertCircle, FiRefreshCw } from 'react-icons/fi';
 import Modal from '@/components/system/Modal';
+import ExerciseThumbnail from './ExerciseThumbnail';
 import { ExerciseLog } from './types';
 import {
     AISubstitutionAccessResponse,
+    AnamnesisStatus,
     EQUIPMENT_OPTIONS,
+    SubstitutionSource,
     SubstitutionSuggestion,
+    SubstitutionTargetSource,
     getAISubstitutionAccess,
     requestExerciseSubstitutions,
 } from '@/libs/aiSubstitutionAccessService';
@@ -30,7 +34,14 @@ type Step =
     | { kind: 'subscription_required'; price?: number }
     | { kind: 'pick-equipment' }
     | { kind: 'loading' }
-    | { kind: 'success'; suggestions: SubstitutionSuggestion[]; source: 'ia' | 'cache' | 'fallback' }
+    | {
+          kind: 'success';
+          suggestions: SubstitutionSuggestion[];
+          source: SubstitutionSource;
+          anamnesisStatus: AnamnesisStatus;
+          targetMuscleGroup?: string;
+          targetSource?: SubstitutionTargetSource;
+      }
     | { kind: 'error' }
     | { kind: 'offline' };
 
@@ -89,7 +100,14 @@ export default function ExerciseSubstitutionModal({
                 exercise_id: exercise.id,
                 unavailable_equipment: equipment,
             });
-            setStep({ kind: 'success', suggestions: res.substitutos, source: res.source });
+            setStep({
+                kind: 'success',
+                suggestions: res.substitutos,
+                source: res.source,
+                anamnesisStatus: res.anamnesis_status ?? 'completa',
+                targetMuscleGroup: res.target_muscle_group,
+                targetSource: res.target_source,
+            });
         } catch (err) {
             if (axios.isAxiosError(err) && !err.response) {
                 setStep({ kind: 'offline' });
@@ -213,18 +231,74 @@ export default function ExerciseSubstitutionModal({
 
                 {step.kind === 'success' && (
                     <div>
+                        {step.anamnesisStatus === 'ausente' && (
+                            <div className={styles.anamnesisBanner}>
+                                <p>
+                                    Você ainda não preencheu a anamnese — estas sugestões
+                                    são conservadoras por segurança. Preencher leva cerca
+                                    de 3 minutos e melhora muito a recomendação.
+                                </p>
+                                <button
+                                    type="button"
+                                    className={styles.bannerBtn}
+                                    onClick={() => router.push('/anamnese')}
+                                >
+                                    Preencher anamnese
+                                </button>
+                            </div>
+                        )}
+
+                        {step.anamnesisStatus === 'sinalizada' && (
+                            <div className={styles.anamnesisBanner}>
+                                <p>
+                                    Sua triagem de saúde indicou pontos de atenção — estas
+                                    sugestões são conservadoras. Fale com seu personal antes
+                                    de aumentar a intensidade.
+                                </p>
+                            </div>
+                        )}
+
+                        {step.source === 'biblioteca' && (
+                            <p className={styles.fallbackNotice}>
+                                Sugestões da biblioteca do app — a recomendação
+                                personalizada está indisponível no momento.
+                            </p>
+                        )}
+
                         {step.source === 'fallback' && (
                             <p className={styles.fallbackNotice}>
                                 Sugestões gerais — a recomendação personalizada está
                                 indisponível no momento.
                             </p>
                         )}
+
+                        {step.targetSource === 'desconhecido' && (
+                            <p className={styles.fallbackNotice}>
+                                Este exercício não tem grupo muscular definido na
+                                prescrição — as sugestões são genéricas. Avise seu personal.
+                            </p>
+                        )}
+
                         <div className={styles.suggestionList}>
                             {step.suggestions.map((s, i) => (
                                 <div key={i} className={styles.suggestionCard}>
-                                    <strong className={styles.suggestionName}>
-                                        {s.nome_exercicio}
-                                    </strong>
+                                    <div className={styles.suggestionHeader}>
+                                        {(s.video_thumb || s.video_url) && (
+                                            <ExerciseThumbnail
+                                                name={s.nome_exercicio}
+                                                videoThumb={s.video_thumb}
+                                                videoUrl={s.video_url}
+                                                width={56}
+                                                height={56}
+                                                captureFrame={false}
+                                                lazyCapture
+                                                className={styles.suggestionThumb}
+                                            />
+                                        )}
+                                        <strong className={styles.suggestionName}>
+                                            {s.nome_exercicio}
+                                        </strong>
+                                    </div>
                                     <div className={styles.badges}>
                                         <span className={styles.badge}>
                                             {s.grupo_muscular}

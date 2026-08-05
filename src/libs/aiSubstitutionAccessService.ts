@@ -35,7 +35,32 @@ export interface SubstitutionSuggestion {
     equipamento_necessario: string;
     justificativa: string;
     nivel_recomendado: string;
+    /** Vínculo com o catálogo real do app (v2). Ausentes quando a sugestão vem
+     * da tabela estática do backend (origem 'estatico'), que não tem ID nem
+     * mídia — é o que permite não prometer vídeo onde não há. */
+    exercise_library_id?: string;
+    personal_exercise_id?: string;
+    video_url?: string;
+    video_thumb?: string;
+    origem?: SubstitutionOrigem;
 }
+
+export type SubstitutionOrigem = 'biblioteca' | 'personal' | 'estatico';
+
+/** 'ia' e 'cache' vêm do modelo; 'biblioteca' é a seleção determinística
+ * sobre o catálogo real; 'fallback' é a tabela estática de último recurso. */
+export type SubstitutionSource = 'ia' | 'cache' | 'biblioteca' | 'fallback';
+
+export type AnamnesisStatus = 'completa' | 'ausente' | 'sinalizada';
+
+/** De onde veio o grupo muscular alvo. 'desconhecido' significa que o
+ * exercício prescrito não tem grupo muscular nem vínculo com a biblioteca —
+ * as sugestões são genéricas e o aluno precisa ser avisado. */
+export type SubstitutionTargetSource =
+    | 'library_id'
+    | 'library_name'
+    | 'prescricao'
+    | 'desconhecido';
 
 export interface ExerciseSubstitutionRequest {
     planning_id: string;
@@ -48,7 +73,10 @@ export interface ExerciseSubstitutionRequest {
 export interface ExerciseSubstitutionResponse {
     exercise_id: string;
     substitutos: SubstitutionSuggestion[];
-    source: 'ia' | 'cache' | 'fallback';
+    source: SubstitutionSource;
+    anamnesis_status: AnamnesisStatus;
+    target_muscle_group?: string;
+    target_source?: SubstitutionTargetSource;
 }
 
 /** Vocabulário exibido no seletor de equipamento — espelha as constantes

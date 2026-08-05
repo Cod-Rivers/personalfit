@@ -138,11 +138,25 @@
     background: var(--surface-2);
 }
 
+.suggestionHeader {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.4rem;
+}
+
+.suggestionThumb {
+    flex-shrink: 0;
+    border-radius: 8px;
+    object-fit: cover;
+}
+
 .suggestionName {
     display: block;
     color: var(--text-primary);
     font-size: 1rem;
-    margin-bottom: 0.4rem;
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 .badges {
@@ -177,4 +191,37 @@
     border-radius: 8px;
     padding: 0.5rem 0.75rem;
     margin-bottom: 0.75rem;
+}
+
+/* Banner de anamnese ausente/sinalizada: explica por que as sugestões são
+   conservadoras e (no caso "ausente") oferece o caminho para resolver. */
+.anamnesisBanner {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    background: var(--surface-2);
+    border: 1px solid var(--border-mid);
+    border-left: 3px solid var(--mint);
+    border-radius: 8px;
+    padding: 0.6rem 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.bannerBtn {
+    padding: 0.35rem 0.8rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--mint);
+    background: rgba(15, 252, 190, 0.12);
+    border: 1px solid var(--mint);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: filter 0.15s;
+}
+
+.bannerBtn:hover {
+    filter: brightness(1.15);
 }

@@ -339,9 +339,16 @@ export interface CreatePersonalExerciseRequest {
     tags?: string[];
 }
 
+/** Vocabulário canônico de grupo muscular — precisa cobrir os 12 grupos da
+ * biblioteca de exercícios e ficar em sincronia com CanonicalMuscleGroups()
+ * do backend (internal/domain/training/muscle-group.go). Faltavam 'Adutores'
+ * e 'Cardio': sem eles o personal não conseguia marcar dois dos 12 grupos, o
+ * que garantia muscle_group vazio nesses exercícios — e um muscle_group vazio
+ * é o que fazia a Substituição Inteligente sugerir exercício de outro grupo. */
 export const MUSCLE_GROUPS = [
     'Quadríceps',
     'Glúteos',
+    'Adutores',
     'Posteriores',
     'Panturrilha',
     'Costas',
@@ -350,6 +357,7 @@ export const MUSCLE_GROUPS = [
     'Tríceps',
     'Bíceps',
     'Core',
+    'Cardio',
 ] as const;
 
 /** GET /exercises?search=&muscle_group= */
