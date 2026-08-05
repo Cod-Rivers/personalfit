@@ -1,11 +1,40 @@
 'use client';
 
 import { useState } from 'react';
-import { FiEdit3, FiCopy, FiTrash2, FiChevronRight } from 'react-icons/fi';
+import { FiEdit3, FiCopy, FiTrash2, FiChevronRight, FiLink } from 'react-icons/fi';
 import type { MesocycleResponse } from '@/libs/planningService';
 import { formatDate, weekdayLabel } from '../lib/mesocycleTransforms';
 import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
+import ExerciseDetailCard from '@/components/features/ExerciseDetailCard';
+import type { ExerciseLog } from '@/components/features/types';
+import { toExerciseLog } from '@/libs/exerciseLog';
+import {
+    partitionExerciseGroups,
+    comboGroupLabel,
+} from '@/libs/trainingTechniques';
 import s from '../builder.module.css';
+
+/** Exercício selecionado para o modal de detalhe, junto com os demais
+ * exercícios do mesmo treino — necessário para achar o próximo do bloco de
+ * bi-set/triset/superset (ver `nextInGroup` no ExerciseDetailCard). */
+interface SelectedExercise {
+    exercise: ExerciseLog;
+    siblings: ExerciseLog[];
+}
+
+function nextInSameGroup(
+    selected: SelectedExercise | null,
+): ExerciseLog | null {
+    if (!selected) return null;
+    const { exercise, siblings } = selected;
+    const idx = siblings.findIndex((e) => e.id === exercise.id);
+    if (idx === -1) return null;
+    const next = siblings[idx + 1];
+    if (next && exercise.group_id && next.group_id === exercise.group_id) {
+        return next;
+    }
+    return null;
+}
 
 interface Props {
     meso: MesocycleResponse;
@@ -29,6 +58,7 @@ export default function MesocycleSection({
 }: Props) {
     const isNumbered = simpleMode && dayLabelStyle === 'number';
     const [open, setOpen] = useState(false);
+    const [selected, setSelected] = useState<SelectedExercise | null>(null);
 
     return (
         <div className={s.mesoSection}>
@@ -137,75 +167,181 @@ export default function MesocycleSection({
                                         {t.exercises.length} exercício(s)
                                     </span>
                                 </div>
-                                {t.exercises.length > 0 && (
-                                    <ul className={s.exerciseList}>
-                                        {t.exercises.map((ex, i) => {
-                                            const seriesText = ex.series_label
-                                                ? ex.series_label
-                                                : ex.timed
-                                                  ? ex.series
-                                                        .map((s) => `${s}s`)
-                                                        .join(' / ')
-                                                  : ex.series.join('/');
-                                            return (
-                                                <li
-                                                    key={ex.id ?? i}
-                                                    className={s.exerciseCard}
-                                                >
-                                                    <ExerciseThumbnail
-                                                        name={ex.name}
-                                                        videoThumb={
-                                                            ex.video_thumb
-                                                        }
-                                                        videoUrl={
-                                                            ex.video_url
-                                                        }
-                                                        captureFrame={false}
-                                                        lazyCapture
-                                                        className={
-                                                            s.exerciseThumbnail
-                                                        }
-                                                    />
-                                                    <div
-                                                        className={
-                                                            s.exerciseInfo
-                                                        }
-                                                    >
-                                                        <p
+                                {t.exercises.length > 0 &&
+                                    (() => {
+                                        const exerciseLogs =
+                                            t.exercises.map(toExerciseLog);
+                                        const groups =
+                                            partitionExerciseGroups(
+                                                exerciseLogs,
+                                            );
+                                        return (
+                                            <ul className={s.exerciseList}>
+                                                {groups.map((group) => {
+                                                    const isCombo =
+                                                        group.length > 1;
+                                                    const items = group.map(
+                                                        (ex) => {
+                                                            const seriesText =
+                                                                ex.series_label
+                                                                    ? ex.series_label
+                                                                    : ex.timed
+                                                                      ? ex.series
+                                                                            .map(
+                                                                                (
+                                                                                    n,
+                                                                                ) =>
+                                                                                    `${n}s`,
+                                                                            )
+                                                                            .join(
+                                                                                ' / ',
+                                                                            )
+                                                                      : ex.series.join(
+                                                                            '/',
+                                                                        );
+                                                            return (
+                                                                <button
+                                                                    key={
+                                                                        ex.id
+                                                                    }
+                                                                    type="button"
+                                                                    className={
+                                                                        s.exerciseCard
+                                                                    }
+                                                                    onClick={() =>
+                                                                        setSelected(
+                                                                            {
+                                                                                exercise:
+                                                                                    ex,
+                                                                                siblings:
+                                                                                    exerciseLogs,
+                                                                            },
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    <ExerciseThumbnail
+                                                                        name={
+                                                                            ex.name
+                                                                        }
+                                                                        videoThumb={
+                                                                            ex.video_thumb
+                                                                        }
+                                                                        videoUrl={
+                                                                            ex.video_url
+                                                                        }
+                                                                        captureFrame={
+                                                                            false
+                                                                        }
+                                                                        lazyCapture
+                                                                        className={
+                                                                            s.exerciseThumbnail
+                                                                        }
+                                                                    />
+                                                                    <div
+                                                                        className={
+                                                                            s.exerciseInfo
+                                                                        }
+                                                                    >
+                                                                        <p
+                                                                            className={
+                                                                                s.exerciseName
+                                                                            }
+                                                                        >
+                                                                            {
+                                                                                ex.name
+                                                                            }
+                                                                        </p>
+                                                                        <p
+                                                                            className={
+                                                                                s.exerciseMeta
+                                                                            }
+                                                                        >
+                                                                            {
+                                                                                seriesText
+                                                                            }
+                                                                            {ex.variations &&
+                                                                                ` · ${ex.variations}`}
+                                                                        </p>
+                                                                        {ex.comments && (
+                                                                            <p
+                                                                                className={
+                                                                                    s.exerciseComments
+                                                                                }
+                                                                            >
+                                                                                {
+                                                                                    ex.comments
+                                                                                }
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+                                                                    <FiChevronRight
+                                                                        className={
+                                                                            s.exerciseCardChevron
+                                                                        }
+                                                                        aria-hidden
+                                                                    />
+                                                                </button>
+                                                            );
+                                                        },
+                                                    );
+
+                                                    if (!isCombo) {
+                                                        return (
+                                                            <li key={group[0].id}>
+                                                                {items}
+                                                            </li>
+                                                        );
+                                                    }
+                                                    return (
+                                                        <li
+                                                            key={group[0].id}
                                                             className={
-                                                                s.exerciseName
+                                                                s.exerciseGroupBlock
                                                             }
                                                         >
-                                                            {ex.name}
-                                                        </p>
-                                                        <p
-                                                            className={
-                                                                s.exerciseMeta
-                                                            }
-                                                        >
-                                                            {seriesText}
-                                                            {ex.variations &&
-                                                                ` · ${ex.variations}`}
-                                                        </p>
-                                                        {ex.comments && (
-                                                            <p
+                                                            <div
                                                                 className={
-                                                                    s.exerciseComments
+                                                                    s.exerciseGroupBadge
                                                                 }
                                                             >
-                                                                {ex.comments}
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                </li>
-                                            );
-                                        })}
-                                    </ul>
-                                )}
+                                                                <FiLink />{' '}
+                                                                {comboGroupLabel(
+                                                                    group.length,
+                                                                    group[0]
+                                                                        .group_technique,
+                                                                )}{' '}
+                                                                — sem
+                                                                descanso entre
+                                                                os exercícios
+                                                            </div>
+                                                            <div
+                                                                className={
+                                                                    s.exerciseGroupItems
+                                                                }
+                                                            >
+                                                                {items}
+                                                            </div>
+                                                        </li>
+                                                    );
+                                                })}
+                                            </ul>
+                                        );
+                                    })()}
                             </div>
                         ))
                     )}
                 </div>
+            )}
+            {selected && (
+                <ExerciseDetailCard
+                    exercise={selected.exercise}
+                    onClose={() => setSelected(null)}
+                    nextInGroup={nextInSameGroup(selected)}
+                    onSelectExercise={(exercise) =>
+                        setSelected({ exercise, siblings: selected.siblings })
+                    }
+                    readOnly
+                />
             )}
         </div>
     );

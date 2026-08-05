@@ -279,14 +279,19 @@
 .exerciseCard {
     display: flex;
     align-items: center;
+    width: 100%;
     padding: 10px 14px;
     background: var(--grad-card);
     color: var(--text-primary);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
     border: 1px solid var(--border-mid);
     border-radius: 10px;
     box-shadow: var(--shadow-md);
     position: relative;
     overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
 }
 .exerciseCard::before {
     content: '';
@@ -298,6 +303,49 @@
         transparent 60%
     );
     pointer-events: none;
+}
+.exerciseCard:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-amber);
+    border-color: var(--amber);
+}
+.exerciseCard:focus {
+    outline: none;
+    border-color: var(--amber);
+    box-shadow: 0 0 0 3px rgba(240, 165, 0, 0.25);
+}
+
+.exerciseCardChevron {
+    height: 1.25rem;
+    width: 1.25rem;
+    flex-shrink: 0;
+    margin-left: 8px;
+    color: var(--mint);
+    filter: drop-shadow(0 0 4px rgba(61, 255, 208, 0.4));
+}
+
+.exerciseGroupBlock {
+    border-left: 3px solid var(--mint);
+    border-radius: 10px;
+    padding-left: 0.75rem;
+    margin-bottom: 0.5rem;
+    background: rgba(61, 255, 208, 0.04);
+}
+
+.exerciseGroupBadge {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--mint);
+    padding: 0.6rem 0.25rem 0;
+    letter-spacing: 0.02em;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.exerciseGroupItems .exerciseCard {
+    margin-top: 0.35rem;
+    margin-bottom: 0.35rem;
 }
 
 .exerciseThumbnail {

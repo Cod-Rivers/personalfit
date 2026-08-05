@@ -64,6 +64,11 @@ interface ExerciseDetailCardProps {
      * exercício. Opcional: o fluxo legado (/app/treino) também renderiza este
      * componente e não deve ganhar o botão. */
     onEquipmentUnavailable?: (exercise: ExerciseLog) => void;
+    /** Modo de visualização do personal (ex: "ver treino" do aluno): oculta
+     * edição de carga e anotações — essas telas são "/me/..." (escopadas no
+     * usuário logado), então salvá-las aqui gravaria dados do personal, não
+     * do aluno. */
+    readOnly?: boolean;
 }
 
 const getEmbedUrl = (url: string): string | null => {
@@ -105,6 +110,7 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
     nextInGroup,
     onSelectExercise,
     onEquipmentUnavailable,
+    readOnly = false,
 }) => {
     // --- Estados ---
     const [timerValue, setTimerValue] = useState<number>(
@@ -158,6 +164,10 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
     }, [exercise.restTime, exercise.id]);
 
     useEffect(() => {
+        // Modo somente leitura (personal vendo o treino do aluno): as notas
+        // são "/me/exercise-notes" (escopadas no usuário logado), então nem
+        // buscamos aqui — mostraria/gravaria dados do personal, não do aluno.
+        if (readOnly) return;
         // Preenchimento otimista com o cache local (funciona offline e evita
         // "piscar" vazio enquanto a resposta do servidor não chega); o
         // servidor é a fonte da verdade e sobrescreve assim que responder.
@@ -181,9 +191,14 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
         return () => {
             cancelled = true;
         };
-    }, [exercise.id]);
+    }, [exercise.id, readOnly]);
 
     useEffect(() => {
+        // Mesmo motivo do efeito de anotações acima: em modo somente leitura
+        // não buscamos "/me/exercise-weight" (seria a preferência do
+        // personal, não a do aluno). A carga prescrita (plannedWeight) é
+        // exibida direto, sem chamada.
+        if (readOnly) return;
         // Mesmo padrão otimista das anotações acima: cache local primeiro
         // (funciona offline e evita "piscar" vazio), servidor sobrescreve
         // assim que responder. Antes disso o campo só vivia em estado local
@@ -208,7 +223,7 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
         return () => {
             cancelled = true;
         };
-    }, [exercise.id]);
+    }, [exercise.id, readOnly]);
 
     // --- Funções de Callback e Auxiliares ---
     const handleStartTimer = useCallback(() => {
@@ -576,7 +591,13 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                                 gap: '0.4rem',
                                             }}
                                         >
-                                        {isWeightEditing ? (
+                                        {readOnly ? (
+                                            <span className={styles.valueBox}>
+                                                {exercise.plannedWeight
+                                                    ? `${exercise.plannedWeight} kg (prescrito)`
+                                                    : 'Sem carga prescrita'}
+                                            </span>
+                                        ) : isWeightEditing ? (
                                             <input
                                                 type="number"
                                                 className={styles.valueBox}
@@ -614,7 +635,7 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                                 </svg>
                                             </span>
                                         )}
-                                        {recommendedWeight != null && (
+                                        {!readOnly && recommendedWeight != null && (
                                             <button
                                                 type="button"
                                                 className={styles.recommendedWeightChip}
@@ -777,7 +798,9 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                         <p>{exercise.comments}</p>
                                     </div>
                                 )}
-                                {/* Campo de Anotações do Usuário */}
+                                {/* Campo de Anotações do Usuário — omitido em modo somente
+                                    leitura, são anotações do próprio aluno */}
+                                {!readOnly && (
                                 <div className={styles.collapsibleCard}>
                                     <button
                                         type="button"
@@ -855,6 +878,7 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                         </div>
                                     )}
                                 </div>
+                                )}
                                 {/* Bloco de bi-set/triset/superset: sem descanso até o
                                     último exercício do bloco — troca o timer por um
                                     atalho direto para o próximo. */}
