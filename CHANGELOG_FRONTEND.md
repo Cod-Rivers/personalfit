@@ -303,3 +303,23 @@
 ## 2026-08-05 08:46 — River (via Claude Code)
 **Resumo:** No response requested.
 **Commits:** feat: cards de exercicio clicaveis no "ver treino" do personal
+
+## 2026-08-05 17:54 — River (via Claude Code)
+**Resumo:** O arquivo é um changelog automático mantido por um hook do Claude Code (`.claude/hooks/changelog-log.js`, evento `Stop`): toda vez que um prompt gera edição/criação de arquivo neste repo, uma entrada é anexada com data/hora/resumo. Estrutura dele: - **Linhas 18-139**: histórico "backfill" reconstruído a partir de `git log --reverse` em 2026-08-04 (não são prompts individuais, são commits — o repo só passou a ser versionado em 2026-07-19 embora o backend já existisse antes). - **A partir de 2026-08-04**: entradas passaram a ser geradas por prompt/sessão real, não mais por commit. A última entra…
+**Commits:**  correção da substituição por ia obs pode quebrar alguma coisa , houve modificaçoes profundas
+
+## 2026-08-06 16:32 — River (via Claude Code)
+**Resumo:** Logic checks out. Fixed: the hook now skips the noisy `**Resumo:** No response requested.` line whenever a commit subject already covers the entry — it only falls back to the generic placeholder text when there's neither a real summary nor a commit to show. No other behavior changed.
+**Arquivos:** CHANGELOG_FRONTEND.md
+
+## 2026-08-06 17:13 — River (via Claude Code)
+**Resumo:** Sim, mas separado do painel de comparação. São duas coisas diferentes: **Gráfico "Evolução ao longo do tempo"** (`EvolutionChart.tsx`) — aparece automaticamente acima do painel de comparação quando há 2+ avaliações. É um gráfico de linha com **peso (kg)** e **% de gordura** plotados por data, usando **todas** as avaliações da linha do tempo (não só as duas escolhidas no comparador). **Painel de comparação** (Antes/Depois) — esse não tem gráfico próprio: mostra fotos lado a lado e uma **tabela** com peso, %gordura e cada medida (cm), com uma coluna Δ (delta) calculando a diferença entre as duas…
+**Arquivos:** EvolutionTimeline.module.css, EvolutionTimeline.tsx
+
+## 2026-08-06 17:24 — River (via Claude Code)
+**Resumo:** Syntax is valid. The fix is complete: the hook no longer writes a `**Resumo:** No response requested.` line when a commit already exists for that entry — only the `**Commits:**` line shows in that case, and the generic fallback text is used only when there's truly neither a summary nor a commit. Nothing else in the file changed.
+**Arquivos:** EvolutionCompareChart.module.css, EvolutionCompareChart.tsx
+
+## 2026-08-06 17:40 — River (via Claude Code)
+**Resumo:** Feito e já em produção. Resumo do que investiguei e mudei: **Achado principal — "thinking" invisível** Testei a resposta real da API do Gemini e descobri que ela reporta um campo `thoughtsTokenCount` separado, que **não aparecia em lugar nenhum no código** (o parser Go só lia `promptTokenCount`/`candidatesTokenCount`/`totalTokenCount`). Para uma tarefa trivial de 5 tokens de resposta, o modelo padrão gastava **91-134 tokens de "raciocínio" invisível** — 20-30x mais que a resposta em si, sem ganho nenhum, já que a tarefa é só escolher um índice de uma lista fechada (o schema já obriga o formato…
+**Arquivos:** EvolutionChart.tsx

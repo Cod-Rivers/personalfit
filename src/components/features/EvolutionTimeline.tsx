@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { FiX, FiBarChart2, FiTrendingUp } from 'react-icons/fi';
+import { FiX, FiBarChart2, FiTrendingUp, FiChevronRight } from 'react-icons/fi';
 import {
     listEvolutionEntries,
     createEvolutionEntry,
@@ -11,10 +11,16 @@ import {
     type EvolutionEntry,
     type BodyFatMethod,
 } from '@/libs/evolutionService';
+import Modal from '@/components/system/Modal';
 import s from './EvolutionTimeline.module.css';
 
 const EvolutionChart = dynamic(
     () => import('./EvolutionChart'),
+    { ssr: false },
+);
+
+const EvolutionCompareChart = dynamic(
+    () => import('./EvolutionCompareChart'),
     { ssr: false },
 );
 
@@ -68,6 +74,9 @@ export default function EvolutionTimeline({ studentId }: Props) {
     const [error, setError] = useState('');
     const [proBlocked, setProBlocked] = useState(false);
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [selectedEntry, setSelectedEntry] = useState<EvolutionEntry | null>(
+        null,
+    );
 
     const [showForm, setShowForm] = useState(false);
     const [editingEntry, setEditingEntry] = useState<EvolutionEntry | null>(
@@ -91,11 +100,26 @@ export default function EvolutionTimeline({ studentId }: Props) {
     const [compareAId, setCompareAId] = useState('');
     const [compareBId, setCompareBId] = useState('');
 
+    // Medida extra (além de peso/%gordura) plotada no gráfico de linha.
+    const [extraMeasurementKey, setExtraMeasurementKey] = useState('');
+
     // Todas as entradas, ordenadas por data crescente (antigas → recentes).
     const sortedEntries = useMemo(
         () => entries.slice().sort((a, b) => a.date.localeCompare(b.date)),
         [entries],
     );
+
+    // Medidas presentes em ao menos uma entrada — disponíveis para plotar no
+    // gráfico de linha além de peso/%gordura.
+    const availableMeasurementFields = useMemo(() => {
+        const keys = new Set<string>();
+        entries.forEach((e) => {
+            if (e.measurements) {
+                Object.keys(e.measurements).forEach((k) => keys.add(k));
+            }
+        });
+        return MEASUREMENT_FIELDS.filter((f) => keys.has(f.key));
+    }, [entries]);
 
     const entryA = sortedEntries.find((e) => e.id === compareAId);
     const entryB = sortedEntries.find((e) => e.id === compareBId);
@@ -107,6 +131,17 @@ export default function EvolutionTimeline({ studentId }: Props) {
         if (entryB?.measurements) Object.keys(entryB.measurements).forEach((k) => keys.add(k));
         return MEASUREMENT_FIELDS.filter((f) => keys.has(f.key));
     }, [entryA, entryB]);
+
+    // Linhas "Antes × Depois" para o gráfico de barras do comparador.
+    const compareMeasurementRows = useMemo(
+        () =>
+            compareMeasurementFields.map((f) => ({
+                label: f.label,
+                antes: entryA?.measurements?.[f.key],
+                depois: entryB?.measurements?.[f.key],
+            })),
+        [compareMeasurementFields, entryA, entryB],
+    );
 
     const toggleCompare = () => {
         if (!compareMode) {
@@ -247,6 +282,7 @@ export default function EvolutionTimeline({ studentId }: Props) {
         try {
             await deleteEvolutionEntry(id, studentId);
             setEntries((prev) => prev.filter((e) => e.id !== id));
+            setSelectedEntry((prev) => (prev?.id === id ? null : prev));
         } catch {
             setError('Erro ao excluir registro.');
         } finally {
@@ -303,8 +339,34 @@ export default function EvolutionTimeline({ studentId }: Props) {
 
             {sortedEntries.length >= 2 && (
                 <div className={s.card}>
-                    <h3 className={s.chartTitle}><FiTrendingUp /> Evolução ao longo do tempo</h3>
-                    <EvolutionChart entries={sortedEntries} />
+                    <div className={s.chartHeader}>
+                        <h3 className={s.chartTitle}><FiTrendingUp /> Evolução ao longo do tempo</h3>
+                        {availableMeasurementFields.length > 0 && (
+                            <select
+                                className={s.chartSelect}
+                                value={extraMeasurementKey}
+                                onChange={(e) =>
+                                    setExtraMeasurementKey(e.target.value)
+                                }
+                            >
+                                <option value="">Também exibir…</option>
+                                {availableMeasurementFields.map((f) => (
+                                    <option key={f.key} value={f.key}>
+                                        {f.label}
+                                    </option>
+                                ))}
+                            </select>
+                        )}
+                    </div>
+                    <EvolutionChart
+                        entries={sortedEntries}
+                        extraMeasurementKey={extraMeasurementKey || undefined}
+                        extraMeasurementLabel={
+                            availableMeasurementFields.find(
+                                (f) => f.key === extraMeasurementKey,
+                            )?.label
+                        }
+                    />
                 </div>
             )}
 
@@ -364,6 +426,14 @@ export default function EvolutionTimeline({ studentId }: Props) {
                             ))}
                         </div>
                     ) : null}
+
+                    <EvolutionCompareChart
+                        weightAntes={entryA?.weight_kg}
+                        weightDepois={entryB?.weight_kg}
+                        bodyFatAntes={entryA?.body_fat_percent}
+                        bodyFatDepois={entryB?.body_fat_percent}
+                        measurementRows={compareMeasurementRows}
+                    />
 
                     <table className={s.compareTable}>
                         <thead>
@@ -572,85 +642,152 @@ export default function EvolutionTimeline({ studentId }: Props) {
                     Nenhum registro de evolução ainda.
                 </div>
             ) : (
-                entries.map((entry) => (
-                    <div key={entry.id} className={s.card}>
-                        <div className={s.entryHeader}>
-                            <span className={s.entryDate}>
-                                {formatDate(entry.date)}
-                            </span>
-                            <span className={s.entryMeta}>
-                                {entry.created_by_role === 'personal'
-                                    ? 'Personal'
-                                    : 'Aluno'}
-                                <button
-                                    type="button"
-                                    className={s.btnEdit}
-                                    style={{ marginLeft: 10 }}
-                                    onClick={() => startEdit(entry)}
-                                >
-                                    Editar
-                                </button>
-                                <button
-                                    type="button"
-                                    className={s.btnDanger}
-                                    style={{ marginLeft: 6 }}
-                                    disabled={deletingId === entry.id}
-                                    onClick={() => handleDelete(entry.id)}
-                                >
-                                    {deletingId === entry.id
-                                        ? 'Excluindo...'
-                                        : 'Excluir'}
-                                </button>
-                            </span>
-                        </div>
+                entries.map((entry) => {
+                    const summaryParts: string[] = [];
+                    if (entry.weight_kg) {
+                        summaryParts.push(`${entry.weight_kg} kg`);
+                    }
+                    if (entry.body_fat_percent) {
+                        summaryParts.push(`${entry.body_fat_percent}% gordura`);
+                    }
+                    const measurementsCount = entry.measurements
+                        ? Object.keys(entry.measurements).length
+                        : 0;
+                    if (measurementsCount > 0) {
+                        summaryParts.push(
+                            `${measurementsCount} medida${measurementsCount > 1 ? 's' : ''}`,
+                        );
+                    }
 
-                        {entry.photo_urls && entry.photo_urls.length > 0 && (
-                            <div className={s.photoGrid}>
-                                {entry.photo_urls.map((url, i) => (
-                                    // eslint-disable-next-line @next/next/no-img-element
-                                    <img
-                                        key={i}
-                                        src={url}
-                                        alt={`Foto de evolução ${i + 1}`}
-                                        className={s.photoThumb}
-                                    />
-                                ))}
+                    return (
+                        <button
+                            type="button"
+                            key={entry.id}
+                            className={s.entryCard}
+                            onClick={() => setSelectedEntry(entry)}
+                        >
+                            {entry.photo_urls && entry.photo_urls[0] && (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                    src={entry.photo_urls[0]}
+                                    alt=""
+                                    className={s.entryCardThumb}
+                                />
+                            )}
+                            <div className={s.entryCardInfo}>
+                                <div className={s.entryHeader}>
+                                    <span className={s.entryDate}>
+                                        {formatDate(entry.date)}
+                                    </span>
+                                    <span className={s.entryMeta}>
+                                        {entry.created_by_role === 'personal'
+                                            ? 'Personal'
+                                            : 'Aluno'}
+                                    </span>
+                                </div>
+                                <span className={s.entryCardSummary}>
+                                    {summaryParts.length > 0
+                                        ? summaryParts.join(' · ')
+                                        : 'Ver detalhes'}
+                                </span>
                             </div>
-                        )}
+                            <FiChevronRight className={s.entryCardChevron} />
+                        </button>
+                    );
+                })
+            )}
 
-                        {(entry.weight_kg || entry.body_fat_percent) && (
+            <Modal
+                open={!!selectedEntry}
+                onClose={() => setSelectedEntry(null)}
+                title={selectedEntry ? formatDate(selectedEntry.date) : ''}
+                footer={
+                    selectedEntry && (
+                        <div className={s.modalActions}>
+                            <button
+                                type="button"
+                                className={s.btnEdit}
+                                onClick={() => {
+                                    const entry = selectedEntry;
+                                    setSelectedEntry(null);
+                                    startEdit(entry);
+                                }}
+                            >
+                                Editar
+                            </button>
+                            <button
+                                type="button"
+                                className={s.btnDanger}
+                                disabled={deletingId === selectedEntry.id}
+                                onClick={() => handleDelete(selectedEntry.id)}
+                            >
+                                {deletingId === selectedEntry.id
+                                    ? 'Excluindo...'
+                                    : 'Excluir'}
+                            </button>
+                        </div>
+                    )
+                }
+            >
+                {selectedEntry && (
+                    <>
+                        <p className={s.entryMeta} style={{ marginBottom: 12 }}>
+                            {selectedEntry.created_by_role === 'personal'
+                                ? 'Registrado pelo personal'
+                                : 'Registrado pelo aluno'}
+                        </p>
+
+                        {selectedEntry.photo_urls &&
+                            selectedEntry.photo_urls.length > 0 && (
+                                <div className={s.photoGrid}>
+                                    {selectedEntry.photo_urls.map((url, i) => (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img
+                                            key={i}
+                                            src={url}
+                                            alt={`Foto de evolução ${i + 1}`}
+                                            className={s.photoThumb}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+
+                        {(selectedEntry.weight_kg ||
+                            selectedEntry.body_fat_percent) && (
                             <div className={s.statRow}>
-                                {entry.weight_kg && (
-                                    <span>{entry.weight_kg} kg</span>
+                                {selectedEntry.weight_kg && (
+                                    <span>{selectedEntry.weight_kg} kg</span>
                                 )}
-                                {entry.body_fat_percent && (
+                                {selectedEntry.body_fat_percent && (
                                     <span>
-                                        {entry.body_fat_percent}% gordura
-                                        {entry.body_fat_method
-                                            ? ` (${entry.body_fat_method === 'caliper' ? 'adipômetro' : 'bioimpedância'})`
+                                        {selectedEntry.body_fat_percent}%
+                                        gordura
+                                        {selectedEntry.body_fat_method
+                                            ? ` (${selectedEntry.body_fat_method === 'caliper' ? 'adipômetro' : 'bioimpedância'})`
                                             : ''}
                                     </span>
                                 )}
                             </div>
                         )}
 
-                        {entry.measurements &&
-                            Object.keys(entry.measurements).length > 0 && (
+                        {selectedEntry.measurements &&
+                            Object.keys(selectedEntry.measurements).length >
+                                0 && (
                                 <div className={s.measurementsGrid}>
-                                    {Object.entries(entry.measurements).map(
-                                        ([k, v]) => (
-                                            <span key={k}>
-                                                {k.replace(/_/g, ' ')}: {v}cm
-                                            </span>
-                                        ),
-                                    )}
+                                    {Object.entries(
+                                        selectedEntry.measurements,
+                                    ).map(([k, v]) => (
+                                        <span key={k}>
+                                            {k.replace(/_/g, ' ')}: {v}cm
+                                        </span>
+                                    ))}
                                 </div>
                             )}
 
-                        {entry.notes && <p>{entry.notes}</p>}
-                    </div>
-                ))
-            )}
+                        {selectedEntry.notes && <p>{selectedEntry.notes}</p>}
+                    </>
+                )}
+            </Modal>
         </div>
     );
 }

@@ -21,8 +21,13 @@ import s from './EvolutionChart.module.css';
  */
 export default function EvolutionChart({
     entries,
+    extraMeasurementKey,
+    extraMeasurementLabel,
 }: {
     entries: EvolutionEntry[];
+    /** Chave de measurements (ex.: "cintura") plotada como 3ª linha. */
+    extraMeasurementKey?: string;
+    extraMeasurementLabel?: string;
 }) {
     const data = entries
         .slice()
@@ -34,6 +39,9 @@ export default function EvolutionChart({
             ),
             peso: e.weight_kg ?? undefined,
             gordura: e.body_fat_percent ?? undefined,
+            extra: extraMeasurementKey
+                ? e.measurements?.[extraMeasurementKey] ?? undefined
+                : undefined,
         }));
 
     return (
@@ -65,6 +73,13 @@ export default function EvolutionChart({
                         width={44}
                         domain={['dataMin - 2', 'dataMax + 2']}
                     />
+                    {extraMeasurementKey && (
+                        <YAxis
+                            yAxisId="extra"
+                            hide
+                            domain={['dataMin - 2', 'dataMax + 2']}
+                        />
+                    )}
                     <Tooltip
                         contentStyle={{
                             background: 'var(--surface-1)',
@@ -95,6 +110,18 @@ export default function EvolutionChart({
                         dot={{ r: 3 }}
                         connectNulls
                     />
+                    {extraMeasurementKey && (
+                        <Line
+                            yAxisId="extra"
+                            type="monotone"
+                            dataKey="extra"
+                            name={extraMeasurementLabel ?? 'Medida'}
+                            stroke="#8b5cf6"
+                            strokeWidth={2}
+                            dot={{ r: 3 }}
+                            connectNulls
+                        />
+                    )}
                 </LineChart>
             </ResponsiveContainer>
         </div>
