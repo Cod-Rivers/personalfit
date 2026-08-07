@@ -95,8 +95,8 @@ export async function setForkVideoUrl(libraryId: string, videoUrl: string) {
 // UTILITÁRIOS
 // ─────────────────────────────────────────────
 
-/** Timeout por tentativa de upload — generoso o bastante para ~20MB mesmo em 4G lento. */
-const UPLOAD_TIMEOUT_MS = 120_000;
+/** Timeout por tentativa de upload — generoso o bastante para ~50MB (limite do admin) mesmo em 4G lento. */
+const UPLOAD_TIMEOUT_MS = 300_000;
 
 /** Falha de rede/timeout em conexão móvel instável (comum em upload de vídeo de
  * câmera de celular) costuma ser transitória — vale a pena tentar de novo. */
@@ -281,8 +281,11 @@ export function captureVideoFrameFromUrl(
     });
 }
 
-/** Tamanho máximo de upload (20MB) — mantido em sincronia com storage.MaxUploadBytes no backend. */
-export const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
+/** Tamanho máximo de upload para personal (35MB) — mantido em sincronia com storage.MaxUploadBytes no backend. */
+export const MAX_UPLOAD_BYTES = 35 * 1024 * 1024;
+
+/** Tamanho máximo de upload para admin (50MB) — mantido em sincronia com storage.MaxUploadBytesAdmin no backend. */
+export const MAX_UPLOAD_BYTES_ADMIN = 50 * 1024 * 1024;
 
 /** Duração máxima de um clipe de exercício enviado por upload (90s). */
 export const MAX_UPLOAD_DURATION_SECONDS = 90;
@@ -350,9 +353,12 @@ export function isVideoExtension(path: string): boolean {
  * para vídeos, duração máxima (lida do próprio arquivo no navegador).
  * Retorna uma mensagem de erro, ou null se o arquivo for válido.
  */
-export async function validateMediaFile(file: File): Promise<string | null> {
-    if (file.size > MAX_UPLOAD_BYTES) {
-        return `Arquivo excede o limite de ${MAX_UPLOAD_BYTES / 1024 / 1024}MB`;
+export async function validateMediaFile(
+    file: File,
+    maxBytes: number = MAX_UPLOAD_BYTES,
+): Promise<string | null> {
+    if (file.size > maxBytes) {
+        return `Arquivo excede o limite de ${maxBytes / 1024 / 1024}MB`;
     }
     if (!file.type.startsWith('video/')) {
         return null;

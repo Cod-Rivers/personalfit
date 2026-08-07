@@ -1060,7 +1060,10 @@ function ExercisesSection() {
     ) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        const validationError = await videoService.validateMediaFile(file);
+        const validationError = await videoService.validateMediaFile(
+            file,
+            videoService.MAX_UPLOAD_BYTES_ADMIN,
+        );
         if (validationError) {
             setError(validationError);
             return;
@@ -1469,7 +1472,7 @@ function ExercisesSection() {
                             />
                             <small className="text-muted">
                                 Máximo:{' '}
-                                {videoService.MAX_UPLOAD_BYTES /
+                                {videoService.MAX_UPLOAD_BYTES_ADMIN /
                                     1024 /
                                     1024}
                                 MB. Até{' '}
