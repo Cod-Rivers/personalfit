@@ -366,7 +366,7 @@ export const MUSCLE_GROUPS = [
  * reconhecem ("Abdômen") em vez do anglicismo. Trocar o valor armazenado
  * exigiria migrar os exercícios já cadastrados em produção. */
 const MUSCLE_GROUP_LABELS: Partial<Record<string, string>> = {
-    Core: 'Abdômen (Lombar)',
+    Core: 'Abdômen',
     Posteriores: 'Posteriores (Isquiotibiais)',
 };
 
