@@ -10,6 +10,7 @@ import {
     MUSCLE_GROUPS,
     EXERCISE_CATEGORIES,
     EXERCISE_TAGS,
+    muscleGroupLabel,
 } from '@/libs/planningService';
 import * as videoService from '@/libs/exerciseVideoService';
 import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
@@ -1388,7 +1389,7 @@ function ExercisesSection() {
                         <option value="">Selecione</option>
                         {MUSCLE_GROUPS.map((mg) => (
                             <option key={mg} value={mg}>
-                                {mg}
+                                {muscleGroupLabel(mg)}
                             </option>
                         ))}
                     </select>

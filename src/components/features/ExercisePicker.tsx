@@ -5,6 +5,7 @@ import {
     searchExercises,
     createMyExercise,
     MUSCLE_GROUPS,
+    muscleGroupLabel,
     type ExerciseLibraryItem,
 } from '@/libs/planningService';
 import VideoUploadModal from '@/components/features/VideoUploadModal';
@@ -165,7 +166,7 @@ export default function ExercisePicker({
                             <option value="">Todos os grupos</option>
                             {MUSCLE_GROUPS.map((mg) => (
                                 <option key={mg} value={mg}>
-                                    {mg}
+                                    {muscleGroupLabel(mg)}
                                 </option>
                             ))}
                         </select>
@@ -237,7 +238,7 @@ export default function ExercisePicker({
                                     <option value="">Grupo muscular *</option>
                                     {MUSCLE_GROUPS.map((mg) => (
                                         <option key={mg} value={mg}>
-                                            {mg}
+                                            {muscleGroupLabel(mg)}
                                         </option>
                                     ))}
                                 </select>

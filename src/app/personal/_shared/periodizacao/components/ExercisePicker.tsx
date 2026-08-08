@@ -6,6 +6,7 @@ import {
     searchExercises,
     getMyExercises,
     MUSCLE_GROUPS,
+    muscleGroupLabel,
     type ExerciseLibraryItem,
 } from '@/libs/planningService';
 import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
@@ -139,7 +140,7 @@ export default function ExercisePicker({ onPick, onClose }: Props) {
                     <option value="">Todos os grupos</option>
                     {MUSCLE_GROUPS.map((g) => (
                         <option key={g} value={g}>
-                            {g}
+                            {muscleGroupLabel(g)}
                         </option>
                     ))}
                 </select>

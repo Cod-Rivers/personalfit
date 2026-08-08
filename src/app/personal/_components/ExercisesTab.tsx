@@ -6,6 +6,7 @@ import {
     MUSCLE_GROUPS,
     EXERCISE_CATEGORIES,
     EXERCISE_TAGS,
+    muscleGroupLabel,
     type ExerciseLibraryItem,
 } from '@/libs/planningService';
 import { usePersonalExercises } from '@/hooks/usePersonalExercises';
@@ -79,7 +80,7 @@ export default function ExercisesTab({ planType = 'free' }: ExercisesTabProps) {
                     <option value="">Todos os grupos</option>
                     {MUSCLE_GROUPS.map((mg) => (
                         <option key={mg} value={mg}>
-                            {mg}
+                            {muscleGroupLabel(mg)}
                         </option>
                     ))}
                 </select>
@@ -203,7 +204,7 @@ export default function ExercisesTab({ planType = 'free' }: ExercisesTabProps) {
                         <option value="">Selecione</option>
                         {MUSCLE_GROUPS.map((mg) => (
                             <option key={mg} value={mg}>
-                                {mg}
+                                {muscleGroupLabel(mg)}
                             </option>
                         ))}
                     </select>
@@ -333,7 +334,7 @@ export default function ExercisesTab({ planType = 'free' }: ExercisesTabProps) {
                         <option value="">Selecione</option>
                         {MUSCLE_GROUPS.map((mg) => (
                             <option key={mg} value={mg}>
-                                {mg}
+                                {muscleGroupLabel(mg)}
                             </option>
                         ))}
                     </select>

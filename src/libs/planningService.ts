@@ -360,6 +360,20 @@ export const MUSCLE_GROUPS = [
     'Cardio',
 ] as const;
 
+/** Rótulo exibido para cada grupo muscular canônico. O valor armazenado
+ * continua sendo o de MUSCLE_GROUPS (ex.: "Core") — só o texto mostrado no
+ * seletor muda, para usar o termo em português que personal trainers
+ * reconhecem ("Abdômen") em vez do anglicismo. Trocar o valor armazenado
+ * exigiria migrar os exercícios já cadastrados em produção. */
+const MUSCLE_GROUP_LABELS: Partial<Record<string, string>> = {
+    Core: 'Abdômen (Lombar)',
+    Posteriores: 'Posteriores (Isquiotibiais)',
+};
+
+export function muscleGroupLabel(group: string): string {
+    return MUSCLE_GROUP_LABELS[group] ?? group;
+}
+
 /** Vocabulário canônico de categoria — precisa ficar em sincronia com
  * CanonicalCategories() do backend (internal/domain/training/exercise-category.go). */
 export const EXERCISE_CATEGORIES = ['Composto', 'Isolado', 'Aeróbico'] as const;

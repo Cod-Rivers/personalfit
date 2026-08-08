@@ -19,6 +19,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import {
     MUSCLE_GROUPS,
+    muscleGroupLabel,
     type ExerciseLibraryItem,
 } from '@/libs/planningService';
 import {
@@ -172,7 +173,7 @@ function MuscleGroupSelect({
                 <option value="">Não definido</option>
                 {MUSCLE_GROUPS.map((g) => (
                     <option key={g} value={g}>
-                        {g}
+                        {muscleGroupLabel(g)}
                     </option>
                 ))}
             </select>
