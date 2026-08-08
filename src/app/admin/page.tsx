@@ -1,11 +1,16 @@
 'use client';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import { isAxiosError } from 'axios';
 import s from './admin.module.css';
 import * as adminService from '@/libs/adminService';
+import {
+    MUSCLE_GROUPS,
+    EXERCISE_CATEGORIES,
+    EXERCISE_TAGS,
+} from '@/libs/planningService';
 import * as videoService from '@/libs/exerciseVideoService';
 import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
 import ExerciseDetailCard from '@/components/features/ExerciseDetailCard';
@@ -947,6 +952,7 @@ function ExercisesSection() {
     >([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
+    const searchDebounce = useRef<ReturnType<typeof setTimeout>>(undefined);
     const [modalMode, setModalMode] = useState<'none' | 'create' | 'edit'>(
         'none',
     );
@@ -958,7 +964,7 @@ function ExercisesSection() {
         category: '',
         video_url: '',
         description: '',
-        tags: '',
+        tags: [] as string[],
     });
     const [uploadMode, setUploadMode] = useState<'youtube' | 'upload'>(
         'youtube',
@@ -999,9 +1005,22 @@ function ExercisesSection() {
         fetchExercises();
     }, [fetchExercises]);
 
-    const handleSearch = () => {
-        setLoading(true);
-        fetchExercises(search);
+    const handleSearchChange = (val: string) => {
+        setSearch(val);
+        if (searchDebounce.current) clearTimeout(searchDebounce.current);
+        searchDebounce.current = setTimeout(() => {
+            setLoading(true);
+            fetchExercises(val);
+        }, 300);
+    };
+
+    const toggleFormTag = (tag: string) => {
+        setForm((f) => ({
+            ...f,
+            tags: f.tags.includes(tag)
+                ? f.tags.filter((t) => t !== tag)
+                : [...f.tags, tag],
+        }));
     };
 
     const openCreate = () => {
@@ -1012,7 +1031,7 @@ function ExercisesSection() {
             category: '',
             video_url: '',
             description: '',
-            tags: '',
+            tags: [],
         });
         setUploadMode('youtube');
         setMediaFile(null);
@@ -1030,7 +1049,7 @@ function ExercisesSection() {
             category: ex.category,
             video_url: ex.video_url,
             description: ex.description,
-            tags: ex.tags?.join(', ') ?? '',
+            tags: ex.tags ?? [],
         });
         // video_url já vem resolvido pela API como URL pública final (R2/CDN);
         // qualquer coisa que não seja um link externo suportado é um arquivo hospedado.
@@ -1086,9 +1105,7 @@ function ExercisesSection() {
                 category: form.category,
                 video_url: uploadMode === 'youtube' ? form.video_url : '',
                 description: form.description,
-                tags: form.tags
-                    ? form.tags.split(',').map((t) => t.trim())
-                    : [],
+                tags: form.tags,
             });
             if (uploadMode === 'upload' && mediaFile) {
                 setUploadProgress(1);
@@ -1134,9 +1151,7 @@ function ExercisesSection() {
                 muscle_group: form.muscle_group,
                 category: form.category,
                 description: form.description,
-                tags: form.tags
-                    ? form.tags.split(',').map((t) => t.trim())
-                    : [],
+                tags: form.tags,
             });
         } catch (err) {
             const msg = isAxiosError(err)
@@ -1218,13 +1233,9 @@ function ExercisesSection() {
                 <input
                     className={s.searchInput}
                     value={search}
-                    onChange={(e) => setSearch(e.target.value)}
+                    onChange={(e) => handleSearchChange(e.target.value)}
                     placeholder="Buscar exercícios..."
-                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 />
-                <button onClick={handleSearch} className={s.btnOutline}>
-                    Buscar
-                </button>
             </div>
 
             {loading ? (
@@ -1364,7 +1375,7 @@ function ExercisesSection() {
                     <label className={s.formLabel}>
                         Grupo Muscular
                     </label>
-                    <input
+                    <select
                         className={s.formInput}
                         value={form.muscle_group}
                         onChange={(e) =>
@@ -1373,12 +1384,18 @@ function ExercisesSection() {
                                 muscle_group: e.target.value,
                             })
                         }
-                        placeholder="Ex: Peito, Costas, Pernas..."
-                    />
+                    >
+                        <option value="">Selecione</option>
+                        {MUSCLE_GROUPS.map((mg) => (
+                            <option key={mg} value={mg}>
+                                {mg}
+                            </option>
+                        ))}
+                    </select>
                 </div>
                 <div className={s.formGroup}>
                     <label className={s.formLabel}>Categoria</label>
-                    <input
+                    <select
                         className={s.formInput}
                         value={form.category}
                         onChange={(e) =>
@@ -1387,8 +1404,14 @@ function ExercisesSection() {
                                 category: e.target.value,
                             })
                         }
-                        placeholder="Ex: Isolador, Composto..."
-                    />
+                    >
+                        <option value="">Selecione</option>
+                        {EXERCISE_CATEGORIES.map((c) => (
+                            <option key={c} value={c}>
+                                {c}
+                            </option>
+                        ))}
+                    </select>
                 </div>
                 <div className={s.formGroup}>
                     <label className={s.formLabel}>Mídia</label>
@@ -1512,17 +1535,23 @@ function ExercisesSection() {
                     />
                 </div>
                 <div className={s.formGroup}>
-                    <label className={s.formLabel}>
-                        Tags (separadas por vírgula)
-                    </label>
-                    <input
-                        className={s.formInput}
-                        value={form.tags}
-                        onChange={(e) =>
-                            setForm({ ...form, tags: e.target.value })
-                        }
-                        placeholder="força, equilíbrio, cardio"
-                    />
+                    <label className={s.formLabel}>Tags</label>
+                    <div className={s.tagChipRow}>
+                        {EXERCISE_TAGS.map((tag) => (
+                            <button
+                                key={tag}
+                                type="button"
+                                onClick={() => toggleFormTag(tag)}
+                                className={
+                                    form.tags.includes(tag)
+                                        ? s.tagChipActive
+                                        : s.tagChip
+                                }
+                            >
+                                {tag}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </Modal>
 

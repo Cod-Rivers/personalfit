@@ -104,6 +104,7 @@ export function usePersonalExercises() {
             category: ex.category || undefined,
             video_url: ex.video_url || undefined,
             description: ex.description || undefined,
+            tags: ex.tags?.length ? ex.tags : undefined,
         });
         setExEditId(ex.id);
         setError('');

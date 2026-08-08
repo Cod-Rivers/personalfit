@@ -2,7 +2,12 @@
 
 import { useState } from 'react';
 import { FiFileText, FiVideo } from 'react-icons/fi';
-import { MUSCLE_GROUPS, type ExerciseLibraryItem } from '@/libs/planningService';
+import {
+    MUSCLE_GROUPS,
+    EXERCISE_CATEGORIES,
+    EXERCISE_TAGS,
+    type ExerciseLibraryItem,
+} from '@/libs/planningService';
 import { usePersonalExercises } from '@/hooks/usePersonalExercises';
 import VideoUploadModal from '@/components/features/VideoUploadModal';
 import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
@@ -40,6 +45,14 @@ export default function ExercisesTab({ planType = 'free' }: ExercisesTabProps) {
 
     const [videoModalExercise, setVideoModalExercise] =
         useState<ExerciseLibraryItem | null>(null);
+
+    const toggleTag = (tag: string) => {
+        const current = exForm.tags ?? [];
+        const next = current.includes(tag)
+            ? current.filter((t) => t !== tag)
+            : [...current, tag];
+        setExForm({ ...exForm, tags: next.length ? next : undefined });
+    };
 
     return (
         <>
@@ -197,7 +210,7 @@ export default function ExercisesTab({ planType = 'free' }: ExercisesTabProps) {
                 </div>
                 <div className={s.formGroup}>
                     <label className={s.formLabel}>Categoria</label>
-                    <input
+                    <select
                         value={exForm.category || ''}
                         onChange={(e) =>
                             setExForm({
@@ -206,8 +219,33 @@ export default function ExercisesTab({ planType = 'free' }: ExercisesTabProps) {
                             })
                         }
                         className={s.formInput}
-                        placeholder="Ex: Isolador, Composto..."
-                    />
+                    >
+                        <option value="">Selecione</option>
+                        {EXERCISE_CATEGORIES.map((c) => (
+                            <option key={c} value={c}>
+                                {c}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+                <div className={s.formGroup}>
+                    <label className={s.formLabel}>Tags</label>
+                    <div className={s.tagChipRow}>
+                        {EXERCISE_TAGS.map((tag) => (
+                            <button
+                                key={tag}
+                                type="button"
+                                onClick={() => toggleTag(tag)}
+                                className={
+                                    exForm.tags?.includes(tag)
+                                        ? s.tagChipActive
+                                        : s.tagChip
+                                }
+                            >
+                                {tag}
+                            </button>
+                        ))}
+                    </div>
                 </div>
                 <div className={s.formGroup}>
                     <label className={s.formLabel}>URL do Vídeo</label>
@@ -302,7 +340,7 @@ export default function ExercisesTab({ planType = 'free' }: ExercisesTabProps) {
                 </div>
                 <div className={s.formGroup}>
                     <label className={s.formLabel}>Categoria</label>
-                    <input
+                    <select
                         value={exForm.category || ''}
                         onChange={(e) =>
                             setExForm({
@@ -311,7 +349,33 @@ export default function ExercisesTab({ planType = 'free' }: ExercisesTabProps) {
                             })
                         }
                         className={s.formInput}
-                    />
+                    >
+                        <option value="">Selecione</option>
+                        {EXERCISE_CATEGORIES.map((c) => (
+                            <option key={c} value={c}>
+                                {c}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+                <div className={s.formGroup}>
+                    <label className={s.formLabel}>Tags</label>
+                    <div className={s.tagChipRow}>
+                        {EXERCISE_TAGS.map((tag) => (
+                            <button
+                                key={tag}
+                                type="button"
+                                onClick={() => toggleTag(tag)}
+                                className={
+                                    exForm.tags?.includes(tag)
+                                        ? s.tagChipActive
+                                        : s.tagChip
+                                }
+                            >
+                                {tag}
+                            </button>
+                        ))}
+                    </div>
                 </div>
                 <div className={s.formGroup}>
                     <label className={s.formLabel}>URL do Vídeo</label>

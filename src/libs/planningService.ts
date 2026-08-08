@@ -360,6 +360,51 @@ export const MUSCLE_GROUPS = [
     'Cardio',
 ] as const;
 
+/** Vocabulário canônico de categoria — precisa ficar em sincronia com
+ * CanonicalCategories() do backend (internal/domain/training/exercise-category.go). */
+export const EXERCISE_CATEGORIES = ['Composto', 'Isolado', 'Aeróbico'] as const;
+
+/** Vocabulário canônico de tags — mesmo vocabulário já usado no seed da
+ * biblioteca (exercise-library-seed.go); precisa ficar em sincronia com
+ * CanonicalTags() do backend (internal/domain/training/exercise-tags.go). */
+export const EXERCISE_TAGS = [
+    'abdominal',
+    'adutores',
+    'aeróbico',
+    'antebraço',
+    'barra',
+    'bike',
+    'bíceps',
+    'cabo',
+    'cardio',
+    'composto',
+    'core',
+    'costas',
+    'dinâmico',
+    'esteira',
+    'glúteos',
+    'halter',
+    'hiit',
+    'isolado',
+    'isométrico',
+    'livre',
+    'máquina',
+    'oblíquo',
+    'ombros',
+    'panturrilha',
+    'peito',
+    'pernas',
+    'peso corporal',
+    'pliométrico',
+    'posteriores',
+    'quadríceps',
+    'remo',
+    'trapézio',
+    'tríceps',
+    'unilateral',
+    'variação',
+] as const;
+
 /** GET /exercises?search=&muscle_group= */
 export async function searchExercises(
     search?: string,
