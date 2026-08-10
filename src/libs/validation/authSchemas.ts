@@ -4,7 +4,7 @@ import { z } from 'zod';
 // Personal-fit-Back/internal/domain/user/cpf-validator.go — sem isto, CPFs
 // com 11 dígitos mas checksum inválido passavam na validação do formulário e
 // só falhavam no backend, que devolvia um erro genérico ao usuário.
-function isValidCpfChecksum(cpf: string): boolean {
+export function isValidCpfChecksum(cpf: string): boolean {
     if (!/^\d{11}$/.test(cpf)) return false;
     if (/^(\d)\1{10}$/.test(cpf)) return false;
 

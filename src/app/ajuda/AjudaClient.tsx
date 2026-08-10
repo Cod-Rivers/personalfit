@@ -237,8 +237,10 @@ const personalSections: HelpSection[] = [
                 <p className="mb-2">
                     Na aba <strong>Meus Alunos</strong>, toque em{' '}
                     <strong>+ Adicionar Aluno</strong> e preencha nome,
-                    e-mail, data de nascimento, sexo, CPF e telefone. Se o
-                    e-mail é novo, o aluno já entra vinculado a você e
+                    e-mail, data de nascimento, sexo e telefone — CPF é
+                    opcional aqui, o aluno completa ao trocar a senha no
+                    primeiro login. Se o e-mail é novo, o aluno já entra
+                    vinculado a você e
                     recebe por e-mail uma senha temporária, que troca no
                     primeiro login. Se o e-mail já tem conta, enviamos um
                     pedido de vínculo — o aluno precisa confirmar na

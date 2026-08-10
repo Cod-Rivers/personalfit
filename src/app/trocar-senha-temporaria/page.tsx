@@ -1,8 +1,9 @@
 'use client';
 import { Api } from '@/libs/api';
+import { formatCpfInput } from '@/libs/formatters';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import {
@@ -12,25 +13,65 @@ import {
     landingRouteFor,
     saveSession,
 } from '@/libs/session';
+import { isValidCpfChecksum } from '@/libs/validation/authSchemas';
 
-const schema = z
-    .object({
-        current_password: z.string().min(1, 'Informe a senha temporária'),
-        new_password: z.string().min(6, 'Mínimo de 6 caracteres'),
-        confirm_password: z.string(),
-    })
-    .refine((d) => d.new_password === d.confirm_password, {
-        message: 'As senhas não coincidem',
-        path: ['confirm_password'],
-    });
+// CPF só entra no formulário quando a conta ainda não tem um (ver
+// CreateStudentHandler: o personal pode deixar em branco no pré-cadastro) —
+// por isso o schema é montado dinamicamente conforme needsCpf.
+function buildSchema(needsCpf: boolean) {
+    return z
+        .object({
+            current_password: z.string().min(1, 'Informe a senha temporária'),
+            new_password: z.string().min(6, 'Mínimo de 6 caracteres'),
+            confirm_password: z.string(),
+            cpf: z.string().optional(),
+        })
+        .refine((d) => d.new_password === d.confirm_password, {
+            message: 'As senhas não coincidem',
+            path: ['confirm_password'],
+        })
+        .superRefine((d, ctx) => {
+            if (!needsCpf) return;
+            const digits = (d.cpf ?? '').replace(/\D/g, '');
+            if (!/^\d{11}$/.test(digits)) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: 'CPF deve conter 11 dígitos numéricos',
+                    path: ['cpf'],
+                });
+            } else if (!isValidCpfChecksum(digits)) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: 'CPF inválido',
+                    path: ['cpf'],
+                });
+            }
+        });
+}
 
-type FormData = z.infer<typeof schema>;
+type FormData = {
+    current_password: string;
+    new_password: string;
+    confirm_password: string;
+    cpf?: string;
+};
 
 export default function TrocarSenhaTemporariaPage() {
     const router = useRouter();
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [needsCpf, setNeedsCpf] = useState(false);
+
+    useEffect(() => {
+        if (!getToken()) {
+            router.replace('/login');
+            return;
+        }
+        setNeedsCpf(!getUser()?.cpf);
+    }, [router]);
+
+    const schema = useMemo(() => buildSchema(needsCpf), [needsCpf]);
 
     const {
         register,
@@ -38,23 +79,25 @@ export default function TrocarSenhaTemporariaPage() {
         formState: { errors },
     } = useForm<FormData>({ resolver: zodResolver(schema) });
 
-    useEffect(() => {
-        if (!getToken()) router.replace('/login');
-    }, [router]);
-
     const submit = async (form: FormData) => {
         setLoading(true);
         setError('');
+        const cpfDigits = form.cpf?.replace(/\D/g, '');
         try {
             await Api.post('/change-password', {
                 current_password: form.current_password,
                 new_password: form.new_password,
+                cpf: needsCpf ? cpfDigits : undefined,
             });
 
             const token = getToken();
             const user = getUser();
             if (token && user) {
-                const updatedUser = { ...user, must_change_password: false };
+                const updatedUser = {
+                    ...user,
+                    must_change_password: false,
+                    cpf: needsCpf ? cpfDigits : user.cpf,
+                };
                 saveSession(
                     token,
                     updatedUser,
@@ -84,7 +127,8 @@ export default function TrocarSenhaTemporariaPage() {
                 <h4 className="mb-2 fw-semibold">Troque sua senha</h4>
                 <p className="text-muted mb-3">
                     Este é seu primeiro acesso. Por segurança, defina uma
-                    nova senha para continuar.
+                    nova senha para continuar
+                    {needsCpf ? ' e complete seu CPF' : ''}.
                 </p>
 
                 <form
@@ -132,6 +176,27 @@ export default function TrocarSenhaTemporariaPage() {
                             </small>
                         )}
                     </div>
+
+                    {needsCpf && (
+                        <div>
+                            <input
+                                className="form-control"
+                                placeholder="CPF"
+                                {...register('cpf', {
+                                    onChange: (e) => {
+                                        e.target.value = formatCpfInput(
+                                            e.target.value,
+                                        );
+                                    },
+                                })}
+                            />
+                            {errors.cpf && (
+                                <small className="text-danger">
+                                    {errors.cpf.message}
+                                </small>
+                            )}
+                        </div>
+                    )}
 
                     {error && (
                         <div className="alert alert-danger py-2">{error}</div>

@@ -21,6 +21,9 @@ export interface SessionUser {
     // true para aluno pré-cadastrado pelo personal que ainda não trocou a
     // senha temporária recebida por e-mail (ver /trocar-senha-temporaria).
     must_change_password?: boolean;
+    // Vazio quando o personal pré-cadastrou o aluno sem informar CPF — a
+    // tela de troca de senha do primeiro login exige completá-lo nesse caso.
+    cpf?: string;
 }
 
 // Bridge nativa do app Android (window.VenafitAuth, injetada via

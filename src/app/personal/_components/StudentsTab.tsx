@@ -18,6 +18,7 @@ import AvatarUpload from '@/components/molecules/AvatarUpload';
 import Modal from '@/components/system/Modal';
 import TrainingPdfUploadModal from '@/components/features/TrainingPdfUploadModal';
 import { usePersonalStudents } from '@/hooks/usePersonalStudents';
+import { formatCpfInput } from '@/libs/formatters';
 import s from '../personal.module.css';
 
 type StudentsState = ReturnType<typeof usePersonalStudents>;
@@ -435,11 +436,19 @@ export default function StudentsTab({ state }: Props) {
                             </select>
                         </div>
                         <div className={s.formGroup}>
-                            <label className={s.formLabel}>CPF</label>
+                            <label className={s.formLabel}>
+                                CPF (opcional)
+                            </label>
                             <input
                                 name="cpf"
                                 value={preRegisterForm.cpf}
-                                onChange={handlePreRegisterInput}
+                                onChange={(e) => {
+                                    e.target.value = formatCpfInput(
+                                        e.target.value,
+                                    );
+                                    handlePreRegisterInput(e);
+                                }}
+                                placeholder="Deixe em branco se não souber"
                                 className={s.formInput}
                             />
                         </div>
