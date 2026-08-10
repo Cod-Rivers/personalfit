@@ -158,7 +158,7 @@ const Header: React.FC = () => {
                 style={{ background: 'var(--amber)', color: 'var(--btn-text)' }}
             >
                 <span>
-                    Seu personal quer reativar seu vínculo. Confirmar?
+                    Um personal quer vincular você como aluno(a). Confirmar?
                     {linkError && (
                         <strong style={{ marginLeft: 8 }}>{linkError}</strong>
                     )}

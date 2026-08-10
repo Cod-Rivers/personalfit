@@ -140,4 +140,30 @@ describe('signUpSchema', () => {
         });
         expect(result.success).toBe(false);
     });
+
+    it('rejects a phone value with only non-digit characters, even if 10+ chars long', () => {
+        // Bug real: a checagem antiga era só min(10) na string bruta, então
+        // texto sem nenhum dígito passava desde que tivesse 10+ caracteres.
+        const result = signUpSchema.safeParse({
+            ...validPayload,
+            phone: 'not-a-phone',
+        });
+        expect(result.success).toBe(false);
+    });
+
+    it('accepts a phone formatted with parentheses/dash, normalizing it to digits only', () => {
+        const result = signUpSchema.safeParse({
+            ...validPayload,
+            phone: '(11) 98765-4321',
+        });
+        expect(result.success).toBe(true);
+        if (result.success) {
+            expect(result.data.phone).toBe('11987654321');
+        }
+    });
+
+    it('rejects a name made only of whitespace', () => {
+        const result = signUpSchema.safeParse({ ...validPayload, name: '   ' });
+        expect(result.success).toBe(false);
+    });
 });

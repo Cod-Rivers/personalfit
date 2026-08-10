@@ -10,6 +10,7 @@ import { Api } from '@/libs/api';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { signUpSchema, SignUpFormData } from '@/libs/validation/authSchemas';
+import { formatCpfInput } from '@/libs/formatters';
 
 const TSignUp: FC = () => {
     const t = useTranslations('SignUpPage');
@@ -114,7 +115,15 @@ const TSignUp: FC = () => {
                     <div>
                         <Input
                             placeholder={t('cpfInput')}
-                            {...register('cpf')}
+                            inputMode="numeric"
+                            maxLength={14}
+                            {...register('cpf', {
+                                onChange: (e) => {
+                                    e.target.value = formatCpfInput(
+                                        e.target.value,
+                                    );
+                                },
+                            })}
                         />
                         {errors.cpf && (
                             <small className="text-danger">

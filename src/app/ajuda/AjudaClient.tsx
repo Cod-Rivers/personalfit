@@ -231,14 +231,18 @@ const personalSections: HelpSection[] = [
     },
     {
         id: 'convidar-alunos',
-        title: 'Convidar e gerenciar alunos',
+        title: 'Adicionar e gerenciar alunos',
         body: (
             <>
                 <p className="mb-2">
                     Na aba <strong>Meus Alunos</strong>, toque em{' '}
-                    <strong>+ Convidar Aluno</strong> para gerar um link de
-                    convite. Envie o link ao aluno: ao se cadastrar por ele,
-                    ele já entra vinculado a você.
+                    <strong>+ Adicionar Aluno</strong> e preencha nome,
+                    e-mail, data de nascimento, sexo, CPF e telefone. Se o
+                    e-mail é novo, o aluno já entra vinculado a você e
+                    recebe por e-mail uma senha temporária, que troca no
+                    primeiro login. Se o e-mail já tem conta, enviamos um
+                    pedido de vínculo — o aluno precisa confirmar na
+                    própria conta antes de ficar vinculado.
                 </p>
                 <p className="mb-2">
                     Cada aluno mostra um selo de situação:{' '}
@@ -1084,7 +1088,7 @@ const personalSections: HelpSection[] = [
                 <p className="mb-0">
                     Pela lista de participantes você acompanha quem entrou e
                     pode <strong>converter</strong> qualquer um deles em aluno
-                    seu diretamente, sem precisar enviar o convite padrão.
+                    seu diretamente, sem precisar pré-cadastrar de novo.
                 </p>
             </>
         ),

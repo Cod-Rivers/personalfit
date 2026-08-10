@@ -18,7 +18,7 @@ export interface Student {
     avatar?: string;
 }
 
-export type StudentModalMode = null | 'invite' | 'edit' | 'unlink';
+export type StudentModalMode = null | 'preregister' | 'edit' | 'unlink';
 
 export interface EditFormData {
     name: string;
@@ -26,7 +26,25 @@ export interface EditFormData {
     mobile_phone: string;
 }
 
+export interface PreRegisterFormData {
+    name: string;
+    email: string;
+    birth_date: string;
+    gender: string;
+    cpf: string;
+    phone: string;
+}
+
 const emptyEditForm: EditFormData = { name: '', phone: '', mobile_phone: '' };
+
+const emptyPreRegisterForm: PreRegisterFormData = {
+    name: '',
+    email: '',
+    birth_date: '',
+    gender: '',
+    cpf: '',
+    phone: '',
+};
 
 function extractErrorMessage(err: unknown, fallback: string): string {
     const data = (
@@ -36,7 +54,7 @@ function extractErrorMessage(err: unknown, fallback: string): string {
 }
 
 /**
- * Encapsula listagem, convite e CRUD de alunos do personal logado.
+ * Encapsula listagem, pré-cadastro e CRUD de alunos do personal logado.
  * Extraído para ser compartilhado entre a aba "Meus Alunos" e a aba
  * "Ciclos" (que precisa da lista de alunos para o modal de aplicar ciclo).
  */
@@ -50,9 +68,15 @@ export function usePersonalStudents(enabled: boolean) {
     const [unlinkTarget, setUnlinkTarget] = useState<Student | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
-    const [inviteLink, setInviteLink] = useState('');
-    const [copied, setCopied] = useState(false);
     const [toggleBusyId, setToggleBusyId] = useState<string | null>(null);
+
+    const [preRegisterForm, setPreRegisterForm] =
+        useState<PreRegisterFormData>(emptyPreRegisterForm);
+    const [preRegisterResult, setPreRegisterResult] = useState<{
+        email: string;
+        emailSent: boolean;
+        linkRequested: boolean;
+    } | null>(null);
 
     const fetchStudents = useCallback(async () => {
         const token = localStorage.getItem('token');
@@ -78,48 +102,72 @@ export function usePersonalStudents(enabled: boolean) {
         setEditId(null);
         setUnlinkTarget(null);
         setError('');
-        setInviteLink('');
-        setCopied(false);
+        setPreRegisterForm(emptyPreRegisterForm);
+        setPreRegisterResult(null);
     }, []);
 
-    const openInvite = useCallback(async () => {
+    const openPreRegister = useCallback(() => {
         setError('');
-        setInviteLink('');
-        setCopied(false);
-        setSubmitting(true);
-        setModal('invite');
+        setPreRegisterForm(emptyPreRegisterForm);
+        setPreRegisterResult(null);
+        setModal('preregister');
+    }, []);
+
+    const handlePreRegisterInput = useCallback(
+        (
+            e: React.ChangeEvent<
+                HTMLInputElement | HTMLSelectElement
+            >,
+        ) => {
+            setPreRegisterForm((prev) => ({
+                ...prev,
+                [e.target.name]: e.target.value,
+            }));
+        },
+        [],
+    );
+
+    const submitPreRegister = useCallback(async () => {
+        setError('');
         const token = localStorage.getItem('token');
         if (!token) {
             setError('Sessão expirada. Faça login novamente.');
-            setSubmitting(false);
             return;
         }
+        setSubmitting(true);
         try {
-            const { data } = await Api.post<{ link: string }>(
-                '/students/invite',
-                {},
+            // O painel só coleta um campo de telefone; o mesmo valor é
+            // enviado como telefone e celular (mesma prática do cadastro
+            // geral, ver SignUp/index.tsx).
+            const { data } = await Api.post<{
+                email: string;
+                email_sent?: boolean;
+                link_requested?: boolean;
+            }>(
+                '/students',
+                {
+                    name: preRegisterForm.name,
+                    email: preRegisterForm.email,
+                    birth_date: preRegisterForm.birth_date,
+                    gender: preRegisterForm.gender,
+                    cpf: preRegisterForm.cpf,
+                    phone: preRegisterForm.phone,
+                    mobile_phone: preRegisterForm.phone,
+                },
                 { headers: { Authorization: token } },
             );
-            setInviteLink(data.link);
+            setPreRegisterResult({
+                email: data.email,
+                emailSent: !!data.email_sent,
+                linkRequested: !!data.link_requested,
+            });
+            await fetchStudents();
         } catch (err: unknown) {
-            setError(extractErrorMessage(err, 'Erro ao gerar convite.'));
+            setError(extractErrorMessage(err, 'Erro ao cadastrar aluno.'));
         } finally {
             setSubmitting(false);
         }
-    }, []);
-
-    const retryInvite = useCallback(() => openInvite(), [openInvite]);
-
-    const copyLink = useCallback(async () => {
-        if (!inviteLink) return;
-        try {
-            await navigator.clipboard.writeText(inviteLink);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        } catch {
-            setError('Não foi possível copiar o link. Copie manualmente.');
-        }
-    }, [inviteLink]);
+    }, [preRegisterForm, fetchStudents]);
 
     const openEdit = useCallback((st: Student) => {
         setEditForm({
@@ -271,11 +319,11 @@ export function usePersonalStudents(enabled: boolean) {
         unlinkTarget,
         submitting,
         error,
-        inviteLink,
-        copied,
-        openInvite,
-        retryInvite,
-        copyLink,
+        preRegisterForm,
+        preRegisterResult,
+        openPreRegister,
+        handlePreRegisterInput,
+        submitPreRegister,
         openEdit,
         openUnlink,
         closeModal,

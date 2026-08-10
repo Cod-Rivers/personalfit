@@ -18,6 +18,9 @@ export interface SessionUser {
     name?: string;
     email?: string;
     has_personal?: boolean;
+    // true para aluno pré-cadastrado pelo personal que ainda não trocou a
+    // senha temporária recebida por e-mail (ver /trocar-senha-temporaria).
+    must_change_password?: boolean;
 }
 
 // Bridge nativa do app Android (window.VenafitAuth, injetada via

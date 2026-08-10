@@ -17,8 +17,8 @@ const TLogin: FC = () => {
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string>('');
     const [info, setInfo] = useState<string>('');
-    // Preserva para onde voltar após o login (ex.: convite de personal
-    // pendente de vínculo) — só aceita caminhos internos (evita open redirect).
+    // Preserva para onde voltar após o login (ex.: um deep link que exigiu
+    // autenticação) — só aceita caminhos internos (evita open redirect).
     const [redirectTarget, setRedirectTarget] = useState<string | null>(null);
 
     const {
@@ -47,8 +47,9 @@ const TLogin: FC = () => {
                     return;
                 }
                 saveSession(data.token, data.user, data.refresh_token);
-                window.location.href =
-                    redirectTarget || landingRouteFor(data.user);
+                window.location.href = data.user.must_change_password
+                    ? '/trocar-senha-temporaria'
+                    : redirectTarget || landingRouteFor(data.user);
             }
         } catch {
             setError('Erro ao realizar login');
@@ -80,8 +81,10 @@ const TLogin: FC = () => {
         const token = localStorage.getItem('token');
         const stored = localStorage.getItem('user');
         if (token && stored) {
-            window.location.href =
-                safeRedirect || landingRouteFor(JSON.parse(stored));
+            const storedUser = JSON.parse(stored);
+            window.location.href = storedUser.must_change_password
+                ? '/trocar-senha-temporaria'
+                : safeRedirect || landingRouteFor(storedUser);
         }
     }, []);
 

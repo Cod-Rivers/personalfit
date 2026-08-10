@@ -9,6 +9,7 @@ import {
     FiChevronRight,
 } from 'react-icons/fi';
 import { Api } from '@/libs/api';
+import { formatCpfInput } from '@/libs/formatters';
 import Modal from '@/components/system/Modal';
 import QuestionsRenderer from '@/components/organism/QuestionsRenderer';
 import { IQuestionProps } from '@/components/organism/QuestionsRenderer/types';
@@ -56,24 +57,6 @@ const getDoresOptions = async (): Promise<string[]> => {
         return [];
     }
 };
-
-// Máscara simples de CPF (000.000.000-00) aplicada enquanto o personal
-// digita. Não há componente de máscara de CPF reutilizável no app — o
-// formulário de cadastro (SignUp) valida com zod mas não formata visualmente
-// — então esta função local fica restrita a este arquivo.
-function formatCpfInput(raw: string): string {
-    const digits = raw.replace(/\D/g, '').slice(0, 11);
-    if (digits.length > 9) {
-        return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
-    }
-    if (digits.length > 6) {
-        return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
-    }
-    if (digits.length > 3) {
-        return `${digits.slice(0, 3)}.${digits.slice(3)}`;
-    }
-    return digits;
-}
 
 type ModalStep = 'dores' | 'questions' | 'attest';
 

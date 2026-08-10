@@ -1,12 +1,28 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { FiX, FiUpload } from 'react-icons/fi';
 import { isInsideNativeApp } from '@/libs/androidApp';
 import s from './InstallPwaPrompt.module.css';
 
 const DISMISS_KEY = 'venafit_install_prompt_dismissed_at';
 const DISMISS_DAYS = 14;
+
+// Mesmas rotas públicas/de autenticação de HeaderCondicional. O banner fixo
+// no rodapé cobria o formulário nessas páginas — em especial o botão
+// "Cadastrar" no iOS, onde o modo 'ios' é sempre uma faixa fixa (sem
+// beforeinstallprompt do navegador). Também não faz sentido convidar um
+// visitante ainda não cadastrado a instalar o app.
+const PUBLIC_PATHS = ['/', '/cadastro', '/esqueceu-senha'];
+
+function isPublicPath(pathname: string): boolean {
+    return (
+        PUBLIC_PATHS.includes(pathname) ||
+        pathname.startsWith('/cadastro/') ||
+        pathname.startsWith('/redefinir-senha/')
+    );
+}
 
 interface BeforeInstallPromptEvent extends Event {
     prompt: () => Promise<void>;
@@ -43,12 +59,19 @@ function wasRecentlyDismissed(): boolean {
  * é o app.
  */
 export default function InstallPwaPrompt() {
+    const pathname = usePathname();
     const [mode, setMode] = useState<'none' | 'ios' | 'installable'>('none');
     const [deferredPrompt, setDeferredPrompt] =
         useState<BeforeInstallPromptEvent | null>(null);
 
     useEffect(() => {
-        if (isInsideNativeApp() || isStandaloneDisplay() || wasRecentlyDismissed()) {
+        if (
+            isPublicPath(pathname) ||
+            isInsideNativeApp() ||
+            isStandaloneDisplay() ||
+            wasRecentlyDismissed()
+        ) {
+            setMode('none');
             return;
         }
 
@@ -65,7 +88,7 @@ export default function InstallPwaPrompt() {
         window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt);
         return () =>
             window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt);
-    }, []);
+    }, [pathname]);
 
     function dismiss() {
         localStorage.setItem(DISMISS_KEY, String(Date.now()));

@@ -45,9 +45,18 @@ const strongPassword = z
 
 export const signUpSchema = z
     .object({
-        name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
-        email: z.string().email('E-mail inválido'),
-        phone: z.string().min(10, 'Telefone inválido'),
+        name: z.string().trim().min(2, 'Nome deve ter pelo menos 2 caracteres'),
+        email: z.string().trim().email('E-mail inválido'),
+        // Antes checava só o comprimento da string bruta (com máscara), então
+        // qualquer texto com 10+ caracteres — inclusive letras — passava. Agora
+        // normaliza para dígitos e exige DDD + 8 ou 9 dígitos, igual ao CPF.
+        phone: z
+            .string()
+            .transform((val) => val.replace(/\D/g, ''))
+            .refine(
+                (val) => val.length === 10 || val.length === 11,
+                'Telefone inválido',
+            ),
         cpf: z
             .string()
             .transform((val) => val.replace(/\D/g, ''))

@@ -323,3 +323,27 @@
 ## 2026-08-06 17:40 — River (via Claude Code)
 **Resumo:** Feito e já em produção. Resumo do que investiguei e mudei: **Achado principal — "thinking" invisível** Testei a resposta real da API do Gemini e descobri que ela reporta um campo `thoughtsTokenCount` separado, que **não aparecia em lugar nenhum no código** (o parser Go só lia `promptTokenCount`/`candidatesTokenCount`/`totalTokenCount`). Para uma tarefa trivial de 5 tokens de resposta, o modelo padrão gastava **91-134 tokens de "raciocínio" invisível** — 20-30x mais que a resposta em si, sem ganho nenhum, já que a tarefa é só escolher um índice de uma lista fechada (o schema já obriga o formato…
 **Arquivos:** EvolutionChart.tsx
+
+## 2026-08-06 18:31 — River (via Claude Code)
+**Commits:** corrigido a versão do gemini usado para replace dos exercicios
+
+## 2026-08-06 18:32 — River (via Claude Code)
+**Resumo:** Dá pra conectar de duas formas — não existe uma sincronização automática entre a memória do Claude Code (aqui, local) e o Claude.ai, mas dá pra alimentar o Project "Venafit" manualmente: **1. Conectar os repositórios via GitHub (recomendado)** Os três repos já estão no GitHub sob `Cod-Rivers`: - `personalfit` (frontend) - `Personal-fit-Back` (backend) - `VenafitApp` (Android) No Claude.ai, dentro do Project → **Add content → GitHub**, você pode conectar esses repos (precisa autorizar o GitHub uma vez em Settings → Connectors). Isso dá ao Project acesso ao código/histórico real, sem precisar co…
+**Arquivos:** CHANGELOG_FRONTEND.md
+
+## 2026-08-07 18:56 — River (via Claude Code)
+**Resumo:** Nenhum teste referencia esses valores. Resumo do que foi alterado: **Backend** (`Personal-fit-Back`): - `internal/infra/storage/r2.go`: `MaxUploadBytes` 20MB → 35MB (personal); nova constante `MaxUploadBytesAdmin` = 50MB - `enforceMaxUploadSize` agora recebe `maxBytes` como parâmetro - `admin-controller.go` (3 pontos: confirmação de vídeo, upload de imagem) usa `MaxUploadBytesAdmin` - `exercise-fork-controller.go` e `personal-exercises-controller.go` usam `MaxUploadBytes` (35MB) **Frontend** (`personalfit`): - `exerciseVideoService.ts`: `MAX_UPLOAD_BYTES` → 35MB; nova `MAX_UPLOAD_BYTES_ADMIN` …
+**Arquivos:** exerciseVideoService.ts, page.tsx
+
+## 2026-08-07 20:35 — River (via Claude Code)
+**Resumo:** Vou mapear o código em busca de todos os tipos de mensagens enviadas (push, email, in-app, etc.) e seus canais de envio.
+**Commits:** Aumenta limite de upload de mídia de exercício: 20MB -> 35MB (personal) / 50MB (admin)
+
+## 2026-08-10 17:27 — River (via Claude Code)
+**Resumo:** Investigando a página de treino do aluno em background para verificar se os treinos sempre aparecem primeiro no layout. Te aviso assim que tiver o resultado.
+**Arquivos:** index.tsx
+**Commits:** feat: seleção predefinida de grupo muscular/categoria/tags + busca reativa na biblioteca de exercícios | fix: rótulos de grupo muscular mais claros (Abdômen, Isquiotibiais, Lombar) | fix: lombar não é sinônimo de abdômen/core
+
+## 2026-08-10 17:29 — River (via Claude Code)
+**Resumo:** Você não achou porque essa funcionalidade ainda não existe no código — ela foi só planejada, nunca implementada. Confirmei isso agora contra o repositório (nenhuma rota, componente ou tela de importação de treino via PDF em nenhum dos dois repos) e contra `Todo/TAREFAS_PENDENTES.md`, item -11. O que existe hoje é só o desenho técnico completo, fechado em 2026-08-05, salvo em `C:\Users\river\.claude\plans\lazy-plotting-abelson.md`: - **Aluno ou personal** sobe um PDF (foto de caderno, planilha, plano de outra academia) e o Gemini extrai os exercícios automaticamente. - **No personal**: pensado …
+**Arquivos:** InstallPwaPrompt.tsx

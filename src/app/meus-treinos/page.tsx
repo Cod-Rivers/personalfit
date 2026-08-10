@@ -55,9 +55,11 @@ import {
     FiEdit2,
     FiTrash2,
     FiWifiOff,
+    FiFileText,
 } from 'react-icons/fi';
 import styles from '../../components/features/TrainingProtocolList.module.css';
 import { summarizeTraining } from '@/libs/trainingSummary';
+import TrainingPdfUploadModal from '@/components/features/TrainingPdfUploadModal';
 import {
     getNewWorkoutLogs,
     NewWorkoutLogResponse,
@@ -162,6 +164,7 @@ export default function MeusTreinosPage() {
     const [selectorOpen, setSelectorOpen] = useState(false);
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [isMounted, setIsMounted] = useState(false);
+    const [pdfImportOpen, setPdfImportOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
 
@@ -292,6 +295,24 @@ export default function MeusTreinosPage() {
         }
     }
 
+    async function handlePdfImportApplied(result: { macrocycleId: string }) {
+        setPdfImportOpen(false);
+        setLoading(true);
+        try {
+            const macro = await getMyMacrocycle(result.macrocycleId);
+            setMacrocycles((prev) => [
+                macro,
+                ...prev.filter((m) => m.id !== macro.id),
+            ]);
+            await selectMacro(macro);
+        } catch (e) {
+            const err = e as Error;
+            setError(`Treino importado, mas houve um erro ao carregá-lo: ${err.message}`);
+        } finally {
+            setLoading(false);
+        }
+    }
+
     async function handleDeleteMacro(macro: MacrocycleResponse) {
         if (
             !window.confirm(
@@ -348,14 +369,33 @@ export default function MeusTreinosPage() {
                 style={{ color: 'var(--text-secondary)' }}
             >
                 <p>Nenhum treino disponível para você no momento.</p>
-                <Link
-                    href="/meus-treinos/escolher-plano"
-                    className="fw-bold text-decoration-none d-inline-flex align-items-center gap-1"
-                    style={{ color: 'var(--amber)' }}
+                <div
+                    className="d-flex flex-column align-items-center gap-2 mt-2"
                 >
-                    <FiStar size={14} />
-                    Escolher um plano estilo famosos
-                </Link>
+                    <Link
+                        href="/meus-treinos/escolher-plano"
+                        className="fw-bold text-decoration-none d-inline-flex align-items-center gap-1"
+                        style={{ color: 'var(--amber)' }}
+                    >
+                        <FiStar size={14} />
+                        Escolher um plano estilo famosos
+                    </Link>
+                    <button
+                        type="button"
+                        onClick={() => setPdfImportOpen(true)}
+                        className="fw-bold text-decoration-none d-inline-flex align-items-center gap-1 btn btn-link p-0"
+                        style={{ color: 'var(--mint-text, #2ecc71)' }}
+                    >
+                        <FiFileText size={14} />
+                        Importar treino de PDF
+                    </button>
+                </div>
+                <TrainingPdfUploadModal
+                    open={pdfImportOpen}
+                    role="student"
+                    onClose={() => setPdfImportOpen(false)}
+                    onApplied={handlePdfImportApplied}
+                />
             </div>
         );
     }
@@ -385,6 +425,117 @@ export default function MeusTreinosPage() {
                         momento).
                     </div>
                 )}
+                {/* Trainings list agrupada por mesociclo — vem primeiro na
+                    página para o aluno ver os treinos sem precisar rolar
+                    por cards de contexto (personal, gamificação, seletor). */}
+                {mesoGroups.length === 0 ? (
+                    <p className={styles.noTrainingsMessage}>
+                        Nenhum treino encontrado para este macrociclo.
+                    </p>
+                ) : (
+                    mesoGroups.map((group) => (
+                        <div
+                            key={group.mesoId}
+                            style={{ marginBottom: '1.5rem' }}
+                        >
+                            {/* Cabeçalho do mesociclo */}
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    gap: 10,
+                                    marginBottom: 8,
+                                    paddingLeft: '5%',
+                                    paddingRight: '5%',
+                                }}
+                            >
+                                <div>
+                                    <p
+                                        style={{
+                                            margin: 0,
+                                            fontWeight: 700,
+                                            fontSize: '0.95rem',
+                                            color: 'var(--text-primary)',
+                                        }}
+                                    >
+                                        {group.mesoName}
+                                    </p>
+                                    <p
+                                        style={{
+                                            margin: 0,
+                                            fontSize: '0.72rem',
+                                            color: 'var(--text-muted)',
+                                        }}
+                                    >
+                                        {group.phase} &middot;{' '}
+                                        {group.durationWeeks} semana
+                                        {group.durationWeeks === 1 ? '' : 's'}
+                                        {group.trainings.length > 0 && (
+                                            <>
+                                                {' '}
+                                                &middot; {group.trainings.length}{' '}
+                                                treino
+                                                {group.trainings.length === 1
+                                                    ? ''
+                                                    : 's'}
+                                            </>
+                                        )}
+                                    </p>
+                                </div>
+                                {(userRole === 'personal' ||
+                                    userRole === 'admin') && (
+                                    <Link
+                                        href={`/personal/aluno/${studentId}/periodizacao/${selectedMacro?.id}`}
+                                        className="d-inline-flex align-items-center gap-1"
+                                        style={{
+                                            fontSize: '0.75rem',
+                                            color: 'var(--amber, #f0a500)',
+                                            border: '1px solid var(--amber, #f0a500)',
+                                            borderRadius: 6,
+                                            padding: '3px 10px',
+                                            textDecoration: 'none',
+                                            whiteSpace: 'nowrap',
+                                            fontWeight: 600,
+                                        }}
+                                    >
+                                        <FiEdit2 size={12} />
+                                        Editar fase
+                                    </Link>
+                                )}
+                            </div>
+                            {/* Cards de treino */}
+                            <div role="list">
+                                {group.trainings.map((training) => (
+                                    <Link
+                                        href={`/meus-treinos/${selectedMacro?.id}/${training.id}`}
+                                        key={training.id}
+                                        className={styles.cardLink}
+                                    >
+                                        <div className={styles.protocolButton}>
+                                            <TrainingCard
+                                                id={training.id}
+                                                label={training.label}
+                                                focusLabel={training.focusLabel}
+                                                accent={training.accent}
+                                                exerciseCount={
+                                                    training.exerciseCount
+                                                }
+                                                seriesCount={
+                                                    training.seriesCount
+                                                }
+                                                estimatedMinutes={
+                                                    training.estimatedMinutes
+                                                }
+                                            />
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                        </div>
+                    ))
+                )}
+
                 {/* Card do Personal Trainer */}
                 <PersonalTrainerCard
                     branding={branding}
@@ -509,7 +660,8 @@ export default function MeusTreinosPage() {
                                         >
                                             {m.name || 'Macrociclo'}
                                         </button>
-                                        {m.category === 'celebrity' && (
+                                        {(m.category === 'celebrity' ||
+                                            m.category === 'imported_pdf') && (
                                             <button
                                                 type="button"
                                                 aria-label={`Remover plano ${m.name}`}
@@ -591,6 +743,38 @@ export default function MeusTreinosPage() {
                             Planos estilo famosos
                         </span>
                     </Link>
+                    <button
+                        type="button"
+                        onClick={() => setPdfImportOpen(true)}
+                        className="d-flex align-items-center gap-2 text-decoration-none btn btn-link p-0 w-100"
+                        style={{ padding: '10px 0' }}
+                    >
+                        <span
+                            aria-hidden="true"
+                            style={{
+                                width: 8,
+                                height: 8,
+                                borderRadius: 2,
+                                background: 'var(--mint)',
+                                flexShrink: 0,
+                            }}
+                        />
+                        <span
+                            style={{
+                                fontSize: '0.87rem',
+                                fontWeight: 600,
+                                color: 'var(--mint-text, #2ecc71)',
+                            }}
+                        >
+                            Importar treino de PDF
+                        </span>
+                    </button>
+                    <TrainingPdfUploadModal
+                        open={pdfImportOpen}
+                        role="student"
+                        onClose={() => setPdfImportOpen(false)}
+                        onApplied={handlePdfImportApplied}
+                    />
                 </div>
                 {/* Gantt chart (read-only) — só faz sentido mostrar (com o
                     toggle de ocultar) quando o personal já definiu datas */}
@@ -607,115 +791,6 @@ export default function MeusTreinosPage() {
                         />
                     </div>
                 )}
-                {/* Trainings list agrupada por mesociclo */}
-                {mesoGroups.length === 0 ? (
-                    <p className={styles.noTrainingsMessage}>
-                        Nenhum treino encontrado para este macrociclo.
-                    </p>
-                ) : (
-                    mesoGroups.map((group) => (
-                        <div
-                            key={group.mesoId}
-                            style={{ marginBottom: '1.5rem' }}
-                        >
-                            {/* Cabeçalho do mesociclo */}
-                            <div
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    gap: 10,
-                                    marginBottom: 8,
-                                    paddingLeft: '5%',
-                                    paddingRight: '5%',
-                                }}
-                            >
-                                <div>
-                                    <p
-                                        style={{
-                                            margin: 0,
-                                            fontWeight: 700,
-                                            fontSize: '0.95rem',
-                                            color: 'var(--text-primary)',
-                                        }}
-                                    >
-                                        {group.mesoName}
-                                    </p>
-                                    <p
-                                        style={{
-                                            margin: 0,
-                                            fontSize: '0.72rem',
-                                            color: 'var(--text-muted)',
-                                        }}
-                                    >
-                                        {group.phase} &middot;{' '}
-                                        {group.durationWeeks} semana
-                                        {group.durationWeeks === 1 ? '' : 's'}
-                                        {group.trainings.length > 0 && (
-                                            <>
-                                                {' '}
-                                                &middot; {group.trainings.length}{' '}
-                                                treino
-                                                {group.trainings.length === 1
-                                                    ? ''
-                                                    : 's'}
-                                            </>
-                                        )}
-                                    </p>
-                                </div>
-                                {(userRole === 'personal' ||
-                                    userRole === 'admin') && (
-                                    <Link
-                                        href={`/personal/aluno/${studentId}/periodizacao/${selectedMacro?.id}`}
-                                        className="d-inline-flex align-items-center gap-1"
-                                        style={{
-                                            fontSize: '0.75rem',
-                                            color: 'var(--amber, #f0a500)',
-                                            border: '1px solid var(--amber, #f0a500)',
-                                            borderRadius: 6,
-                                            padding: '3px 10px',
-                                            textDecoration: 'none',
-                                            whiteSpace: 'nowrap',
-                                            fontWeight: 600,
-                                        }}
-                                    >
-                                        <FiEdit2 size={12} />
-                                        Editar fase
-                                    </Link>
-                                )}
-                            </div>
-                            {/* Cards de treino */}
-                            <div role="list">
-                                {group.trainings.map((training) => (
-                                    <Link
-                                        href={`/meus-treinos/${selectedMacro?.id}/${training.id}`}
-                                        key={training.id}
-                                        className={styles.cardLink}
-                                    >
-                                        <div className={styles.protocolButton}>
-                                            <TrainingCard
-                                                id={training.id}
-                                                label={training.label}
-                                                focusLabel={training.focusLabel}
-                                                accent={training.accent}
-                                                exerciseCount={
-                                                    training.exerciseCount
-                                                }
-                                                seriesCount={
-                                                    training.seriesCount
-                                                }
-                                                estimatedMinutes={
-                                                    training.estimatedMinutes
-                                                }
-                                            />
-                                        </div>
-                                    </Link>
-                                ))}
-                            </div>
-                        </div>
-                    ))
-                )}
-                ​
             </div>
 
             {/* Ad rodapé sticky */}
