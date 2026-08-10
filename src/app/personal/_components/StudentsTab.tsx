@@ -13,6 +13,7 @@ import {
     FiMessageCircle,
     FiMail,
     FiFileText,
+    FiCheck,
 } from 'react-icons/fi';
 import AvatarUpload from '@/components/molecules/AvatarUpload';
 import Modal from '@/components/system/Modal';
@@ -35,6 +36,7 @@ export default function StudentsTab({ state }: Props) {
         name: string;
     } | null>(null);
     const [pdfImportPickerOpen, setPdfImportPickerOpen] = useState(false);
+    const [passwordCopied, setPasswordCopied] = useState(false);
     const {
         students,
         loading,
@@ -81,7 +83,13 @@ export default function StudentsTab({ state }: Props) {
                     >
                         <FiFileText /> Importar Treino de PDF
                     </button>
-                    <button onClick={openPreRegister} className={s.btnAdd}>
+                    <button
+                        onClick={() => {
+                            setPasswordCopied(false);
+                            openPreRegister();
+                        }}
+                        className={s.btnAdd}
+                    >
                         + Adicionar Aluno
                     </button>
                 </div>
@@ -384,6 +392,72 @@ export default function StudentsTab({ state }: Props) {
                                         minha senha&quot; na tela de login
                                         com o e-mail cadastrado.
                                     </p>
+                                )}
+                                {preRegisterResult.tempPassword && (
+                                    <>
+                                        <p className={s.confirmText}>
+                                            Você também pode ajudar o aluno
+                                            a entrar agora — essa senha só
+                                            aparece nesta tela, uma vez:
+                                        </p>
+                                        <div
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 8,
+                                            }}
+                                        >
+                                            <input
+                                                readOnly
+                                                value={
+                                                    preRegisterResult.tempPassword
+                                                }
+                                                onFocus={(e) =>
+                                                    e.target.select()
+                                                }
+                                                className={s.formInput}
+                                                style={{
+                                                    fontFamily: 'monospace',
+                                                    letterSpacing: '0.5px',
+                                                }}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={async () => {
+                                                    try {
+                                                        await navigator.clipboard.writeText(
+                                                            preRegisterResult.tempPassword!,
+                                                        );
+                                                        setPasswordCopied(
+                                                            true,
+                                                        );
+                                                        setTimeout(
+                                                            () =>
+                                                                setPasswordCopied(
+                                                                    false,
+                                                                ),
+                                                            2000,
+                                                        );
+                                                    } catch {
+                                                        /* clipboard indisponível — o campo já permite copiar manualmente */
+                                                    }
+                                                }}
+                                                className={s.btnSubmit}
+                                                style={{
+                                                    flexShrink: 0,
+                                                    whiteSpace: 'nowrap',
+                                                }}
+                                            >
+                                                {passwordCopied ? (
+                                                    <>
+                                                        <FiCheck /> Copiada!
+                                                    </>
+                                                ) : (
+                                                    'Copiar'
+                                                )}
+                                            </button>
+                                        </div>
+                                    </>
                                 )}
                             </>
                         )}

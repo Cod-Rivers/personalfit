@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Api } from '@/libs/api';
+import { isValidCpfChecksum } from '@/libs/validation/authSchemas';
 
 export type LinkStatus = 'active' | 'pending' | 'inactive';
 
@@ -76,6 +77,7 @@ export function usePersonalStudents(enabled: boolean) {
         email: string;
         emailSent: boolean;
         linkRequested: boolean;
+        tempPassword?: string;
     } | null>(null);
 
     const fetchStudents = useCallback(async () => {
@@ -127,8 +129,34 @@ export function usePersonalStudents(enabled: boolean) {
         [],
     );
 
+    // Validação client-side antes de chamar a API: o modal não usa
+    // react-hook-form/zod (é um form simples com useState), então sem isso
+    // um envio com campo em branco só voltava um "erro de validação"
+    // genérico do backend, sem dizer qual campo faltou.
+    const validatePreRegisterForm = useCallback((): string | null => {
+        const f = preRegisterForm;
+        if (!f.name.trim()) return 'Informe o nome do aluno.';
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim()))
+            return 'Informe um e-mail válido.';
+        if (!f.birth_date) return 'Informe a data de nascimento.';
+        if (!f.gender) return 'Selecione o sexo.';
+        if (!f.phone.trim()) return 'Informe o telefone.';
+        if (f.cpf.trim()) {
+            const digits = f.cpf.replace(/\D/g, '');
+            if (!/^\d{11}$/.test(digits) || !isValidCpfChecksum(digits)) {
+                return 'CPF inválido — confira os números ou deixe em branco.';
+            }
+        }
+        return null;
+    }, [preRegisterForm]);
+
     const submitPreRegister = useCallback(async () => {
         setError('');
+        const validationError = validatePreRegisterForm();
+        if (validationError) {
+            setError(validationError);
+            return;
+        }
         const token = localStorage.getItem('token');
         if (!token) {
             setError('Sessão expirada. Faça login novamente.');
@@ -143,6 +171,7 @@ export function usePersonalStudents(enabled: boolean) {
                 email: string;
                 email_sent?: boolean;
                 link_requested?: boolean;
+                temp_password?: string;
             }>(
                 '/students',
                 {
@@ -160,6 +189,7 @@ export function usePersonalStudents(enabled: boolean) {
                 email: data.email,
                 emailSent: !!data.email_sent,
                 linkRequested: !!data.link_requested,
+                tempPassword: data.temp_password,
             });
             await fetchStudents();
         } catch (err: unknown) {
@@ -167,7 +197,7 @@ export function usePersonalStudents(enabled: boolean) {
         } finally {
             setSubmitting(false);
         }
-    }, [preRegisterForm, fetchStudents]);
+    }, [preRegisterForm, fetchStudents, validatePreRegisterForm]);
 
     const openEdit = useCallback((st: Student) => {
         setEditForm({
