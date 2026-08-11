@@ -347,3 +347,7 @@
 ## 2026-08-10 17:29 — River (via Claude Code)
 **Resumo:** Você não achou porque essa funcionalidade ainda não existe no código — ela foi só planejada, nunca implementada. Confirmei isso agora contra o repositório (nenhuma rota, componente ou tela de importação de treino via PDF em nenhum dos dois repos) e contra `Todo/TAREFAS_PENDENTES.md`, item -11. O que existe hoje é só o desenho técnico completo, fechado em 2026-08-05, salvo em `C:\Users\river\.claude\plans\lazy-plotting-abelson.md`: - **Aluno ou personal** sobe um PDF (foto de caderno, planilha, plano de outra academia) e o Gemini extrai os exercícios automaticamente. - **No personal**: pensado …
 **Arquivos:** InstallPwaPrompt.tsx
+
+## 2026-08-11 12:55 — River (via Claude Code)
+**Resumo:** I'll just wait for the background agent's notification rather than polling — no action needed right now.
+**Commits:** alterado aforma de vinculo com personal, corrigido campos de cadastro e adicionado pdf com ia' | CPF opcional no pré-cadastro de aluno, completado no primeiro login | Mostra a senha temporária pro personal + validação client-side no pré-cadastro | Remove cache-buster local do upload da vitrine | Thumbnail de exercício no editor do personal abre preview de vídeo | Enquadramento (arrastar + zoom) para as imagens da vitrine

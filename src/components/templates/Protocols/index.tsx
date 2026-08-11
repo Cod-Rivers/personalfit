@@ -7,6 +7,7 @@ import { IProtocol } from './types';
 import { useRouter } from 'next/navigation';
 import { Api } from '@/libs/api';
 import { useBranding } from '@/context/BrandingContext';
+import GoogleAdSlot from '@/components/molecules/GoogleAdSlot';
 
 const TProtocols: React.FC = () => {
     const router = useRouter();
@@ -104,6 +105,10 @@ const TProtocols: React.FC = () => {
                         </div>
                     ))}
                 </div>
+            </div>
+
+            <div className="container py-3">
+                <GoogleAdSlot />
             </div>
 
             {/* Unlink section — só aparece quando o aluno realmente tem um

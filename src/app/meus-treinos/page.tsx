@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { useAds } from '@/context/AdContext';
 import { useBranding } from '@/context/BrandingContext';
 import AdBanner from '@/components/molecules/AdBanner';
+import GoogleAdSlot from '@/components/molecules/GoogleAdSlot';
 import PersonalTrainerCard from '@/components/molecules/PersonalTrainerCard';
 import { TrainingCardProps } from '../../components/features/types';
 
@@ -791,6 +792,10 @@ export default function MeusTreinosPage() {
                         />
                     </div>
                 )}
+
+                <div className="py-3">
+                    <GoogleAdSlot />
+                </div>
             </div>
 
             {/* Ad rodapé sticky */}

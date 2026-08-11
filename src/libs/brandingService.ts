@@ -36,17 +36,25 @@ export async function getMyBranding(): Promise<{ branding: PersonalBranding | nu
     return res.data;
 }
 
-/** Retorna o branding (e nome) do personal vinculado ao usuário autenticado (para alunos). */
+/**
+ * Retorna o branding (e nome) do personal vinculado ao usuário autenticado
+ * (para alunos), junto do plano efetivo (ver ResolveEffectiveStudentPlanType
+ * no backend): o do personal vinculado quando existe, senão o próprio plano
+ * do usuário.
+ */
 export async function getPersonalBranding(): Promise<{
     branding: PersonalBranding | null;
     personalName: string | null;
+    effectivePlanType: string | null;
 }> {
     const res = await Api.get<{
         branding: PersonalBranding | null;
         personal_name?: string;
+        effective_plan_type?: string;
     }>('/branding');
     return {
         branding: res.data.branding,
         personalName: res.data.personal_name ?? null,
+        effectivePlanType: res.data.effective_plan_type ?? null,
     };
 }

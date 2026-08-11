@@ -6,12 +6,15 @@ import { PersonalBranding, getPersonalBranding } from '@/libs/brandingService';
 interface BrandingContextValue {
     branding: PersonalBranding | null;
     personalName: string | null;
+    /** "free" | "pro" | null enquanto não carregado — ver getPersonalBranding. */
+    effectivePlanType: string | null;
     setBranding: (b: PersonalBranding | null) => void;
 }
 
 const BrandingContext = createContext<BrandingContextValue>({
     branding: null,
     personalName: null,
+    effectivePlanType: null,
     setBranding: () => {},
 });
 
@@ -39,6 +42,9 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
         null,
     );
     const [personalName, setPersonalName] = useState<string | null>(null);
+    const [effectivePlanType, setEffectivePlanType] = useState<string | null>(
+        null,
+    );
 
     useEffect(() => {
         const token =
@@ -48,9 +54,10 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
         if (!token) return;
 
         getPersonalBranding()
-            .then(({ branding: b, personalName: name }) => {
+            .then(({ branding: b, personalName: name, effectivePlanType: plan }) => {
                 setBrandingState(b);
                 setPersonalName(name);
+                setEffectivePlanType(plan);
                 applyBrandingVars(b);
             })
             .catch(() => {
@@ -65,7 +72,7 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
 
     return (
         <BrandingContext.Provider
-            value={{ branding, personalName, setBranding }}
+            value={{ branding, personalName, effectivePlanType, setBranding }}
         >
             {children}
         </BrandingContext.Provider>

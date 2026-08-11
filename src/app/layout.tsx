@@ -10,6 +10,7 @@ import HeaderCondicional from '@/components/organism/HeaderCondicional';
 import FCMProvider from '@/components/FCMProvider';
 import ServiceWorkerRegistrar from '@/components/system/ServiceWorkerRegistrar';
 import InstallPwaPrompt from '@/components/system/InstallPwaPrompt';
+import GoogleAdsense from '@/components/system/GoogleAdsense';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './css/globals.css';
 
@@ -68,6 +69,7 @@ export default async function RootLayout({
                     <InstallPwaPrompt />
                     <ThemeProvider>
                         <BrandingProvider>
+                            <GoogleAdsense />
                             <AdProvider>
                                 <FCMProvider>
                                     <HeaderCondicional />
