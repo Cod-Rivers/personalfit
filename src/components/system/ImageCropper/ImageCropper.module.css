@@ -1,0 +1,159 @@
+/* Recorte de imagem — modal de posicionamento (arrastar + zoom).
+   Fica acima de qualquer modal do app: o recorte é sempre aberto A PARTIR de
+   uma tela (o editor da vitrine, por exemplo) que já é um modal. */
+
+.overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.78);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: calc(var(--z-modal) + 10);
+    padding: var(--space-4);
+}
+
+.card {
+    background: var(--surface-1);
+    border-radius: var(--radius-xl);
+    padding: var(--space-5) var(--space-4) var(--space-4);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-3);
+    max-width: 340px;
+    width: 100%;
+    border: 1px solid var(--border-subtle);
+    box-shadow: var(--shadow-lg);
+}
+
+.title {
+    margin: 0;
+    font-size: var(--font-md);
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.hint {
+    margin: calc(var(--space-2) * -1) 0 0;
+    font-size: var(--font-xs);
+    color: var(--text-secondary);
+    text-align: center;
+}
+
+/* Quadro de visualização: tem a MESMA proporção em que a imagem vai aparecer
+   na tela final, então o que o usuário enquadra aqui é o que ele vê depois. */
+.viewport {
+    position: relative;
+    overflow: hidden;
+    background: #111;
+    border: 2px solid var(--mint);
+    border-radius: var(--radius-md);
+    cursor: grab;
+    flex-shrink: 0;
+    /* Sem isto o navegador rouba o arraste/pinça para rolar a página. */
+    touch-action: none;
+}
+
+.viewportRound {
+    border-radius: 50%;
+}
+
+.viewport:active {
+    cursor: grabbing;
+}
+
+.img {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    display: block;
+    user-select: none;
+    pointer-events: none;
+    /* O transform (posição) e o tamanho (zoom) vêm inline. */
+    max-width: none;
+}
+
+/* ── Zoom ── */
+
+.zoomRow {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    width: 100%;
+    color: var(--text-secondary);
+}
+
+.zoomBtn {
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    border: 1px solid var(--border-mid);
+    background: var(--surface-3);
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+}
+
+.zoomBtn:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.zoomSlider {
+    flex: 1;
+    min-width: 0;
+    accent-color: var(--mint);
+    cursor: pointer;
+}
+
+.actions {
+    display: flex;
+    gap: var(--space-2);
+    width: 100%;
+}
+
+.cancel,
+.save {
+    flex: 1;
+    padding: var(--space-3) 0;
+    border-radius: var(--radius-md);
+    font-size: var(--font-sm);
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition:
+        opacity 0.15s,
+        transform 0.1s;
+}
+
+.cancel {
+    background: var(--surface-3);
+    color: var(--text-primary);
+    border: 1px solid var(--border-mid);
+}
+
+.save {
+    background: var(--grad-mint);
+    color: var(--btn-text);
+}
+
+.cancel:disabled,
+.save:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.cancel:hover:not(:disabled),
+.save:hover:not(:disabled) {
+    opacity: 0.85;
+}
+
+.cancel:active:not(:disabled),
+.save:active:not(:disabled) {
+    transform: scale(0.97);
+}

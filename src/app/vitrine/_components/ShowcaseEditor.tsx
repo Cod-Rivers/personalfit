@@ -12,6 +12,10 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import Modal from '@/components/system/Modal';
+import ImageCropper, {
+    cropCanvasToBlob,
+    fileToDataURI,
+} from '@/components/system/ImageCropper';
 import {
     Showcase,
     ShowcasePayload,
@@ -32,6 +36,126 @@ interface Props {
 }
 
 const MAX_RESULTS = 12;
+
+/** Teto do arquivo ESCOLHIDO — o que sobe é o recorte, sempre bem menor. */
+const MAX_PICK_BYTES = 15 * 1024 * 1024;
+
+/**
+ * Como cada peça aparece na vitrine. O quadro de recorte usa exatamente esta
+ * proporção, então o enquadramento escolhido aqui é o que o aluno vê: a página
+ * exibe tudo com `object-fit: cover`, que corta sozinho o que não couber.
+ *
+ * As proporções são as da tela do celular (a esmagadora maioria dos acessos);
+ * no cartão mais largo do desktop sobra um pouco das laterais.
+ */
+const SLOT_FRAMES = {
+    capa: {
+        aspect: 16 / 9,
+        outputWidth: 1600,
+        title: 'Enquadrar a capa',
+    },
+    avatar: {
+        aspect: 1,
+        round: true,
+        outputWidth: 600,
+        title: 'Enquadrar a foto de perfil',
+    },
+    depoimento: {
+        aspect: 1,
+        round: true,
+        outputWidth: 400,
+        title: 'Enquadrar a foto do aluno',
+    },
+    aviso: {
+        aspect: 3.25,
+        outputWidth: 1600,
+        title: 'Enquadrar o banner do aviso',
+    },
+    resultado: {
+        aspect: 9 / 11,
+        outputWidth: 900,
+        title: 'Enquadrar a foto do resultado',
+    },
+} as const;
+
+function frameFor(slot: ShowcaseSlot) {
+    if (slot.startsWith('resultado')) return SLOT_FRAMES.resultado;
+    return SLOT_FRAMES[slot as keyof typeof SLOT_FRAMES] ?? SLOT_FRAMES.avatar;
+}
+
+/**
+ * Fluxo comum de troca de imagem: escolher o arquivo, enquadrar (arrastar e dar
+ * zoom) e só então subir o recorte. É o mesmo em todos os slots — capa, avatar,
+ * depoimento, aviso e cada foto de resultado —, então vive em um lugar só.
+ */
+function useCropUpload(
+    slot: ShowcaseSlot,
+    onUploaded: (key: string, url: string) => void,
+) {
+    const inputRef = useRef<HTMLInputElement>(null);
+    const [cropSrc, setCropSrc] = useState<string | null>(null);
+    const [busy, setBusy] = useState(false);
+    const [error, setError] = useState('');
+
+    const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        // Zera o input para que reescolher o MESMO arquivo dispare o change.
+        e.target.value = '';
+        if (!file) return;
+
+        setError('');
+        if (file.size > MAX_PICK_BYTES) {
+            setError('Imagem muito grande (máx 15 MB).');
+            return;
+        }
+        try {
+            setCropSrc(await fileToDataURI(file));
+        } catch {
+            setError('Não foi possível abrir esta imagem.');
+        }
+    };
+
+    const confirmCrop = async (canvas: HTMLCanvasElement) => {
+        setBusy(true);
+        setError('');
+        try {
+            const blob = await cropCanvasToBlob(canvas);
+            const { key, url } = await uploadShowcaseImage(blob, slot);
+            setCropSrc(null);
+            onUploaded(key, url);
+        } catch (err) {
+            // Fecha o recorte junto com o erro: manter o quadro aberto sobre uma
+            // mensagem que o personal não consegue ler não ajuda em nada.
+            setCropSrc(null);
+            setError(
+                err instanceof Error
+                    ? err.message
+                    : 'Falha ao enviar a imagem.',
+            );
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const cropper = cropSrc ? (
+        <ImageCropper
+            src={cropSrc}
+            {...frameFor(slot)}
+            busy={busy}
+            onCancel={() => setCropSrc(null)}
+            onConfirm={confirmCrop}
+        />
+    ) : null;
+
+    return {
+        inputRef,
+        busy,
+        error,
+        cropper,
+        open: () => inputRef.current?.click(),
+        handleFile,
+    };
+}
 
 /** Interruptor de visibilidade de uma seção. */
 function Toggle({
@@ -60,7 +184,11 @@ function Toggle({
     );
 }
 
-/** Campo de imagem: preview + botão de troca. O upload é imediato. */
+/**
+ * Campo de imagem: preview + botão de troca. Escolher um arquivo abre o
+ * enquadramento; ao aplicar, o recorte sobe na hora (a key só é persistida no
+ * "Salvar" do painel).
+ */
 function ImageField({
     label,
     hint,
@@ -80,34 +208,10 @@ function ImageField({
     onUploaded: (key: string, url: string) => void;
     onClear?: () => void;
 }) {
-    const inputRef = useRef<HTMLInputElement>(null);
-    const [busy, setBusy] = useState(false);
-    const [error, setError] = useState('');
-
-    const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        // Zera o input para que reescolher o MESMO arquivo dispare o change.
-        e.target.value = '';
-        if (!file) return;
-
-        setBusy(true);
-        setError('');
-        try {
-            const { key, url: publicUrl } = await uploadShowcaseImage(
-                file,
-                slot,
-            );
-            onUploaded(key, publicUrl);
-        } catch (err) {
-            setError(
-                err instanceof Error
-                    ? err.message
-                    : 'Falha ao enviar a imagem.',
-            );
-        } finally {
-            setBusy(false);
-        }
-    };
+    const { inputRef, busy, error, cropper, open, handleFile } = useCropUpload(
+        slot,
+        onUploaded,
+    );
 
     const previewClass = `${styles.mediaPreview} ${round ? styles.mediaPreviewRound : ''}`;
 
@@ -127,7 +231,7 @@ function ImageField({
                 <button
                     type="button"
                     className={styles.smallBtn}
-                    onClick={() => inputRef.current?.click()}
+                    onClick={open}
                     disabled={disabled || busy}
                 >
                     {busy ? 'Enviando…' : url ? 'Trocar' : 'Enviar imagem'}
@@ -151,6 +255,7 @@ function ImageField({
                 />
             </div>
             {error && <p className={styles.error}>{error}</p>}
+            {cropper}
         </div>
     );
 }
@@ -775,33 +880,18 @@ function ResultUploadButton({
     hasPhoto: boolean;
     onUploaded: (key: string, url: string) => void;
 }) {
-    const inputRef = useRef<HTMLInputElement>(null);
-    const [busy, setBusy] = useState(false);
-
-    const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        e.target.value = '';
-        if (!file) return;
-        setBusy(true);
-        try {
-            const { key, url } = await uploadShowcaseImage(
-                file,
-                `resultado-${index}` as ShowcaseSlot,
-            );
-            onUploaded(key, url);
-        } catch {
-            /* o erro já é visível pela foto que não trocou */
-        } finally {
-            setBusy(false);
-        }
-    };
+    const { inputRef, busy, error, cropper, open, handleFile } = useCropUpload(
+        `resultado-${index}` as ShowcaseSlot,
+        onUploaded,
+    );
 
     return (
         <>
             <button
                 type="button"
                 className={styles.smallBtn}
-                onClick={() => inputRef.current?.click()}
+                onClick={open}
+                title={error || undefined}
                 disabled={busy}
             >
                 {busy ? 'Enviando…' : hasPhoto ? 'Trocar foto' : 'Enviar foto'}
@@ -813,6 +903,7 @@ function ResultUploadButton({
                 style={{ display: 'none' }}
                 onChange={handleFile}
             />
+            {cropper}
         </>
     );
 }

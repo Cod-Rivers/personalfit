@@ -1,5 +1,4 @@
 import { Api } from '@/libs/api';
-import { compressImageToBlob } from '@/libs/imageCompression';
 
 /**
  * Vitrine do personal — a página de divulgação da marca dele, exibida como
@@ -142,22 +141,18 @@ interface UploadUrlResponse {
 }
 
 /**
- * Comprime a imagem no client, pede uma URL assinada e sobe direto ao bucket.
- * Devolve a key (que vai no payload) e a URL pública (para preview imediato,
- * antes mesmo de salvar).
+ * Pede uma URL assinada e sobe a imagem direto ao bucket. Devolve a key (que vai
+ * no payload) e a URL pública (para preview imediato, antes mesmo de salvar).
  *
- * A capa é o único slot largo — 1600px de lado maior mantém o banner nítido em
- * telas grandes sem carregar o original de câmera.
+ * Recebe um Blob já recortado e redimensionado pelo editor de enquadramento
+ * (components/system/ImageCropper): é lá que o personal decide o que aparece
+ * dentro do quadro, e o tamanho final sai do recorte — a capa é o único slot
+ * largo, com 1600px, para manter o banner nítido em telas grandes.
  */
 export async function uploadShowcaseImage(
-    file: File,
+    blob: Blob,
     slot: ShowcaseSlot,
 ): Promise<{ key: string; url: string }> {
-    const blob = await compressImageToBlob(file, {
-        maxDimension: slot === 'capa' ? 1600 : 900,
-        quality: 0.85,
-    });
-
     const { data } = await Api.post<UploadUrlResponse>(
         '/personal/showcase/upload-url',
         { slot, content_type: 'image/jpeg', filename: `${slot}.jpg` },
