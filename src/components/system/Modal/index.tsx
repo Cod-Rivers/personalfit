@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { FiX } from 'react-icons/fi';
 import styles from './Modal.module.css';
@@ -12,6 +12,13 @@ interface ModalProps {
     footer?: React.ReactNode;
     closeOnBackdrop?: boolean;
 }
+
+/** Pilha dos modais abertos, na ordem em que foram montados. Só o do topo
+ * responde ao Escape: modais aninhados são comuns aqui (player de vídeo dentro
+ * do card de exercício, card de exercício dentro do editor de mesociclo) e sem
+ * isso um Escape fecharia todos de uma vez — no editor, descartando o
+ * formulário inteiro sem querer. */
+const openModals: symbol[] = [];
 
 /**
  * Sheet full-screen: preenche a área abaixo do header (que permanece visível,
@@ -26,19 +33,36 @@ export default function Modal({
     footer,
     closeOnBackdrop = true,
 }: ModalProps) {
+    const idRef = useRef<symbol | null>(null);
+    if (idRef.current === null) idRef.current = Symbol('modal');
+
+    // onClose vive num ref para o efeito abaixo depender só de `open`: se ele
+    // remontasse a cada nova identidade de onClose, o modal se reempilharia e
+    // passaria à frente de um filho já aberto na disputa pelo Escape.
+    const onCloseRef = useRef(onClose);
+    useEffect(() => {
+        onCloseRef.current = onClose;
+    });
+
     useEffect(() => {
         if (!open) return;
+        const id = idRef.current as symbol;
+        openModals.push(id);
         const previousOverflow = document.body.style.overflow;
         document.body.style.overflow = 'hidden';
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') onClose();
+            if (e.key !== 'Escape') return;
+            if (openModals[openModals.length - 1] !== id) return;
+            onCloseRef.current();
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => {
+            const idx = openModals.indexOf(id);
+            if (idx !== -1) openModals.splice(idx, 1);
             document.body.style.overflow = previousOverflow;
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [open, onClose]);
+    }, [open]);
 
     if (!open || typeof document === 'undefined') return null;
 

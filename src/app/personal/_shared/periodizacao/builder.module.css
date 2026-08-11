@@ -826,6 +826,45 @@
     flex-shrink: 0;
 }
 
+/* Thumbnail clicável: abre o card de detalhe/vídeo do exercício. O badge de
+   play só aparece no hover/foco para não competir com a imagem em si. */
+.exerciseEditThumbBtn {
+    position: relative;
+    flex-shrink: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    line-height: 0;
+    display: block;
+}
+
+.exerciseEditThumbBtn:focus-visible {
+    outline: 2px solid var(--mint, #3dffd0);
+    outline-offset: 2px;
+}
+
+.exerciseEditThumbPlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.45);
+    color: #fff;
+    font-size: 1.1rem;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    pointer-events: none;
+}
+
+.exerciseEditThumbBtn:hover .exerciseEditThumbPlay,
+.exerciseEditThumbBtn:focus-visible .exerciseEditThumbPlay {
+    opacity: 1;
+}
+
 .btnRemoveExercise {
     background: transparent;
     border: 1px solid var(--coral);

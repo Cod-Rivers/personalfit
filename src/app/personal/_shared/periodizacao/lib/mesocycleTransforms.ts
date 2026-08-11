@@ -4,6 +4,7 @@ import type {
     MesocycleRequest,
     TrainingResponse,
 } from '@/libs/planningService';
+import type { ExerciseLog } from '@/components/features/types';
 import { partitionExerciseGroups, comboGroupLabel } from '@/libs/trainingTechniques';
 
 export { partitionExerciseGroups, comboGroupLabel };
@@ -184,6 +185,65 @@ function fieldToNum(
         : parseInt(trimmed, 10);
     if (Number.isNaN(parsed)) return undefined;
     return Math.max(min, Math.min(max, parsed));
+}
+
+/** Converte o exercício em edição (form local) para o formato consumido pelo
+ * ExerciseDetailCard, para o personal pré-visualizar vídeo e prescrição sem
+ * precisar salvar o mesociclo antes. Espelha o mapeamento de séries usado no
+ * save (ver `toRequest`), então o que ele vê é o que será gravado. */
+export function localExerciseToLog(ex: LocalExercise): ExerciseLog {
+    const isFree = ex.series_mode === 'free';
+    const sets = Math.max(1, parseInt(ex.series_sets, 10) || 1);
+    const val = Math.max(0, parseInt(ex.series_value, 10) || 0);
+
+    return {
+        // Exercício novo ainda não tem id do backend; o _id local basta aqui,
+        // só serve para identificar o card aberto.
+        id: ex.id ?? ex._id,
+        name: ex.name || 'Exercício sem nome',
+        series: isFree ? [] : Array(sets).fill(val),
+        series_label: isFree ? ex.series_free || undefined : undefined,
+        timed: ex.series_mode === 'time',
+        variations: ex.variations ?? '',
+        video_url: ex.video_url ?? '',
+        // Mesma regra do toExerciseLog: caminho não-http (GCS privado) não
+        // carrega em <img>, então conta como "sem thumbnail".
+        video_thumb: ex.video_thumb?.startsWith('http') ? ex.video_thumb : '',
+        weight: 0,
+        notes: '',
+        comments: ex.observations || undefined,
+        restTime: fieldToNum(ex.rest_seconds, { min: 0, max: 65535 }) ?? 0,
+        plannedWeight: fieldToNum(ex.load_kg, {
+            min: 0,
+            max: 999,
+            decimal: true,
+        }),
+        technique: ex.technique || undefined,
+        technique_params: ex.technique
+            ? {
+                  rounds: fieldToNum(ex.technique_rounds, { min: 0, max: 255 }),
+                  round_reduction_pct: fieldToNum(ex.technique_reduction_pct, {
+                      min: 0,
+                      max: 100,
+                  }),
+                  pause_seconds: fieldToNum(ex.technique_pause_seconds, {
+                      min: 0,
+                      max: 65535,
+                  }),
+                  extra_reps: fieldToNum(ex.technique_extra_reps, {
+                      min: 0,
+                      max: 255,
+                  }),
+                  hold_seconds: fieldToNum(ex.technique_hold_seconds, {
+                      min: 0,
+                      max: 65535,
+                  }),
+              }
+            : undefined,
+        group_technique: ex.group_technique,
+        group_id: ex.group_id,
+        muscle_group: ex.muscle_group || undefined,
+    };
 }
 
 export function makeDefaultMicrocycles(durationWeeks: number): LocalMicrocycle[] {

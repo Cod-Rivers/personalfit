@@ -27,11 +27,14 @@ import {
     weekdayLabel,
     partitionExerciseGroups,
     comboGroupLabel,
+    localExerciseToLog,
     type LocalExercise,
     type LocalTraining,
 } from '../lib/mesocycleTransforms';
 import ExercisePicker from './ExercisePicker';
 import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
+import ExerciseDetailCard from '@/components/features/ExerciseDetailCard';
+import type { ExerciseLog } from '@/components/features/types';
 import {
     TECHNIQUE_CATALOG,
     TECHNIQUE_CATEGORIES,
@@ -39,7 +42,7 @@ import {
     formatTechniqueSummary,
     type TechniqueParamKey,
 } from '@/libs/trainingTechniques';
-import { FiMove, FiCopy, FiX, FiLink } from 'react-icons/fi';
+import { FiMove, FiCopy, FiX, FiLink, FiPlay } from 'react-icons/fi';
 import s from '../builder.module.css';
 
 /** Mapeia a chave genérica do catálogo (rounds/round_reduction_pct/...) para
@@ -605,6 +608,27 @@ export default function TrainingsEditor({
             return next;
         });
 
+    // Pré-visualização do exercício (mesmo card que o aluno vê): abre pelo
+    // clique na thumbnail, principalmente para conferir o vídeo do exercício
+    // recém-adicionado sem sair do editor. Guarda também os irmãos do treino
+    // para navegar dentro de um bloco de bi-set/triset (ver nextInGroup).
+    const [preview, setPreview] = useState<{
+        exercise: ExerciseLog;
+        siblings: ExerciseLog[];
+    } | null>(null);
+
+    const previewNextInGroup = (): ExerciseLog | null => {
+        if (!preview) return null;
+        const { exercise, siblings } = preview;
+        const idx = siblings.findIndex((e) => e.id === exercise.id);
+        if (idx === -1) return null;
+        const next = siblings[idx + 1];
+        if (next && exercise.group_id && next.group_id === exercise.group_id) {
+            return next;
+        }
+        return null;
+    };
+
     // Ordenação por arrastar-e-soltar: modo explícito (em vez de sempre-ativo)
     // para não conflitar com o clique normal nas abas/botões dos cards.
     const [reorderTrainingsMode, setReorderTrainingsMode] = useState(false);
@@ -897,30 +921,65 @@ export default function TrainingsEditor({
                                                                     s.exerciseEditHeader
                                                                 }
                                                             >
-                                                                <ExerciseThumbnail
-                                                                    name={
-                                                                        ex.name ||
-                                                                        'Exercício'
-                                                                    }
-                                                                    videoThumb={
-                                                                        ex.video_thumb
-                                                                    }
-                                                                    videoUrl={
-                                                                        ex.video_url
-                                                                    }
-                                                                    width={48}
-                                                                    height={48}
-                                                                    borderRadius={
-                                                                        8
-                                                                    }
-                                                                    captureFrame={
-                                                                        false
-                                                                    }
-                                                                    lazyCapture
+                                                                <button
+                                                                    type="button"
                                                                     className={
-                                                                        s.exerciseEditThumb
+                                                                        s.exerciseEditThumbBtn
                                                                     }
-                                                                />
+                                                                    title={`Ver vídeo e detalhes de ${ex.name || 'exercício'}`}
+                                                                    aria-label={`Ver vídeo e detalhes de ${ex.name || 'exercício'}`}
+                                                                    onClick={() =>
+                                                                        setPreview(
+                                                                            {
+                                                                                exercise:
+                                                                                    localExerciseToLog(
+                                                                                        ex,
+                                                                                    ),
+                                                                                siblings:
+                                                                                    active.exercises.map(
+                                                                                        localExerciseToLog,
+                                                                                    ),
+                                                                            },
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    <ExerciseThumbnail
+                                                                        name={
+                                                                            ex.name ||
+                                                                            'Exercício'
+                                                                        }
+                                                                        videoThumb={
+                                                                            ex.video_thumb
+                                                                        }
+                                                                        videoUrl={
+                                                                            ex.video_url
+                                                                        }
+                                                                        width={
+                                                                            48
+                                                                        }
+                                                                        height={
+                                                                            48
+                                                                        }
+                                                                        borderRadius={
+                                                                            8
+                                                                        }
+                                                                        captureFrame={
+                                                                            false
+                                                                        }
+                                                                        lazyCapture
+                                                                        className={
+                                                                            s.exerciseEditThumb
+                                                                        }
+                                                                    />
+                                                                    <span
+                                                                        className={
+                                                                            s.exerciseEditThumbPlay
+                                                                        }
+                                                                        aria-hidden
+                                                                    >
+                                                                        <FiPlay />
+                                                                    </span>
+                                                                </button>
                                                                 <input
                                                                     value={
                                                                         ex.name
@@ -1723,6 +1782,21 @@ export default function TrainingsEditor({
                         />
                     )}
                 </div>
+            )}
+
+            {/* Pré-visualização do exercício (o mesmo card que o aluno vê).
+                readOnly: carga e anotações aqui seriam gravadas na conta do
+                personal, não na do aluno. */}
+            {preview && (
+                <ExerciseDetailCard
+                    exercise={preview.exercise}
+                    onClose={() => setPreview(null)}
+                    nextInGroup={previewNextInGroup()}
+                    onSelectExercise={(exercise) =>
+                        setPreview({ exercise, siblings: preview.siblings })
+                    }
+                    readOnly
+                />
             )}
         </div>
     );
