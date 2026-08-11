@@ -172,10 +172,10 @@ export async function uploadShowcaseImage(
         throw new Error('Falha ao enviar a imagem. Tente novamente.');
     }
 
-    // O objeto é sobrescrito na mesma key a cada troca, então a URL pública é
-    // estável — e por isso mesmo pode estar em cache. O parâmetro de versão
-    // força o navegador a buscar a imagem nova no preview.
-    return { key: data.object_key, url: `${data.public_url}?v=${Date.now()}` };
+    // Cada envio recebe uma key própria do servidor, então a URL pública já é
+    // nova a cada troca — nem o cache do navegador nem o cache-first do service
+    // worker podem devolver a imagem anterior no preview.
+    return { key: data.object_key, url: data.public_url };
 }
 
 /** Estado inicial de um personal que ainda não configurou nada. */
