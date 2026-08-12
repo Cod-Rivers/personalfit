@@ -351,3 +351,11 @@
 ## 2026-08-11 12:55 — River (via Claude Code)
 **Resumo:** I'll just wait for the background agent's notification rather than polling — no action needed right now.
 **Commits:** alterado aforma de vinculo com personal, corrigido campos de cadastro e adicionado pdf com ia' | CPF opcional no pré-cadastro de aluno, completado no primeiro login | Mostra a senha temporária pro personal + validação client-side no pré-cadastro | Remove cache-buster local do upload da vitrine | Thumbnail de exercício no editor do personal abre preview de vídeo | Enquadramento (arrastar + zoom) para as imagens da vitrine
+
+## 2026-08-11 14:04 — River (via Claude Code)
+**Resumo:** Sim, funciona — mas com uma ressalva importante sobre o `ads.txt`. **Site no AdSense**: quando você cadastra `codriverslabs.com` como site, isso cobre automaticamente todos os subdomínios (`venafit.codriverslabs.com` incluso) — não precisa cadastrar o subdomínio separado. O script com `ca-pub-9935304322065680` vai carregar e servir anúncios normalmente em `venafit.codriverslabs.com` assim que a conta/site for aprovado pelo Google (isso pode levar de algumas horas a alguns dias se a conta ainda estiver em revisão). **O problema**: o `ads.txt` que eu criei fica em `personalfit/public/ads.txt`, q…
+**Commits:** Integra Google AdSense (auto ads + slot dedicado), gated pelo plano efetivo
+
+## 2026-08-11 14:07 — River (via Claude Code)
+**Resumo:** Sim, funciona — mas com uma ressalva importante sobre o `ads.txt`. **Site no AdSense**: quando você cadastra `codriverslabs.com` como site, isso cobre automaticamente todos os subdomínios (`venafit.codriverslabs.com` incluso) — não precisa cadastrar o subdomínio separado. O script com `ca-pub-9935304322065680` vai carregar e servir anúncios normalmente em `venafit.codriverslabs.com` assim que a conta/site for aprovado pelo Google (isso pode levar de algumas horas a alguns dias se a conta ainda estiver em revisão). **O problema**: o `ads.txt` que eu criei fica em `personalfit/public/ads.txt`, q…
+**Arquivos:** CHANGELOG_FRONTEND.md
