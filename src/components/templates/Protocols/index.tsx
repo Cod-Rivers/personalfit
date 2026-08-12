@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { Api } from '@/libs/api';
 import { useBranding } from '@/context/BrandingContext';
 import GoogleAdSlot from '@/components/molecules/GoogleAdSlot';
+import ScrollHint from '@/components/atoms/ScrollHint';
 
 const TProtocols: React.FC = () => {
     const router = useRouter();
@@ -52,6 +53,7 @@ const TProtocols: React.FC = () => {
     useEffect(getTrainings, [router]);
     return (
         <>
+            <ScrollHint />
             <div className="container py-5">
                 <div className="d-flex align-aitems-center gap-3">
                     <Image

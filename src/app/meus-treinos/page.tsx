@@ -46,6 +46,7 @@ import {
     getOfflineMacrocycle,
 } from '@/libs/offline/downloadManager';
 import SyncPendingBadge from '../../components/features/SyncPendingBadge';
+import ScrollHint from '@/components/atoms/ScrollHint';
 import GanttPlanning, {
     GanttPhase,
 } from '../../components/features/GanttPlanningResponsive';
@@ -403,6 +404,8 @@ export default function MeusTreinosPage() {
 
     return (
         <>
+            <ScrollHint />
+
             {/* Ad topo */}
             {canShowAds && currentTopAd && (
                 <AdBanner ad={currentTopAd} placement="top" />

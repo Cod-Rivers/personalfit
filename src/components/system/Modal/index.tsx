@@ -64,6 +64,29 @@ export default function Modal({
         };
     }, [open]);
 
+    // No Safari iOS, elementos com position:fixed são posicionados contra o
+    // layout viewport, que não encolhe quando o teclado abre — só o visual
+    // viewport encolhe. Resultado: o rodapé (com os botões de Cancelar/
+    // Cadastrar) fica fora da área visível, atrás do teclado, num formulário
+    // como o de "Adicionar Aluno". Espelhamos a altura real em --modal-vh
+    // para o CSS poder se ajustar.
+    useEffect(() => {
+        if (!open) return;
+        const vv = window.visualViewport;
+        if (!vv) return;
+        const update = () =>
+            document.documentElement.style.setProperty(
+                '--modal-vh',
+                `${vv.height}px`,
+            );
+        update();
+        vv.addEventListener('resize', update);
+        return () => {
+            vv.removeEventListener('resize', update);
+            document.documentElement.style.removeProperty('--modal-vh');
+        };
+    }, [open]);
+
     if (!open || typeof document === 'undefined') return null;
 
     return createPortal(

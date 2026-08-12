@@ -3,7 +3,9 @@
     top: var(--app-header-height, 64px);
     left: 0;
     right: 0;
-    bottom: 0;
+    height: calc(100vh - var(--app-header-height, 64px));
+    height: calc(100dvh - var(--app-header-height, 64px));
+    height: calc(var(--modal-vh, 100dvh) - var(--app-header-height, 64px));
     z-index: var(--z-modal);
     background: rgba(0, 0, 0, 0.55);
     display: flex;
@@ -73,6 +75,7 @@
     justify-content: flex-end;
     gap: 10px;
     padding: 12px 20px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
     border-top: 1px solid var(--border-subtle);
 }
 

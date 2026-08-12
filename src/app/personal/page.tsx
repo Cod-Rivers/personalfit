@@ -18,6 +18,7 @@ import {
 } from 'react-icons/fi';
 
 import { usePersonalStudents } from '@/hooks/usePersonalStudents';
+import ScrollHint from '@/components/atoms/ScrollHint';
 import s from './personal.module.css';
 import BrandingSettings from '@/components/organism/BrandingSettings';
 import AutoregulationPolicySettings from '@/components/organism/AutoregulationPolicySettings';
@@ -80,6 +81,7 @@ export default function PersonalDashboard() {
 
     return (
         <div className={s.page}>
+            <ScrollHint />
             <div className={s.container}>
                 {/* Page title */}
                 <div className={s.header}>

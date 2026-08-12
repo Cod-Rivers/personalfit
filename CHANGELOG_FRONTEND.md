@@ -359,3 +359,10 @@
 ## 2026-08-11 14:07 — River (via Claude Code)
 **Resumo:** Sim, funciona — mas com uma ressalva importante sobre o `ads.txt`. **Site no AdSense**: quando você cadastra `codriverslabs.com` como site, isso cobre automaticamente todos os subdomínios (`venafit.codriverslabs.com` incluso) — não precisa cadastrar o subdomínio separado. O script com `ca-pub-9935304322065680` vai carregar e servir anúncios normalmente em `venafit.codriverslabs.com` assim que a conta/site for aprovado pelo Google (isso pode levar de algumas horas a alguns dias se a conta ainda estiver em revisão). **O problema**: o `ads.txt` que eu criei fica em `personalfit/public/ads.txt`, q…
 **Arquivos:** CHANGELOG_FRONTEND.md
+
+## 2026-08-12 10:11 — River (via Claude Code)
+**Commits:** Atualiza changelog do frontend
+
+## 2026-08-12 10:26 — River (via Claude Code)
+**Resumo:** Ainda não — vou salvar agora.
+**Arquivos:** CHANGELOG_FRONTEND.md, Modal.module.css, ScrollHint, index.tsx, page.tsx

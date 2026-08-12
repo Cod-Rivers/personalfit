@@ -1,0 +1,42 @@
+.hint {
+    position: fixed;
+    left: 50%;
+    bottom: calc(
+        var(--app-footer-height, 0px) + env(safe-area-inset-bottom) + 14px
+    );
+    transform: translateX(-50%);
+    z-index: var(--z-fixed);
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--surface-1);
+    border: 1px solid var(--border-mid);
+    color: var(--mint);
+    box-shadow: var(--shadow-md);
+    pointer-events: none;
+    animation: scrollHintBounce 1.6s ease-in-out infinite, scrollHintFadeIn 0.3s ease-out;
+}
+
+.hint svg {
+    width: 18px;
+    height: 18px;
+}
+
+@keyframes scrollHintBounce {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(6px); }
+}
+
+@keyframes scrollHintFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hint {
+        animation: scrollHintFadeIn 0.3s ease-out;
+    }
+}
