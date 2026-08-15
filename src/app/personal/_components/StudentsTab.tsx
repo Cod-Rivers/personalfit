@@ -240,7 +240,7 @@ export default function StudentsTab({ state }: Props) {
                                             color: '#5bc0be',
                                         }}
                                     >
-                                        <FiClipboard /> Periodização
+                                        <FiClipboard /> Prescrever Treino
                                     </button>
                                     <button
                                         onClick={() =>
