@@ -117,7 +117,40 @@ export default function PoliticaPrivacidadePage() {
             </section>
 
             <section className="mb-4">
-                <h2 className="h5 fw-semibold">6. Retenção de dados</h2>
+                <h2 className="h5 fw-semibold">
+                    6. Biblioteca pública de modelos de treino (personal
+                    trainers)
+                </h2>
+                <p>
+                    Personal trainers podem salvar planos de treino como{' '}
+                    <strong>modelos reutilizáveis</strong> (templates), fora
+                    do plano de um aluno específico.
+                </p>
+                <ul>
+                    <li>
+                        <strong>Plano gratuito:</strong> todo modelo criado ou
+                        salvo é automaticamente tornado{' '}
+                        <strong>público</strong> e entra em fila de revisão da
+                        equipe Venafit antes de aparecer na biblioteca pública
+                        para outros usuários. Não é possível manter modelos
+                        privados no plano gratuito.
+                    </li>
+                    <li>
+                        <strong>Plano PRO:</strong> você escolhe livremente se
+                        cada modelo fica público (sujeito à mesma revisão) ou
+                        privado (visível só para você, sem revisão).
+                    </li>
+                </ul>
+                <p>
+                    Essa regra vale apenas para modelos/templates salvos
+                    separadamente da biblioteca pública. Os planos de treino
+                    que você monta para um aluno específico nunca são
+                    tornados públicos por essa regra.
+                </p>
+            </section>
+
+            <section className="mb-4">
+                <h2 className="h5 fw-semibold">7. Retenção de dados</h2>
                 <p>
                     Ao excluir sua conta, seus dados de identificação e de
                     saúde são anonimizados imediatamente. Dados financeiros
@@ -127,7 +160,7 @@ export default function PoliticaPrivacidadePage() {
             </section>
 
             <section className="mb-4">
-                <h2 className="h5 fw-semibold">7. Segurança</h2>
+                <h2 className="h5 fw-semibold">8. Segurança</h2>
                 <p>
                     Senhas são armazenadas com hash (bcrypt) e nunca em texto
                     puro. A preencher: detalhes de criptografia em repouso e
@@ -137,7 +170,7 @@ export default function PoliticaPrivacidadePage() {
 
             <section className="mb-4">
                 <h2 className="h5 fw-semibold">
-                    8. Encarregado de dados (DPO)
+                    9. Encarregado de dados (DPO)
                 </h2>
                 <p>
                     A preencher: nome/contato do encarregado responsável por
