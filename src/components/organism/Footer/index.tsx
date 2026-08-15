@@ -43,9 +43,10 @@ const Footer: React.FC = () => {
     return (
         <footer className="footer" ref={ref}>
             <div className="container">
-                <p className="footer__brand mb-1">Venafit</p>
                 <p className="footer__copy mb-0">
-                    &copy; {year} Venafit. Todos os direitos reservados.
+                    <span className="footer__brand">Venafit</span>
+                    {' · '}
+                    &copy; {year} Todos os direitos reservados
                     {' · '}
                     <Link href="/ajuda">Central de Ajuda</Link>
                     {' · '}

@@ -5,7 +5,7 @@
     color: var(--header-text);
     border-top: 2px solid var(--header-border);
     box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.3);
-    padding: 16px 0;
+    padding: 10px 0;
     text-align: center;
     flex-shrink: 0;
     position: relative;
@@ -23,10 +23,8 @@
 }
 
 .footer__brand {
-    font-size: 1rem;
     font-weight: 600;
     letter-spacing: 0.05em;
-    margin-bottom: 4px;
 }
 
 .footer__copy {
