@@ -6,10 +6,12 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    align-items: safe center;
     padding: 16px;
     background: var(--grad-hero);
     position: relative;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 .login_main_container::before {
