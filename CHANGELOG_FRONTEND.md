@@ -388,3 +388,15 @@
 ## 2026-08-15 12:26 — River (via Claude Code)
 **Resumo:** Confirmado, o fluxo já funciona do jeito que você espera: 1. **Onde fica guardado**: `Notification.permission` é uma API nativa do navegador, persistida por origem (domínio) desde a primeira vez que o usuário aceita ou nega — não é algo que o app precisa salvar em `localStorage`/backend. Sobrevive a reloads, fechar o navegador, etc. 2. **O banner (`FCMProvider.tsx:47-48`)** só aparece quando `permissionState === 'default'` (nunca decidiu) ou `'denied'` (bloqueou). Se já está `'granted'`, nenhum dos dois banners renderiza. 3. **Se já estava `'granted'`** de uma vez anterior, o hook nem mostra p…
 **Commits:** Restringe banner de notificacoes a usuarios logados e reduz tamanho
+
+## 2026-08-15 12:45 — River (via Claude Code)
+**Resumo:** Vou delegar a auditoria de padronização de botões e modais para um agente de exploração, já que isso envolve varrer muitos arquivos do frontend.
+**Commits:** Adiciona botao voltar na tela de cadastro
+
+## 2026-08-15 12:50 — River (via Claude Code)
+**Resumo:** Auditoria concluída. Achado principal: **o componente de botão padrão está órfão**. **Botões** - `src/components/atoms/Button` (variantes primary/secondary/danger/warning/ghost, tokens corretos, spinner, a11y) existe e está bem feito, mas **não é usado em nenhum lugar do app**. - Na prática há 3 sistemas paralelos de botão: `.btn-gold`/Bootstrap re-temado em `globals.css` (usado em ~28 arquivos: minha-conta, anamnese, pagamento, login/signup, error/not-found...), `.btn-luxe` exclusivo do Header, e dezenas de CSS Modules por tela reinventando a mesma coisa (admin, ExerciseDetailCard, ExerciseSu…
+**Arquivos:** CHANGELOG_FRONTEND.md
+
+## 2026-08-15 13:03 — River (via Claude Code)
+**Resumo:** Corrigido nos dois arquivos (`Login/styles.css` e `SignUp/styles.css`). Mudança é só CSS, sem risco de quebrar build: `overflow: hidden` virou `overflow-x: hidden` + `overflow-y: auto`, e adicionei `align-items: safe center` (navegadores que não suportam ignoram e mantêm o `center` normal como fallback). Resultado prático: quando o card não couber na altura da janela (zoom 100%, PWA desktop), ele agora ancora no topo em vez de ser cortado — e mesmo que ainda não caiba perfeitamente, dá pra rolar pra ver o que ficou acima. Não commitei nada, fica pra você validar visualmente no app instalado.
+**Arquivos:** ExerciseDetailCard.module.css, ExerciseDetailCard.tsx, ExerciseSubstitutionModal.module.css, ExerciseSubstitutionModal.tsx, WorkoutLogger.module.css, admin.module.css, agenda.module.css, agendamentos.module.css, builder.module.css, escolher-plano.module.css, periodizacao.module.css, personal.module.css, styles.css

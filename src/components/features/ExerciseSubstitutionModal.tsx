@@ -5,6 +5,7 @@ import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import { FiAlertCircle, FiRefreshCw } from 'react-icons/fi';
 import Modal from '@/components/system/Modal';
+import Button from '@/components/atoms/Button';
 import ExerciseThumbnail from './ExerciseThumbnail';
 import { ExerciseLog } from './types';
 import {
@@ -149,9 +150,9 @@ export default function ExerciseSubstitutionModal({
                             Seu personal ainda não habilitou as sugestões de exercícios
                             por IA. Fale com ele se quiser usar esse recurso.
                         </p>
-                        <button className={styles.secondaryBtn} onClick={onClose}>
+                        <Button variant="ghost" fullWidth onClick={onClose}>
                             Manter o exercício original
-                        </button>
+                        </Button>
                     </div>
                 )}
 
@@ -167,15 +168,16 @@ export default function ExerciseSubstitutionModal({
                                 {formatBRL(step.price)}/mês
                             </p>
                         )}
-                        <button
-                            className={styles.primaryBtn}
+                        <Button
+                            variant="primary"
+                            fullWidth
                             onClick={() => router.push('/pagamento?produto=ia-substituicao')}
                         >
                             Assinar
-                        </button>
-                        <button className={styles.secondaryBtn} onClick={onClose}>
+                        </Button>
+                        <Button variant="ghost" fullWidth onClick={onClose}>
                             Manter o exercício original
-                        </button>
+                        </Button>
                     </div>
                 )}
 
@@ -209,8 +211,9 @@ export default function ExerciseSubstitutionModal({
                                 onChange={(e) => setCustomEquipment(e.target.value)}
                             />
                         )}
-                        <button
-                            className={styles.primaryBtn}
+                        <Button
+                            variant="primary"
+                            fullWidth
                             disabled={
                                 !selectedEquipment ||
                                 (selectedEquipment === 'outro' && !customEquipment.trim())
@@ -218,7 +221,7 @@ export default function ExerciseSubstitutionModal({
                             onClick={handlePickEquipment}
                         >
                             Buscar alternativas
-                        </button>
+                        </Button>
                     </div>
                 )}
 
@@ -238,13 +241,13 @@ export default function ExerciseSubstitutionModal({
                                     são conservadoras por segurança. Preencher leva cerca
                                     de 3 minutos e melhora muito a recomendação.
                                 </p>
-                                <button
-                                    type="button"
-                                    className={styles.bannerBtn}
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
                                     onClick={() => router.push('/anamnese')}
                                 >
                                     Preencher anamnese
-                                </button>
+                                </Button>
                             </div>
                         )}
 
@@ -317,18 +320,19 @@ export default function ExerciseSubstitutionModal({
                                             {s.justificativa}
                                         </p>
                                     )}
-                                    <button
-                                        className={styles.primaryBtn}
+                                    <Button
+                                        variant="primary"
+                                        fullWidth
                                         onClick={() => handleApply(s)}
                                     >
                                         Usar este exercício hoje
-                                    </button>
+                                    </Button>
                                 </div>
                             ))}
                         </div>
-                        <button className={styles.secondaryBtn} onClick={onClose}>
+                        <Button variant="ghost" fullWidth onClick={onClose}>
                             Manter o exercício original
-                        </button>
+                        </Button>
                     </div>
                 )}
 
@@ -336,15 +340,17 @@ export default function ExerciseSubstitutionModal({
                     <div className={styles.centered}>
                         <FiAlertCircle className={styles.infoIcon} />
                         <p>Não foi possível buscar alternativas agora.</p>
-                        <button
-                            className={styles.primaryBtn}
+                        <Button
+                            variant="primary"
+                            fullWidth
+                            leftIcon={<FiRefreshCw />}
                             onClick={() => setStep({ kind: 'pick-equipment' })}
                         >
-                            <FiRefreshCw /> Tentar novamente
-                        </button>
-                        <button className={styles.secondaryBtn} onClick={onClose}>
+                            Tentar novamente
+                        </Button>
+                        <Button variant="ghost" fullWidth onClick={onClose}>
                             Manter o exercício original
-                        </button>
+                        </Button>
                     </div>
                 )}
 
@@ -352,9 +358,9 @@ export default function ExerciseSubstitutionModal({
                     <div className={styles.centered}>
                         <FiAlertCircle className={styles.infoIcon} />
                         <p>Sem conexão — não é possível buscar alternativas agora.</p>
-                        <button className={styles.secondaryBtn} onClick={onClose}>
+                        <Button variant="ghost" fullWidth onClick={onClose}>
                             Manter o exercício original
-                        </button>
+                        </Button>
                     </div>
                 )}
             </div>

@@ -10,6 +10,7 @@ import {
     updateAdvertisement,
     deleteAdvertisement,
 } from '@/libs/advertisementService';
+import Button from '@/components/atoms/Button';
 import styles from './MyAdvertisements.module.css';
 
 const emptyForm: CreateAdvertisementRequest = {
@@ -103,9 +104,9 @@ export default function MyAdvertisements() {
         <div className={styles.container}>
             <div className={styles.header}>
                 <h2 className={styles.title}><FiSpeaker /> Meus Anúncios</h2>
-                <button onClick={openCreate} className={styles.btnAdd}>
+                <Button variant="primary" size="sm" onClick={openCreate}>
                     + Novo Anúncio
-                </button>
+                </Button>
             </div>
 
             <p className={styles.hint}>
@@ -168,18 +169,20 @@ export default function MyAdvertisements() {
                                 </a>
                             </div>
                             <div className={styles.adActions}>
-                                <button
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
                                     onClick={() => openEdit(ad)}
-                                    className={styles.btnEdit}
                                 >
                                     Editar
-                                </button>
-                                <button
+                                </Button>
+                                <Button
+                                    variant="danger"
+                                    size="sm"
                                     onClick={() => handleDelete(ad.id)}
-                                    className={styles.btnDelete}
                                 >
                                     Excluir
-                                </button>
+                                </Button>
                             </div>
                         </div>
                     ))}
@@ -341,24 +344,22 @@ export default function MyAdvertisements() {
                             </div>
 
                             <div className={styles.modalFooter}>
-                                <button
+                                <Button
                                     type="button"
+                                    variant="ghost"
+                                    size="sm"
                                     onClick={() => setShowForm(false)}
-                                    className={styles.btnCancel}
                                 >
                                     Cancelar
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     type="submit"
-                                    className={styles.btnSave}
-                                    disabled={submitting}
+                                    variant="primary"
+                                    size="sm"
+                                    isLoading={submitting}
                                 >
-                                    {submitting
-                                        ? 'Salvando...'
-                                        : editTarget
-                                          ? 'Atualizar'
-                                          : 'Criar'}
-                                </button>
+                                    {editTarget ? 'Atualizar' : 'Criar'}
+                                </Button>
                             </div>
                         </form>
                     </div>

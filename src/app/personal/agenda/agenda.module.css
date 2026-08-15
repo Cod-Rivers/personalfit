@@ -417,36 +417,6 @@
     border-radius: 999px;
 }
 
-/* Modal */
-.modalOverlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.65);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    padding: 1rem;
-}
-
-.modalCard {
-    background: var(--surface-1);
-    border: 1px solid var(--surface-3);
-    border-radius: 16px;
-    padding: 1.75rem;
-    width: 100%;
-    max-width: 480px;
-    max-height: 90vh;
-    overflow-y: auto;
-}
-
-.modalTitle {
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin: 0 0 1.25rem;
-}
-
 /* Form */
 .form {
     display: flex;
@@ -481,13 +451,6 @@
     gap: 0.75rem;
 }
 .row .label { flex: 1; }
-
-.modalActions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.75rem;
-    margin-top: 0.5rem;
-}
 
 /* Day checkboxes (multi-day recurrence) */
 .dayCheckboxes {

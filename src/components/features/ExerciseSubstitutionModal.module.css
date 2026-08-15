@@ -75,49 +75,6 @@
     margin-bottom: 0.75rem;
 }
 
-.primaryBtn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.4rem;
-    width: 100%;
-    padding: 0.6rem 1rem;
-    background: var(--grad-mint);
-    color: var(--btn-text);
-    border: none;
-    border-radius: 8px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: transform 0.18s, box-shadow 0.18s, filter 0.18s;
-}
-
-.primaryBtn:hover:not(:disabled) {
-    transform: translateY(-1px);
-    filter: brightness(1.08);
-}
-
-.primaryBtn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.secondaryBtn {
-    width: 100%;
-    padding: 0.5rem 1rem;
-    background: transparent;
-    color: var(--text-muted);
-    border: 1px solid var(--border-subtle);
-    border-radius: 8px;
-    cursor: pointer;
-    margin-top: 0.5rem;
-    transition: color 0.15s, border-color 0.15s;
-}
-
-.secondaryBtn:hover {
-    color: var(--text-primary);
-    border-color: var(--border-mid);
-}
-
 .price {
     font-size: 1.1rem;
     font-weight: 700;
@@ -147,7 +104,7 @@
 
 .suggestionThumb {
     flex-shrink: 0;
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     object-fit: cover;
 }
 
@@ -188,7 +145,7 @@
     color: var(--amber);
     background: rgba(240, 165, 0, 0.1);
     border: 1px solid rgba(240, 165, 0, 0.25);
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     padding: 0.5rem 0.75rem;
     margin-bottom: 0.75rem;
 }
@@ -205,23 +162,8 @@
     background: var(--surface-2);
     border: 1px solid var(--border-mid);
     border-left: 3px solid var(--mint);
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     padding: 0.6rem 0.75rem;
     margin-bottom: 0.75rem;
 }
 
-.bannerBtn {
-    padding: 0.35rem 0.8rem;
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--mint);
-    background: rgba(15, 252, 190, 0.12);
-    border: 1px solid var(--mint);
-    border-radius: 6px;
-    cursor: pointer;
-    transition: filter 0.15s;
-}
-
-.bannerBtn:hover {
-    filter: brightness(1.15);
-}

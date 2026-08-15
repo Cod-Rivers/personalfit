@@ -15,6 +15,7 @@ import {
 import { ExerciseLog } from './types';
 import styles from './ExerciseDetailCard.module.css';
 import Modal from '@/components/system/Modal';
+import Button from '@/components/atoms/Button';
 import {
     isVideoExtension,
     isInstagramUrl,
@@ -838,17 +839,14 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                                 }
                                                 placeholder="Adicione suas anotações aqui..."
                                             />
-                                            <button
+                                            <Button
+                                                variant="primary"
+                                                size="sm"
+                                                isLoading={isSavingAnnotations}
                                                 onClick={handleSaveAnnotations}
-                                                className={
-                                                    styles.saveAnnotationsButton
-                                                }
-                                                disabled={isSavingAnnotations}
                                             >
-                                                {isSavingAnnotations
-                                                    ? 'Salvando...'
-                                                    : 'Salvar'}
-                                            </button>
+                                                Salvar
+                                            </Button>
                                             {annotationsStatus !== 'idle' && (
                                                 <p
                                                     className={
@@ -889,17 +887,18 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                             siga direto para o próximo
                                             exercício do bloco.
                                         </p>
-                                        <button
-                                            type="button"
-                                            className={styles.timerButton}
+                                        <Button
+                                            variant="primary"
+                                            size="sm"
+                                            rightIcon={<FiChevronRight />}
                                             onClick={() =>
                                                 onSelectExercise?.(
                                                     nextInGroup,
                                                 )
                                             }
                                         >
-                                            Ir para {nextInGroup.name} <FiChevronRight />
-                                        </button>
+                                            Ir para {nextInGroup.name}
+                                        </Button>
                                     </div>
                                 ) : (
                                     (exercise.restTime ?? 0) > 0 && (
@@ -924,33 +923,32 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                         <div className={styles.timerControls}>
                                             {!isTimerRunning &&
                                                 timerValue > 0 && (
-                                                    <button
+                                                    <Button
+                                                        variant="primary"
+                                                        size="sm"
                                                         onClick={
                                                             handleStartTimer
                                                         }
-                                                        className={
-                                                            styles.timerButton
-                                                        }
                                                     >
                                                         Iniciar
-                                                    </button>
+                                                    </Button>
                                                 )}
                                             {isTimerRunning && (
-                                                <button
+                                                <Button
+                                                    variant="primary"
+                                                    size="sm"
                                                     onClick={handlePauseTimer}
-                                                    className={
-                                                        styles.timerButton
-                                                    }
                                                 >
                                                     Pausar
-                                                </button>
+                                                </Button>
                                             )}
-                                            <button
+                                            <Button
+                                                variant="primary"
+                                                size="sm"
                                                 onClick={handleResetTimer}
-                                                className={styles.timerButton}
                                             >
                                                 Resetar
-                                            </button>
+                                            </Button>
                                         </div>
                                     </div>
                                     )

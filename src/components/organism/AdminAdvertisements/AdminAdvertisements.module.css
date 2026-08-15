@@ -39,22 +39,6 @@
     padding: 32px 0;
 }
 
-.btnAdd {
-    background: var(--mint);
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    padding: 8px 18px;
-    font-size: 0.875rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity 0.15s;
-}
-
-.btnAdd:hover {
-    opacity: 0.88;
-}
-
 .tableWrap {
     width: 100%;
     overflow-x: auto;
@@ -104,38 +88,6 @@
     gap: 8px;
 }
 
-.btnEdit {
-    background: transparent;
-    border: 1px solid var(--mint);
-    color: var(--mint);
-    border-radius: 6px;
-    padding: 3px 10px;
-    font-size: 0.75rem;
-    cursor: pointer;
-    transition: background 0.15s;
-}
-
-.btnEdit:hover {
-    background: var(--mint);
-    color: #fff;
-}
-
-.btnDelete {
-    background: transparent;
-    border: 1px solid var(--coral);
-    color: var(--coral);
-    border-radius: 6px;
-    padding: 3px 10px;
-    font-size: 0.75rem;
-    cursor: pointer;
-    transition: background 0.15s;
-}
-
-.btnDelete:hover {
-    background: var(--coral);
-    color: #fff;
-}
-
 /* Modal (same as MyAdvertisements) */
 .overlay {
     position: fixed;
@@ -149,7 +101,7 @@
 
 .modal {
     background: var(--surface-1);
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     padding: 24px;
     width: 100%;
     max-width: 480px;
@@ -185,7 +137,7 @@
     background: rgba(255, 80, 80, 0.1);
     border: 1px solid rgba(255, 80, 80, 0.3);
     color: var(--coral);
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     padding: 10px 14px;
     font-size: 0.875rem;
     margin-bottom: 16px;
@@ -212,7 +164,7 @@
 .input {
     background: var(--surface-2, #f5f5f5);
     border: 1px solid var(--border-mid);
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     padding: 8px 12px;
     font-size: 16px;
     color: var(--text-primary);
@@ -241,33 +193,3 @@
     margin-top: 8px;
 }
 
-.btnCancel {
-    background: transparent;
-    border: 1px solid var(--border-mid);
-    color: var(--text-secondary);
-    border-radius: 8px;
-    padding: 8px 18px;
-    font-size: 0.875rem;
-    cursor: pointer;
-}
-
-.btnSave {
-    background: var(--mint);
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    padding: 8px 18px;
-    font-size: 0.875rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity 0.15s;
-}
-
-.btnSave:hover {
-    opacity: 0.88;
-}
-
-.btnSave:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
