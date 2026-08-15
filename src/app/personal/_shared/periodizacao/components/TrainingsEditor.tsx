@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
     DndContext,
     closestCenter,
@@ -594,6 +594,20 @@ export default function TrainingsEditor({
     const active = trainings.find((t) => t._id === activeId) ?? null;
     const activeIndex = active ? trainings.indexOf(active) : -1;
 
+    // partitionExerciseGroups reagrupa por bissérie/trissérie a cada edição
+    // de qualquer campo do treino ativo (o array de exercícios ganha nova
+    // referência a cada tecla digitada) — memoizado para não recalcular 2x
+    // por render (drag context + lista) nem gerar arrays novos que quebrem a
+    // identidade usada pelo SortableContext.
+    const activeExerciseGroups = useMemo(
+        () => (active ? partitionExerciseGroups(active.exercises) : []),
+        // Depende só do array de exercícios, não do objeto `active` inteiro:
+        // trocar de aba (activeId) ou editar reference/weekday do treino sem
+        // tocar nos exercícios não deve forçar reparticionar os grupos.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [active?.exercises],
+    );
+
     // Bloco de prescrição por exercício — recolhido por padrão, como o
     // "Ajustes semanais": são campos opcionais e o que mais se consulta ao
     // abrir o treino é nome/séries/descanso.
@@ -855,10 +869,7 @@ export default function TrainingsEditor({
                                 onDragEnd={(event: DragEndEvent) => {
                                     const { active: dragged, over } = event;
                                     if (!over || dragged.id === over.id) return;
-                                    const groups = partitionExerciseGroups(
-                                        active.exercises,
-                                    );
-                                    const groupIds = groups.map(
+                                    const groupIds = activeExerciseGroups.map(
                                         (g) => g[0].group_id ?? g[0]._id,
                                     );
                                     const oldIndex = groupIds.indexOf(
@@ -870,7 +881,7 @@ export default function TrainingsEditor({
                                     if (oldIndex === -1 || newIndex === -1)
                                         return;
                                     const reordered = arrayMove(
-                                        groups,
+                                        activeExerciseGroups,
                                         oldIndex,
                                         newIndex,
                                     );
@@ -881,15 +892,13 @@ export default function TrainingsEditor({
                                 }}
                             >
                                 <SortableContext
-                                    items={partitionExerciseGroups(
-                                        active.exercises,
-                                    ).map((g) => g[0].group_id ?? g[0]._id)}
+                                    items={activeExerciseGroups.map(
+                                        (g) => g[0].group_id ?? g[0]._id,
+                                    )}
                                     strategy={verticalListSortingStrategy}
                                 >
                                     <div className={s.exercisesStack}>
-                                        {partitionExerciseGroups(
-                                            active.exercises,
-                                        ).map((group) => {
+                                        {activeExerciseGroups.map((group) => {
                                             const isCombo = group.length > 1;
                                             const groupId = group[0].group_id;
                                             const sortId =
