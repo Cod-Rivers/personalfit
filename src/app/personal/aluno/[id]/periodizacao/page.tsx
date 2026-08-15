@@ -275,7 +275,7 @@ export default function PeriodizacaoPage() {
                                     )
                                 }
                             >
-                                + Novo Macrociclo
+                                + Novo Treino/Macrociclo
                             </button>
                         </div>
                     </div>
