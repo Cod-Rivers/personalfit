@@ -31,6 +31,7 @@ import TrainingsEditor, {
     type BulkPrescriptionFields,
 } from './TrainingsEditor';
 import Modal from '@/components/system/Modal';
+import HelpTooltip from '@/components/atoms/HelpTooltip';
 import { FiStar, FiChevronDown, FiAlertTriangle } from 'react-icons/fi';
 import s from '../builder.module.css';
 
@@ -562,7 +563,14 @@ export default function MesocycleFormModal({
 
                         <div className={s.formRow}>
                             <div className={s.formGroup}>
-                                <label className={s.formLabel}>Fase *</label>
+                                <label className={s.formLabel}>
+                                    Fase *{' '}
+                                    <HelpTooltip
+                                        text="Modelo clássico usado para organizar a fase: Matveyev (Introdução, Base, Preparação, Pré-competição, Competição) ou Força/Bloco (Bompa — Acumulação, Transmutação, Realização e outras)."
+                                        href="/ajuda#autorregulacao-rpe-rir"
+                                        label="Ajuda sobre a fase do mesociclo"
+                                    />
+                                </label>
                                 <select
                                     {...register('phase')}
                                     className={s.formSelect}
@@ -666,7 +674,14 @@ export default function MesocycleFormModal({
                         </div>
 
                         <div className={s.formGroup}>
-                            <label className={s.formLabel}>Metodologia *</label>
+                            <label className={s.formLabel}>
+                                Metodologia *{' '}
+                                <HelpTooltip
+                                    text="Como a intensidade/volume progride nas semanas desta fase: Linear, Ondulada Diária (DUP), Ondulada Semanal, Conjugada ou Bloco."
+                                    href="/ajuda#autorregulacao-rpe-rir"
+                                    label="Ajuda sobre a metodologia de progressão"
+                                />
+                            </label>
                             <select
                                 {...register('methodology')}
                                 className={s.formSelect}

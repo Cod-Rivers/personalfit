@@ -35,6 +35,8 @@ import ExercisePicker from './ExercisePicker';
 import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
 import ExerciseDetailCard from '@/components/features/ExerciseDetailCard';
 import type { ExerciseLog } from '@/components/features/types';
+import HelpTooltip from '@/components/atoms/HelpTooltip';
+import { getGlossaryTerm } from '@/libs/glossaryContent';
 import {
     TECHNIQUE_CATALOG,
     TECHNIQUE_CATEGORIES,
@@ -128,6 +130,7 @@ function PrescriptionNumber({
     min,
     max,
     step,
+    helpId,
 }: {
     label: string;
     unit: string;
@@ -136,10 +139,24 @@ function PrescriptionNumber({
     min?: string;
     max?: string;
     step?: string;
+    /** id do termo no glossário (glossaryContent.ts) — exibe um HelpTooltip ao lado do rótulo. */
+    helpId?: string;
 }) {
     return (
         <div className={s.prescriptionField}>
-            <label className={s.formLabel}>{label}</label>
+            <label className={s.formLabel}>
+                {label}
+                {helpId && (
+                    <>
+                        {' '}
+                        <HelpTooltip
+                            text={getGlossaryTerm(helpId).short}
+                            href={`/ajuda#glossario-${helpId}`}
+                            label={`Ajuda sobre ${label.toLowerCase()}`}
+                        />
+                    </>
+                )}
+            </label>
             <div className={s.prescriptionInputRow}>
                 <input
                     type="number"
@@ -167,7 +184,14 @@ function MuscleGroupSelect({
 }) {
     return (
         <div className={s.prescriptionFieldWide}>
-            <label className={s.formLabel}>Grupo muscular</label>
+            <label className={s.formLabel}>
+                Grupo muscular{' '}
+                <HelpTooltip
+                    text={getGlossaryTerm('grupo-muscular').short}
+                    href="/ajuda#glossario-grupo-muscular"
+                    label="Ajuda sobre grupo muscular"
+                />
+            </label>
             <select
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
@@ -201,7 +225,14 @@ function TechniqueBlock({
     return (
         <>
             <div className={s.prescriptionFieldWide}>
-                <label className={s.formLabel}>Técnica avançada</label>
+                <label className={s.formLabel}>
+                    Técnica avançada{' '}
+                    <HelpTooltip
+                        text={getGlossaryTerm('tecnica').short}
+                        href="/ajuda#glossario-tecnica"
+                        label="Ajuda sobre técnica de treinamento"
+                    />
+                </label>
                 <select
                     value={technique}
                     onChange={(e) => onChangeTechnique(e.target.value)}
@@ -336,6 +367,7 @@ function BulkPrescriptionFill({
                         step="0.5"
                         value={fields.load_kg}
                         onChange={setField('load_kg')}
+                        helpId="carga"
                     />
                     <PrescriptionNumber
                         label="% de 1RM"
@@ -344,6 +376,7 @@ function BulkPrescriptionFill({
                         max="100"
                         value={fields.load_percentage}
                         onChange={setField('load_percentage')}
+                        helpId="1rm"
                     />
                     <PrescriptionNumber
                         label="Cadência"
@@ -351,6 +384,7 @@ function BulkPrescriptionFill({
                         min="0"
                         value={fields.tempo_seconds}
                         onChange={setField('tempo_seconds')}
+                        helpId="cadencia"
                     />
                     <PrescriptionNumber
                         label="RPE alvo"
@@ -359,6 +393,7 @@ function BulkPrescriptionFill({
                         max="10"
                         value={fields.rpe_target}
                         onChange={setField('rpe_target')}
+                        helpId="rpe"
                     />
                     <MuscleGroupSelect
                         value={fields.muscle_group}
@@ -1046,7 +1081,14 @@ export default function TrainingsEditor({
                                                                         s.formLabel
                                                                     }
                                                                 >
-                                                                    Séries
+                                                                    Séries{' '}
+                                                                    <HelpTooltip
+                                                                        text={getGlossaryTerm(
+                                                                            'series-repeticoes',
+                                                                        ).short}
+                                                                        href="/ajuda#glossario-series-repeticoes"
+                                                                        label="Ajuda sobre séries e repetições"
+                                                                    />
                                                                 </label>
                                                                 <select
                                                                     value={
@@ -1269,7 +1311,14 @@ export default function TrainingsEditor({
                                                                     }
                                                                 >
                                                                     Descanso
-                                                                    entre séries
+                                                                    entre séries{' '}
+                                                                    <HelpTooltip
+                                                                        text={getGlossaryTerm(
+                                                                            'descanso',
+                                                                        ).short}
+                                                                        href="/ajuda#glossario-descanso"
+                                                                        label="Ajuda sobre descanso entre séries"
+                                                                    />
                                                                 </label>
                                                                 <div
                                                                     className={
@@ -1323,7 +1372,14 @@ export default function TrainingsEditor({
                                                                         s.formLabel
                                                                     }
                                                                 >
-                                                                    Variação
+                                                                    Variação{' '}
+                                                                    <HelpTooltip
+                                                                        text={getGlossaryTerm(
+                                                                            'variacoes',
+                                                                        ).short}
+                                                                        href="/ajuda#glossario-variacoes"
+                                                                        label="Ajuda sobre variações"
+                                                                    />
                                                                 </label>
                                                                 <input
                                                                     value={
@@ -1467,6 +1523,7 @@ export default function TrainingsEditor({
                                                                                     v,
                                                                                 )
                                                                             }
+                                                                            helpId="carga"
                                                                         />
                                                                         <PrescriptionNumber
                                                                             label="% de 1RM"
@@ -1486,6 +1543,7 @@ export default function TrainingsEditor({
                                                                                     v,
                                                                                 )
                                                                             }
+                                                                            helpId="1rm"
                                                                         />
                                                                         <PrescriptionNumber
                                                                             label="Cadência"
@@ -1504,6 +1562,7 @@ export default function TrainingsEditor({
                                                                                     v,
                                                                                 )
                                                                             }
+                                                                            helpId="cadencia"
                                                                         />
                                                                         <PrescriptionNumber
                                                                             label="RPE alvo"
@@ -1523,6 +1582,7 @@ export default function TrainingsEditor({
                                                                                     v,
                                                                                 )
                                                                             }
+                                                                            helpId="rpe"
                                                                         />
                                                                         <MuscleGroupSelect
                                                                             value={
@@ -1684,6 +1744,13 @@ export default function TrainingsEditor({
                                                                             .group_technique,
                                                                     )}
                                                                 </span>
+                                                                <HelpTooltip
+                                                                    text={getGlossaryTerm(
+                                                                        'combinacao',
+                                                                    ).short}
+                                                                    href="/ajuda#glossario-combinacao"
+                                                                    label="Ajuda sobre combinação de exercícios"
+                                                                />
                                                                 <select
                                                                     value={
                                                                         group[0]

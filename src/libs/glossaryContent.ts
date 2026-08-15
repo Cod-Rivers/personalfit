@@ -338,6 +338,18 @@ const trainingFieldTerms: GlossaryTerm[] = [
         short: 'Ajustes ou opções de execução do exercício sugeridos pelo personal (ex.: pegada, amplitude, equipamento alternativo).',
         long: 'Variações são observações do personal sobre formas alternativas de executar o exercício — por exemplo, mudar a pegada, a amplitude de movimento, ou usar um equipamento diferente do padrão.',
     },
+    {
+        id: 'cadencia',
+        term: 'Cadência de execução',
+        short: 'Tempo, em segundos, para executar cada repetição — controla a velocidade do movimento.',
+        long: 'A cadência é o tempo, em segundos, que cada repetição deve levar para ser executada. Cadências mais lentas aumentam o tempo sob tensão do músculo; cadências mais rápidas priorizam potência. É um campo opcional da prescrição — deixe em branco se não fizer questão de controlar a velocidade do movimento.',
+    },
+    {
+        id: 'grupo-muscular',
+        term: 'Grupo muscular',
+        short: 'O grupo muscular principal trabalhado pelo exercício, usado para organizar a prescrição e ver o volume por grupo.',
+        long: 'O grupo muscular indica qual músculo ou região é o foco principal do exercício (ex.: Peito, Costas, Quadríceps). Definir esse campo permite olhar o volume prescrito por grupo muscular e balancear melhor o treino do aluno. Exercícios vindos da biblioteca já trazem o grupo preenchido automaticamente.',
+    },
 ];
 
 const microcycleDerivedTerms: GlossaryTerm[] = microcycleHelpTopics.map((topic) => ({

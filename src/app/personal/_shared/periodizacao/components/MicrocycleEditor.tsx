@@ -1,6 +1,8 @@
 'use client';
 
 import type { LocalMicrocycle } from '../lib/mesocycleTransforms';
+import HelpTooltip from '@/components/atoms/HelpTooltip';
+import { getGlossaryTerm } from '@/libs/glossaryContent';
 import s from '../builder.module.css';
 
 const MICRO_STATUS_LABEL: Record<string, string> = {
@@ -44,7 +46,12 @@ export default function MicrocycleEditor({ microcycles, onUpdate, simpleMode }: 
                                         )
                                     }
                                 />
-                                Deload
+                                Deload{' '}
+                                <HelpTooltip
+                                    text={getGlossaryTerm('deload').short}
+                                    href="/ajuda#glossario-deload"
+                                    label="Ajuda sobre deload"
+                                />
                             </label>
                         )}
                     </div>
@@ -89,7 +96,14 @@ export default function MicrocycleEditor({ microcycles, onUpdate, simpleMode }: 
 
                     <div className={s.formRow}>
                         <div className={s.formGroup}>
-                            <label className={s.formLabel}>RPE alvo</label>
+                            <label className={s.formLabel}>
+                                RPE alvo{' '}
+                                <HelpTooltip
+                                    text="O esforço esperado nesta semana (1-10). Ex.: semana de acúmulo ~7, semana de pico ~9. O app compara com o RPE registrado pelo aluno para ajustar a carga."
+                                    href="/ajuda#autorregulacao-rpe-rir"
+                                    label="Ajuda sobre RPE alvo da semana"
+                                />
+                            </label>
                             <input
                                 type="number"
                                 min={1}
@@ -108,7 +122,12 @@ export default function MicrocycleEditor({ microcycles, onUpdate, simpleMode }: 
                         </div>
                         <div className={s.formGroup}>
                             <label className={s.formLabel}>
-                                Ajuste volume %
+                                Ajuste volume %{' '}
+                                <HelpTooltip
+                                    text="Aumenta ou reduz o volume previsto da semana em relação ao padrão — ex.: +10% num acúmulo, −40% num deload."
+                                    href="/ajuda#autorregulacao-rpe-rir"
+                                    label="Ajuda sobre ajuste de volume"
+                                />
                             </label>
                             <input
                                 type="number"
@@ -127,7 +146,12 @@ export default function MicrocycleEditor({ microcycles, onUpdate, simpleMode }: 
                         </div>
                         <div className={s.formGroup}>
                             <label className={s.formLabel}>
-                                Ajuste intensidade %
+                                Ajuste intensidade %{' '}
+                                <HelpTooltip
+                                    text="Mesma ideia do ajuste de volume, mas para a carga/intensidade da semana."
+                                    href="/ajuda#autorregulacao-rpe-rir"
+                                    label="Ajuda sobre ajuste de intensidade"
+                                />
                             </label>
                             <input
                                 type="number"
