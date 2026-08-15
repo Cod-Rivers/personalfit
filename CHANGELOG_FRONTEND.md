@@ -371,3 +371,16 @@
 **Resumo:** Correção aplicada em [constants.css](personalfit/src/app/css/constants.css#L1-L6) e [linha 143](personalfit/src/app/css/constants.css#L143-L145). Só CSS, sem tocar em nenhuma das 13 telas com `<input type="date">` — a causa era global. **Resumo:** o app nunca declarava `color-scheme`, então o navegador improvisava o contraste do popup nativo do calendário (e do ícone) com base em heurística própria em vez do tema real da página — daí números "brancos sobre branco" só visíveis quando selecionados (o destaque de acento salvava o contraste). Agora `[data-theme="light"]` declara `color-scheme: lig…
 **Arquivos:** constants.css
 **Commits:** Adiciona indicador de scroll e corrige rodapé de modal cortado no iOS |  alterado nos cards dos alunos do personal preiodização para prescrever treino |  alterado botãod e criar treino / macrociclo
+
+## 2026-08-15 09:22 — River (via Claude Code)
+**Resumo:** Achei a causa real — as fotos mostram o **seletor nativo de data do Android** (dentro do `WebView` do app, não o navegador). Isso está totalmente fora do alcance do CSS que corrigi antes; a correção do `color-scheme` era necessária mas não resolve esse caso, porque esse diálogo é renderizado pelo próprio Android, não pela página web.
+**Commits:** Altewrado contraste errado dos calendarios
+
+## 2026-08-15 10:27 — River (via Claude Code)
+**Resumo:** Confirmado no código: [build.gradle.kts:30-35](VenafitApp/app/build.gradle.kts#L30-L35) já está com `compileSdk = 36` e `targetSdk = 36` (Android 16), que é exatamente o nível que o aviso está pedindo. Isso já estava certo desde a atualização de julho (memória: upgrade de Billing Library + API 36). Duas coisas importantes: 1. **"Sync Now" no Android Studio não resolve esse aviso.** Isso só sincroniza o projeto localmente com o Gradle — o Google Play não sabe nada sobre isso. O aviso só desaparece quando uma **versão publicada** (build enviado ao Play Console) atinge o nível de API exigido. 2. …
+**Arquivos:** CHANGELOG_FRONTEND.md
+
+## 2026-08-15 12:21 — River (via Claude Code)
+**Resumo:** Corrigido: o banner "Ative as notificações..." (e o de "notificações bloqueadas") agora só aparece para usuários logados — não vai mais surgir na tela de cadastro/login, onde não fazia sentido nem funcionava (o `requestPermission` já no-opava sem sessão).
+**Arquivos:** FCMProvider.tsx
+**Commits:** Documenta regra de visibilidade de templates na Política de Privacidade | Memoiza agrupamento de exercícios no editor de periodização

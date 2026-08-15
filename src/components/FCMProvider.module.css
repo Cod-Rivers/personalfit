@@ -1,0 +1,57 @@
+.banner {
+    position: fixed;
+    bottom: calc(var(--app-footer-height, 0px) + env(safe-area-inset-bottom));
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    width: 100%;
+    max-width: 480px;
+    background: var(--surface-1);
+    border: 1px solid var(--border-mid);
+    border-radius: 8px 8px 0 0;
+    box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.15);
+    padding: 10px 36px 10px 14px;
+}
+
+.close {
+    position: absolute;
+    top: 4px;
+    right: 8px;
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    line-height: 1;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.text {
+    flex: 1;
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+.actionBtn {
+    flex-shrink: 0;
+    background: var(--grad-mint);
+    color: var(--btn-text);
+    border: none;
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}

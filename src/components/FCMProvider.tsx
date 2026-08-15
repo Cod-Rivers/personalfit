@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { FiX } from 'react-icons/fi';
 import { useFCMToken } from '@/hooks/useFCMToken';
 import { useVisiblePolling } from '@/hooks/useVisiblePolling';
 import { listenNativePushToken } from '@/libs/nativePush';
 import { getToken, refreshNativeAuthToken } from '@/libs/session';
 import { renewSession } from '@/libs/sessionHeartbeat';
+import s from './FCMProvider.module.css';
 
 const SESSION_HEARTBEAT_INTERVAL_MS = 30 * 60 * 1000;
 
@@ -43,61 +45,51 @@ export default function FCMProvider({
         Boolean(getToken()),
     );
 
-    const showBlocked = permissionState === 'denied' && !dismissed;
-    const showOptIn = permissionState === 'default' && !dismissed;
+    const hasSession = Boolean(getToken());
+    const showBlocked = hasSession && permissionState === 'denied' && !dismissed;
+    const showOptIn = hasSession && permissionState === 'default' && !dismissed;
 
     return (
         <>
             {showBlocked && (
-                <div
-                    className="alert alert-warning alert-dismissible fade show m-2"
-                    role="alert"
-                    style={{
-                        position: 'fixed',
-                        bottom: 'calc(16px + env(safe-area-inset-bottom))',
-                        left: 16,
-                        right: 16,
-                        zIndex: 9999,
-                    }}
-                >
-                    <i className="fa-solid fa-bell-slash me-2"></i>
-                    Notificações bloqueadas. Para recebê-las, habilite as
-                    permissões nas configurações do navegador.
+                <div className={s.banner} role="alert" aria-live="polite">
                     <button
                         type="button"
-                        className="btn-close"
+                        className={s.close}
                         aria-label="Fechar"
                         onClick={() => setDismissed(true)}
-                    />
+                    >
+                        <FiX />
+                    </button>
+                    <p className={s.text}>
+                        Notificações bloqueadas. Para recebê-las, habilite as
+                        permissões nas configurações do navegador.
+                    </p>
                 </div>
             )}
             {showOptIn && (
-                <div
-                    className="alert alert-info alert-dismissible fade show m-2"
-                    role="alert"
-                    style={{
-                        position: 'fixed',
-                        bottom: 'calc(16px + env(safe-area-inset-bottom))',
-                        left: 16,
-                        right: 16,
-                        zIndex: 9999,
-                    }}
-                >
-                    <i className="fa-solid fa-bell me-2"></i>
-                    Ative as notificações para não perder avisos importantes.{' '}
+                <div className={s.banner} role="alert" aria-live="polite">
                     <button
                         type="button"
-                        className="btn btn-sm btn-primary ms-1"
-                        onClick={() => requestPermission()}
-                    >
-                        Ativar
-                    </button>
-                    <button
-                        type="button"
-                        className="btn-close"
+                        className={s.close}
                         aria-label="Fechar"
                         onClick={() => setDismissed(true)}
-                    />
+                    >
+                        <FiX />
+                    </button>
+                    <div className={s.row}>
+                        <p className={s.text}>
+                            Ative as notificações para não perder avisos
+                            importantes.
+                        </p>
+                        <button
+                            type="button"
+                            className={s.actionBtn}
+                            onClick={() => requestPermission()}
+                        >
+                            Ativar
+                        </button>
+                    </div>
                 </div>
             )}
             {children}
