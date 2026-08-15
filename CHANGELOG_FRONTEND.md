@@ -366,3 +366,8 @@
 ## 2026-08-12 10:26 — River (via Claude Code)
 **Resumo:** Ainda não — vou salvar agora.
 **Arquivos:** CHANGELOG_FRONTEND.md, Modal.module.css, ScrollHint, index.tsx, page.tsx
+
+## 2026-08-15 08:19 — River (via Claude Code)
+**Resumo:** Correção aplicada em [constants.css](personalfit/src/app/css/constants.css#L1-L6) e [linha 143](personalfit/src/app/css/constants.css#L143-L145). Só CSS, sem tocar em nenhuma das 13 telas com `<input type="date">` — a causa era global. **Resumo:** o app nunca declarava `color-scheme`, então o navegador improvisava o contraste do popup nativo do calendário (e do ícone) com base em heurística própria em vez do tema real da página — daí números "brancos sobre branco" só visíveis quando selecionados (o destaque de acento salvava o contraste). Agora `[data-theme="light"]` declara `color-scheme: lig…
+**Arquivos:** constants.css
+**Commits:** Adiciona indicador de scroll e corrige rodapé de modal cortado no iOS |  alterado nos cards dos alunos do personal preiodização para prescrever treino |  alterado botãod e criar treino / macrociclo

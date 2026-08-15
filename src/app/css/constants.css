@@ -1,5 +1,10 @@
 :root,
 [data-theme="light"] {
+    /* Informa ao navegador que a página é clara, para que ele pinte
+       controles nativos (calendário do <input type="date">, scrollbar,
+       checkbox) com contraste correto em vez de adivinhar pelo tema do SO. */
+    color-scheme: light;
+
     /* ── Legacy alias (mantido para compat) ── */
     --color-gold: #3dffd0;
     --color-dark-gray: #7a6e5c;
@@ -141,6 +146,8 @@
    DARK THEME
    ══════════════════════════════════════════ */
 [data-theme="dark"] {
+    color-scheme: dark;
+
     --color-dark-gray: #7a8aaa;
     --color-bg-dark: #000000;
 
