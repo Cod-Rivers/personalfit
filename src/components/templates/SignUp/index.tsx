@@ -3,6 +3,7 @@ import { useTranslations } from 'next-intl';
 import React, { FC, useState } from 'react';
 import { FiUser, FiBriefcase } from 'react-icons/fi';
 import Input from '@/components/molecules/Input';
+import BackButton from '@/components/molecules/BackButton';
 import Image from 'next/image';
 import Link from 'next/link';
 import './styles.css';
@@ -68,6 +69,7 @@ const TSignUp: FC = () => {
     return (
         <div className="login_main_container">
             <div className="login_box">
+                <BackButton link="/" label="Voltar para o login" />
                 <Image
                     src="/assets/images/logo.png"
                     alt="logo"

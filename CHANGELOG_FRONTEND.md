@@ -384,3 +384,7 @@
 **Resumo:** Corrigido: o banner "Ative as notificações..." (e o de "notificações bloqueadas") agora só aparece para usuários logados — não vai mais surgir na tela de cadastro/login, onde não fazia sentido nem funcionava (o `requestPermission` já no-opava sem sessão).
 **Arquivos:** FCMProvider.tsx
 **Commits:** Documenta regra de visibilidade de templates na Política de Privacidade | Memoiza agrupamento de exercícios no editor de periodização
+
+## 2026-08-15 12:26 — River (via Claude Code)
+**Resumo:** Confirmado, o fluxo já funciona do jeito que você espera: 1. **Onde fica guardado**: `Notification.permission` é uma API nativa do navegador, persistida por origem (domínio) desde a primeira vez que o usuário aceita ou nega — não é algo que o app precisa salvar em `localStorage`/backend. Sobrevive a reloads, fechar o navegador, etc. 2. **O banner (`FCMProvider.tsx:47-48`)** só aparece quando `permissionState === 'default'` (nunca decidiu) ou `'denied'` (bloqueou). Se já está `'granted'`, nenhum dos dois banners renderiza. 3. **Se já estava `'granted'`** de uma vez anterior, o hook nem mostra p…
+**Commits:** Restringe banner de notificacoes a usuarios logados e reduz tamanho
