@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
@@ -947,6 +947,16 @@ function RatingsSection() {
 /* ═══════════════════════════════════════════════
    EXERCISES SECTION
    ═══════════════════════════════════════════════ */
+interface BulkMediaItem {
+    id: string;
+    file: File;
+    previewUrl: string;
+    exerciseId: string;
+    status: 'idle' | 'uploading' | 'done' | 'error';
+    progress: number;
+    error?: string;
+}
+
 function ExercisesSection() {
     const [exercises, setExercises] = useState<
         adminService.ExerciseLibraryItem[]
@@ -957,6 +967,12 @@ function ExercisesSection() {
     const [modalMode, setModalMode] = useState<'none' | 'create' | 'edit'>(
         'none',
     );
+    const [bulkOpen, setBulkOpen] = useState(false);
+    const [bulkItems, setBulkItems] = useState<BulkMediaItem[]>([]);
+    const [bulkUploading, setBulkUploading] = useState(false);
+    const [bulkDragActive, setBulkDragActive] = useState(false);
+    const [bulkError, setBulkError] = useState('');
+    const bulkFileInputRef = useRef<HTMLInputElement>(null);
     const [editTarget, setEditTarget] =
         useState<adminService.ExerciseLibraryItem | null>(null);
     const [form, setForm] = useState({
@@ -1082,7 +1098,7 @@ function ExercisesSection() {
         if (!file) return;
         const validationError = await videoService.validateMediaFile(
             file,
-            videoService.MAX_UPLOAD_BYTES_ADMIN,
+            videoService.NO_UPLOAD_SIZE_LIMIT,
         );
         if (validationError) {
             setError(validationError);
@@ -1219,15 +1235,175 @@ function ExercisesSection() {
         }
     };
 
+    const pendingMediaExercises = useMemo(
+        () =>
+            [...exercises]
+                .filter((ex) => !ex.video_url)
+                .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')),
+        [exercises],
+    );
+
+    const assignedExerciseIds = useMemo(
+        () =>
+            new Set(
+                bulkItems.filter((it) => it.exerciseId).map((it) => it.exerciseId),
+            ),
+        [bulkItems],
+    );
+
+    const openBulk = () => {
+        setBulkItems([]);
+        setBulkError('');
+        setBulkOpen(true);
+    };
+
+    const closeBulk = () => {
+        if (bulkUploading) return;
+        bulkItems.forEach((it) => URL.revokeObjectURL(it.previewUrl));
+        setBulkItems([]);
+        setBulkOpen(false);
+    };
+
+    const addBulkFiles = async (files: File[]) => {
+        const accepted: BulkMediaItem[] = [];
+        for (const file of files) {
+            const validationError = await videoService.validateMediaFile(
+                file,
+                videoService.NO_UPLOAD_SIZE_LIMIT,
+            );
+            if (validationError) continue;
+            accepted.push({
+                id: `${file.name}-${file.size}-${Math.random().toString(36).slice(2)}`,
+                file,
+                previewUrl: URL.createObjectURL(file),
+                exerciseId: '',
+                status: 'idle',
+                progress: 0,
+            });
+        }
+        setBulkError(
+            accepted.length < files.length
+                ? `${files.length - accepted.length} arquivo(s) rejeitado(s) (tamanho, duração ou formato inválido).`
+                : '',
+        );
+        if (accepted.length) setBulkItems((prev) => [...prev, ...accepted]);
+    };
+
+    const handleBulkFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files ?? []);
+        e.target.value = '';
+        if (files.length) addBulkFiles(files);
+    };
+
+    const handleBulkDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        setBulkDragActive(false);
+        const files = Array.from(e.dataTransfer.files ?? []);
+        if (files.length) addBulkFiles(files);
+    };
+
+    const setBulkItemExercise = (itemId: string, exerciseId: string) => {
+        setBulkItems((prev) =>
+            prev.map((it) =>
+                it.id === itemId ? { ...it, exerciseId, status: 'idle', error: undefined } : it,
+            ),
+        );
+    };
+
+    const removeBulkItem = (itemId: string) => {
+        setBulkItems((prev) => {
+            const target = prev.find((it) => it.id === itemId);
+            if (target) URL.revokeObjectURL(target.previewUrl);
+            return prev.filter((it) => it.id !== itemId);
+        });
+    };
+
+    const handleBulkUploadAll = async () => {
+        const toSend = bulkItems.filter(
+            (it) => it.exerciseId && (it.status === 'idle' || it.status === 'error'),
+        );
+        if (!toSend.length) return;
+        setBulkUploading(true);
+        for (const item of toSend) {
+            setBulkItems((prev) =>
+                prev.map((it) =>
+                    it.id === item.id
+                        ? { ...it, status: 'uploading', progress: 0, error: undefined }
+                        : it,
+                ),
+            );
+            try {
+                const { upload_url, object_path } =
+                    await adminService.requestExerciseUploadUrl(
+                        item.exerciseId,
+                        item.file,
+                    );
+                await adminService.uploadToR2(upload_url, item.file, (pct) =>
+                    setBulkItems((prev) =>
+                        prev.map((it) =>
+                            it.id === item.id ? { ...it, progress: pct } : it,
+                        ),
+                    ),
+                );
+                const updated = await adminService.confirmExerciseVideo(
+                    item.exerciseId,
+                    object_path,
+                );
+                setBulkItems((prev) =>
+                    prev.map((it) =>
+                        it.id === item.id
+                            ? { ...it, status: 'done', progress: 100 }
+                            : it,
+                    ),
+                );
+                setExercises((prev) =>
+                    prev.map((ex) =>
+                        ex.id === item.exerciseId
+                            ? {
+                                  ...ex,
+                                  video_url: updated.video_url,
+                                  video_thumb: updated.video_thumb,
+                              }
+                            : ex,
+                    ),
+                );
+            } catch (err) {
+                const msg = isAxiosError(err)
+                    ? (err.response?.data?.error ?? err.message)
+                    : 'Erro no upload.';
+                setBulkItems((prev) =>
+                    prev.map((it) =>
+                        it.id === item.id
+                            ? { ...it, status: 'error', error: msg }
+                            : it,
+                    ),
+                );
+            }
+        }
+        setBulkUploading(false);
+    };
+
+    const bulkReadyCount = bulkItems.filter(
+        (it) => it.exerciseId && (it.status === 'idle' || it.status === 'error'),
+    ).length;
+
     return (
         <>
             <div className={s.sectionHeader}>
                 <h1 className={s.sectionTitle}>
                     <FiActivity className={s.titleIcon} /> Biblioteca de Exercícios
                 </h1>
-                <button onClick={openCreate} className={s.btnPrimary}>
-                    + Novo Exercício
-                </button>
+                <div className={s.btnGroup}>
+                    {pendingMediaExercises.length > 0 && (
+                        <button onClick={openBulk} className={s.btnOutline}>
+                            <FiUpload className={s.btnIcon} /> Upload em lote (
+                            {pendingMediaExercises.length} sem mídia)
+                        </button>
+                    )}
+                    <button onClick={openCreate} className={s.btnPrimary}>
+                        + Novo Exercício
+                    </button>
+                </div>
             </div>
 
             <div className={s.searchBar}>
@@ -1495,11 +1671,7 @@ function ExercisesSection() {
                                 style={{ paddingTop: 8 }}
                             />
                             <small className="text-muted">
-                                Máximo:{' '}
-                                {videoService.MAX_UPLOAD_BYTES_ADMIN /
-                                    1024 /
-                                    1024}
-                                MB. Até{' '}
+                                Sem limite de tamanho. Até{' '}
                                 {
                                     videoService.MAX_UPLOAD_DURATION_SECONDS
                                 }
@@ -1554,6 +1726,165 @@ function ExercisesSection() {
                         ))}
                     </div>
                 </div>
+            </Modal>
+
+            <Modal
+                open={bulkOpen}
+                onClose={closeBulk}
+                title="Upload em lote de mídia"
+                footer={
+                    <>
+                        <button
+                            onClick={closeBulk}
+                            className={s.btnOutline}
+                            disabled={bulkUploading}
+                        >
+                            Fechar
+                        </button>
+                        <button
+                            onClick={handleBulkUploadAll}
+                            className={s.btnPrimary}
+                            disabled={bulkUploading || bulkReadyCount === 0}
+                        >
+                            {bulkUploading
+                                ? 'Enviando...'
+                                : `Enviar tudo (${bulkReadyCount})`}
+                        </button>
+                    </>
+                }
+            >
+                {bulkError && <p className={s.errorMsg}>{bulkError}</p>}
+                <div
+                    className={`${s.bulkDropzone} ${bulkDragActive ? s.bulkDropzoneActive : ''}`}
+                    onDragOver={(e) => {
+                        e.preventDefault();
+                        setBulkDragActive(true);
+                    }}
+                    onDragLeave={() => setBulkDragActive(false)}
+                    onDrop={handleBulkDrop}
+                    onClick={() => bulkFileInputRef.current?.click()}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ')
+                            bulkFileInputRef.current?.click();
+                    }}
+                >
+                    <FiUpload size={24} />
+                    <span>
+                        Arraste vários arquivos de vídeo/imagem aqui, ou
+                        clique para selecionar
+                    </span>
+                    <input
+                        ref={bulkFileInputRef}
+                        type="file"
+                        multiple
+                        accept={videoService.ACCEPTED_UPLOAD_EXTENSIONS}
+                        style={{ display: 'none' }}
+                        onChange={handleBulkFileInput}
+                    />
+                </div>
+
+                {bulkItems.length > 0 && (
+                    <>
+                        <div className={s.bulkSummary}>
+                            <span>
+                                {bulkItems.length} arquivo(s) selecionado(s) ·{' '}
+                                {pendingMediaExercises.length} exercício(s)
+                                ainda sem mídia
+                            </span>
+                        </div>
+                        {bulkItems.map((item) => (
+                            <div
+                                key={item.id}
+                                className={`${s.bulkRow} ${
+                                    item.status === 'done'
+                                        ? s.bulkRowDone
+                                        : item.status === 'error'
+                                          ? s.bulkRowError
+                                          : ''
+                                }`}
+                            >
+                                <ExerciseThumbnail
+                                    name={item.file.name}
+                                    videoUrl={item.previewUrl}
+                                    captureFrame
+                                    width={56}
+                                    height={56}
+                                />
+                                <div className={s.bulkRowInfo}>
+                                    <span
+                                        className={s.bulkRowName}
+                                        title={item.file.name}
+                                    >
+                                        {item.file.name}
+                                    </span>
+                                    <span className={s.cardMeta}>
+                                        {(item.file.size / 1024 / 1024).toFixed(1)}{' '}
+                                        MB
+                                    </span>
+                                </div>
+                                <select
+                                    className={`${s.formInput} ${s.bulkRowSelect}`}
+                                    value={item.exerciseId}
+                                    disabled={
+                                        item.status === 'uploading' ||
+                                        item.status === 'done'
+                                    }
+                                    onChange={(e) =>
+                                        setBulkItemExercise(
+                                            item.id,
+                                            e.target.value,
+                                        )
+                                    }
+                                >
+                                    <option value="">
+                                        Selecione o exercício...
+                                    </option>
+                                    {pendingMediaExercises
+                                        .filter(
+                                            (ex) =>
+                                                ex.id === item.exerciseId ||
+                                                !assignedExerciseIds.has(ex.id),
+                                        )
+                                        .map((ex) => (
+                                            <option key={ex.id} value={ex.id}>
+                                                {ex.name}
+                                            </option>
+                                        ))}
+                                </select>
+                                <div className={s.bulkRowStatus}>
+                                    {item.status === 'uploading' && (
+                                        <span>{item.progress}%</span>
+                                    )}
+                                    {item.status === 'done' && (
+                                        <FiCheck className={s.bulkStatusDone} />
+                                    )}
+                                    {item.status === 'error' && (
+                                        <span
+                                            className={s.bulkStatusError}
+                                            title={item.error}
+                                        >
+                                            <FiX /> erro
+                                        </span>
+                                    )}
+                                </div>
+                                {item.status !== 'uploading' &&
+                                    item.status !== 'done' && (
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                removeBulkItem(item.id)
+                                            }
+                                            className={`${s.btnOutline} ${s.btnSmall}`}
+                                        >
+                                            Remover
+                                        </button>
+                                    )}
+                            </div>
+                        ))}
+                    </>
+                )}
             </Modal>
 
             {previewExercise && (

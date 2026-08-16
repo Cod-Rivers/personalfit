@@ -400,3 +400,12 @@
 ## 2026-08-15 13:03 — River (via Claude Code)
 **Resumo:** Corrigido nos dois arquivos (`Login/styles.css` e `SignUp/styles.css`). Mudança é só CSS, sem risco de quebrar build: `overflow: hidden` virou `overflow-x: hidden` + `overflow-y: auto`, e adicionei `align-items: safe center` (navegadores que não suportam ignoram e mantêm o `center` normal como fallback). Resultado prático: quando o card não couber na altura da janela (zoom 100%, PWA desktop), ele agora ancora no topo em vez de ser cortado — e mesmo que ainda não caiba perfeitamente, dá pra rolar pra ver o que ficou acima. Não commitei nada, fica pra você validar visualmente no app instalado.
 **Arquivos:** ExerciseDetailCard.module.css, ExerciseDetailCard.tsx, ExerciseSubstitutionModal.module.css, ExerciseSubstitutionModal.tsx, WorkoutLogger.module.css, admin.module.css, agenda.module.css, agendamentos.module.css, builder.module.css, escolher-plano.module.css, periodizacao.module.css, personal.module.css, styles.css
+
+## 2026-08-15 21:58 — River (via Claude Code)
+**Resumo:** Revertido. O repositório continua clonado em `references/agent-skills/`, sem a entrada no `.clineignore`.
+**Arquivos:** page.tsx
+**Commits:** Corrige overflow vertical do login/cadastro em janelas baixas | Padroniza botões em modais/cards de exercício e anúncios; remove CSS morto | Compacta footer em uma única linha | Adiciona helptips nos campos de criação de treinos do personal
+
+## 2026-08-15 21:59 — River (via Claude Code)
+**Resumo:** Pasta `.git` removida. Agora é só um conjunto de arquivos de referência, sem histórico git.
+**Arquivos:** CHANGELOG_FRONTEND.md

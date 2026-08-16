@@ -102,6 +102,20 @@
 .exerciseThumb { width: 72px; height: 72px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border-subtle); flex-shrink: 0; }
 .exerciseThumbPreview { display: block; width: 120px; height: 120px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border-subtle); margin-bottom: 10px; }
 
+/* Bulk media upload */
+.bulkDropzone { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 32px 20px; border: 2px dashed var(--border-subtle); border-radius: 10px; color: var(--text-muted); cursor: pointer; text-align: center; transition: border-color 0.2s, background 0.2s; margin-bottom: 20px; }
+.bulkDropzone:hover, .bulkDropzoneActive { border-color: var(--mint); background: rgba(61,255,208,0.05); color: var(--text-primary); }
+.bulkSummary { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 0.82rem; color: var(--text-muted); flex-wrap: wrap; gap: 8px; }
+.bulkRow { display: flex; align-items: center; gap: 12px; padding: 10px; border: 1px solid var(--border-subtle); border-radius: 8px; margin-bottom: 8px; }
+.bulkRowDone { border-color: rgba(61,255,208,0.4); background: rgba(61,255,208,0.05); }
+.bulkRowError { border-color: rgba(255,107,107,0.4); background: rgba(255,107,107,0.05); }
+.bulkRowInfo { flex: 1 1 160px; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.bulkRowName { font-size: 0.85rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bulkRowSelect { flex: 1 1 220px; min-width: 160px; }
+.bulkRowStatus { flex-shrink: 0; width: 64px; text-align: center; font-size: 0.82rem; }
+.bulkStatusDone { color: var(--mint); }
+.bulkStatusError { color: var(--coral); display: flex; align-items: center; gap: 4px; cursor: help; }
+
 /* Loading */
 .loading { text-align: center; padding: 60px 20px; color: var(--text-muted); }
 
