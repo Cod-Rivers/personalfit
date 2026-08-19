@@ -9,6 +9,7 @@ import {
     createTrainingPdfImport,
     retryTrainingPdfImport,
     MAX_TRAINING_PDF_IMPORT_MB,
+    MAX_TRAINING_PDF_IMPORTS_PER_MONTH,
     type TrainingPdfImport,
 } from '@/libs/trainingPdfImportService';
 import TrainingPdfReviewScreen from './TrainingPdfReviewScreen';
@@ -137,7 +138,7 @@ export default function TrainingPdfUploadModal({
                         Envie uma foto de caderno, planilha ou PDF de um plano de
                         treino de outra academia. A IA extrai os exercícios
                         automaticamente — você revisa e corrige antes de aplicar.
-                        Limite de 1 importação por mês.
+                        Limite de {MAX_TRAINING_PDF_IMPORTS_PER_MONTH} importações por mês.
                     </p>
 
                     <button

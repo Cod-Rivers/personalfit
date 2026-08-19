@@ -5,7 +5,7 @@ import type { TechniqueParamsResponse } from '@/libs/planningService';
 export const MAX_TRAINING_PDF_IMPORT_MB = 10;
 
 /** Deve espelhar training.MaxPdfImportsPerStudentPerMonth no backend. */
-export const MAX_TRAINING_PDF_IMPORTS_PER_MONTH = 1;
+export const MAX_TRAINING_PDF_IMPORTS_PER_MONTH = 3;
 
 export type TrainingPdfImportStatus =
     | 'processing'
