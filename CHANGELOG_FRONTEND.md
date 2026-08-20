@@ -409,3 +409,8 @@
 ## 2026-08-15 21:59 — River (via Claude Code)
 **Resumo:** Pasta `.git` removida. Agora é só um conjunto de arquivos de referência, sem histórico git.
 **Arquivos:** CHANGELOG_FRONTEND.md
+
+## 2026-08-18 17:16 — River (via Claude Code)
+**Resumo:** Investiguei e encontrei **duas causas independentes** — a IA de fato não era a única culpada. ## O que estava errado **1. O fluxo do personal jogava a mídia fora.** Este é o que causou o sintoma da aluna. Em [TrainingPdfReviewScreen.tsx:36-37](personalfit/src/components/features/TrainingPdfReviewScreen.tsx#L36-L37), o payload enviado ao criar o macrociclo mandava `video_url: ''` e `video_thumb: ''` — mesmo quando o exercício tinha o `exercise_library_id` certo. E [save-planning.go](Personal-fit-Back/internal/application/user/commands/save-planning.go) gravava exatamente isso. O fluxo do **alun…
+**Arquivos:** TrainingPdfReviewScreen.module.css, TrainingPdfReviewScreen.tsx
+**Commits:** Adiciona upload em lote de midia no admin e remove limite de tamanho

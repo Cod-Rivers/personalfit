@@ -210,3 +210,18 @@
     opacity: 0.6;
     cursor: not-allowed;
 }
+
+/* O selo de vinculado é um botão: clicar troca o exercício da biblioteca
+   escolhido pelo casamento automático. Herda a aparência de .badgeMatched
+   (texto verde sem moldura) e só neutraliza o estilo padrão de botão. */
+.badgeMatched {
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    text-align: left;
+    max-width: 100%;
+    /* Nome de exercício da biblioteca é longo: quebra em vez de estourar o card. */
+    white-space: normal;
+    overflow-wrap: anywhere;
+}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FiCheckCircle, FiHelpCircle, FiPlus, FiTrash2, FiX } from 'react-icons/fi';
 import {
     type ExtractedExercise,
@@ -9,7 +9,13 @@ import {
     updateTrainingPdfImport,
     confirmMyTrainingPdfImport,
 } from '@/libs/trainingPdfImportService';
-import { createMacrocycle, type ExerciseRequest, type TrainingRequest } from '@/libs/planningService';
+import {
+    createMacrocycle,
+    searchExercises,
+    type ExerciseLibraryItem,
+    type ExerciseRequest,
+    type TrainingRequest,
+} from '@/libs/planningService';
 import ExercisePicker from '@/app/personal/_shared/periodizacao/components/ExercisePicker';
 import { TECHNIQUE_CATALOG } from '@/libs/trainingTechniques';
 import styles from './TrainingPdfReviewScreen.module.css';
@@ -78,6 +84,34 @@ export default function TrainingPdfReviewScreen({
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
     const [confirmDiscard, setConfirmDiscard] = useState(false);
+    // Catálogo por id: o rascunho só carrega o exercise_library_id resolvido,
+    // e "Vinculado" sem dizer a QUAL exercício não dá como conferir se o
+    // casamento automático acertou.
+    const [libraryById, setLibraryById] = useState<Map<string, ExerciseLibraryItem>>(
+        () => new Map(),
+    );
+
+    useEffect(() => {
+        let active = true;
+        searchExercises()
+            .then((items) => {
+                if (!active) return;
+                setLibraryById(new Map(items.map((item) => [item.id, item])));
+            })
+            .catch(() => {
+                // Sem o catálogo a revisão continua funcionando: perde-se só o
+                // nome do exercício vinculado ao lado do selo.
+            });
+        return () => {
+            active = false;
+        };
+    }, []);
+
+    function linkedName(ex: ExtractedExercise) {
+        return ex.exercise_library_id
+            ? libraryById.get(ex.exercise_library_id)?.name
+            : undefined;
+    }
 
     const totalExercises = trainings.reduce((n, t) => n + t.exercises.length, 0);
     const unmatchedCount = trainings.reduce(
@@ -211,15 +245,16 @@ export default function TrainingPdfReviewScreen({
                                     className={styles.exerciseNameInput}
                                     placeholder="Nome do exercício"
                                 />
-                                {ex.match_status === 'matched' && (
-                                    <span className={styles.badgeMatched} title="Vinculado à biblioteca">
-                                        <FiCheckCircle /> Vinculado
-                                    </span>
-                                )}
-                                {ex.match_status === 'manual' && (
-                                    <span className={styles.badgeMatched} title="Vinculado manualmente">
-                                        <FiCheckCircle /> Vinculado
-                                    </span>
+                                {ex.match_status !== 'unmatched' && (
+                                    <button
+                                        type="button"
+                                        className={styles.badgeMatched}
+                                        onClick={() => setPickerFor({ t: ti, e: ei })}
+                                        title="Trocar o exercício da biblioteca vinculado"
+                                    >
+                                        <FiCheckCircle />
+                                        {linkedName(ex) ?? 'Vinculado'}
+                                    </button>
                                 )}
                                 {ex.match_status === 'unmatched' && (
                                     <button
