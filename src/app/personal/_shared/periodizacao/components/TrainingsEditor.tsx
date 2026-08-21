@@ -33,6 +33,7 @@ import {
 } from '../lib/mesocycleTransforms';
 import ExercisePicker from './ExercisePicker';
 import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
+import ExerciseVideoField from './ExerciseVideoField';
 import ExerciseDetailCard from '@/components/features/ExerciseDetailCard';
 import type { ExerciseLog } from '@/components/features/types';
 import HelpTooltip from '@/components/atoms/HelpTooltip';
@@ -657,6 +658,19 @@ export default function TrainingsEditor({
             return next;
         });
 
+    // Link e capa do vídeo andam juntos (ver ExerciseVideoField). São duas
+    // chamadas porque onUpdateExercise é por campo — o setState do dono é
+    // funcional, então as duas se acumulam no mesmo render.
+    const setExerciseVideo = (
+        tid: string,
+        eid: string,
+        videoUrl: string,
+        videoThumb: string,
+    ) => {
+        onUpdateExercise(tid, eid, 'video_url', videoUrl);
+        onUpdateExercise(tid, eid, 'video_thumb', videoThumb);
+    };
+
     // Pré-visualização do exercício (mesmo card que o aluno vê): abre pelo
     // clique na thumbnail, principalmente para conferir o vídeo do exercício
     // recém-adicionado sem sair do editor. Guarda também os irmãos do treino
@@ -1083,9 +1097,12 @@ export default function TrainingsEditor({
                                                                 >
                                                                     Séries{' '}
                                                                     <HelpTooltip
-                                                                        text={getGlossaryTerm(
-                                                                            'series-repeticoes',
-                                                                        ).short}
+                                                                        text={
+                                                                            getGlossaryTerm(
+                                                                                'series-repeticoes',
+                                                                            )
+                                                                                .short
+                                                                        }
                                                                         href="/ajuda#glossario-series-repeticoes"
                                                                         label="Ajuda sobre séries e repetições"
                                                                     />
@@ -1313,9 +1330,12 @@ export default function TrainingsEditor({
                                                                     Descanso
                                                                     entre séries{' '}
                                                                     <HelpTooltip
-                                                                        text={getGlossaryTerm(
-                                                                            'descanso',
-                                                                        ).short}
+                                                                        text={
+                                                                            getGlossaryTerm(
+                                                                                'descanso',
+                                                                            )
+                                                                                .short
+                                                                        }
                                                                         href="/ajuda#glossario-descanso"
                                                                         label="Ajuda sobre descanso entre séries"
                                                                     />
@@ -1374,9 +1394,12 @@ export default function TrainingsEditor({
                                                                 >
                                                                     Variação{' '}
                                                                     <HelpTooltip
-                                                                        text={getGlossaryTerm(
-                                                                            'variacoes',
-                                                                        ).short}
+                                                                        text={
+                                                                            getGlossaryTerm(
+                                                                                'variacoes',
+                                                                            )
+                                                                                .short
+                                                                        }
                                                                         href="/ajuda#glossario-variacoes"
                                                                         label="Ajuda sobre variações"
                                                                     />
@@ -1445,6 +1468,29 @@ export default function TrainingsEditor({
                                                                     }}
                                                                 />
                                                             </div>
+
+                                                            <ExerciseVideoField
+                                                                libraryLinked={
+                                                                    !!ex.exercise_library_id
+                                                                }
+                                                                videoUrl={
+                                                                    ex.video_url
+                                                                }
+                                                                videoThumb={
+                                                                    ex.video_thumb
+                                                                }
+                                                                onChange={(
+                                                                    url,
+                                                                    thumb,
+                                                                ) =>
+                                                                    setExerciseVideo(
+                                                                        active._id,
+                                                                        ex._id,
+                                                                        url,
+                                                                        thumb,
+                                                                    )
+                                                                }
+                                                            />
 
                                                             <div
                                                                 className={
@@ -1745,9 +1791,11 @@ export default function TrainingsEditor({
                                                                     )}
                                                                 </span>
                                                                 <HelpTooltip
-                                                                    text={getGlossaryTerm(
-                                                                        'combinacao',
-                                                                    ).short}
+                                                                    text={
+                                                                        getGlossaryTerm(
+                                                                            'combinacao',
+                                                                        ).short
+                                                                    }
                                                                     href="/ajuda#glossario-combinacao"
                                                                     label="Ajuda sobre combinação de exercícios"
                                                                 />

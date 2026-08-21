@@ -1091,3 +1091,73 @@
     background: transparent;
     color: var(--text-muted);
 }
+
+/* ── Vídeo de demonstração por exercício ──
+   Linha de ações compacta (chip da plataforma + trocar/remover) que vira um
+   editor de link ao ser acionada. Os botões podem quebrar em telas estreitas:
+   flex-wrap junto do flex-shrink dos chips, senão a linha estoura o card. */
+.videoFieldRow {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    min-width: 0;
+}
+
+.videoSourceChip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border-subtle);
+    background: var(--surface-2);
+    color: var(--text-primary);
+    font-size: 0.74rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.videoEditor {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.videoInputRow {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-width: 0;
+}
+
+/* O input come a linha e os dois botões ficam ao lado; abaixo de ~360px o
+   flex-wrap acima empurra os botões para a linha de baixo. */
+.videoInputRow .formInput {
+    flex: 1 1 200px;
+    min-width: 0;
+    margin-bottom: 0;
+}
+
+.videoFieldHint {
+    margin: 0;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+}
+
+.videoFieldError {
+    composes: videoFieldHint;
+    color: var(--coral);
+    font-weight: 600;
+}
+
+.videoThumbPreview {
+    width: 96px;
+    height: 54px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid var(--border-subtle);
+    margin-top: 8px;
+}

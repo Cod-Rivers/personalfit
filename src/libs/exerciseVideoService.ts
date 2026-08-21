@@ -43,16 +43,24 @@ export async function confirmPersonalVideo(
     objectPath: string,
     thumbObjectPath?: string,
 ) {
-    const { data } = await Api.post(`/my-exercises/${exerciseId}/video-confirm`, {
-        object_path: objectPath,
-        thumb_object_path: thumbObjectPath,
-    });
+    const { data } = await Api.post(
+        `/my-exercises/${exerciseId}/video-confirm`,
+        {
+            object_path: objectPath,
+            thumb_object_path: thumbObjectPath,
+        },
+    );
     return data;
 }
 
 /** Define link externo (YouTube/Vimeo/Instagram: qualquer plano; TikTok: requer Pro) para exercício pessoal. */
-export async function setPersonalVideoUrl(exerciseId: string, videoUrl: string) {
-    const { data } = await Api.put(`/my-exercises/${exerciseId}/video-url`, { video_url: videoUrl });
+export async function setPersonalVideoUrl(
+    exerciseId: string,
+    videoUrl: string,
+) {
+    const { data } = await Api.put(`/my-exercises/${exerciseId}/video-url`, {
+        video_url: videoUrl,
+    });
     return data;
 }
 
@@ -87,7 +95,9 @@ export async function confirmFork(
 
 /** Define link externo (YouTube/Vimeo/Instagram: qualquer plano; TikTok: requer Pro) para fork de exercício da biblioteca. */
 export async function setForkVideoUrl(libraryId: string, videoUrl: string) {
-    const { data } = await Api.put(`/exercises/${libraryId}/fork-url`, { video_url: videoUrl });
+    const { data } = await Api.put(`/exercises/${libraryId}/fork-url`, {
+        video_url: videoUrl,
+    });
     return data;
 }
 
@@ -120,7 +130,8 @@ function uploadToR2Once(
         xhr.timeout = UPLOAD_TIMEOUT_MS;
         if (onProgress) {
             xhr.upload.onprogress = (e) => {
-                if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+                if (e.lengthComputable)
+                    onProgress(Math.round((e.loaded / e.total) * 100));
             };
         }
         xhr.onload = () =>
@@ -128,7 +139,10 @@ function uploadToR2Once(
                 ? resolve()
                 : reject(new Error(`Upload R2 falhou: ${xhr.status}`));
         xhr.onerror = () => reject(new Error('Erro de rede no upload R2'));
-        xhr.ontimeout = () => reject(new Error('Tempo esgotado no upload R2 — conexão muito lenta'));
+        xhr.ontimeout = () =>
+            reject(
+                new Error('Tempo esgotado no upload R2 — conexão muito lenta'),
+            );
         xhr.send(file);
     });
 }
@@ -162,7 +176,10 @@ export async function uploadToR2(
             await uploadToR2Once(signedUrl, file, onProgress);
             return;
         } catch (err) {
-            if (!isRetryableUploadError(err) || attempt === UPLOAD_MAX_ATTEMPTS) {
+            if (
+                !isRetryableUploadError(err) ||
+                attempt === UPLOAD_MAX_ATTEMPTS
+            ) {
                 throw err;
             }
             await sleep(UPLOAD_RETRY_DELAY_MS * attempt);
@@ -213,7 +230,11 @@ export function captureVideoThumbnail(file: File): Promise<Blob | null> {
                     return;
                 }
                 context.drawImage(video, 0, 0, canvas.width, canvas.height);
-                canvas.toBlob((blob) => cleanupAndResolve(blob), 'image/jpeg', 0.8);
+                canvas.toBlob(
+                    (blob) => cleanupAndResolve(blob),
+                    'image/jpeg',
+                    0.8,
+                );
             } catch {
                 cleanupAndResolve(null);
             }
@@ -334,7 +355,9 @@ export function isInstagramUrl(videoUrl: string): boolean {
 
 /** Detecta se é um link embutível via iframe (YouTube/Vimeo/TikTok). */
 export function isEmbeddableUrl(videoUrl: string): boolean {
-    return isYouTubeUrl(videoUrl) || isVimeoUrl(videoUrl) || isTikTokUrl(videoUrl);
+    return (
+        isYouTubeUrl(videoUrl) || isVimeoUrl(videoUrl) || isTikTokUrl(videoUrl)
+    );
 }
 
 /** Detecta se é um link de provedor externo suportado (embutível ou redirecionamento). */
@@ -381,4 +404,51 @@ export async function validateMediaFile(
         return `Vídeo excede o limite de ${MAX_UPLOAD_DURATION_SECONDS}s (duração: ${Math.round(duration)}s)`;
     }
     return null;
+}
+
+// ─────────────────────────────────────────────
+// LINK EXTERNO EM EXERCÍCIO DE PLANO (editor de treinos)
+// ─────────────────────────────────────────────
+
+/** Plataformas de vídeo adotadas como padrão do sistema, na ordem em que são
+ * apresentadas ao personal. Mantido em sincronia com supportedVideoHosts no
+ * backend (video-thumb.go). */
+export const SUPPORTED_VIDEO_PLATFORMS = [
+    'YouTube',
+    'Vimeo',
+    'Instagram',
+    'TikTok',
+] as const;
+
+/** Nome da plataforma de um link externo suportado, ou null se não for um. */
+export function externalVideoPlatform(videoUrl: string): string | null {
+    if (isYouTubeUrl(videoUrl)) return 'YouTube';
+    if (isVimeoUrl(videoUrl)) return 'Vimeo';
+    if (isInstagramUrl(videoUrl)) return 'Instagram';
+    if (isTikTokUrl(videoUrl)) return 'TikTok';
+    return null;
+}
+
+export interface ResolvedVideoLink {
+    video_url: string;
+    video_thumb: string;
+}
+
+/**
+ * Valida um link de vídeo das plataformas padrão e devolve a thumbnail
+ * derivada pelo backend (oEmbed do Vimeo/TikTok, padrão de imagem do YouTube),
+ * sem persistir nada.
+ *
+ * Usado pelo editor de treinos, onde o vídeo é gravado no próprio exercício do
+ * plano — não há PersonalExercise para atualizar, então setPersonalVideoUrl /
+ * setForkVideoUrl não servem. A derivação fica no backend porque as APIs
+ * oEmbed não liberam CORS para o navegador.
+ */
+export async function resolveExternalVideoLink(
+    videoUrl: string,
+): Promise<ResolvedVideoLink> {
+    const { data } = await Api.post('/my-exercises/resolve-video-link', {
+        video_url: videoUrl,
+    });
+    return data;
 }

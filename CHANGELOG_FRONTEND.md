@@ -414,3 +414,8 @@
 **Resumo:** Investiguei e encontrei **duas causas independentes** — a IA de fato não era a única culpada. ## O que estava errado **1. O fluxo do personal jogava a mídia fora.** Este é o que causou o sintoma da aluna. Em [TrainingPdfReviewScreen.tsx:36-37](personalfit/src/components/features/TrainingPdfReviewScreen.tsx#L36-L37), o payload enviado ao criar o macrociclo mandava `video_url: ''` e `video_thumb: ''` — mesmo quando o exercício tinha o `exercise_library_id` certo. E [save-planning.go](Personal-fit-Back/internal/application/user/commands/save-planning.go) gravava exatamente isso. O fluxo do **alun…
 **Arquivos:** TrainingPdfReviewScreen.module.css, TrainingPdfReviewScreen.tsx
 **Commits:** Adiciona upload em lote de midia no admin e remove limite de tamanho
+
+## 2026-08-20 21:16 — River (via Claude Code)
+**Resumo:** Feito. Cada exercício do editor de treinos agora tem um campo **"Vídeo de demonstração"** — vale igualmente para exercício da biblioteca e para exercício avulso (o caso do treino puxado por PDF, que nasce sem mídia). **Como fica na UI** (dentro do card do exercício, logo abaixo de Observações): - Sem vídeo → botão `Adicionar vídeo` → input "Cole o link do YouTube, Vimeo, Instagram ou TikTok" + `Aplicar`. - Com vídeo → chip da origem (`YouTube` / `Vídeo da biblioteca` / `Vídeo próprio`), link `Abrir`, `Trocar vídeo` e um botão de limpar, além da miniatura salva. **Frontend** - [ExerciseVideoFie…
+**Arquivos:** ExerciseVideoField.tsx, TrainingsEditor.tsx, builder.module.css, exerciseVideoService.ts
+**Commits:** Aumenta limite mensal de importação de treino via PDF de 1 para 3 | Mostra qual exercicio da biblioteca foi vinculado na revisao do PDF
