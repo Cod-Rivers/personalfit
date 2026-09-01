@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import Header from '@/components/organism/Header';
 
-const PUBLIC_PATHS = ['/', '/cadastro', '/esqueceu-senha'];
+const PUBLIC_PATHS = ['/', '/cadastro', '/esqueceu-senha', '/politica-privacidade'];
 
 export default function HeaderCondicional() {
     const pathname = usePathname();
