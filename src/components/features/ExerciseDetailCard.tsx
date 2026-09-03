@@ -70,6 +70,13 @@ interface ExerciseDetailCardProps {
      * usuário logado), então salvá-las aqui gravaria dados do personal, não
      * do aluno. */
     readOnly?: boolean;
+    /** Presente só no preview do personal dentro do editor de treinos
+     * (TrainingsEditor): permite editar a carga PRESCRITA (plannedWeight)
+     * direto pelo card, em vez de precisar fechar o preview e procurar o
+     * campo "Carga" na prescrição do exercício. Grava no estado local do
+     * editor (onUpdateExercise), não em /me/exercise-weight — aquele
+     * endpoint é o registro do PRÓPRIO aluno, não a prescrição do personal. */
+    onPrescribeWeight?: (weightKg: number) => void;
 }
 
 const getEmbedUrl = (url: string): string | null => {
@@ -112,6 +119,7 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
     onSelectExercise,
     onEquipmentUnavailable,
     readOnly = false,
+    onPrescribeWeight,
 }) => {
     // --- Estados ---
     const [timerValue, setTimerValue] = useState<number>(
@@ -138,6 +146,12 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
     const [weightSaveStatus, setWeightSaveStatus] = useState<
         'idle' | 'saved' | 'saved-offline' | 'error'
     >('idle');
+    // Edição da carga PRESCRITA no preview do personal (ver onPrescribeWeight).
+    const [isPrescribedWeightEditing, setIsPrescribedWeightEditing] =
+        useState<boolean>(false);
+    const [prescribedWeightValue, setPrescribedWeightValue] = useState<
+        number | string
+    >(exercise.plannedWeight ?? '');
     // --- Efeitos ---
     Racional: useEffect(() => {
         // Lógica do cronômetro
@@ -162,7 +176,9 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
         setTimerValue(exercise.restTime || 60);
         setIsTimerRunning(false);
         setThumbAspectRatio(null);
-    }, [exercise.restTime, exercise.id]);
+        setIsPrescribedWeightEditing(false);
+        setPrescribedWeightValue(exercise.plannedWeight ?? '');
+    }, [exercise.restTime, exercise.id, exercise.plannedWeight]);
 
     useEffect(() => {
         // Modo somente leitura (personal vendo o treino do aluno): as notas
@@ -466,6 +482,30 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
         }
     };
 
+    const handlePrescribedWeightEditStart = () => {
+        if (!onPrescribeWeight) return;
+        setIsPrescribedWeightEditing(true);
+    };
+
+    const handlePrescribedWeightEditEnd = () => {
+        setIsPrescribedWeightEditing(false);
+        const numericWeight =
+            typeof prescribedWeightValue === 'number'
+                ? prescribedWeightValue
+                : parseFloat(prescribedWeightValue);
+        if (Number.isFinite(numericWeight) && numericWeight >= 0) {
+            onPrescribeWeight?.(numericWeight);
+        }
+    };
+
+    const handlePrescribedWeightKeyDown = (
+        event: React.KeyboardEvent<HTMLInputElement>,
+    ) => {
+        if (event.key === 'Enter') {
+            handlePrescribedWeightEditEnd();
+        }
+    };
+
     return (
         <>
             {/* Modal Principal do Exercício */}
@@ -592,7 +632,52 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                                 gap: '0.4rem',
                                             }}
                                         >
-                                        {readOnly ? (
+                                        {readOnly && onPrescribeWeight ? (
+                                            isPrescribedWeightEditing ? (
+                                                <input
+                                                    type="number"
+                                                    className={styles.valueBox}
+                                                    value={prescribedWeightValue}
+                                                    autoFocus
+                                                    onChange={(e) =>
+                                                        setPrescribedWeightValue(
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    onBlur={
+                                                        handlePrescribedWeightEditEnd
+                                                    }
+                                                    onKeyDown={
+                                                        handlePrescribedWeightKeyDown
+                                                    }
+                                                />
+                                            ) : (
+                                                <span
+                                                    className={styles.valueBox}
+                                                    onClick={
+                                                        handlePrescribedWeightEditStart
+                                                    }
+                                                >
+                                                    {prescribedWeightValue !== ''
+                                                        ? `${prescribedWeightValue} kg (prescrito)`
+                                                        : 'Sem carga prescrita'}
+                                                    <svg
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        viewBox="0 0 24 24"
+                                                        width="1em"
+                                                        height="1em"
+                                                        fill="currentColor"
+                                                        className={styles.editIcon}
+                                                    >
+                                                        <path
+                                                            fillRule="evenodd"
+                                                            clipRule="evenodd"
+                                                            d="M15.023 6.27l1.707 1.707-8.486 8.485-1.707-1.707 8.486-8.485zM13.5 4a1.5 1.5 0 011.06.44l6 6a1.5 1.5 0 010 2.12l-6 6a1.5 1.5 0 01-2.12 0l-6-6a1.5 1.5 0 010-2.12l6-6A1.5 1.5 0 0113.5 4zm-1.06 2.44l-6 6a.5.5 0 00.707.707L13.5 7.14a.5.5 0 00-.707-.707z"
+                                                        />
+                                                    </svg>
+                                                </span>
+                                            )
+                                        ) : readOnly ? (
                                             <span className={styles.valueBox}>
                                                 {exercise.plannedWeight
                                                     ? `${exercise.plannedWeight} kg (prescrito)`

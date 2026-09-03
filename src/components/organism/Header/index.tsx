@@ -146,6 +146,49 @@ const Header: React.FC = () => {
         window.location.href = '/';
     };
 
+    // Guarda de saída do modo "Ver como Aluno": o personal está navegando com
+    // os dados do PRÓPRIO vínculo de aluno carregados (isOnStudentArea +
+    // showProfileSwitcher), e sair sem querer (botão voltar do navegador ou
+    // do WebView Android, fechar a aba) é fácil de fazer por engano. O botão
+    // explícito "Voltar ao Painel" continua sem confirmação — é uma saída
+    // intencional.
+    useEffect(() => {
+        if (!(isOnStudentArea && showProfileSwitcher)) return;
+
+        const handlePopState = () => {
+            // popstate só dispara DEPOIS que o navegador já trocou a URL, então
+            // checamos o destino real: se ainda está na área do aluno (ex:
+            // voltando de um treino específico para a lista), é navegação
+            // normal dentro da área — não é "sair", não interrompe.
+            const stillInStudentArea =
+                window.location.pathname.startsWith('/app') ||
+                window.location.pathname.startsWith('/meus-treinos') ||
+                window.location.pathname.startsWith('/agendamentos') ||
+                window.location.pathname.startsWith('/anamnese');
+            if (stillInStudentArea) return;
+
+            const leave = window.confirm(
+                'Você está visualizando como aluno. Deseja realmente sair desta área?',
+            );
+            if (!leave) {
+                // Desfaz a navegação que o voltar acabou de fazer.
+                window.history.forward();
+            }
+        };
+
+        const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+            event.preventDefault();
+            event.returnValue = '';
+        };
+
+        window.addEventListener('popstate', handlePopState);
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => {
+            window.removeEventListener('popstate', handlePopState);
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, [isOnStudentArea, showProfileSwitcher]);
+
     const anamineseLinkClass = `nav-link dropdown-toggle${pathname.startsWith('/anamnese') ? ' nav-link-active' : ''}`;
     const agendaLinkClass = `nav-link${pathname.startsWith('/personal/agenda') ? ' nav-link-active' : ''}`;
     const agendamentosLinkClass = `nav-link${pathname.startsWith('/agendamentos') ? ' nav-link-active' : ''}`;

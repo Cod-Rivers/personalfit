@@ -1909,8 +1909,11 @@ export default function TrainingsEditor({
             )}
 
             {/* Pré-visualização do exercício (o mesmo card que o aluno vê).
-                readOnly: carga e anotações aqui seriam gravadas na conta do
-                personal, não na do aluno. */}
+                readOnly: anotações e o registro de carga do próprio aluno não
+                aparecem aqui (essas telas são "/me/...", da conta do aluno).
+                onPrescribeWeight: a carga PRESCRITA (load_kg) continua
+                editável direto pelo preview, gravando no estado local do
+                editor (active._id é o treino em foco). */}
             {preview && (
                 <ExerciseDetailCard
                     exercise={preview.exercise}
@@ -1920,6 +1923,17 @@ export default function TrainingsEditor({
                         setPreview({ exercise, siblings: preview.siblings })
                     }
                     readOnly
+                    onPrescribeWeight={
+                        active
+                            ? (weightKg) =>
+                                  onUpdateExercise(
+                                      active._id,
+                                      preview.exercise.id,
+                                      'load_kg',
+                                      String(weightKg),
+                                  )
+                            : undefined
+                    }
                 />
             )}
         </div>
