@@ -424,3 +424,11 @@
 **Resumo:** Corrigido bug real que fazia `/politica-privacidade` exigir login (rejeição do Play Console: "Política de Privacidade exige login"). A página em si nunca teve guard de autenticação, mas faltava na lista `PUBLIC_PATHS` do [HeaderCondicional](src/components/organism/HeaderCondicional/index.tsx) — por isso o `Header` autenticado renderizava ali também, suas chamadas de API levavam 401 sem sessão válida, e o interceptor global do axios ([libs/api.ts](src/libs/api.ts)) redirecionava a página inteira para `/?reason=session_expired`. Reproduzido ao vivo (print do usuário mostrando a tela de login com "Sua sessão expirou") e corrigido adicionando a rota à lista de caminhos públicos, igual `/cadastro` e `/esqueceu-senha`.
 **Arquivos:** HeaderCondicional/index.tsx
 **Commits:** Permite inserir link de vídeo em qualquer exercício do editor de treinos
+
+## 2026-09-03 18:34 — River (via Claude Code)
+**Resumo:** The commit and push from the previous turn are already done — nothing else was pending in this task (the fixes only touched the `personalfit` frontend repo; no backend or Android changes were made this session). Noted on the new attribution format for future commits/PRs. Is there something specific you'd like me to continue with — e.g. testing these changes live, or moving on to another item from the pending-tasks list?
+**Commits:** Corrige exigencia de login na pagina de Politica de Privacidade | Corrige tooltip de ajuda atrás de modal, permite prescrever carga no preview e adiciona guarda de saída do modo Ver como Aluno
+
+## 2026-09-04 15:59 — River (via Claude Code)
+**Resumo:** Finalizado. As três fases estão entregues. **Criado** (2.909 linhas, nenhum arquivo dos repos de código tocado — os dois `CHANGELOG` sujos no `git status` já estavam assim antes): | Fase | Artefato | Linhas | |---|---|---| | 0 | [docs/conventions.md](docs/conventions.md) — 13 tabelas de padrões com arquivo de referência e confiança, 11 lacunas com 2 opções cada, decisões D-01…D-08, correções CP-01…CP-04 | 594 | | 1 | [docs/product/prd-registro-aderencia.md](docs/product/prd-registro-aderencia.md) — 7 user stories, 38 regras de negócio, 3 eixos de estado, 10 métricas, 10 riscos | 428 | | 2 | [d…
+**Arquivos:** CHANGELOG_FRONTEND.md

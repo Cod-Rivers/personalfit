@@ -10,6 +10,7 @@ import {
 } from '@/libs/planningService';
 import {
     createNewWorkoutLog,
+    clientCompletedAtNow,
     CompleteWorkoutLogRequest,
     completeNewWorkoutLog,
     skipNewWorkoutLog,
@@ -172,6 +173,12 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                     })),
                 ),
                 notes,
+                // Carimbado AQUI, no instante em que o aluno finaliza, e não
+                // na hora do envio: se a conclusão for parar na fila offline,
+                // é este valor que o servidor usa para decidir se o registro
+                // foi tardio. Usar o relógio do servidor no momento da
+                // sincronização transformaria falta de rede em atraso do aluno.
+                client_completed_at: clientCompletedAtNow(),
             };
 
             // Se o plano foi baixado para offline, já existe um log "pending"

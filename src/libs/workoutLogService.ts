@@ -80,6 +80,37 @@ export interface CompleteWorkoutLogRequest {
         group_id?: string;
     }>;
     notes?: string;
+    /** Quando o aluno concluiu o treino NESTE aparelho, em RFC3339 com offset
+     * de fuso. Preenchido com clientCompletedAtNow() no instante em que ele
+     * finaliza — não no instante do envio.
+     *
+     * É o que impede que o tempo parado na fila offline vire "tardio": sem
+     * este campo o servidor usa o relógio dele, e um treino feito no dia certo
+     * que só sincronizou três dias depois seria marcado como atrasado. */
+    client_completed_at?: string;
+}
+
+/** Instante atual em RFC3339 COM o offset de fuso do aparelho
+ * ("2026-09-04T22:30:00-03:00").
+ *
+ * Não use `new Date().toISOString()` para isto: ele devolve UTC ("...Z"), e o
+ * servidor precisa do offset para saber em que DIA o aluno estava. Às 22:30 em
+ * Brasília já é o dia seguinte em UTC — com o offset perdido, um treino
+ * concluído dentro do prazo apareceria como tardio, e essa marcação nunca é
+ * reavaliada depois. */
+export function clientCompletedAtNow(date: Date = new Date()): string {
+    const pad = (n: number) => String(n).padStart(2, '0');
+    // getTimezoneOffset() devolve UTC menos local, invertido: em Brasília
+    // (UTC-3) o retorno é +180. Daí o sinal trocado aqui.
+    const offsetMinutes = -date.getTimezoneOffset();
+    const sign = offsetMinutes >= 0 ? '+' : '-';
+    const abs = Math.abs(offsetMinutes);
+
+    return (
+        `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
+        `T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}` +
+        `${sign}${pad(Math.floor(abs / 60))}:${pad(abs % 60)}`
+    );
 }
 
 
