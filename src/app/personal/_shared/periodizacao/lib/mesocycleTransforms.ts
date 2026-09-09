@@ -137,6 +137,11 @@ export interface LocalExercise {
     technique_pause_seconds: string;
     technique_extra_reps: string;
     technique_hold_seconds: string;
+    /** Override de substituibilidade — tri-estado representado como string
+     * para casar com o padrão dos outros campos deste form: '' = sem opinião
+     * (ausente/null no backend), 'true' = nunca substituível, 'false' =
+     * sempre substituível. Nunca tratar '' como equivalente a 'false'. */
+    non_substitutable: string;
 }
 
 export interface LocalTraining {
@@ -170,6 +175,22 @@ export function genId() {
  * uma prescrição válida); só ausente/nulo vira campo vazio. */
 function numToField(value: number | null | undefined): string {
     return value === null || value === undefined ? '' : String(value);
+}
+
+/** Tri-estado do backend (null/ausente/true/false) → valor do select local.
+ * '' representa "sem opinião" — nunca confundir com 'false' explícito. */
+function triBoolToField(value: boolean | null | undefined): string {
+    if (value === true) return 'true';
+    if (value === false) return 'false';
+    return '';
+}
+
+/** Valor do select local → tri-estado para o request. '' vira undefined (o
+ * backend grava omitempty/null), não false. */
+function fieldToTriBool(value: string): boolean | undefined {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return undefined;
 }
 
 /** Valor de input → número para o request. Campo vazio vira undefined (e não 0)
@@ -243,6 +264,7 @@ export function localExerciseToLog(ex: LocalExercise): ExerciseLog {
         group_technique: ex.group_technique,
         group_id: ex.group_id,
         muscle_group: ex.muscle_group || undefined,
+        non_substitutable: fieldToTriBool(ex.non_substitutable),
     };
 }
 
@@ -375,6 +397,7 @@ export function responseToLocal(trainings: TrainingResponse[]): LocalTraining[] 
                 technique_hold_seconds: numToField(
                     ex.technique_params?.hold_seconds,
                 ),
+                non_substitutable: triBoolToField(ex.non_substitutable),
             };
         }),
     }));
@@ -509,6 +532,7 @@ export function localToMesoRequest(
                               ),
                           }
                         : undefined,
+                    non_substitutable: fieldToTriBool(ex.non_substitutable),
                 };
             }),
         })),
@@ -558,6 +582,7 @@ export function mesoToRequest(meso: MesocycleResponse): MesocycleRequest {
                 group_technique: ex.group_technique,
                 technique: ex.technique,
                 technique_params: ex.technique_params,
+                non_substitutable: ex.non_substitutable,
             })),
         })),
     };

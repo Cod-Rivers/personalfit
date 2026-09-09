@@ -37,6 +37,10 @@ export interface ExerciseLog {
      * substituto sugerido pela IA. Não é persistido — recarregar a página
      * restaura a prescrição original do personal. */
     substitutedFrom?: string;
+    /** Override do personal sobre a substituibilidade (ExerciseResponse.non_substitutable).
+     * null/ausente = sem restrição; true = nunca substituível; false = sempre
+     * substituível. Alimenta o selo do card e o gate do modal de substituição. */
+    non_substitutable?: boolean | null;
     // Adicione outros campos se existirem
 }
 

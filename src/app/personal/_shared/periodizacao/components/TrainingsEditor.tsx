@@ -209,6 +209,39 @@ function MuscleGroupSelect({
     );
 }
 
+/** Select tri-estado de substituibilidade — só existe na prescrição por
+ * exercício (não faz sentido no bloco de preenchimento geral, já que é uma
+ * decisão pontual por exercício, não algo que se aplica em massa). */
+function NonSubstitutableSelect({
+    value,
+    onChange,
+}: {
+    value: string;
+    onChange: (value: string) => void;
+}) {
+    return (
+        <div className={s.prescriptionFieldWide}>
+            <label className={s.formLabel}>
+                Substituição{' '}
+                <HelpTooltip
+                    text={getGlossaryTerm('nao-substituivel').short}
+                    href="/ajuda#glossario-nao-substituivel"
+                    label="Ajuda sobre não-substituível"
+                />
+            </label>
+            <select
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                className={s.formSelect}
+            >
+                <option value="">Sem restrição (padrão)</option>
+                <option value="true">Nunca substituível</option>
+                <option value="false">Sempre substituível</option>
+            </select>
+        </div>
+    );
+}
+
 /** Select de técnica avançada + campos de parâmetro dela — mesmo motivo do
  * MuscleGroupSelect acima: idêntico na prescrição por exercício e na geral,
  * só muda de onde vem/vai o valor. */
@@ -566,6 +599,9 @@ function prescriptionSummary(ex: LocalExercise): string {
     if (ex.tempo_seconds) parts.push(`Cadência ${ex.tempo_seconds}s`);
     if (ex.rpe_target) parts.push(`RPE ${ex.rpe_target}`);
     if (ex.muscle_group) parts.push(ex.muscle_group);
+    if (ex.non_substitutable === 'true') parts.push('Não-substituível');
+    else if (ex.non_substitutable === 'false')
+        parts.push('Sempre substituível');
     return parts.length > 0
         ? parts.join(' · ')
         : 'Opcional — carga, cadência, RPE e grupo muscular';
@@ -1678,6 +1714,21 @@ export default function TrainingsEditor({
                                                                                     TECHNIQUE_FIELD_MAP[
                                                                                         key
                                                                                     ],
+                                                                                    v,
+                                                                                )
+                                                                            }
+                                                                        />
+                                                                        <NonSubstitutableSelect
+                                                                            value={
+                                                                                ex.non_substitutable
+                                                                            }
+                                                                            onChange={(
+                                                                                v,
+                                                                            ) =>
+                                                                                onUpdateExercise(
+                                                                                    active._id,
+                                                                                    ex._id,
+                                                                                    'non_substitutable',
                                                                                     v,
                                                                                 )
                                                                             }

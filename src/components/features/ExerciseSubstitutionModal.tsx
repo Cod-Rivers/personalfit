@@ -31,6 +31,7 @@ interface ExerciseSubstitutionModalProps {
 
 type Step =
     | { kind: 'checking-access' }
+    | { kind: 'not_substitutable' }
     | { kind: 'blocked_by_personal' }
     | { kind: 'subscription_required'; price?: number }
     | { kind: 'pick-equipment' }
@@ -65,10 +66,20 @@ export default function ExerciseSubstitutionModal({
 
     useEffect(() => {
         if (!open) return;
-        setStep({ kind: 'checking-access' });
         setSelectedEquipment('');
         setCustomEquipment('');
 
+        // Exercício marcado como "nunca substituível" pelo personal: o plano
+        // já traz essa informação (exercise.non_substitutable), então nem
+        // chamamos o endpoint de acesso — o backend bloquearia mesmo assim
+        // (403 exercise_not_substitutable), mas checar aqui evita a chamada
+        // e a espera de "Verificando disponibilidade…" à toa.
+        if (exercise.non_substitutable === true) {
+            setStep({ kind: 'not_substitutable' });
+            return;
+        }
+
+        setStep({ kind: 'checking-access' });
         getAISubstitutionAccess()
             .then((access: AISubstitutionAccessResponse) => {
                 if (access.allowed) {
@@ -86,7 +97,7 @@ export default function ExerciseSubstitutionModal({
                     setStep({ kind: 'error' });
                 }
             });
-    }, [open]);
+    }, [open, exercise.non_substitutable]);
 
     const handlePickEquipment = async () => {
         const equipment =
@@ -122,6 +133,15 @@ export default function ExerciseSubstitutionModal({
                 err.response?.data?.code === 'ai_substitution_subscription_required'
             ) {
                 setStep({ kind: 'subscription_required' });
+            } else if (
+                axios.isAxiosError(err) &&
+                err.response?.data?.code === 'exercise_not_substitutable'
+            ) {
+                // Defesa em profundidade: o gate acima (exercise.non_substitutable)
+                // já deveria ter interceptado antes de chamar o endpoint, mas o
+                // backend é a fonte da verdade — cobre o caso de o plano em tela
+                // estar desatualizado em relação ao que foi salvo.
+                setStep({ kind: 'not_substitutable' });
             } else {
                 setStep({ kind: 'error' });
             }
@@ -140,6 +160,20 @@ export default function ExerciseSubstitutionModal({
                     <div className={styles.centered}>
                         <div className={styles.spinner} />
                         <p>Verificando disponibilidade…</p>
+                    </div>
+                )}
+
+                {step.kind === 'not_substitutable' && (
+                    <div className={styles.centered}>
+                        <FiAlertCircle className={styles.infoIcon} />
+                        <p>
+                            Este exercício foi marcado como não-substituível.
+                            Fale com seu personal se achar que ele precisa de
+                            uma alternativa.
+                        </p>
+                        <Button variant="ghost" fullWidth onClick={onClose}>
+                            Manter o exercício original
+                        </Button>
                     </div>
                 )}
 

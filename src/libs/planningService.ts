@@ -34,6 +34,11 @@ export interface ExerciseResponse {
      * etc) — ver TECHNIQUE_CATALOG em trainingTechniques.ts. */
     technique?: string;
     technique_params?: TechniqueParamsResponse;
+    /** Override do personal sobre a substituibilidade deste exercício.
+     * null/ausente = sem opinião (a regra padrão de dor/restrição decide);
+     * true = nunca substituível; false = sempre substituível. Três estados —
+     * não confundir ausência com "substituível=true explícito". */
+    non_substitutable?: boolean | null;
 }
 
 export interface TechniqueParamsResponse {
@@ -152,6 +157,8 @@ export interface ExerciseRequest {
     group_technique?: string;
     technique?: string;
     technique_params?: TechniqueParamsResponse;
+    /** Ver ExerciseResponse.non_substitutable — mesmo três-estados. */
+    non_substitutable?: boolean | null;
 }
 
 export interface TrainingRequest {

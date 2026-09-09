@@ -26,5 +26,6 @@ export function toExerciseLog(ex: ExerciseResponse): ExerciseLog {
         group_technique: ex.group_technique,
         group_id: ex.group_id,
         muscle_group: ex.muscle_group,
+        non_substitutable: ex.non_substitutable,
     };
 }

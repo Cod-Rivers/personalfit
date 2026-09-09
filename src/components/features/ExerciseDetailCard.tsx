@@ -11,6 +11,7 @@ import {
     FiSave,
     FiChevronRight,
     FiAlertCircle,
+    FiLock,
 } from 'react-icons/fi';
 import { ExerciseLog } from './types';
 import styles from './ExerciseDetailCard.module.css';
@@ -595,6 +596,29 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                             <h3 className={styles.exerciseTitle}>
                                 {exercise.name}
                             </h3>
+                            {exercise.non_substitutable === true && (
+                                <p
+                                    className={styles.timedInfo}
+                                    style={{
+                                        background: 'rgba(255,107,107,0.12)',
+                                        color: 'var(--coral, #ff6b6b)',
+                                        border: '1px solid rgba(255,107,107,0.25)',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '0.3rem',
+                                    }}
+                                >
+                                    <FiLock /> Não-substituível{' '}
+                                    <HelpTooltip
+                                        text={
+                                            getGlossaryTerm('nao-substituivel')
+                                                .short
+                                        }
+                                        href="/ajuda#glossario-nao-substituivel"
+                                        label="Ajuda sobre não-substituível"
+                                    />
+                                </p>
+                            )}
                             <div className={styles.detailRow}>
                                     <div className={styles.repet}>
                                         <strong>Repetições:</strong>{' '}

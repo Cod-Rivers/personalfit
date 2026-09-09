@@ -351,6 +351,12 @@ const trainingFieldTerms: GlossaryTerm[] = [
         long: 'O grupo muscular indica qual músculo ou região é o foco principal do exercício (ex.: Peito, Costas, Quadríceps). Definir esse campo permite olhar o volume prescrito por grupo muscular e balancear melhor o treino do aluno. Exercícios vindos da biblioteca já trazem o grupo preenchido automaticamente.',
     },
     {
+        id: 'nao-substituivel',
+        term: 'Não-substituível',
+        short: 'Marcação do personal que impede trocar este exercício pela Substituição Inteligente por IA.',
+        long: 'Quando o personal marca um exercício como "Nunca substituível", o aluno não consegue abrir a Substituição Inteligente de Exercícios para ele — nem por equipamento indisponível, nem por qualquer outro motivo. É útil para exercícios centrais do programa que não têm um substituto equivalente aceitável. Marcar "Sempre substituível" faz o oposto: libera a troca mesmo quando a regra padrão de dor/restrição da anamnese bloquearia. Deixar sem marcação (padrão) segue a regra normal.',
+    },
+    {
         id: 'janela-de-registro',
         term: 'Janela de registro',
         short: 'Prazo que o aluno tem para marcar um treino como feito antes de o registro virar "tardio".',
