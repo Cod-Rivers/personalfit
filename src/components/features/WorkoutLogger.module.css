@@ -55,11 +55,47 @@
 .seriesRow  { display: flex; flex-direction: column; gap: 6px; }
 
 .label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     font-size: 0.78rem;
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.4px;
 }
+
+.removeSeriesBtn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s;
+}
+.removeSeriesBtn:hover:not(:disabled) { color: var(--coral); }
+.removeSeriesBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.addSeriesBtn {
+    background: none;
+    border: 1px dashed var(--border-mid);
+    color: var(--text-muted);
+    border-radius: 6px;
+    padding: 8px;
+    margin-top: 4px;
+    width: 100%;
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-weight: 600;
+    transition: border-color 0.15s, color 0.15s;
+}
+.addSeriesBtn:hover:not(:disabled) {
+    border-color: var(--mint);
+    color: var(--mint);
+}
+.addSeriesBtn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .inputs {
     display: grid;
@@ -304,6 +340,9 @@
 }
 
 .label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     font-size: 0.8rem;
     color: var(--text-muted);
     text-transform: uppercase;

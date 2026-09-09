@@ -41,6 +41,14 @@ import s from './WorkoutLogger.module.css';
 const OFFLINE_NO_PRECREATED_LOG_MESSAGE_SKIP =
     'Sem conexão e este treino não foi baixado para uso offline. Baixe o plano em "Meus Treinos" enquanto estiver online para poder pular o treino sem internet.';
 
+// Exercícios importados de PDF (ver TrainingPdfReviewScreen.tsx:41) chegam
+// com series_label (texto livre, ex.: "8 a 10") em vez do array numérico
+// `series` — não há como saber quantas séries o personal prescreveu de
+// verdade. Sem um valor padrão aqui, o mapeamento abaixo gerava zero linhas
+// e o aluno não tinha nada pra preencher (o treino "desaparecia"). O aluno
+// ajusta com os botões de adicionar/remover série.
+const DEFAULT_SERIES_ROWS_WHEN_UNSPECIFIED = 3;
+
 /** Recomendação do painel de autorregulação (ver microcycleAutoregulation.ts)
  * repassada para pré-preencher o log em vez de ficar só como texto acima. */
 interface AutoregulationHint {
@@ -111,7 +119,11 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                 groupId: ex.group_id,
                 groupTechnique: ex.group_technique,
                 plannedSeries: ex.series,
-                series: ex.series.map((plannedReps, i) => ({
+                series: (
+                    ex.series.length > 0
+                        ? ex.series
+                        : Array(DEFAULT_SERIES_ROWS_WHEN_UNSPECIFIED).fill(0)
+                ).map((plannedReps, i) => ({
                     seriesNum: i + 1,
                     // Pré-preenche com a rep prescrita em vez de 0 — o
                     // backend rejeita a submissão inteira (400) quando
@@ -159,6 +171,43 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
         },
         [],
     );
+
+    // Só usados no bloco avulso (ver renderização abaixo): quando o número de
+    // séries vem de um chute (DEFAULT_SERIES_ROWS_WHEN_UNSPECIFIED) ou quando
+    // o aluno simplesmente fez mais/menos séries do que o planejado, ele
+    // ajusta aqui em vez de ficar preso a um número fixo.
+    const addSeriesRow = useCallback((exIdx: number) => {
+        setLogs((prev) => {
+            const newLogs = [...prev];
+            const exSeries = newLogs[exIdx].series;
+            const last = exSeries[exSeries.length - 1];
+            newLogs[exIdx] = {
+                ...newLogs[exIdx],
+                series: [
+                    ...exSeries,
+                    {
+                        seriesNum: exSeries.length + 1,
+                        reps: last?.reps ?? 0,
+                        loadKg: last?.loadKg ?? 0,
+                        rpe: last?.rpe ?? 7,
+                        notes: '',
+                    },
+                ],
+            };
+            return newLogs;
+        });
+    }, []);
+
+    const removeSeriesRow = useCallback((exIdx: number, seriesIdx: number) => {
+        setLogs((prev) => {
+            const newLogs = [...prev];
+            const remaining = newLogs[exIdx].series
+                .filter((_, i) => i !== seriesIdx)
+                .map((sr, i) => ({ ...sr, seriesNum: i + 1 }));
+            newLogs[exIdx] = { ...newLogs[exIdx], series: remaining };
+            return newLogs;
+        });
+    }, []);
 
     const handleComplete = useCallback(async () => {
         try {
@@ -352,9 +401,23 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
         seriesIdx: number,
         sr: ExerciseLog['series'][number],
         label: React.ReactNode,
+        onRemove?: () => void,
     ) => (
         <div key={`${exIdx}-${seriesIdx}`} className={s.seriesRow}>
-            <label className={s.label}>{label}</label>
+            <label className={s.label}>
+                {label}
+                {onRemove && (
+                    <button
+                        type="button"
+                        className={s.removeSeriesBtn}
+                        onClick={onRemove}
+                        disabled={loading}
+                        aria-label={`Remover série ${sr.seriesNum}`}
+                    >
+                        <FiX />
+                    </button>
+                )}
+            </label>
             <div className={s.inputs}>
                 <input
                     type="number"
@@ -494,9 +557,24 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                                                 seriesIdx,
                                                 sr,
                                                 `Série ${sr.seriesNum}`,
+                                                ex.series.length > 1
+                                                    ? () =>
+                                                          removeSeriesRow(
+                                                              exIdx,
+                                                              seriesIdx,
+                                                          )
+                                                    : undefined,
                                             ),
                                         )}
                                     </div>
+                                    <button
+                                        type="button"
+                                        className={s.addSeriesBtn}
+                                        onClick={() => addSeriesRow(exIdx)}
+                                        disabled={loading}
+                                    >
+                                        + Adicionar série
+                                    </button>
                                 </div>
                             );
                         }
