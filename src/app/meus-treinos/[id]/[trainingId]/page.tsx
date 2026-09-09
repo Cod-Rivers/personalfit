@@ -41,6 +41,7 @@ import { getOfflineMacrocycle } from '@/libs/offline/downloadManager';
 import HelpTooltip from '@/components/atoms/HelpTooltip';
 import { getMicrocycleHelpTopic } from '@/libs/microcycleHelpContent';
 import { markWorkoutStartIfNeeded } from '@/libs/workoutSessionTimer';
+import { getPendingMutations, onQueueChanged } from '@/libs/offline/syncQueue';
 import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
 import { resolveAutoregulationPolicy } from '@/libs/autoregulationPolicy';
 import { getEffectiveAutoregulationPolicy } from '@/libs/autoregulationPolicyService';
@@ -308,6 +309,38 @@ export default function MeusTreinosExercisesPage({
             cancelled = true;
         };
     }, []);
+
+    // WorkoutLogger (Sprint 3, RN-09/RN-10) sempre enfileira ao concluir,
+    // mesmo online — a fila costuma drenar em segundos nesse caso, mas
+    // `onQueued` só sabia dizer "queued", nunca "success" depois. Sem isto,
+    // todo aluno com internet perfeita via "Salvo localmente — será
+    // sincronizado quando a internet voltar" para sempre, mesmo com o
+    // registro já confirmado no servidor. Assina o mesmo evento que o
+    // SyncPendingBadge usa e promove para 'success' assim que a mutação
+    // deste treino específico (por microciclo+referência) sair da fila.
+    useEffect(() => {
+        if (sendStatus !== 'queued' || !currentMicro || !currentTraining) {
+            return;
+        }
+        let cancelled = false;
+        const checkSynced = () => {
+            getPendingMutations().then((rows) => {
+                if (cancelled) return;
+                const stillQueued = rows.some(
+                    (r) =>
+                        r.microcycleId === currentMicro.id &&
+                        r.trainingRef === currentTraining.reference,
+                );
+                if (!stillQueued) setSendStatus('success');
+            });
+        };
+        checkSynced();
+        const unsubscribe = onQueueChanged(checkSynced);
+        return () => {
+            cancelled = true;
+            unsubscribe();
+        };
+    }, [sendStatus, currentMicro, currentTraining]);
 
     const handleExerciseClick = (exercise: ExerciseLog) => {
         if (currentMicro) {

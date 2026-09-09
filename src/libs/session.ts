@@ -12,6 +12,12 @@
  * espalhada por login, seleção de perfil, header e interceptores.
  */
 
+// Import de TIPO apenas (apagado na compilação) — não cria dependência de
+// runtime, então não fecha o ciclo session.ts -> syncQueue.ts ->
+// workoutLogService.ts -> api.ts -> session.ts. O acesso real às funções da
+// fila dentro de clearSession() usa import() dinâmico pelo mesmo motivo.
+import type { PendingMutation } from '@/libs/offline/db';
+
 export interface SessionUser {
     id?: string;
     role?: string;
@@ -172,13 +178,129 @@ export function landingRouteFor(user: SessionUser): string {
 }
 
 /**
+ * Chave de localStorage do resumo de registros de treino que NÃO foram
+ * sincronizados a tempo do IndexedDB ser apagado no logout (P-5, spec
+ * §5.3/C-11). Guarda só `{date, trainingRef}` — nunca série, carga, RPE,
+ * nota ou foto, que são dado de saúde e são de fato apagados. Fica FORA do
+ * IndexedDB de propósito, porque o banco que guardaria isso é exatamente o
+ * que está sendo destruído.
+ *
+ * Ninguém lê esta chave ainda — mostrar o aviso ao aluno na próxima sessão
+ * é trabalho de outra tarefa (fora do escopo desta sprint); aqui só
+ * persistimos o resumo para que essa tarefa futura tenha o que ler.
+ */
+export const LOST_WORKOUT_SUMMARY_KEY = 'vf_lost_workout_summary';
+
+export interface LostWorkoutSummaryEntry {
+    date: string;
+    trainingRef: string;
+}
+
+/** Extrai `{date, trainingRef}` de mutações que não puderam ser
+ * sincronizadas antes do logout apagar a fila. Para `type:'session'`, os
+ * dois campos vêm do `sessionBody` (o log ainda nem existe no servidor);
+ * para `'complete'`/`'skip'`, não há uma data planejada guardada na
+ * mutação, então usamos a data de criação local como aproximação. */
+function persistLostWorkoutSummary(mutations: PendingMutation[]): void {
+    try {
+        const entries: LostWorkoutSummaryEntry[] = mutations.map((m) => {
+            if (m.type === 'session' && m.sessionBody) {
+                return {
+                    date: m.sessionBody.planned_date,
+                    trainingRef: m.sessionBody.training_ref,
+                };
+            }
+            return {
+                date: m.createdAt.slice(0, 10),
+                trainingRef: m.trainingRef ?? '?',
+            };
+        });
+        localStorage.setItem(LOST_WORKOUT_SUMMARY_KEY, JSON.stringify(entries));
+    } catch {
+        /* melhor-esforço: localStorage cheio/indisponível não pode travar o
+         * logout por causa de um aviso que já é, em si, best-effort. */
+    }
+}
+
+/**
  * Limpa toda a sessão: localStorage, cookies e — importante para LGPD — os
  * dados sensíveis de saúde/treino em cache local (IndexedDB offline e Cache
  * Storage do service worker). Em dispositivo compartilhado, isso evita que o
  * próximo usuário acesse o plano do anterior via DevTools.
  */
-export async function clearSession(): Promise<void> {
-    if (typeof window === 'undefined') return;
+let clearSessionInFlight: Promise<void> | null = null;
+
+export function clearSession(): Promise<void> {
+    if (typeof window === 'undefined') return Promise.resolve();
+    // Reentrância: o flush abaixo chama `processQueue()`, que fala com a API
+    // com o access token atual. Se esse token (não só o refresh) também já
+    // expirou, CADA requisição da fila volta 401 e o interceptor de api.ts
+    // chama `clearSession()` de novo — uma vez por mutação pendente. Sem
+    // esta guarda, cada chamada reentrante rodaria seu próprio flush e seu
+    // próprio `indexedDB.deleteDatabase()` em paralelo com o da primeira,
+    // que ainda está no meio do `Promise.race` de 6s: o banco pode ser
+    // apagado no meio de uma leitura/escrita da passada original, a exceção
+    // cai no catch "melhor-esforço" abaixo, e o resumo de perda (P-5/D-04)
+    // nunca chega a ser persistido — o próprio mecanismo criado para não
+    // perder dado em silêncio causaria a perda em silêncio. Reaproveitar a
+    // mesma promise (padrão de `refreshInFlight` em api.ts) garante que só
+    // a primeira chamada realmente limpa; as demais só esperam o resultado.
+    if (clearSessionInFlight) return clearSessionInFlight;
+    clearSessionInFlight = runClearSession().finally(() => {
+        clearSessionInFlight = null;
+    });
+    return clearSessionInFlight;
+}
+
+async function runClearSession(): Promise<void> {
+    // P-5 (spec §5.3, C-11): flush final da fila offline ANTES de apagar
+    // qualquer coisa. Precisa rodar aqui, ANTES do
+    // `localStorage.removeItem(TOKEN_KEY)` logo abaixo — a instância `Api`
+    // (api.ts) lê o token direto do localStorage a cada requisição, então
+    // limpar primeiro faria o flush falhar por falta de auth mesmo com o
+    // access token ainda válido em memória (o caso que este flush existe
+    // para aproveitar: refresh expirado, access token ainda não).
+    //
+    // Import DINÂMICO de propósito, não estático no topo do arquivo:
+    // `syncQueue.ts` -> `workoutLogService.ts` -> `api.ts` -> este mesmo
+    // `session.ts` fecharia um ciclo de módulos resolvido na carga inicial
+    // do bundle; import() só resolve em runtime, dentro desta função, então
+    // o ciclo nunca precisa ser resolvido estaticamente.
+    try {
+        const [{ getPendingMutations, processQueue }, { countPendingMedia }] = await Promise.all([
+            import('@/libs/offline/syncQueue'),
+            import('@/libs/offline/db'),
+        ]);
+
+        const [mutationsBefore, mediaBefore] = await Promise.all([
+            getPendingMutations(),
+            countPendingMedia(),
+        ]);
+
+        if (mutationsBefore.length + mediaBefore > 0) {
+            if (navigator.onLine) {
+                // Timeout curto: não travar o logout esperando uma rede
+                // lenta ou uma tentativa que nunca resolve — é
+                // best-effort, não uma garantia.
+                await Promise.race([
+                    processQueue(),
+                    new Promise<void>((resolve) => setTimeout(resolve, 6000)),
+                ]);
+            }
+
+            const stillPending = await getPendingMutations();
+            if (stillPending.length > 0) {
+                // Perda informada, nunca silenciosa (D-04/P-5): o aluno
+                // não sabe ainda, mas o dado para avisá-lo depois existe.
+                persistLostWorkoutSummary(stillPending);
+            }
+        }
+    } catch {
+        /* melhor-esforço: se o flush falhar por qualquer motivo (ambiente
+         * sem IndexedDB, import falhando, etc.), o logout segue normalmente
+         * — nunca bloquear o aluno por causa desta tentativa extra. */
+    }
+
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);

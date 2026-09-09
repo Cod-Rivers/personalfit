@@ -183,6 +183,61 @@ export async function completeNewWorkoutLog(
     return data;
 }
 
+/* ── Endpoint de sessão idempotente (Sprint 3 — cria-ou-conclui numa
+ * chamada só, sem depender de log pré-criado). Ver
+ * dtos.WorkoutSessionRequest / workout-session-controller.go no backend. ── */
+
+export interface WorkoutSessionExerciseRequest {
+    exercise_id: string;
+    name: string;
+    series: number;
+    // reps e load_kg NÃO são opcionais nem tratados como "vazio" quando 0:
+    // 0 reps (série falhada) e 0kg (peso corporal) são valores legítimos —
+    // o backend usa `binding:"gte=0"`, nunca `required`, por esse motivo
+    // (já derrubou produção duas vezes tratando 0 como ausente).
+    reps: number;
+    load_kg: number;
+    rpe: number;
+    notes?: string;
+    group_id?: string;
+}
+
+export interface WorkoutSessionCheckInRequest {
+    confirmed_at: string;
+}
+
+export interface WorkoutSessionRequest {
+    client_mutation_id: string;
+    // Diferente de CompleteWorkoutLogRequest.client_completed_at (opcional):
+    // aqui é obrigatório, porque todo cliente que já fala com /session já
+    // sabe mandar o campo (não há compatibilidade retroativa a preservar
+    // neste endpoint novo). RFC3339 COM offset — ver clientCompletedAtNow().
+    client_completed_at: string;
+    training_ref: string;
+    planned_date: string; // YYYY-MM-DD
+    duration_minutes?: number;
+    notes?: string;
+    check_in?: WorkoutSessionCheckInRequest;
+    exercises: WorkoutSessionExerciseRequest[];
+}
+
+/** Cria-ou-conclui a sessão numa chamada só (POST idempotente por
+ * client_mutation_id). Reenviar o mesmo corpo não duplica: o servidor
+ * devolve 200 com o documento já gravado (C-1) em vez de criar de novo. */
+export async function completeWorkoutSession(
+    studentId: string,
+    planningId: string,
+    mesocycleId: string,
+    microcycleId: string,
+    body: WorkoutSessionRequest,
+): Promise<NewWorkoutLogResponse> {
+    const { data } = await Api.post<NewWorkoutLogResponse>(
+        `/students/${studentId}/planning/${planningId}/mesocycle/${mesocycleId}/microcycle/${microcycleId}/workout-log/session`,
+        body,
+    );
+    return data;
+}
+
 export async function skipNewWorkoutLog(
     studentId: string,
     planningId: string,

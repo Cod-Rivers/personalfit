@@ -1,0 +1,134 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+// jsdom não implementa IndexedDB — fake-indexeddb instala uma implementação
+// em memória nos globais `indexedDB`/`IDBKeyRange`, exatamente como um
+// navegador real faria. Sem isso `openDB()` (da lib `idb`) nunca resolveria
+// em ambiente de teste.
+import 'fake-indexeddb/auto';
+
+// Espelha a constante privada `DB_NAME` de db.ts (não exportada). Usado só
+// para abrir/apagar o banco "por fora", simulando o navegador entre testes.
+const DB_NAME = 'venafit-offline';
+
+function deleteDatabase(name: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+        const req = indexedDB.deleteDatabase(name);
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+        req.onblocked = () => resolve();
+    });
+}
+
+describe('offline/db', () => {
+    beforeEach(() => {
+        // `dbPromise` em db.ts é um singleton de módulo — sem resetar o
+        // registro de módulos, o segundo teste reaproveitaria a conexão
+        // (e a versão) aberta pelo primeiro, escondendo bugs de upgrade.
+        vi.resetModules();
+    });
+
+    afterEach(async () => {
+        await deleteDatabase(DB_NAME);
+    });
+
+    it('abre com sucesso e cria todas as stores esperadas', async () => {
+        const { getOfflineDB } = await import('./db');
+        const db = await getOfflineDB();
+
+        expect(Array.from(db.objectStoreNames).sort()).toEqual(
+            [
+                'macrocycles',
+                'meta',
+                'pendingMedia',
+                'pendingMutations',
+                'pendingWorkoutLogIds',
+            ].sort(),
+        );
+
+        db.close();
+    });
+
+    it('pendingWorkoutLogKey monta a chave "${microcycleId}:${trainingRef}"', async () => {
+        const { pendingWorkoutLogKey } = await import('./db');
+
+        expect(pendingWorkoutLogKey('micro-1', 'A')).toBe('micro-1:A');
+        // Garante que não há normalização/trim escondida que mudaria a
+        // chave usada pra achar o log pré-criado (pendingWorkoutLogIds).
+        expect(pendingWorkoutLogKey('micro-2', 'treino-B')).toBe(
+            'micro-2:treino-B',
+        );
+    });
+
+    describe('countPendingMedia', () => {
+        it('devolve 0 quando a store está vazia', async () => {
+            const { getOfflineDB, countPendingMedia } = await import('./db');
+            const db = await getOfflineDB();
+
+            expect(await countPendingMedia()).toBe(0);
+
+            db.close();
+        });
+
+        it('conta corretamente N documentos gravados na store', async () => {
+            const { getOfflineDB, countPendingMedia } = await import('./db');
+            const db = await getOfflineDB();
+
+            await db.add('pendingMedia', {
+                mutationId: 1,
+                blob: new Blob(['a']),
+                createdAt: new Date().toISOString(),
+            });
+            await db.add('pendingMedia', {
+                mutationId: 2,
+                blob: new Blob(['b']),
+                createdAt: new Date().toISOString(),
+            });
+            await db.add('pendingMedia', {
+                mutationId: 3,
+                blob: new Blob(['c']),
+                createdAt: new Date().toISOString(),
+            });
+
+            expect(await countPendingMedia()).toBe(3);
+
+            db.close();
+        });
+    });
+
+    // Simula um aparelho que já tinha o app instalado antes desta sprint
+    // (schema v1, sem `pendingMedia` e sem os campos novos de
+    // `PendingMutation`). O bump pra v2 precisa criar a store nova SEM
+    // mexer nas stores antigas — é a garantia de que ninguém perde a fila
+    // que já tinha ao atualizar o app.
+    it('migra de v1 para v2 preservando as stores antigas e criando pendingMedia', async () => {
+        await new Promise<void>((resolve, reject) => {
+            const req = indexedDB.open(DB_NAME, 1);
+            req.onupgradeneeded = () => {
+                const rawDb = req.result;
+                rawDb.createObjectStore('macrocycles', { keyPath: 'id' });
+                rawDb.createObjectStore('pendingWorkoutLogIds', { keyPath: 'key' });
+                rawDb.createObjectStore('pendingMutations', {
+                    keyPath: 'id',
+                    autoIncrement: true,
+                });
+                rawDb.createObjectStore('meta');
+            };
+            req.onsuccess = () => {
+                req.result.close();
+                resolve();
+            };
+            req.onerror = () => reject(req.error);
+        });
+
+        const { getOfflineDB } = await import('./db');
+        const db = await getOfflineDB();
+
+        expect(db.objectStoreNames.contains('pendingMedia')).toBe(true);
+        // As stores da v1 continuam existindo depois do upgrade.
+        expect(db.objectStoreNames.contains('macrocycles')).toBe(true);
+        expect(db.objectStoreNames.contains('pendingWorkoutLogIds')).toBe(true);
+        expect(db.objectStoreNames.contains('pendingMutations')).toBe(true);
+        expect(db.objectStoreNames.contains('meta')).toBe(true);
+
+        db.close();
+    });
+});

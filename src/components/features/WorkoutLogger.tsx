@@ -11,13 +11,12 @@ import {
 import {
     createNewWorkoutLog,
     clientCompletedAtNow,
-    CompleteWorkoutLogRequest,
-    completeNewWorkoutLog,
     skipNewWorkoutLog,
+    WorkoutSessionRequest,
     NewWorkoutLogResponse,
 } from '@/libs/workoutLogService';
 import { getPendingWorkoutLogId } from '@/libs/offline/downloadManager';
-import { enqueueCompletion, enqueueSkip } from '@/libs/offline/syncQueue';
+import { enqueueSession, enqueueSkip } from '@/libs/offline/syncQueue';
 import Modal from '@/components/system/Modal';
 import {
     partitionExerciseGroups,
@@ -32,8 +31,15 @@ import HelpTooltip from '@/components/atoms/HelpTooltip';
 import { getGlossaryTerm } from '@/libs/glossaryContent';
 import s from './WorkoutLogger.module.css';
 
-const OFFLINE_NO_PRECREATED_LOG_MESSAGE =
-    'Sem conexão e este treino não foi baixado para uso offline. Baixe o plano em "Meus Treinos" enquanto estiver online para poder completá-lo sem internet.';
+// Só se aplica ao "Pular Treino" (handleSkip): o endpoint novo de sessão
+// (POST .../workout-log/session) só sabe criar-ou-concluir, não tem
+// equivalente a pular — então esse fluxo específico ainda depende do log
+// pré-criado (ver ensurePendingWorkoutLogs em downloadManager.ts) para
+// funcionar offline. Completar o treino (handleComplete) não usa mais esta
+// mensagem: com o endpoint de sessão, completar funciona offline com ou sem
+// log pré-criado (US-01 critério 5 / cenário S-2 do spec).
+const OFFLINE_NO_PRECREATED_LOG_MESSAGE_SKIP =
+    'Sem conexão e este treino não foi baixado para uso offline. Baixe o plano em "Meus Treinos" enquanto estiver online para poder pular o treino sem internet.';
 
 /** Recomendação do painel de autorregulação (ver microcycleAutoregulation.ts)
  * repassada para pré-preencher o log em vez de ficar só como texto acima. */
@@ -159,11 +165,30 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
             setLoading(true);
             setError(null);
 
-            const body: CompleteWorkoutLogRequest = {
+            // Sempre pelo endpoint novo (POST .../workout-log/session, Sprint
+            // 3): cria-ou-conclui numa chamada só, então funciona offline com
+            // ou sem log pré-criado — é literalmente o motivo desta sprint
+            // existir (US-01 critério 5, cenário S-2 do spec). O
+            // client_mutation_id é gerado UMA vez aqui, antes de qualquer
+            // tentativa de rede, e reaproveitado se cair para a fila —
+            // regenerar no enfileiramento criaria um segundo registro no
+            // servidor a partir do mesmo treino.
+            const sessionBody: WorkoutSessionRequest = {
+                client_mutation_id: crypto.randomUUID(),
+                // Carimbado AQUI, no instante em que o aluno finaliza, e não
+                // na hora do envio: se a conclusão for parar na fila offline,
+                // é este valor que o servidor usa para decidir se o registro
+                // foi tardio. Usar o relógio do servidor no momento da
+                // sincronização transformaria falta de rede em atraso do aluno.
+                client_completed_at: clientCompletedAtNow(),
+                training_ref: training.reference,
+                planned_date: new Date().toISOString().split('T')[0],
                 duration_minutes: duration ?? undefined,
+                notes,
                 exercises: logs.flatMap((ex) =>
                     ex.series.map((s) => ({
                         exercise_id: ex.exerciseId,
+                        name: ex.name,
                         series: s.seriesNum,
                         reps: s.reps,
                         load_kg: s.loadKg,
@@ -172,82 +197,36 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                         group_id: ex.groupId,
                     })),
                 ),
-                notes,
-                // Carimbado AQUI, no instante em que o aluno finaliza, e não
-                // na hora do envio: se a conclusão for parar na fila offline,
-                // é este valor que o servidor usa para decidir se o registro
-                // foi tardio. Usar o relógio do servidor no momento da
-                // sincronização transformaria falta de rede em atraso do aluno.
-                client_completed_at: clientCompletedAtNow(),
             };
 
-            // Se o plano foi baixado para offline, já existe um log "pending"
-            // pré-criado online para este treino — só falta o PATCH de
-            // conclusão, que funciona (ou enfileira) tanto online quanto offline.
-            const preCreatedId = await getPendingWorkoutLogId(
-                microcycle.id,
-                training.reference,
-            );
-
-            if (preCreatedId) {
-                try {
-                    const completed = await completeNewWorkoutLog(
-                        studentId,
-                        planningId,
-                        mesocycle.id,
-                        microcycle.id,
-                        preCreatedId,
-                        body,
-                    );
-                    clearWorkoutStart(microcycle.id, training.reference);
-                    onComplete(completed);
-                } catch (err) {
-                    if (axios.isAxiosError(err) && !err.response) {
-                        await enqueueCompletion({
-                            studentId,
-                            planningId,
-                            mesocycleId: mesocycle.id,
-                            microcycleId: microcycle.id,
-                            workoutLogId: preCreatedId,
-                            completeBody: body,
-                        });
-                        clearWorkoutStart(microcycle.id, training.reference);
-                        onQueued();
-                        return;
-                    }
-                    throw err;
-                }
-                return;
-            }
-
-            // Sem log pré-criado (aluno não baixou o plano antes de perder
-            // conexão) — só dá pra completar com o fluxo online normal.
-            const newLog = await createNewWorkoutLog(
+            // RN-09/RN-10 (spec): toda conclusão passa pela fila local ANTES
+            // de qualquer tentativa de envio, e a confirmação ao aluno não
+            // espera resposta do servidor. `enqueueSession` só grava no
+            // IndexedDB e sai — quem decide se tenta a rede agora ou mais
+            // tarde é o próprio `syncQueue.ts` (dispara `processQueue()` em
+            // segundo plano quando `navigator.onLine`, sem bloquear este
+            // `await`). Chamar `completeWorkoutSession` direto aqui e só
+            // enfileirar no `catch` (padrão antigo) é o bug que este
+            // comentário substitui: `navigator.onLine` mente em wifi de
+            // academia (conectado, sem internet real), e nesse caso a
+            // chamada direta fica pendurada até o timeout — se o aluno
+            // fechar a aba antes do `catch` rodar, o registro nunca chega a
+            // ser escrito no IndexedDB (a perda que US-02 existe pra evitar).
+            await enqueueSession({
                 studentId,
                 planningId,
-                mesocycle.id,
-                microcycle.id,
-                {
-                    planned_date: new Date().toISOString().split('T')[0],
-                    training_ref: training.reference,
-                },
-            );
-            const completed = await completeNewWorkoutLog(
-                studentId,
-                planningId,
-                mesocycle.id,
-                microcycle.id,
-                newLog.id,
-                body,
-            );
+                mesocycleId: mesocycle.id,
+                microcycleId: microcycle.id,
+                trainingRef: training.reference,
+                sessionBody,
+            });
             clearWorkoutStart(microcycle.id, training.reference);
-            onComplete(completed);
+            onQueued();
         } catch (err) {
-            if (axios.isAxiosError(err) && !err.response) {
-                setError(OFFLINE_NO_PRECREATED_LOG_MESSAGE);
-            } else {
-                setError('Erro ao salvar workout. Tente novamente.');
-            }
+            // Só chega aqui se a própria escrita no IndexedDB falhar (quota,
+            // navegador sem suporte) — não é mais possível um erro de rede
+            // aparecer neste ponto, porque a rede não é mais tentada aqui.
+            setError('Erro ao salvar workout. Tente novamente.');
             console.error(err);
         } finally {
             setLoading(false);
@@ -261,7 +240,6 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
         duration,
         notes,
         logs,
-        onComplete,
         onQueued,
     ]);
 
@@ -329,7 +307,7 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
             onComplete(skipped);
         } catch (err) {
             if (axios.isAxiosError(err) && !err.response) {
-                setError(OFFLINE_NO_PRECREATED_LOG_MESSAGE);
+                setError(OFFLINE_NO_PRECREATED_LOG_MESSAGE_SKIP);
             } else {
                 setError('Erro ao cancelar. Tente novamente.');
             }
