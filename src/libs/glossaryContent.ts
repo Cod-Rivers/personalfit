@@ -350,6 +350,12 @@ const trainingFieldTerms: GlossaryTerm[] = [
         short: 'O grupo muscular principal trabalhado pelo exercício, usado para organizar a prescrição e ver o volume por grupo.',
         long: 'O grupo muscular indica qual músculo ou região é o foco principal do exercício (ex.: Peito, Costas, Quadríceps). Definir esse campo permite olhar o volume prescrito por grupo muscular e balancear melhor o treino do aluno. Exercícios vindos da biblioteca já trazem o grupo preenchido automaticamente.',
     },
+    {
+        id: 'janela-de-registro',
+        term: 'Janela de registro',
+        short: 'Prazo que o aluno tem para marcar um treino como feito antes de o registro virar "tardio".',
+        long: 'A janela de registro é o prazo que o aluno tem, depois da data planejada do treino, para registrá-lo sem que ele seja marcado como "tardio". Você escolhe entre 4 opções por aluno: mesmo dia (até o fim daquele dia), 24 horas, 48 horas (o padrão, usado quando você ainda não configurou nada) ou sem limite. Um registro tardio continua contando normalmente para o histórico e a evolução do aluno — a marcação é só informativa, pra você enxergar quando ele treinou fora do prazo esperado, mesmo que o app tenha ficado sem internet por alguns dias: o horário que vale é sempre o do momento em que o aluno concluiu o treino no aparelho dele, não o do momento em que o registro chegou ao servidor.',
+    },
 ];
 
 const microcycleDerivedTerms: GlossaryTerm[] = microcycleHelpTopics.map((topic) => ({

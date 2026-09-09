@@ -18,6 +18,7 @@ import {
 import AvatarUpload from '@/components/molecules/AvatarUpload';
 import Modal from '@/components/system/Modal';
 import TrainingPdfUploadModal from '@/components/features/TrainingPdfUploadModal';
+import LogWindowSettings from '@/components/features/LogWindowSettings';
 import { usePersonalStudents } from '@/hooks/usePersonalStudents';
 import { formatCpfInput } from '@/libs/formatters';
 import s from '../personal.module.css';
@@ -42,6 +43,7 @@ export default function StudentsTab({ state }: Props) {
         loading,
         modal,
         editForm,
+        editId,
         unlinkTarget,
         submitting,
         error,
@@ -584,6 +586,10 @@ export default function StudentsTab({ state }: Props) {
                         className={s.formInput}
                     />
                 </div>
+                {/* Salva por conta própria (PUT /students/:id/log-window),
+                    separado do restante do formulário — não entra em
+                    editForm/handleUpdate. */}
+                {editId && <LogWindowSettings studentId={editId} />}
             </Modal>
 
             {/* ── Unlink Student Modal ── */}

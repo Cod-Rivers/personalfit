@@ -432,3 +432,23 @@
 ## 2026-09-04 15:59 — River (via Claude Code)
 **Resumo:** Finalizado. As três fases estão entregues. **Criado** (2.909 linhas, nenhum arquivo dos repos de código tocado — os dois `CHANGELOG` sujos no `git status` já estavam assim antes): | Fase | Artefato | Linhas | |---|---|---| | 0 | [docs/conventions.md](docs/conventions.md) — 13 tabelas de padrões com arquivo de referência e confiança, 11 lacunas com 2 opções cada, decisões D-01…D-08, correções CP-01…CP-04 | 594 | | 1 | [docs/product/prd-registro-aderencia.md](docs/product/prd-registro-aderencia.md) — 7 user stories, 38 regras de negócio, 3 eixos de estado, 10 métricas, 10 riscos | 428 | | 2 | [d…
 **Arquivos:** CHANGELOG_FRONTEND.md
+
+## 2026-09-04 21:41 — River (via Claude Code)
+**Resumo:** ## A premissa está errada: os triggers existem e o push **deployou** hoje O `gcloud builds triggers list` voltou vazio por causa da configuração local, não por ausência de trigger: ``` [builds] region = us-west1 ← gcloud config ``` Sem `--region`, o comando consulta **só us-west1**. Os dois triggers vivem em outras regiões: | Trigger | Região | Repo | Branch | Estado | |---|---|---|---|---| | `venafit-frontend-master` | `us-east1` | `personalfit` | `^master$` | ativo, GITHUB push | | `venafit-backend-main` | `southamerica-east1` | `personal-fit-back` | `^main$` | ativo, GITHUB push | E não exi…
+**Commits:** Envia a hora local de conclusão do treino ao concluir
+
+## 2026-09-04 21:43 — River (via Claude Code)
+**Resumo:** Fechado. Resumo do estado real: **Sprint 1 está em produção.** Backend `4781b4f` → `venafit-backend-00060-ksz`, frontend `90284b0` → `venafit-frontend-00092-46d`, ambos com 100% do tráfego, deployados automaticamente pelos triggers no push de hoje. Nenhuma ação manual era necessária — e o `gcloud builds submit` que o classificador barrou teria só disparado um build redundante. Os três casos: 1. **tzdata** — corrigido e no ar. É a única das três correções que muda algo que já estava quebrado hoje. 2. **Buraco do D-04** — fechado nas duas pontas (backend aceita `client_completed_at`, `WorkoutLog…
+**Arquivos:** CHANGELOG_FRONTEND.md
+
+## 2026-09-04 23:19 — River (via Claude Code)
+**Resumo:** Enquanto isso levanto o cenário: essa é uma decisão de produto (que mecanismos de validação usar nos desafios), não uma implementação — vou esperar o resultado da investigação antes de sugerir algo concreto, para não propor algo que já existe ou que não se encaixa no que já foi construído (upload R2, moderação, IA de imagem etc.). Assim que o agente retornar, te dou uma análise curta com as opções de mecanismo simbólico de validação e a recomendação, sem implementar nada ainda.
+**Arquivos:** db.ts, workoutLogService.ts
+
+## 2026-09-04 23:21 — River (via Claude Code)
+**Resumo:** Investiguei o código antes de responder, porque o nome "desafios" no Venafit não é o que parece. ## O que existe hoje `Challenge` (`internal/domain/training/challenge.go`) é um **funil de captação de leads**, não um desafio de treino gamificado: o personal cria um desafio público (nome, rotina/`TemplateID`, datas, limite de vagas), divulga um link (`/desafio/[token]`), e quem entra é um `ChallengeParticipant` (nome/e-mail/telefone) — sem conta, sem perfil de aluno. A única transição de estado hoje é manual: o personal marca `Converted` quando o lead vira aluno pagante. **Não há hoje nenhum vín…
+**Arquivos:** session.ts, syncQueue.ts
+
+## 2026-09-04 23:38 — River (via Claude Code)
+**Resumo:** Fechado nas 5 opções. Desenho rápido de como isso encaixaria no `Challenge` existente, com as decisões que fiz por padrão — me avisa se quiser mudar alguma: ## Modelo **`ChallengeDayPrompt`** (novo, 1 por dia do desafio) — `ChallengeID`, `DayIndex` (1, 2, 3... relativo ao `StartDate`, não data calendário — desafios de personals diferentes começam em dias diferentes), `Type` (`pose` | `code` | `pose_code` | `gesture` | `video`), `Content` (texto da instrução: descrição da pose/gesto, a palavra-código, ou o link do vídeo-referência), `CreatedAt`. - Personal escolhe o tipo **dia a dia**, não um t…
+**Arquivos:** WorkoutLogger.tsx, db.test.ts, package-lock.json, package.json, syncQueue.test.ts

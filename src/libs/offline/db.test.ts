@@ -72,21 +72,25 @@ describe('offline/db', () => {
             const { getOfflineDB, countPendingMedia } = await import('./db');
             const db = await getOfflineDB();
 
-            await db.add('pendingMedia', {
-                mutationId: 1,
+            // Sprint 4 (mediaQueue.ts): PendingMedia trocou `mutationId`
+            // (referência a uma linha de pendingMutations que some quando a
+            // mutação sincroniza) por `clientMutationId`/`logId` + os campos
+            // de rota necessários para o upload da foto — ver comentário da
+            // interface em db.ts.
+            const base = {
                 blob: new Blob(['a']),
+                contentType: 'image/jpeg',
                 createdAt: new Date().toISOString(),
-            });
-            await db.add('pendingMedia', {
-                mutationId: 2,
-                blob: new Blob(['b']),
-                createdAt: new Date().toISOString(),
-            });
-            await db.add('pendingMedia', {
-                mutationId: 3,
-                blob: new Blob(['c']),
-                createdAt: new Date().toISOString(),
-            });
+                status: 'pending' as const,
+                retryCount: 0,
+                studentId: 's1',
+                planningId: 'p1',
+                mesocycleId: 'm1',
+                microcycleId: 'mc1',
+            };
+            await db.add('pendingMedia', { ...base, logId: 'log-1' });
+            await db.add('pendingMedia', { ...base, logId: 'log-2' });
+            await db.add('pendingMedia', { ...base, clientMutationId: 'cmid-3' });
 
             expect(await countPendingMedia()).toBe(3);
 

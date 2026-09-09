@@ -67,15 +67,50 @@ export interface PendingMutation {
     firstFailedAt?: string;
 }
 
-/** Mídia (foto de check-in) pendente de upload, ligada a uma
- * `PendingMutation` por `mutationId`. Ninguém escreve nem lê esta store
- * ainda — ela só existe para a Sprint 4 (fila de mídia) poder usá-la sem
- * precisar de mais um bump de versão do banco. */
+/** Mídia (foto de check-in) pendente de upload — Sprint 4 (mediaQueue.ts).
+ *
+ * O campo original desta store era `mutationId: number` (id local da linha
+ * em `pendingMutations`), mas essa referência não sobrevive ao sucesso da
+ * sincronização: a linha é APAGADA de `pendingMutations` assim que o
+ * servidor confirma, e o upload da foto normalmente só começa depois disso
+ * (precisa do `logId` real, que só existe quando o log já sincronizou).
+ * Por isso a ligação é feita por `clientMutationId` (o UUID estável que
+ * `enqueueSession` gera e nunca regenera) contra o mapeamento gravado em
+ * `meta` por `setResolvedSessionLogId` — sobrevive à linha de
+ * `pendingMutations` já ter sumido. Quando o chamador já tem o ID real na
+ * hora de enfileirar (ex.: log pré-existente, fora do fluxo de sessão
+ * offline), `logId` é preenchido direto e `clientMutationId` fica de fora. */
 export interface PendingMedia {
     id?: number;
-    mutationId: number;
     blob: Blob;
+    /** Sempre 'image/jpeg' hoje — compressImageToBlob sempre reexporta como
+     * JPEG, mas o campo existe explícito para não hardcodar o content-type
+     * do PUT/POST em vários lugares de mediaQueue.ts. */
+    contentType: string;
     createdAt: string;
+    status: 'pending' | 'uploading' | 'failed';
+    retryCount: number;
+    /** Mesmo backoff exponencial com jitter de `pendingMutations` (spec
+     * §4.3) — ver computeNextAttemptAt em syncQueue.ts, reaproveitado por
+     * mediaQueue.ts em vez de reimplementado. */
+    nextAttemptAt?: string;
+    lastError?: string;
+    /** ISO da primeira vez que esta linha virou 'failed' — mesma política de
+     * expiração de 45 dias de `pendingMutations` (RN-40), reaproveitada por
+     * mediaQueue.ts. */
+    firstFailedAt?: string;
+    studentId: string;
+    planningId: string;
+    mesocycleId: string;
+    microcycleId: string;
+    /** ID real do log no servidor, quando já conhecido no momento de
+     * enfileirar (ver comentário da interface acima). */
+    logId?: string;
+    /** Presente quando `logId` ainda não existe: o mesmo `client_mutation_id`
+     * usado na sessão correspondente em `pendingMutations`/`sessionBody`.
+     * mediaQueue.ts resolve para um `logId` real assim que syncQueue.ts
+     * sincronizar aquela sessão especificamente. */
+    clientMutationId?: string;
 }
 
 interface VenafitOfflineDB extends DBSchema {
@@ -146,10 +181,49 @@ export function pendingWorkoutLogKey(microcycleId: string, trainingRef: string):
 
 /** Conta os registros em `pendingMedia`. Usado pelo flush final de
  * `clearSession()` (S3.4) para decidir se vale a pena tentar sincronizar
- * antes de apagar o banco — mídia ainda não é escrita por ninguém nesta
- * sprint, então hoje sempre devolve 0, mas o helper já existe para a
- * Sprint 4 não precisar mexer em `session.ts` de novo. */
+ * antes de apagar o banco. */
 export async function countPendingMedia(): Promise<number> {
     const db = await getOfflineDB();
     return db.count('pendingMedia');
+}
+
+// ── Mapeamento clientMutationId -> logId real (Sprint 4 / mediaQueue.ts) ──
+//
+// Guardado na store `meta` (chave/valor livre, já existente) em vez de mais
+// uma store dedicada: é só uma string por sessão, sem necessidade de índice
+// nem de outra guarda de upgrade. Prefixo evita colidir com outras chaves
+// que `meta` venha a ganhar no futuro.
+const SESSION_LOG_ID_PREFIX = 'sessionLogId:';
+
+/** Chamado por syncQueue.ts assim que uma mutação `type:'session'` sincroniza
+ * com sucesso (ou é reconhecida via 409 idempotente) — grava o `logId` real
+ * que o servidor atribuiu, para mediaQueue.ts encontrar depois. Sobrevive à
+ * linha de `pendingMutations` já ter sido apagada (é exatamente o caso
+ * normal: a foto só começa a subir DEPOIS que a sessão já sincronizou). */
+export async function setResolvedSessionLogId(
+    db: Awaited<ReturnType<typeof getOfflineDB>>,
+    clientMutationId: string,
+    logId: string,
+): Promise<void> {
+    await db.put('meta', logId, `${SESSION_LOG_ID_PREFIX}${clientMutationId}`);
+}
+
+export async function getResolvedSessionLogId(
+    db: Awaited<ReturnType<typeof getOfflineDB>>,
+    clientMutationId: string,
+): Promise<string | undefined> {
+    const value = await db.get('meta', `${SESSION_LOG_ID_PREFIX}${clientMutationId}`);
+    return typeof value === 'string' ? value : undefined;
+}
+
+/** Limpeza best-effort depois que mediaQueue.ts termina de usar o
+ * mapeamento (foto confirmada, ou descartada de vez) — evita que `meta`
+ * cresça sem limite ao longo dos anos. Não é crítico se falhar ou nunca for
+ * chamado: são só strings pequenas, não é o tipo de vazamento que preocupa
+ * (diferente do banco inteiro por LGPD, que é apagado por `clearSession`). */
+export async function deleteResolvedSessionLogId(
+    db: Awaited<ReturnType<typeof getOfflineDB>>,
+    clientMutationId: string,
+): Promise<void> {
+    await db.delete('meta', `${SESSION_LOG_ID_PREFIX}${clientMutationId}`);
 }

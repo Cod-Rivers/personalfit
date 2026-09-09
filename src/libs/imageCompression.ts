@@ -2,9 +2,13 @@
  *  retangulares de corpo inteiro, sem crop — diferente do AvatarUpload, que
  *  recorta em círculo fixo 400x400). Redimensiona mantendo proporção até
  *  `maxDimension` no maior lado e reexporta como JPEG.
+ *
+ *  Aceita `Blob` além de `File` (todo `File` já é um `Blob`) — reaproveitado
+ *  por mediaQueue.ts (foto de check-in, Sprint 4) para blobs capturados
+ *  diretamente de câmera/canvas, que nem sempre chegam como `File`.
  */
 export function compressImageToBlob(
-    file: File,
+    file: File | Blob,
     { maxDimension = 1280, quality = 0.85 } = {},
 ): Promise<Blob> {
     return new Promise((resolve, reject) => {

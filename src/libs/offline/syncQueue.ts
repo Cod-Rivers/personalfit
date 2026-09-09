@@ -6,7 +6,11 @@ import {
     createNewWorkoutLog,
     CompleteWorkoutLogRequest,
 } from '@/libs/workoutLogService';
-import { getOfflineDB, PendingMutation } from './db';
+import {
+    getOfflineDB,
+    PendingMutation,
+    setResolvedSessionLogId,
+} from './db';
 
 const QUEUE_EVENT = 'venafit:queue-changed';
 
@@ -56,29 +60,36 @@ export function enqueueSkip(
  * `PendingWorkoutLogId` pré-criado. `workoutLogId` não existe ainda neste
  * ponto (o log só nasce no servidor), então passamos string vazia: nenhum
  * dos caminhos de processamento de `type:'session'` lê esse campo. */
+/** Devolve o `clientMutationId` gerado para esta sessão — quem chama precisa
+ * dele para enfileirar a foto de check-in correspondente em mediaQueue.ts
+ * (S4.3): antes da sincronização, é a ÚNICA referência estável que liga a
+ * foto ao registro, já que `workoutLogId` real ainda não existe. */
 export function enqueueSession(
     mutation: Omit<
         NewMutation,
         'type' | 'completeBody' | 'skipReason' | 'clientMutationId' | 'workoutLogId'
     > & { workoutLogId?: string },
-): Promise<void> {
+): Promise<string> {
+    // Gerado UMA vez, aqui, e nunca regenerado num retry — é a chave de
+    // idempotência que o servidor casa com `client_mutation_id`.
+    // Regenerar a cada tentativa transformaria cada retry num registro
+    // novo, exatamente o bug que essa chave existe para impedir.
+    const clientMutationId = crypto.randomUUID();
     return enqueue({
         ...mutation,
         workoutLogId: mutation.workoutLogId ?? '',
         type: 'session',
-        // Gerado UMA vez, aqui, e nunca regenerado num retry — é a chave de
-        // idempotência que o servidor casa com `client_mutation_id`.
-        // Regenerar a cada tentativa transformaria cada retry num registro
-        // novo, exatamente o bug que essa chave existe para impedir.
-        clientMutationId: crypto.randomUUID(),
-    });
+        clientMutationId,
+    }).then(() => clientMutationId);
 }
 
 // RN-40: só `failed` expira (o servidor já recusou o corpo por validação —
 // reenviar idêntico nunca vai passar). `pending` nunca expira, por mais
 // tempo que fique esperando rede — é a distinção que preserva "nada que o
 // aluno preencheu se perde" por falta de sinal.
-const FAILED_EXPIRATION_DAYS = 45;
+// Exportada: mediaQueue.ts (S4.3) reaproveita a MESMA política de expiração
+// para `pendingMedia`, em vez de definir o próprio número separado.
+export const FAILED_EXPIRATION_DAYS = 45;
 const FAILED_EXPIRATION_WARNING_DAYS = 7; // mostra o prazo a partir do dia 38 (45-7)
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -152,7 +163,10 @@ const MAX_BACKOFF_MINUTES = 60;
  * aparelhos que perderam rede no mesmo instante) reintentem todas no mesmo
  * segundo quando a rede volta — sem teto de tentativas: uma mutação nunca é
  * descartada sozinha por backoff, só por `discardMutation` manual. */
-function computeNextAttemptAt(retryCount: number): string {
+// Exportada: mediaQueue.ts (S4.3) reaproveita a MESMA fórmula de backoff em
+// vez de reimplementar (requisito explícito da Sprint 4 — nada de lógica de
+// retry nova).
+export function computeNextAttemptAt(retryCount: number): string {
     const baseMinutes = Math.min(2 ** retryCount, MAX_BACKOFF_MINUTES);
     const jitter = 0.8 + Math.random() * 0.4;
     const delayMs = baseMinutes * 60_000 * jitter;
@@ -162,7 +176,9 @@ function computeNextAttemptAt(retryCount: number): string {
 /** Uma linha é elegível para reenvio agora se nunca falhou com backoff
  * agendado, ou se o instante agendado já passou. Não conta como erro pular
  * uma linha ainda em espera — é o comportamento normal do backoff. */
-function isEligibleNow(row: PendingMutation): boolean {
+// Assinatura genérica (`nextAttemptAt` é o único campo usado) — mediaQueue.ts
+// reaproveita esta mesma função para `PendingMedia`, que tem o campo idêntico.
+export function isEligibleNow(row: { nextAttemptAt?: string }): boolean {
     if (!row.nextAttemptAt) return true;
     return Date.now() >= new Date(row.nextAttemptAt).getTime();
 }
@@ -269,13 +285,22 @@ export async function processQueue(): Promise<void> {
                         row.skipReason ?? '',
                     );
                 } else if (row.type === 'session' && row.sessionBody) {
-                    await completeWorkoutSession(
+                    const synced = await completeWorkoutSession(
                         row.studentId,
                         row.planningId,
                         row.mesocycleId,
                         row.microcycleId,
                         row.sessionBody,
                     );
+                    // mediaQueue.ts (S4.3): grava o logId real ANTES de
+                    // apagar esta linha — é o único momento em que os dois
+                    // (clientMutationId local e logId do servidor) estão
+                    // disponíveis juntos. Sem isso a foto de check-in
+                    // enfileirada com só o clientMutationId nunca teria como
+                    // descobrir para onde subir.
+                    if (row.clientMutationId) {
+                        await setResolvedSessionLogId(db, row.clientMutationId, synced.id);
+                    }
                 }
                 await db.delete('pendingMutations', row.id);
             } catch (err) {
@@ -286,6 +311,21 @@ export async function processQueue(): Promise<void> {
                 // dado — apaga da fila e segue para a próxima (RN-16: uma
                 // mutação problemática não pode bloquear as seguintes).
                 if (axios.isAxiosError(err) && err.response?.status === 409) {
+                    // C-2: o corpo do 409 já vem com `workout_log` (o
+                    // documento vigente) — se esta linha tinha uma foto de
+                    // check-in esperando (mediaQueue.ts), este é o único
+                    // lugar onde o logId real aparece neste caminho, já que
+                    // a resposta de sucesso normal (200/201) nunca chega a
+                    // esta mutação (foi outra tentativa, deste ou de outro
+                    // aparelho, que completou primeiro).
+                    if (row.clientMutationId) {
+                        const logId = (
+                            err.response.data as { workout_log?: { id?: string } } | undefined
+                        )?.workout_log?.id;
+                        if (logId) {
+                            await setResolvedSessionLogId(db, row.clientMutationId, logId);
+                        }
+                    }
                     await db.delete('pendingMutations', row.id);
                     continue;
                 }

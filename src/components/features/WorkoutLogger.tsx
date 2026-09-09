@@ -17,7 +17,9 @@ import {
 } from '@/libs/workoutLogService';
 import { getPendingWorkoutLogId } from '@/libs/offline/downloadManager';
 import { enqueueSession, enqueueSkip } from '@/libs/offline/syncQueue';
+import { enqueuePhoto } from '@/libs/offline/mediaQueue';
 import Modal from '@/components/system/Modal';
+import WorkoutCheckIn from './WorkoutCheckIn';
 import {
     partitionExerciseGroups,
     comboGroupLabel,
@@ -153,6 +155,17 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // Passo de check-in (US-03 critério 1): "Completar Treino" não enfileira
+    // mais direto — primeiro troca o CONTEÚDO deste mesmo Modal pela tela de
+    // confirmação (WorkoutCheckIn), sem empilhar um segundo Modal por cima.
+    // `checkInDraft` carrega só o que o check-in precisa saber ANTES da
+    // confirmação (a data planejada, para estimar o aviso de tardio) —
+    // calculada no instante em que o aluno pede para completar, não antes.
+    const [step, setStep] = useState<'form' | 'checkin'>('form');
+    const [checkInDraft, setCheckInDraft] = useState<{
+        plannedDate: string;
+    } | null>(null);
+
     const updateSeriesLog = useCallback(
         (
             exIdx: number,
@@ -209,88 +222,143 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
         });
     }, []);
 
-    const handleComplete = useCallback(async () => {
-        try {
-            setLoading(true);
-            setError(null);
+    // Chamado só depois que o aluno confirma no passo de check-in
+    // (WorkoutCheckIn) — nunca direto do botão "Completar Treino" (ver
+    // `goToCheckIn` abaixo). `checkIn` traz o instante confirmado e a foto
+    // opcional, já escolhidos na tela anterior.
+    const handleComplete = useCallback(
+        async (checkIn: { confirmedAt: string; photoFile: File | null }) => {
+            try {
+                setLoading(true);
+                setError(null);
 
-            // Sempre pelo endpoint novo (POST .../workout-log/session, Sprint
-            // 3): cria-ou-conclui numa chamada só, então funciona offline com
-            // ou sem log pré-criado — é literalmente o motivo desta sprint
-            // existir (US-01 critério 5, cenário S-2 do spec). O
-            // client_mutation_id é gerado UMA vez aqui, antes de qualquer
-            // tentativa de rede, e reaproveitado se cair para a fila —
-            // regenerar no enfileiramento criaria um segundo registro no
-            // servidor a partir do mesmo treino.
-            const sessionBody: WorkoutSessionRequest = {
-                client_mutation_id: crypto.randomUUID(),
-                // Carimbado AQUI, no instante em que o aluno finaliza, e não
-                // na hora do envio: se a conclusão for parar na fila offline,
-                // é este valor que o servidor usa para decidir se o registro
-                // foi tardio. Usar o relógio do servidor no momento da
-                // sincronização transformaria falta de rede em atraso do aluno.
-                client_completed_at: clientCompletedAtNow(),
-                training_ref: training.reference,
-                planned_date: new Date().toISOString().split('T')[0],
-                duration_minutes: duration ?? undefined,
-                notes,
-                exercises: logs.flatMap((ex) =>
-                    ex.series.map((s) => ({
-                        exercise_id: ex.exerciseId,
-                        name: ex.name,
-                        series: s.seriesNum,
-                        reps: s.reps,
-                        load_kg: s.loadKg,
-                        rpe: s.rpe,
-                        notes: s.notes,
-                        group_id: ex.groupId,
-                    })),
-                ),
-            };
+                // Sempre pelo endpoint novo (POST .../workout-log/session, Sprint
+                // 3): cria-ou-conclui numa chamada só, então funciona offline com
+                // ou sem log pré-criado — é literalmente o motivo desta sprint
+                // existir (US-01 critério 5, cenário S-2 do spec). O
+                // client_mutation_id é gerado UMA vez aqui, antes de qualquer
+                // tentativa de rede, e reaproveitado se cair para a fila —
+                // regenerar no enfileiramento criaria um segundo registro no
+                // servidor a partir do mesmo treino.
+                const sessionBody: WorkoutSessionRequest = {
+                    client_mutation_id: crypto.randomUUID(),
+                    // Carimbado AQUI, no instante em que o aluno finaliza, e não
+                    // na hora do envio: se a conclusão for parar na fila offline,
+                    // é este valor que o servidor usa para decidir se o registro
+                    // foi tardio. Usar o relógio do servidor no momento da
+                    // sincronização transformaria falta de rede em atraso do aluno.
+                    client_completed_at: clientCompletedAtNow(),
+                    training_ref: training.reference,
+                    planned_date:
+                        checkInDraft?.plannedDate ??
+                        new Date().toISOString().split('T')[0],
+                    duration_minutes: duration ?? undefined,
+                    notes,
+                    // check_in é o que torna esta conclusão um CHECK-IN
+                    // explícito (US-03 critério 1) — `confirmed_at` é o
+                    // instante em que o aluno apertou "Confirmar" na tela
+                    // anterior, não o instante em que a fila conseguir
+                    // sincronizar.
+                    check_in: { confirmed_at: checkIn.confirmedAt },
+                    exercises: logs.flatMap((ex) =>
+                        ex.series.map((s) => ({
+                            exercise_id: ex.exerciseId,
+                            name: ex.name,
+                            series: s.seriesNum,
+                            reps: s.reps,
+                            load_kg: s.loadKg,
+                            rpe: s.rpe,
+                            notes: s.notes,
+                            group_id: ex.groupId,
+                        })),
+                    ),
+                };
 
-            // RN-09/RN-10 (spec): toda conclusão passa pela fila local ANTES
-            // de qualquer tentativa de envio, e a confirmação ao aluno não
-            // espera resposta do servidor. `enqueueSession` só grava no
-            // IndexedDB e sai — quem decide se tenta a rede agora ou mais
-            // tarde é o próprio `syncQueue.ts` (dispara `processQueue()` em
-            // segundo plano quando `navigator.onLine`, sem bloquear este
-            // `await`). Chamar `completeWorkoutSession` direto aqui e só
-            // enfileirar no `catch` (padrão antigo) é o bug que este
-            // comentário substitui: `navigator.onLine` mente em wifi de
-            // academia (conectado, sem internet real), e nesse caso a
-            // chamada direta fica pendurada até o timeout — se o aluno
-            // fechar a aba antes do `catch` rodar, o registro nunca chega a
-            // ser escrito no IndexedDB (a perda que US-02 existe pra evitar).
-            await enqueueSession({
-                studentId,
-                planningId,
-                mesocycleId: mesocycle.id,
-                microcycleId: microcycle.id,
-                trainingRef: training.reference,
-                sessionBody,
-            });
-            clearWorkoutStart(microcycle.id, training.reference);
-            onQueued();
-        } catch (err) {
-            // Só chega aqui se a própria escrita no IndexedDB falhar (quota,
-            // navegador sem suporte) — não é mais possível um erro de rede
-            // aparecer neste ponto, porque a rede não é mais tentada aqui.
-            setError('Erro ao salvar workout. Tente novamente.');
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    }, [
-        studentId,
-        planningId,
-        mesocycle,
-        microcycle,
-        training,
-        duration,
-        notes,
-        logs,
-        onQueued,
-    ]);
+                // RN-09/RN-10 (spec): toda conclusão passa pela fila local ANTES
+                // de qualquer tentativa de envio, e a confirmação ao aluno não
+                // espera resposta do servidor. `enqueueSession` só grava no
+                // IndexedDB e sai — quem decide se tenta a rede agora ou mais
+                // tarde é o próprio `syncQueue.ts` (dispara `processQueue()` em
+                // segundo plano quando `navigator.onLine`, sem bloquear este
+                // `await`). Chamar `completeWorkoutSession` direto aqui e só
+                // enfileirar no `catch` (padrão antigo) é o bug que este
+                // comentário substitui: `navigator.onLine` mente em wifi de
+                // academia (conectado, sem internet real), e nesse caso a
+                // chamada direta fica pendurada até o timeout — se o aluno
+                // fechar a aba antes do `catch` rodar, o registro nunca chega a
+                // ser escrito no IndexedDB (a perda que US-02 existe pra evitar).
+                //
+                // `enqueueSession` devolve o `clientMutationId` gerado — é a
+                // ÚNICA referência estável para anexar a foto agora: o log
+                // real ainda não existe no servidor neste ponto.
+                const clientMutationId = await enqueueSession({
+                    studentId,
+                    planningId,
+                    mesocycleId: mesocycle.id,
+                    microcycleId: microcycle.id,
+                    trainingRef: training.reference,
+                    sessionBody,
+                });
+
+                // Foto é OPCIONAL e NUNCA bloqueia (RN-20/22, US-03
+                // critérios 2 e 4): o check-in acima já está enfileirado e
+                // vale por si só. `enqueuePhoto` já comprime a imagem
+                // internamente (mediaQueue.ts) e nunca lança — se cota ou
+                // compressão falharem, devolve `null` e o aluno só não tem
+                // aviso nenhum aqui (a foto simplesmente não entra na fila);
+                // não há por que barrar ou avisar sobre algo que não afeta
+                // o registro já confirmado.
+                if (checkIn.photoFile) {
+                    void enqueuePhoto({
+                        target: { clientMutationId },
+                        studentId,
+                        planningId,
+                        mesocycleId: mesocycle.id,
+                        microcycleId: microcycle.id,
+                        file: checkIn.photoFile,
+                    });
+                }
+
+                clearWorkoutStart(microcycle.id, training.reference);
+                onQueued();
+            } catch (err) {
+                // Só chega aqui se a própria escrita no IndexedDB falhar (quota,
+                // navegador sem suporte) — não é mais possível um erro de rede
+                // aparecer neste ponto, porque a rede não é mais tentada aqui.
+                setError('Erro ao salvar workout. Tente novamente.');
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        },
+        [
+            studentId,
+            planningId,
+            mesocycle,
+            microcycle,
+            training,
+            duration,
+            notes,
+            logs,
+            checkInDraft,
+            onQueued,
+        ],
+    );
+
+    /** Troca o conteúdo do Modal para a tela de check-in (WorkoutCheckIn) —
+     * substitui o clique direto em "Completar Treino" de antes desta
+     * sprint. `plannedDate` é calculada aqui (não antes) para refletir o
+     * instante em que o aluno decidiu concluir, não o de quando abriu o
+     * formulário. */
+    const goToCheckIn = useCallback(() => {
+        setCheckInDraft({ plannedDate: new Date().toISOString().split('T')[0] });
+        setStep('checkin');
+    }, []);
+
+    const backToForm = useCallback(() => {
+        setStep('form');
+        setError(null);
+    }, []);
 
     const handleSkip = useCallback(async () => {
         const reason = notes || 'Sem motivo informado';
@@ -485,30 +553,29 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
         </div>
     );
 
-    const footer = (
-        <div className={s.actions}>
-            <button
-                className={s.btnSkip}
-                onClick={handleSkip}
-                disabled={loading}
-            >
-                {loading ? <FiLoader className={s.spin} /> : <FiX />}{' '}
-                Pular Treino
-            </button>
-            <button
-                className={s.btnComplete}
-                onClick={handleComplete}
-                disabled={loading}
-            >
-                {loading ? (
-                    <FiLoader className={s.spin} />
-                ) : (
-                    <FiCheck />
-                )}{' '}
-                Completar Treino
-            </button>
-        </div>
-    );
+    // Sem footer próprio no passo de check-in: WorkoutCheckIn já tem os
+    // botões dele (Voltar/Confirmar) dentro do próprio conteúdo — repetir um
+    // footer aqui duplicaria ações na mesma tela.
+    const footer =
+        step === 'checkin' ? null : (
+            <div className={s.actions}>
+                <button
+                    className={s.btnSkip}
+                    onClick={handleSkip}
+                    disabled={loading}
+                >
+                    {loading ? <FiLoader className={s.spin} /> : <FiX />}{' '}
+                    Pular Treino
+                </button>
+                <button
+                    className={s.btnComplete}
+                    onClick={goToCheckIn}
+                    disabled={loading}
+                >
+                    <FiCheck /> Completar Treino
+                </button>
+            </div>
+        );
 
     return (
         <Modal
@@ -522,8 +589,19 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
             }
             footer={footer}
         >
-            <div className={s.content}>
-                {error && (
+            {step === 'checkin' && checkInDraft ? (
+                <div className={s.content}>
+                    <WorkoutCheckIn
+                        plannedDate={checkInDraft.plannedDate}
+                        loading={loading}
+                        error={error}
+                        onConfirm={handleComplete}
+                        onCancel={backToForm}
+                    />
+                </div>
+            ) : (
+                <div className={s.content}>
+                    {error && (
                         <div className={s.errorBanner}>
                             <FiAlertCircle /> {error}
                         </div>
@@ -670,6 +748,7 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                         </label>
                     </div>
                 </div>
+            )}
         </Modal>
     );
 };

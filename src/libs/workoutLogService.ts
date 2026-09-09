@@ -253,6 +253,52 @@ export async function completeWorkoutSession(
     return data;
 }
 
+/* ── Foto de check-in (Sprint 4 / S4.3, mediaQueue.ts) — atrás da flag
+ * ADHERENCE_PHOTO_ENABLED no backend; desligada, 404 nativo do gin. Mesmo
+ * par (photo_key + upload_url) de fotos de evolução (evolutionService.ts):
+ * a foto sobe por PUT presigned direto ao R2, nunca passando por estas
+ * funções — elas só pedem a URL e depois confirmam. ── */
+
+export interface CheckInPhotoUploadURLResponse {
+    photo_key: string;
+    upload_url: string;
+}
+
+export async function requestCheckInPhotoUploadUrl(
+    studentId: string,
+    planningId: string,
+    mesocycleId: string,
+    microcycleId: string,
+    workoutLogId: string,
+    contentType: string,
+): Promise<CheckInPhotoUploadURLResponse> {
+    const { data } = await Api.post<CheckInPhotoUploadURLResponse>(
+        `/me/planning/${planningId}/mesocycle/${mesocycleId}/microcycle/${microcycleId}/workout-log/${workoutLogId}/check-in/photo-url`,
+        { content_type: contentType },
+    );
+    return data;
+}
+
+/** Confirma ao backend que o PUT ao R2 terminou — devolve o log atualizado
+ * com `check_in.photo_key`/`check_in.photo_added_at` preenchidos. Se a foto
+ * estourar o limite de tamanho, o backend descarta SÓ a foto e mantém o
+ * check-in (S-10) — mas isso chega como erro nesta chamada, não como
+ * sucesso silencioso: quem chama precisa tratar o reject. */
+export async function confirmCheckInPhoto(
+    studentId: string,
+    planningId: string,
+    mesocycleId: string,
+    microcycleId: string,
+    workoutLogId: string,
+    photoKey: string,
+): Promise<NewWorkoutLogResponse> {
+    const { data } = await Api.patch<NewWorkoutLogResponse>(
+        `/me/planning/${planningId}/mesocycle/${mesocycleId}/microcycle/${microcycleId}/workout-log/${workoutLogId}/check-in/photo`,
+        { photo_key: photoKey },
+    );
+    return data;
+}
+
 export async function skipNewWorkoutLog(
     studentId: string,
     planningId: string,

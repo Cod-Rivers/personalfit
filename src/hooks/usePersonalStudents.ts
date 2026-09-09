@@ -346,6 +346,7 @@ export function usePersonalStudents(enabled: boolean) {
         loading,
         modal,
         editForm,
+        editId,
         unlinkTarget,
         submitting,
         error,
