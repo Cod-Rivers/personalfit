@@ -126,7 +126,15 @@ export async function saveWorkoutLog(
     return res.data;
 }
 
-/* ── New API ── */
+/* ── New API ──
+ * As rotas abaixo usam /me/planning/... (o aluno logado registrando o
+ * próprio treino), não /students/:id/planning/... (essa é exclusiva do
+ * personal — RequireRole(personal) rejeitava com 403 toda conta
+ * role=student, que é o default do cadastro: pendência -16 do
+ * TAREFAS_PENDENTES.md). studentId continua no parâmetro por compatibilidade
+ * de assinatura com quem já chama essas funções, mas não entra mais na URL —
+ * o backend resolve o aluno pelo usuário autenticado
+ * (app_shared.ResolveStudentID). */
 export async function createNewWorkoutLog(
     studentId: string,
     planningId: string,
@@ -135,7 +143,7 @@ export async function createNewWorkoutLog(
     body: CreateNewWorkoutLogRequest,
 ): Promise<NewWorkoutLogResponse> {
     const { data } = await Api.post<NewWorkoutLogResponse>(
-        `/students/${studentId}/planning/${planningId}/mesocycle/${mesocycleId}/microcycle/${microcycleId}/workout-log`,
+        `/me/planning/${planningId}/mesocycle/${mesocycleId}/microcycle/${microcycleId}/workout-log`,
         body,
     );
     return data;
@@ -147,8 +155,15 @@ export async function getNewWorkoutLogs(
     mesocycleId: string,
     microcycleId: string,
 ): Promise<NewWorkoutLogResponse[]> {
+    // "workout-log" no SINGULAR aqui — é o GetWorkoutLogs escopado a um
+    // microciclo (meso.GET("", ...) em PeriodizedWorkoutLogRoutes), diferente
+    // do "/workout-logs" plural do macrociclo inteiro (GetPlanWorkoutLogs).
+    // Achado batendo esta função contra a rota real: chamava o plural aqui e
+    // sempre voltava 404, então `ensurePendingWorkoutLogs`
+    // (downloadManager.ts) nunca chegava a tentar pré-criar nada — o
+    // try/catch engolia o 404 e retornava cedo demais.
     const { data } = await Api.get<NewWorkoutLogResponse[]>(
-        `/students/${studentId}/planning/${planningId}/mesocycle/${mesocycleId}/microcycle/${microcycleId}/workout-logs`,
+        `/me/planning/${planningId}/mesocycle/${mesocycleId}/microcycle/${microcycleId}/workout-log`,
     );
     return data ?? [];
 }
@@ -177,7 +192,7 @@ export async function completeNewWorkoutLog(
     body: CompleteWorkoutLogRequest,
 ): Promise<NewWorkoutLogResponse> {
     const { data } = await Api.patch<NewWorkoutLogResponse>(
-        `/students/${studentId}/planning/${planningId}/mesocycle/${mesocycleId}/microcycle/${microcycleId}/workout-log/${workoutLogId}/complete`,
+        `/me/planning/${planningId}/mesocycle/${mesocycleId}/microcycle/${microcycleId}/workout-log/${workoutLogId}/complete`,
         body,
     );
     return data;
@@ -232,7 +247,7 @@ export async function completeWorkoutSession(
     body: WorkoutSessionRequest,
 ): Promise<NewWorkoutLogResponse> {
     const { data } = await Api.post<NewWorkoutLogResponse>(
-        `/students/${studentId}/planning/${planningId}/mesocycle/${mesocycleId}/microcycle/${microcycleId}/workout-log/session`,
+        `/me/planning/${planningId}/mesocycle/${mesocycleId}/microcycle/${microcycleId}/workout-log/session`,
         body,
     );
     return data;
@@ -247,7 +262,7 @@ export async function skipNewWorkoutLog(
     reason: string,
 ): Promise<NewWorkoutLogResponse> {
     const { data } = await Api.patch<NewWorkoutLogResponse>(
-        `/students/${studentId}/planning/${planningId}/mesocycle/${mesocycleId}/microcycle/${microcycleId}/workout-log/${workoutLogId}/skip`,
+        `/me/planning/${planningId}/mesocycle/${mesocycleId}/microcycle/${microcycleId}/workout-log/${workoutLogId}/skip`,
         { reason },
     );
     return data;
