@@ -67,19 +67,93 @@ const studentSections: HelpSection[] = [
     },
     {
         id: 'offline',
-        title: 'Treinar offline',
+        title: 'Treinar offline e check-in com foto',
         body: (
             <>
                 <p className="mb-2">
+                    <strong>Por que isso existe:</strong> academia costuma ter
+                    sinal fraco (porão, sala de musculação com paredes
+                    grossas) ou nenhum sinal. Sem esse recurso, uma queda de
+                    conexão bem na hora de salvar o treino apagaria o seu
+                    esforço — você faria tudo certo e o app
+                    &quot;esqueceria&quot;. O Venafit resolve isso guardando
+                    o registro{' '}
+                    <strong>no seu aparelho primeiro</strong>, e só manda para
+                    o servidor quando a internet voltar. Falha de rede nunca
+                    é problema seu.
+                </p>
+                <p className="mb-2">
                     Toque em <strong>Baixar para offline</strong> para salvar
                     seu plano de treino atual e os vídeos dos exercícios no
-                    aparelho. Assim você consegue treinar mesmo sem internet.
+                    aparelho. Assim você consegue treinar mesmo sem internet
+                    — e nem precisa ter baixado antes: o registro nunca se
+                    perde, com ou sem plano baixado previamente.
                 </p>
-                <p className="mb-0">
+                <p className="mb-2">
+                    <strong>Passo a passo para registrar um treino:</strong>
+                </p>
+                <ol className="mb-2 ps-3">
+                    <li>
+                        Abra o treino do dia e registre cada série (
+                        repetições, carga e{' '}
+                        <GlossaryLink id="rpe">RPE</GlossaryLink>), como de
+                        costume.
+                    </li>
+                    <li>
+                        Toque em <strong>Completar Treino</strong>. Aparece
+                        uma tela de <strong>confirmação (check-in)</strong>:
+                        você confirma que terminou e pode, opcionalmente,
+                        anexar uma <strong>foto</strong> do treino ou do
+                        resultado.
+                    </li>
+                    <li>
+                        Se o seu personal configurou uma{' '}
+                        <GlossaryLink id="janela-de-registro">
+                            janela de registro
+                        </GlossaryLink>
+                        , essa mesma tela avisa quando o registro está perto
+                        de ficar <strong>tardio</strong> — é só um aviso
+                        estimado; o registro é salvo de qualquer forma, nunca
+                        é bloqueado ou descartado por estar fora do prazo.
+                    </li>
+                    <li>
+                        Confirme. O treino já é salvo <strong>no
+                        aparelho</strong> nesse instante — a tela não fica
+                        esperando a internet. Um selo mostra &quot;salvo
+                        localmente&quot; até a sincronização de verdade
+                        acontecer.
+                    </li>
+                    <li>
+                        Assim que houver internet, o app envia o registro
+                        automaticamente em segundo plano. Reenviar por engano
+                        nunca duplica o treino.
+                    </li>
+                    <li>
+                        A foto (se você anexou) sobe <strong>depois</strong>,
+                        numa fila própria, e nunca atrasa nem bloqueia a
+                        confirmação do treino em si — mesmo que o envio da
+                        foto falhe (sinal fraco, foto grande demais), o
+                        treino já está registrado.
+                    </li>
+                </ol>
+                <p className="mb-2">
                     Enquanto estiver offline, os treinos completados ficam
                     guardados no aparelho e são enviados automaticamente assim
                     que a internet voltar. Um selo mostra quantos treinos
-                    ainda estão pendentes de sincronizar.
+                    (e fotos) ainda estão pendentes de sincronizar.
+                </p>
+                <p className="mb-0 small text-muted">
+                    <strong>Para aproveitar melhor:</strong> baixe o treino
+                    para offline <em>antes</em> de sair de casa se a sua
+                    academia costuma ter sinal ruim — assim os vídeos dos
+                    exercícios também abrem sem internet. Anexar a foto no
+                    check-in é opcional, mas ajuda o seu personal a
+                    acompanhar de verdade (não só &quot;cumpriu&quot;, mas
+                    &quot;como ficou&quot;) — e não custa nada tentar mesmo
+                    com sinal fraco: se a foto falhar, o treino já está
+                    registrado do mesmo jeito. Não force o app: fechar a
+                    tela logo depois de &quot;Completar Treino&quot; é
+                    seguro, o envio continua em segundo plano.
                 </p>
             </>
         ),
@@ -280,6 +354,56 @@ const personalSections: HelpSection[] = [
         ),
     },
     {
+        id: 'janela-de-registro-personal',
+        title: 'Janela de registro: até quando o aluno pode marcar o treino',
+        body: (
+            <>
+                <p className="mb-2">
+                    <strong>Por que isso existe:</strong> sem um prazo
+                    definido, &quot;quando&quot; o aluno registra um treino é
+                    ambíguo —
+                    ele pode marcar um treino de terça só na sexta, e isso
+                    conta como aderência real? A{' '}
+                    <GlossaryLink id="janela-de-registro">
+                        janela de registro
+                    </GlossaryLink>{' '}
+                    resolve isso: você define, por aluno, até quando um
+                    registro conta como &quot;no prazo&quot; antes de ficar
+                    marcado como <strong>tardio</strong>. Importante: um registro
+                    tardio <strong>nunca é apagado ou recusado</strong> — ele
+                    é salvo do mesmo jeito, só fica sinalizado, para você
+                    diferenciar consistência real de registro tardio.
+                </p>
+                <p className="mb-2">
+                    <strong>Passo a passo:</strong>
+                </p>
+                <ol className="mb-2 ps-3">
+                    <li>
+                        Na aba <strong>Meus Alunos</strong>, toque em{' '}
+                        <strong>Editar</strong> no cartão do aluno.
+                    </li>
+                    <li>
+                        Escolha a janela: <strong>mesmo dia</strong>,{' '}
+                        <strong>24 horas</strong>, <strong>48 horas</strong>{' '}
+                        (padrão) ou <strong>sem limite</strong>.
+                    </li>
+                    <li>Salve — vale a partir dali, sem afetar o histórico já registrado.</li>
+                </ol>
+                <p className="mb-0 small text-muted">
+                    <strong>Para aproveitar melhor:</strong> use{' '}
+                    <strong>mesmo dia</strong> ou <strong>24h</strong> só com
+                    alunos que você quer cobrar disciplina rígida de horário
+                    — para a maioria, <strong>48h</strong> já separa bem
+                    quem treina e demora a confirmar de quem realmente não
+                    treinou. Evite <strong>sem limite</strong> por padrão:
+                    ele torna o sinal de &quot;tardio&quot; inútil para
+                    identificar quem está sumindo (veja a aba{' '}
+                    <Link href="#retencao">Retenção</Link>).
+                </p>
+            </>
+        ),
+    },
+    {
         id: 'retencao',
         title: 'Retenção',
         body: (
@@ -460,6 +584,69 @@ const personalSections: HelpSection[] = [
                         Periodização + Autorregulação por RPE/RIR
                     </Link>{' '}
                     — como definir RPE alvo, ajustar carga e programar deloads.
+                </p>
+            </>
+        ),
+    },
+    {
+        id: 'exercicio-nao-substituivel',
+        title: 'Exercício não-substituível',
+        body: (
+            <>
+                <p className="mb-2">
+                    <strong>Por que isso existe:</strong> quando o
+                    equipamento prescrito está indisponível, o aluno pode
+                    pedir uma sugestão de troca por IA. Isso é ótimo na
+                    maioria dos casos, mas alguns exercícios são{' '}
+                    <strong>centrais do programa</strong> ou foram escolhidos
+                    por um motivo técnico/de segurança específico (uma
+                    restrição da anamnese, uma progressão que só faz sentido
+                    naquele movimento) — trocá-los sem o seu aval pode
+                    comprometer o plano. O toggle de{' '}
+                    <GlossaryLink id="nao-substituivel">
+                        não-substituível
+                    </GlossaryLink>{' '}
+                    te dá a palavra final sobre isso, exercício a exercício.
+                </p>
+                <p className="mb-2">
+                    <strong>Passo a passo:</strong>
+                </p>
+                <ol className="mb-2 ps-3">
+                    <li>
+                        Abra a{' '}
+                        <Link href="#periodizacao-aluno">
+                            edição de treinos
+                        </Link>{' '}
+                        do aluno (ou de um{' '}
+                        <Link href="#periodizacao-biblioteca">
+                            ciclo reutilizável
+                        </Link>
+                        ) e ache o exercício desejado.
+                    </li>
+                    <li>
+                        No campo de prescrição do exercício, defina{' '}
+                        <strong>Nunca substituível</strong> (bloqueia a troca
+                        sempre, mesmo que a regra automática de dor/restrição
+                        liberaria),{' '}
+                        <strong>Sempre substituível</strong> (libera mesmo
+                        que a regra automática bloquearia) ou deixe{' '}
+                        <strong>Sem restrição</strong> (padrão — segue a
+                        regra automática da anamnese).
+                    </li>
+                    <li>
+                        Salve o plano. O aluno passa a ver um selo de
+                        bloqueio no card do exercício e não consegue abrir a
+                        Substituição Inteligente para ele.
+                    </li>
+                </ol>
+                <p className="mb-0 small text-muted">
+                    <strong>Para aproveitar melhor:</strong> use com
+                    moderação — marcar tudo como não-substituível tira do
+                    aluno a saída de emergência para quando o equipamento
+                    realmente não está disponível na academia dele, e ele
+                    pode acabar pulando a série em vez de adaptar. Reserve
+                    para os exercícios em que a técnica ou a segurança
+                    realmente não permitem alternativa equivalente.
                 </p>
             </>
         ),
