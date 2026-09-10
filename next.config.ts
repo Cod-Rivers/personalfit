@@ -60,6 +60,23 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  // Aliases da política de privacidade. A URL canônica é
+  // /politica-privacidade, mas lojas de aplicativo, e-mails e materiais
+  // antigos costumam apontar para variações em inglês ou com hífen a mais.
+  // Sem estes aliases, essas variações caem em 404 — o que uma revisão de
+  // loja lê como "política inacessível".
+  async redirects() {
+    return [
+      "/privacy",
+      "/privacy-policy",
+      "/politica-de-privacidade",
+      "/politica",
+    ].map((source) => ({
+      source,
+      destination: "/politica-privacidade",
+      permanent: true,
+    }));
+  },
   webpack: (config) => {
     // Desativa source maps de JS e CSS no nível do webpack
     config.devtool = false;
