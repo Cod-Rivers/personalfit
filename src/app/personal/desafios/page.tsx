@@ -16,7 +16,10 @@ import {
     challengePublicLink,
     type Challenge,
 } from '@/libs/challengeService';
+import StudentChallengeTab from './_components/StudentChallengeTab';
 import s from './desafios.module.css';
+
+type DesafiosTab = 'leads' | 'entre-alunos';
 
 function fmt(d: string) {
     const dt = new Date(d + 'T00:00:00');
@@ -31,6 +34,7 @@ function todayISO(offsetDays = 0) {
 
 export default function DesafiosPage() {
     const router = useRouter();
+    const [activeTab, setActiveTab] = useState<DesafiosTab>('leads');
     const [challenges, setChallenges] = useState<Challenge[]>([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
@@ -116,10 +120,11 @@ export default function DesafiosPage() {
             <div className={s.container}>
                 <div className={s.header}>
                     <div>
-                        <h1 className={s.headerTitle}><FiAward /> Grupos de Desafio</h1>
+                        <h1 className={s.headerTitle}><FiAward /> Desafios</h1>
                         <p className={s.headerSub}>
-                            Crie um desafio, compartilhe o link no Instagram ou
-                            WhatsApp e converta os participantes em alunos.
+                            {activeTab === 'leads'
+                                ? 'Crie um desafio, compartilhe o link no Instagram ou WhatsApp e converta os participantes em alunos.'
+                                : 'Crie uma competição de constância entre os alunos que já são seus, com base em dias seguidos de treino registrado com foto.'}
                         </p>
                     </div>
                     <div className={s.headerActions}>
@@ -129,16 +134,51 @@ export default function DesafiosPage() {
                         >
                             <FiArrowLeft /> Voltar
                         </button>
-                        <button
-                            className={s.btnPrimary}
-                            onClick={() => setShowForm((v) => !v)}
-                        >
-                            + Novo desafio
-                        </button>
+                        {activeTab === 'leads' && (
+                            <button
+                                className={s.btnPrimary}
+                                onClick={() => setShowForm((v) => !v)}
+                            >
+                                + Novo desafio
+                            </button>
+                        )}
                     </div>
                 </div>
 
-                {showForm && (
+                <div
+                    className="btn-group mb-3"
+                    role="group"
+                    aria-label="Escolher tipo de desafio"
+                >
+                    <button
+                        type="button"
+                        className={`btn btn-sm ${
+                            activeTab === 'leads'
+                                ? 'btn-secondary'
+                                : 'btn-outline-secondary'
+                        }`}
+                        aria-pressed={activeTab === 'leads'}
+                        onClick={() => setActiveTab('leads')}
+                    >
+                        Captação de Leads
+                    </button>
+                    <button
+                        type="button"
+                        className={`btn btn-sm ${
+                            activeTab === 'entre-alunos'
+                                ? 'btn-secondary'
+                                : 'btn-outline-secondary'
+                        }`}
+                        aria-pressed={activeTab === 'entre-alunos'}
+                        onClick={() => setActiveTab('entre-alunos')}
+                    >
+                        Entre Alunos
+                    </button>
+                </div>
+
+                {activeTab === 'entre-alunos' && <StudentChallengeTab />}
+
+                {activeTab === 'leads' && showForm && (
                     <form className={s.formCard} onSubmit={handleCreate}>
                         <div className={s.form}>
                             <div>
@@ -227,7 +267,7 @@ export default function DesafiosPage() {
                     </form>
                 )}
 
-                {loading ? (
+                {activeTab === 'leads' && (loading ? (
                     <div className={s.loading}>Carregando…</div>
                 ) : challenges.length === 0 ? (
                     <div className={s.empty}>
@@ -370,7 +410,7 @@ export default function DesafiosPage() {
                             </div>
                         ))}
                     </div>
-                )}
+                ))}
             </div>
         </div>
     );

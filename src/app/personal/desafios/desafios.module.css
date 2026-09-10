@@ -281,3 +281,38 @@
     padding: 40px;
     color: var(--text-secondary);
 }
+
+.toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.errorMsg {
+    background: rgba(255, 80, 80, 0.12);
+    color: var(--coral);
+    border-radius: 8px;
+    padding: 0.65rem 1rem;
+    font-size: 0.875rem;
+}
+
+.studentPickList {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 220px;
+    overflow-y: auto;
+    padding: 8px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+}
+
+.studentPickItem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    cursor: pointer;
+}

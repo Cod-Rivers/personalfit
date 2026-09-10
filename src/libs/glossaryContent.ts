@@ -376,11 +376,37 @@ const microcycleDerivedTerms: GlossaryTerm[] = microcycleHelpTopics.map((topic) 
     },
 }));
 
+// Termos do "Desafio entre Alunos" — competição de constância entre alunos já
+// vinculados ao mesmo personal, ver StudentChallengeLeaderboard.tsx. Sem
+// `seeAlso` por enquanto: a seção dedicada na Central de Ajuda ainda não foi
+// escrita (fica para depois, não é bloqueante desta feature).
+const studentChallengeTerms: GlossaryTerm[] = [
+    {
+        id: 'desafio-entre-alunos',
+        term: 'Desafio entre Alunos',
+        short: 'Competição de constância entre os alunos de um mesmo personal, por dias seguidos de treino com foto.',
+        long: 'O Desafio entre Alunos é uma competição criada pelo personal entre os alunos já vinculados a ele. A pontuação é por streak: quem mantém mais dias civis seguidos completando o treino e anexando uma foto no check-in (a mesma foto opcional do registro de treino, reaproveitada automaticamente) sobe no mural. Participar exige aceitar um convite com consentimento explícito — ao aceitar, sua foto de check-in e sua sequência de dias ficam visíveis aos outros participantes do mesmo desafio. Você pode sair a qualquer momento, o que interrompe essa visibilidade na hora.',
+    },
+    {
+        id: 'streak-atual',
+        term: 'Streak atual (desafio)',
+        short: 'Quantos dias seguidos, até hoje, você mantém o check-in com foto dentro de um desafio entre alunos.',
+        long: 'A streak atual é a sequência de dias civis seguidos, contando até hoje, em que você completou o treino e anexou uma foto no check-in dentro da janela de um desafio entre alunos. Ela tem folga para o dia de hoje ainda não ter check-in — não zera à meia-noite, só se um dia inteiro passar sem registro. É diferente da streak recorde, que não cai quando a sequência atual quebra.',
+    },
+    {
+        id: 'streak-recorde',
+        term: 'Streak recorde (desafio)',
+        short: 'A maior sequência de dias seguidos com foto que você já alcançou dentro do desafio — critério oficial do ranking.',
+        long: 'A streak recorde (longest streak) é a maior sequência de dias civis seguidos com check-in e foto que você já alcançou desde o início do desafio, mesmo que a sequência tenha quebrado depois. É o critério oficial de desempate do mural: o ranking ordena primeiro pela streak recorde, depois pela streak atual, e só então pelo total de dias qualificados.',
+    },
+];
+
 export const glossaryTerms: GlossaryTerm[] = [
     ...microcycleDerivedTerms,
     ...trainingScienceTerms,
     ...trainingFieldTerms,
     ...productTerms,
+    ...studentChallengeTerms,
 ];
 
 export function getGlossaryTerm(id: string): GlossaryTerm {

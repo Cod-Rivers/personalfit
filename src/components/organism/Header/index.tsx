@@ -371,6 +371,16 @@ const Header: React.FC = () => {
                                 </Link>
                             </li>
                         )}
+                        {user.role === 'student' && (
+                            <li className="nav-item">
+                                <Link
+                                    className={`nav-link${pathname === '/desafios' ? ' nav-link-active' : ''}`}
+                                    href="/desafios"
+                                >
+                                    Desafios
+                                </Link>
+                            </li>
+                        )}
                     </ul>
                     <div
                         className="d-flex align-items-center gap-3"

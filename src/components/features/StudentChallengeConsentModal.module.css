@@ -1,0 +1,54 @@
+.description {
+    font-style: italic;
+    color: var(--text-secondary);
+    margin: 0 0 var(--space-3);
+    font-size: var(--font-sm);
+}
+
+.consentLabel {
+    font-size: var(--font-sm);
+}
+
+.text {
+    margin: 0 0 var(--space-3);
+    font-size: var(--font-base);
+    color: var(--text-primary);
+}
+
+.errorMsg {
+    background: rgba(255, 80, 80, 0.12);
+    color: var(--coral);
+    border-radius: var(--radius-md);
+    padding: var(--space-2) var(--space-3);
+    margin-bottom: var(--space-3);
+    font-size: var(--font-sm);
+}
+
+.btnPrimary {
+    background: var(--grad-mint);
+    color: var(--btn-text);
+    border: none;
+    border-radius: var(--radius-md);
+    padding: var(--space-2) var(--space-4);
+    font-weight: 650;
+    cursor: pointer;
+    font-size: var(--font-base);
+}
+.btnPrimary:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.btnGhost {
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    color: inherit;
+    border-radius: var(--radius-md);
+    padding: var(--space-2) var(--space-4);
+    cursor: pointer;
+    font-size: var(--font-base);
+}
+.btnGhost:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
