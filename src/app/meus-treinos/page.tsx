@@ -531,6 +531,21 @@ export default function MeusTreinosPage() {
                                                 estimatedMinutes={
                                                     training.estimatedMinutes
                                                 }
+                                                // Sem estes três, o enriquecimento
+                                                // feito por buildMesoGroups (que
+                                                // ainda paga um getNewWorkoutLogs
+                                                // por mesociclo) era descartado no
+                                                // caminho: o card nunca exibia
+                                                // "Hoje"/"Concluído" e o aluno não
+                                                // tinha como saber qual treino era
+                                                // o da vez sem abrir um por um.
+                                                status={training.status}
+                                                completedDate={
+                                                    training.completedDate
+                                                }
+                                                scheduledToday={
+                                                    training.scheduledToday
+                                                }
                                             />
                                         </div>
                                     </Link>

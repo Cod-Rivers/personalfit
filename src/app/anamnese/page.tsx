@@ -254,8 +254,12 @@ const Questions: FC = () => {
                     label="Voltar para Meus Treinos"
                 />
             </header>
+            {/* minHeight herda do pai (.main-content já resolve 100dvh em
+                cascata). Era '90vh', que em mobile conta a faixa da barra de
+                endereço e forçava scroll de página num passo que cabia na
+                tela — ver rules/layout-viewport-dvh-mobile.md. */}
             <div className="d-flex justify-content-center align-items-center" style={{
-                minHeight: '90vh',
+                minHeight: '100%',
                 paddingBottom: '2rem',
             }}>
                 {loading && <span className="text-center spinner-border" />}
