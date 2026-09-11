@@ -5,7 +5,8 @@
       "namespace": "android_app",
       "package_name": "com.codriverslabs.venafit",
       "sha256_cert_fingerprints": [
-        "SUBSTITUA_PELO_SHA256_DA_ASSINATURA_DE_PRODUCAO"
+        "7D:90:E0:22:75:F0:2F:AF:72:59:7C:9D:91:1C:A8:31:8A:6B:8C:68:32:C2:DA:CD:95:A8:B0:3A:C5:11:5F:23",
+        "E4:46:64:4D:6F:11:6C:FE:CF:7D:D5:8A:3B:08:FB:F8:61:78:08:BF:77:BD:3D:83:9F:36:EF:1C:F8:D9:EF:30"
       ]
     }
   }
