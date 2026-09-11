@@ -1,0 +1,226 @@
+.wrap {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+}
+
+.head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+}
+
+.title {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 0;
+    font-size: var(--font-lg);
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.counter {
+    font-size: var(--font-sm);
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+
+.counter strong {
+    font-size: var(--font-xl);
+    color: var(--text-primary);
+}
+
+.bar {
+    width: 100%;
+    height: 0.875rem;
+    border-radius: var(--radius-full);
+    background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
+    overflow: hidden;
+}
+
+.barFill {
+    height: 100%;
+    background: var(--grad-mint);
+    border-radius: var(--radius-full);
+    transition: width 240ms ease;
+}
+
+.barReached {
+    border-color: var(--mint);
+    box-shadow: var(--shadow-mint);
+}
+
+.status {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    font-size: var(--font-sm);
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+
+.status strong {
+    color: var(--text-primary);
+}
+
+.projection {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: var(--text-muted);
+    font-size: var(--font-xs);
+}
+
+/* Meta batida: comemoração. Meta não atingida: o mesmo tom neutro do resto
+   da tela — sem "falhou", sem badge negativo, sem vermelho. */
+.reached {
+    background: var(--mint-glow);
+    border: 1px solid var(--mint);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    font-size: var(--font-sm);
+    color: var(--text-primary);
+    line-height: 1.5;
+}
+
+.reached strong {
+    color: var(--mint-text);
+}
+
+.closing {
+    background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    font-size: var(--font-sm);
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.closing strong {
+    color: var(--text-primary);
+}
+
+.contribBlock {
+    border-top: 1px solid var(--border-subtle);
+    padding-top: var(--space-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.contribTitle {
+    margin: 0;
+    font-size: var(--font-base);
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.contribNote {
+    margin: 0;
+    font-size: var(--font-xs);
+    color: var(--text-muted);
+}
+
+.stack {
+    display: flex;
+    width: 100%;
+    height: 0.75rem;
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
+}
+
+.segment {
+    height: 100%;
+    min-width: 0.125rem;
+}
+
+.contribList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.contribItem {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+    font-size: var(--font-sm);
+    color: var(--text-secondary);
+}
+
+.dot {
+    width: 0.625rem;
+    height: 0.625rem;
+    border-radius: var(--radius-full);
+    flex-shrink: 0;
+}
+
+.contribName {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+    color: var(--text-primary);
+    font-weight: 600;
+    min-width: 0;
+    flex: 1;
+}
+
+.contribDays {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.selfTag {
+    font-size: var(--font-xs);
+    font-weight: 700;
+    color: var(--mint-text);
+    background: var(--mint-glow);
+    border-radius: var(--radius-full);
+    padding: 0.125rem var(--space-2);
+}
+
+/* Paleta da barra empilhada. Só tons dos tokens do tema — nada de hex solto,
+   para o claro e o escuro continuarem legíveis. */
+.seg0 {
+    background: var(--mint);
+}
+.seg1 {
+    background: var(--amber);
+}
+.seg2 {
+    background: var(--mint-dim);
+}
+.seg3 {
+    background: var(--coral);
+}
+.seg4 {
+    background: var(--amber-dim);
+}
+.seg5 {
+    background: var(--coral-dim);
+}
+
+.loading {
+    text-align: center;
+    padding: var(--space-6) var(--space-4);
+    color: var(--text-secondary);
+    font-size: var(--font-sm);
+}

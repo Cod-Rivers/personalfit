@@ -2,14 +2,21 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiAward, FiArrowLeft, FiLogOut } from 'react-icons/fi';
+import { FiAward, FiArrowLeft, FiLogOut, FiAlertCircle } from 'react-icons/fi';
 import { getToken, getUser, getStudentHomeRoute } from '@/libs/session';
 import StudentChallengeLeaderboard from '@/components/features/StudentChallengeLeaderboard';
-import StudentChallengeConsentModal from '@/components/features/StudentChallengeConsentModal';
+import StudentChallengeTeamLeaderboard from '@/components/features/StudentChallengeTeamLeaderboard';
+import StudentChallengeGoalProgress from '@/components/features/StudentChallengeGoalProgress';
+import StudentChallengeConsentModal, {
+    type ConsentModalMode,
+} from '@/components/features/StudentChallengeConsentModal';
 import {
     listMyStudentChallenges,
     getMyLeaderboard,
     optOutStudentChallenge,
+    challengeMode,
+    acceptedPersonals,
+    isMultiPersonal,
     type StudentChallenge,
     type StudentChallengeLeaderboard as Leaderboard,
 } from '@/libs/studentChallengeService';
@@ -27,6 +34,7 @@ export default function MyStudentChallengesPage() {
     const [consentTarget, setConsentTarget] = useState<StudentChallenge | null>(
         null,
     );
+    const [consentMode, setConsentMode] = useState<ConsentModalMode>('accept');
     const [leaderboards, setLeaderboards] = useState<
         Record<string, Leaderboard>
     >({});
@@ -67,8 +75,15 @@ export default function MyStudentChallengesPage() {
     const invited = challenges.filter(
         (c) => myParticipant(c)?.status === 'invited',
     );
+    // O consentimento antigo (v1) deixou de cobrir o escopo do desafio, que
+    // virou multi-personal. O aluno continua inscrito, mas fora do mural: nem
+    // expõe, nem enxerga. Por isso ele sai da lista de ativos e ganha uma
+    // seção própria — carregar o mural dele aqui só devolveria vazio.
+    const needsReconsent = challenges.filter(
+        (c) => myParticipant(c)?.status === 'active' && c.needs_reconsent,
+    );
     const active = challenges.filter(
-        (c) => myParticipant(c)?.status === 'active',
+        (c) => myParticipant(c)?.status === 'active' && !c.needs_reconsent,
     );
 
     const loadLeaderboard = useCallback(
@@ -109,6 +124,23 @@ export default function MyStudentChallengesPage() {
         }
     }
 
+    function openConsent(
+        challenge: StudentChallenge,
+        mode: ConsentModalMode,
+    ) {
+        setConsentMode(mode);
+        setConsentTarget(challenge);
+    }
+
+    /** Nomes dos personais participantes, para a faixa de reconfirmação — o
+     * aluno decide sabendo quem passou a fazer parte, não só "outros". */
+    function personalNames(challenge: StudentChallenge): string {
+        const names = acceptedPersonals(challenge)
+            .map((p) => p.name?.trim())
+            .filter((n): n is string => !!n);
+        return names.join(', ');
+    }
+
     if (!studentId && loading) return null;
 
     return (
@@ -121,7 +153,7 @@ export default function MyStudentChallengesPage() {
                         </h1>
                         <p className={s.headerSub}>
                             Competições de constância entre você e os outros
-                            alunos do seu personal.
+                            alunos participantes.
                         </p>
                     </div>
                     <button
@@ -136,6 +168,64 @@ export default function MyStudentChallengesPage() {
                     <div className={s.loadingMsg}>Carregando…</div>
                 ) : (
                     <>
+                        {needsReconsent.length > 0 && (
+                            <section className={ms.section}>
+                                <h2 className={ms.sectionTitle}>
+                                    Confirme sua participação
+                                </h2>
+                                <div className={ms.inviteList}>
+                                    {needsReconsent.map((c) => (
+                                        <div
+                                            className={ms.reconsentCard}
+                                            key={c.id}
+                                        >
+                                            <div className={ms.reconsentBody}>
+                                                <div
+                                                    className={
+                                                        ms.reconsentTitle
+                                                    }
+                                                >
+                                                    <FiAlertCircle
+                                                        aria-hidden="true"
+                                                    />
+                                                    {c.name}
+                                                </div>
+                                                <p className={ms.inviteMeta}>
+                                                    Este desafio agora reúne
+                                                    alunos de mais de um
+                                                    personal
+                                                    {personalNames(c) &&
+                                                        ` (${personalNames(c)})`}
+                                                    . Como isso muda quem
+                                                    enxerga suas fotos e sua
+                                                    sequência, precisamos da sua
+                                                    confirmação de novo.
+                                                </p>
+                                                <p className={ms.inviteMeta}>
+                                                    Até lá você fica{' '}
+                                                    <strong>
+                                                        fora do mural
+                                                    </strong>
+                                                    : ninguém vê seus dados e
+                                                    você também não vê os dos
+                                                    outros. Sua sequência não é
+                                                    perdida.
+                                                </p>
+                                            </div>
+                                            <button
+                                                className={ms.btnPrimary}
+                                                onClick={() =>
+                                                    openConsent(c, 'renew')
+                                                }
+                                            >
+                                                Confirmar participação
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+
                         {invited.length > 0 && (
                             <section className={ms.section}>
                                 <h2 className={ms.sectionTitle}>
@@ -152,14 +242,15 @@ export default function MyStudentChallengesPage() {
                                                     {c.name}
                                                 </div>
                                                 <div className={ms.inviteMeta}>
-                                                    Seu personal te convidou
-                                                    para este desafio.
+                                                    {isMultiPersonal(c)
+                                                        ? 'Convite para um desafio que reúne alunos de mais de um personal.'
+                                                        : 'Seu personal te convidou para este desafio.'}
                                                 </div>
                                             </div>
                                             <button
                                                 className={ms.btnPrimary}
                                                 onClick={() =>
-                                                    setConsentTarget(c)
+                                                    openConsent(c, 'accept')
                                                 }
                                             >
                                                 Ver convite
@@ -181,56 +272,120 @@ export default function MyStudentChallengesPage() {
                                 </div>
                             ) : (
                                 <div className={ms.activeList}>
-                                    {active.map((c) => (
-                                        <div
-                                            className={ms.activeCard}
-                                            key={c.id}
-                                        >
-                                            <div className={ms.activeHead}>
-                                                <div>
-                                                    <div
-                                                        className={
-                                                            ms.inviteName
-                                                        }
-                                                    >
-                                                        {c.name}
-                                                    </div>
-                                                    {c.description && (
+                                    {active.map((c) => {
+                                        const lb = leaderboards[c.id];
+                                        const mode = challengeMode(c);
+                                        return (
+                                            <div
+                                                className={ms.activeCard}
+                                                key={c.id}
+                                            >
+                                                <div className={ms.activeHead}>
+                                                    <div>
                                                         <div
                                                             className={
-                                                                ms.inviteMeta
+                                                                ms.inviteName
                                                             }
                                                         >
-                                                            {c.description}
+                                                            {c.name}
+                                                        </div>
+                                                        {c.description && (
+                                                            <div
+                                                                className={
+                                                                    ms.inviteMeta
+                                                                }
+                                                            >
+                                                                {c.description}
+                                                            </div>
+                                                        )}
+                                                        {isMultiPersonal(c) && (
+                                                            <div
+                                                                className={
+                                                                    ms.multiTag
+                                                                }
+                                                            >
+                                                                Desafio entre
+                                                                alunos de vários
+                                                                personais
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <button
+                                                        className={ms.btnLeave}
+                                                        onClick={() =>
+                                                            handleOptOut(c)
+                                                        }
+                                                        disabled={
+                                                            optOutTargetId ===
+                                                            c.id
+                                                        }
+                                                    >
+                                                        <FiLogOut />{' '}
+                                                        {optOutTargetId === c.id
+                                                            ? 'Saindo…'
+                                                            : 'Sair do desafio'}
+                                                    </button>
+                                                </div>
+
+                                                {mode === 'collaborative' &&
+                                                    lb?.collaborative && (
+                                                        <StudentChallengeGoalProgress
+                                                            progress={
+                                                                lb.collaborative
+                                                            }
+                                                            teams={lb.teams}
+                                                            entries={lb.entries}
+                                                            finished={
+                                                                c.status ===
+                                                                'finished'
+                                                            }
+                                                        />
+                                                    )}
+
+                                                {mode === 'teams' &&
+                                                    lb?.teams && (
+                                                        <div
+                                                            className={
+                                                                ms.teamBlock
+                                                            }
+                                                        >
+                                                            <h3
+                                                                className={
+                                                                    ms.blockTitle
+                                                                }
+                                                            >
+                                                                Quadro de
+                                                                equipes
+                                                            </h3>
+                                                            <StudentChallengeTeamLeaderboard
+                                                                teams={lb.teams}
+                                                                finished={
+                                                                    c.status ===
+                                                                    'finished'
+                                                                }
+                                                            />
                                                         </div>
                                                     )}
-                                                </div>
-                                                <button
-                                                    className={ms.btnLeave}
-                                                    onClick={() =>
-                                                        handleOptOut(c)
+
+                                                {mode !== 'individual' && (
+                                                    <h3
+                                                        className={
+                                                            ms.blockTitle
+                                                        }
+                                                    >
+                                                        Mural de constância
+                                                    </h3>
+                                                )}
+                                                <StudentChallengeLeaderboard
+                                                    entries={lb?.entries ?? []}
+                                                    loading={
+                                                        leaderboardLoading ===
+                                                        c.id
                                                     }
-                                                    disabled={
-                                                        optOutTargetId === c.id
-                                                    }
-                                                >
-                                                    <FiLogOut />{' '}
-                                                    {optOutTargetId === c.id
-                                                        ? 'Saindo…'
-                                                        : 'Sair do desafio'}
-                                                </button>
+                                                />
                                             </div>
-                                            <StudentChallengeLeaderboard
-                                                entries={
-                                                    leaderboards[c.id]
-                                                        ?.entries ?? []
-                                                }
-                                                loading={
-                                                    leaderboardLoading === c.id
-                                                }
-                                            />
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             )}
                         </section>
@@ -242,6 +397,7 @@ export default function MyStudentChallengesPage() {
                 <StudentChallengeConsentModal
                     open={!!consentTarget}
                     challenge={consentTarget}
+                    mode={consentMode}
                     onClose={() => setConsentTarget(null)}
                     onAccepted={() => {
                         setConsentTarget(null);

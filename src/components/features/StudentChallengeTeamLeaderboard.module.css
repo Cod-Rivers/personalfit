@@ -1,0 +1,182 @@
+.wrap {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.legend {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    font-size: var(--font-xs);
+    color: var(--text-secondary);
+    line-height: 1.45;
+}
+
+.legendIcon {
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+    color: var(--mint-text);
+}
+
+.partial {
+    font-size: var(--font-xs);
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: var(--space-3) var(--space-4);
+}
+
+.itemSelf {
+    border-color: var(--mint);
+    box-shadow: var(--shadow-mint);
+}
+
+.itemUnranked {
+    border-style: dashed;
+    opacity: 0.9;
+}
+
+.rank {
+    flex-shrink: 0;
+    min-width: 2rem;
+    height: 2rem;
+    padding: 0 var(--space-2);
+    border-radius: var(--radius-full);
+    background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-xs);
+    font-weight: 700;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+
+.rankEmpty {
+    color: var(--text-muted);
+}
+
+.rankIcon {
+    color: var(--amber);
+}
+
+.body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    min-width: 0;
+    flex: 1;
+}
+
+.nameRow {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+.name {
+    font-weight: 700;
+    font-size: var(--font-base);
+    color: var(--text-primary);
+}
+
+.selfTag {
+    font-size: var(--font-xs);
+    font-weight: 700;
+    color: var(--mint-text);
+    background: var(--mint-glow);
+    border-radius: var(--radius-full);
+    padding: 0.125rem var(--space-2);
+}
+
+/* Empate é DECLARADO, nunca resolvido por desempate inventado no cliente. */
+.tieTag {
+    font-size: var(--font-xs);
+    font-weight: 700;
+    color: var(--amber-text);
+    background: rgba(240, 165, 0, 0.14);
+    border-radius: var(--radius-full);
+    padding: 0.125rem var(--space-2);
+}
+
+.outTag {
+    font-size: var(--font-xs);
+    color: var(--text-muted);
+    border: 1px dashed var(--border-subtle);
+    border-radius: var(--radius-full);
+    padding: 0.125rem var(--space-2);
+}
+
+.scores {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+}
+
+.scoreMain {
+    font-size: var(--font-xs);
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+
+.scoreMain strong {
+    font-size: var(--font-xl);
+    color: var(--text-primary);
+    margin-right: 0.25rem;
+}
+
+/* A taxa bruta é secundária na hierarquia visual, mas nunca some: é ela que
+   bate com a conta de cabeça do personal. */
+.scoreRaw {
+    font-size: var(--font-xs);
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.stats {
+    display: flex;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+    font-size: var(--font-xs);
+    color: var(--text-secondary);
+}
+
+.stat {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.empty,
+.loading {
+    text-align: center;
+    padding: var(--space-6) var(--space-4);
+    color: var(--text-secondary);
+    font-size: var(--font-sm);
+}

@@ -256,6 +256,9 @@
     display: flex;
     gap: 6px;
     flex-shrink: 0;
+    /* flex-wrap junto do flex-shrink:0 — sem ele os botões estouram o card
+       em viewport estreito (padrão de bug já corrigido em 4 outros lugares). */
+    flex-wrap: wrap;
 }
 
 .convertedTag {
@@ -315,4 +318,257 @@
     gap: 8px;
     font-size: 0.9rem;
     cursor: pointer;
+}
+
+/* ══ Multi-personal ══ */
+
+.blockTitle {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 4px 0;
+}
+
+.badgeGroup {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+}
+
+.modeBadge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.roleBadge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: rgba(240, 165, 0, 0.14);
+    color: var(--amber-text);
+    white-space: nowrap;
+}
+
+/* Card de convite recebido de outro personal. Botões com flex-wrap junto do
+   flex-shrink do .cardActions — sem isso eles estouram o card no celular
+   (bug recorrente do projeto). */
+.inviteCard {
+    background: var(--surface-1);
+    border: 1px solid var(--amber);
+    border-left: 3px solid var(--amber);
+    border-radius: 14px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.personalList {
+    margin-top: 14px;
+    border-top: 1px solid var(--border-subtle);
+    padding-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.personalListTitle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+
+.personalRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.personalInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.personalName {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.personalMeta {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.selfTag {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--mint-text);
+    background: var(--mint-glow);
+    border-radius: 999px;
+    padding: 1px 8px;
+}
+
+.noticeBox,
+.noticeBoxStrong {
+    margin-top: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 0.85rem;
+    line-height: 1.45;
+}
+
+.noticeBox {
+    background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+}
+
+.noticeBoxStrong {
+    background: var(--mint-glow);
+    border: 1px solid var(--mint);
+    color: var(--text-primary);
+}
+
+.noticeBox .cardActions,
+.noticeBoxStrong .cardActions {
+    margin-top: 0;
+}
+
+.transferInline {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.select {
+    padding: 7px 10px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    background: var(--surface-1);
+    color: inherit;
+    font-size: 0.82rem;
+    max-width: 100%;
+}
+
+.modePick {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.modeOption {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    padding: 10px 12px;
+    cursor: pointer;
+}
+
+.modeOption input {
+    margin-top: 3px;
+    flex-shrink: 0;
+}
+
+.modeOption > span {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.modeName {
+    font-weight: 650;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+}
+
+.modeHint {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+.goalRow {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.goalRow .input {
+    flex: 1;
+    min-width: 8rem;
+}
+
+/* Aviso de reconsentimento no convite a outro personal — atenção, não erro. */
+.warnBox {
+    background: rgba(240, 165, 0, 0.12);
+    border: 1px solid var(--amber);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.warnTitle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+}
+
+.warnTitle svg {
+    color: var(--amber);
+    flex-shrink: 0;
+}
+
+.warnText {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.45;
+}
+
+.warnCheck {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    color: var(--text-primary);
+}
+
+.warnCheck input {
+    margin-top: 3px;
+    flex-shrink: 0;
 }

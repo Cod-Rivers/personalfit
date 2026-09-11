@@ -87,3 +87,72 @@
     opacity: 0.55;
     cursor: not-allowed;
 }
+
+/* ── Multi-personal ── */
+
+/* Faixa de reconfirmação: o desafio virou multi-personal e o consentimento
+   antigo deixou de cobrir o escopo. Tom de atenção (âmbar), nunca de erro —
+   o aluno não fez nada errado. */
+.reconsentCard {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    background: var(--surface-1);
+    border: 1px solid var(--amber);
+    border-left: 3px solid var(--amber);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+}
+
+.reconsentBody {
+    min-width: 14rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.reconsentTitle {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-weight: 700;
+    font-size: var(--font-base);
+    color: var(--text-primary);
+}
+
+.reconsentTitle svg {
+    color: var(--amber);
+    flex-shrink: 0;
+}
+
+.reconsentBody .inviteMeta,
+.reconsentBody p {
+    margin: 0;
+}
+
+.multiTag {
+    display: inline-block;
+    margin-top: var(--space-2);
+    font-size: var(--font-xs);
+    font-weight: 700;
+    color: var(--mint-text);
+    background: var(--mint-glow);
+    border-radius: var(--radius-full);
+    padding: 0.125rem var(--space-2);
+}
+
+.teamBlock {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.blockTitle {
+    margin: 0;
+    font-size: var(--font-base);
+    font-weight: 700;
+    color: var(--text-primary);
+}

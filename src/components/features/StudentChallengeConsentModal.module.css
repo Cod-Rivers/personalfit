@@ -15,6 +15,44 @@
     color: var(--text-primary);
 }
 
+/* Lista nominal dos personais participantes — exigência do consentimento v2:
+   o aluno precisa saber QUEM passa a enxergar o dado dele, não só "outros
+   personais". */
+.personalList {
+    list-style: none;
+    margin: 0 0 var(--space-3);
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.personalItem {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+    background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: var(--space-2) var(--space-3);
+}
+
+.personalName {
+    font-weight: 600;
+    font-size: var(--font-base);
+    color: var(--text-primary);
+}
+
+.personalTag {
+    font-size: var(--font-xs);
+    font-weight: 700;
+    color: var(--mint-text);
+    background: var(--mint-glow);
+    border-radius: var(--radius-full);
+    padding: 0.125rem var(--space-2);
+}
+
 .errorMsg {
     background: rgba(255, 80, 80, 0.12);
     color: var(--coral);

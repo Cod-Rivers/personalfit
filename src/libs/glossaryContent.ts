@@ -399,6 +399,24 @@ const studentChallengeTerms: GlossaryTerm[] = [
         short: 'A maior sequência de dias seguidos com foto que você já alcançou dentro do desafio — critério oficial do ranking.',
         long: 'A streak recorde (longest streak) é a maior sequência de dias civis seguidos com check-in e foto que você já alcançou desde o início do desafio, mesmo que a sequência tenha quebrado depois. É o critério oficial de desempate do mural: o ranking ordena primeiro pela streak recorde, depois pela streak atual, e só então pelo total de dias qualificados.',
     },
+    {
+        id: 'desafio-multi-personal',
+        term: 'Desafio multi-personal',
+        short: 'Desafio que reúne alunos de mais de um personal, cada personal formando uma equipe.',
+        long: 'Um desafio multi-personal acontece quando o personal que organizou convida outros personais, e cada um inscreve os próprios alunos. Cada personal vira uma equipe. Isso muda quem enxerga os seus dados: além dos colegas da sua carteira e do seu personal, passam a ver sua foto de check-in, sua sequência, seu nome e seu avatar também os alunos das outras carteiras e os outros personais participantes. Por isso o app pede um consentimento novo, listando nominalmente quem participa — e, enquanto você não confirmar, você fica fora do mural: ninguém vê seus dados e você também não vê os dos outros. Sua sequência não é perdida nesse período, ela volta intacta assim que você confirmar. Nenhum desses personais tem acesso ao seu treino, à sua avaliação, ao seu telefone ou ao seu e-mail — só ao que aparece no mural.',
+    },
+    {
+        id: 'taxa-ajustada-equipe',
+        term: 'Taxa ajustada (quadro de equipes)',
+        short: 'Pontuação que classifica as equipes, corrigindo a vantagem de sorte que equipes pequenas teriam.',
+        long: 'No modo de equipes, cada equipe (um personal e os alunos dele) recebe duas notas. A taxa bruta é a conta direta: o percentual de dias da janela em que um aluno típico daquela equipe registrou treino com foto. A taxa ajustada é a que classifica: ela mistura a taxa bruta da equipe com a média geral do desafio, dando mais peso ao número próprio quanto mais alunos a equipe tiver. Existe porque, na conta bruta, uma equipe de 3 alunos só precisa não ter nenhum faltoso para vencer uma de 30 — o ajuste tira essa vantagem de amostra pequena sem fingir que 3 alunos assíduos é um resultado ruim. As duas aparecem sempre lado a lado no quadro. Equipe com menos de 3 alunos ativos aparece no quadro, mas fora de classificação.',
+    },
+    {
+        id: 'meta-colaborativa',
+        term: 'Meta colaborativa',
+        short: 'Modalidade em que todos somam dias de treino rumo a um número único do grupo, sem disputa.',
+        long: 'Na modalidade colaborativa não há ranking de equipes nem vencedor: o grupo inteiro soma os dias de treino com foto rumo a uma meta única, definida pelo personal organizador antes do desafio começar (e imutável depois disso). A barra do topo mostra quanto o grupo já somou, e abaixo dela aparece a contribuição de cada equipe — contribuição, não colocação. Ao bater a meta o desafio não encerra: ele segue até a data final e o excedente é mostrado como "dias além da meta". Se a meta não for alcançada, o app apenas registra o percentual que o grupo chegou; não existe marca negativa, notificação de fracasso nem penalidade em nenhum lugar do sistema.',
+    },
 ];
 
 export const glossaryTerms: GlossaryTerm[] = [
