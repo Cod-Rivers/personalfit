@@ -212,6 +212,65 @@ const studentSections: HelpSection[] = [
         ),
     },
     {
+        id: 'plano-alimentar',
+        title: 'Plano Alimentar',
+        body: (
+            <>
+                <p className="mb-2">
+                    Em <strong>Plano Alimentar</strong> você acompanha as
+                    refeições que o seu personal montou para você, com o
+                    horário e o conteúdo de cada uma. Se ele anexou o plano em
+                    PDF, o arquivo fica disponível para abrir na mesma tela.
+                </p>
+                <p className="mb-0">
+                    A tela é preenchida pelo personal: se estiver vazia, é
+                    porque ele ainda não montou o seu plano — fale com ele.
+                </p>
+            </>
+        ),
+    },
+    {
+        id: 'evolucao',
+        title: 'Evolução',
+        body: (
+            <>
+                <p className="mb-2">
+                    Em <strong>Evolução</strong> você registra sua avaliação
+                    física ao longo do tempo: peso, medidas e fotos. Cada
+                    registro entra na linha do tempo, e você pode comparar
+                    duas avaliações lado a lado para ver o antes e o depois.
+                </p>
+                <p className="mb-0">
+                    Na mesma tela fica a calculadora de{' '}
+                    <strong>zonas de frequência cardíaca</strong>, que mostra
+                    em que faixa de batimentos treinar. Editar uma avaliação
+                    nunca apaga as fotos já enviadas — elas apenas somam.
+                </p>
+            </>
+        ),
+    },
+    {
+        id: 'desafios',
+        title: 'Desafios',
+        body: (
+            <>
+                <p className="mb-2">
+                    Em <strong>Desafios</strong> ficam as campanhas de
+                    constância criadas pelo seu personal. Convites pendentes
+                    aparecem no topo da tela: você só entra depois de aceitar,
+                    e pode sair de um desafio quando quiser.
+                </p>
+                <p className="mb-0">
+                    Participando, os treinos que você conclui somam pontos no{' '}
+                    <strong>mural de constância</strong>. Alguns desafios são
+                    em <strong>equipes</strong> ou têm uma{' '}
+                    <strong>meta coletiva</strong> — nesses, o quadro mostra o
+                    progresso do grupo, e não só o seu.
+                </p>
+            </>
+        ),
+    },
+    {
         id: 'notificacoes',
         title: 'Notificações',
         body: (
@@ -487,6 +546,33 @@ const personalSections: HelpSection[] = [
                 </Link>
                 .
             </p>
+        ),
+    },
+    {
+        id: 'substituicao-ia',
+        title: 'Substituição por IA',
+        pro: true,
+        body: (
+            <>
+                <p className="mb-2">
+                    Na aba <strong>Substituição por IA</strong> você liga ou
+                    desliga a <strong>Substituição Inteligente</strong> para
+                    os seus alunos. Com ela ativa, o aluno que não conseguir
+                    usar o equipamento prescrito recebe de 2 a 3 alternativas
+                    na hora, respeitando o grupo muscular, o objetivo do
+                    treino, o nível dele e as restrições da{' '}
+                    <GlossaryLink id="anamnese">anamnese</GlossaryLink>.
+                </p>
+                <p className="mb-0">
+                    É um recurso do{' '}
+                    <Link href="#plano-pro">plano PRO</Link>. Para travar um
+                    exercício específico contra troca, use o{' '}
+                    <Link href="#exercicio-nao-substituivel">
+                        marcador de não-substituível
+                    </Link>{' '}
+                    na prescrição.
+                </p>
+            </>
         ),
     },
     {
@@ -1299,6 +1385,28 @@ const personalSections: HelpSection[] = [
         ),
     },
     {
+        id: 'minha-pagina',
+        title: 'Minha Página (vitrine)',
+        pro: true,
+        body: (
+            <>
+                <p className="mb-2">
+                    <strong>Minha Página</strong> é a sua vitrine: a tela que
+                    os seus alunos vinculados veem ao entrar no app. Nela você
+                    apresenta sua foto, bio, especialidades, resultados,
+                    números (alunos, anos de experiência, avaliação) e links
+                    de Instagram, YouTube e WhatsApp.
+                </p>
+                <p className="mb-0">
+                    As cores vêm de paletas prontas, escolhidas na aba{' '}
+                    <Link href="#personalizacao">Personalização</Link>. É um
+                    recurso do <Link href="#plano-pro">plano PRO</Link> — no
+                    gratuito, o aluno entra direto na lista de treinos.
+                </p>
+            </>
+        ),
+    },
+    {
         id: 'anuncios',
         title: 'Meus Anúncios',
         pro: true,
@@ -1309,6 +1417,29 @@ const personalSections: HelpSection[] = [
                 <Link href="#plano-pro">plano PRO</Link> — e, como assinante
                 PRO, nem você nem seus alunos veem anúncios de terceiros.
             </p>
+        ),
+    },
+    {
+        id: 'conta',
+        title: 'Minha Conta e privacidade',
+        body: (
+            <>
+                <p className="mb-2">
+                    Em <strong>Minha Conta</strong> você corrige os dados do
+                    seu cadastro — nome, e-mail e telefone. O CPF fica
+                    visível, mas não é editável por aqui.
+                </p>
+                <p className="mb-0">
+                    Na mesma tela você baixa uma cópia de todos os seus dados
+                    (perfil, alunos, histórico e assinatura) ou pede a
+                    exclusão definitiva da conta, que anonimiza seus dados de
+                    forma irreversível. Os detalhes estão na{' '}
+                    <Link href="/politica-privacidade">
+                        Política de Privacidade
+                    </Link>
+                    .
+                </p>
+            </>
         ),
     },
     {
