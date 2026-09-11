@@ -611,6 +611,20 @@
     color: var(--amber);
 }
 
+
+/* Aba + balão de ajuda na mesma célula da barra. O padding direito do botão
+   encolhe e migra para o slot, então a largura total da aba não muda e o "?"
+   fica encostado no rótulo a que pertence. */
+.tabSlot {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    padding-right: 12px;
+}
+.tabSlot > .tab {
+    padding-right: 2px;
+}
+
 /* ── Exercise cards (Meus Exercícios) ── */
 .exSearch {
     display: flex;

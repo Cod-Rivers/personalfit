@@ -481,3 +481,7 @@
 ## 2026-09-11 08:26 — River (via Claude Code)
 **Resumo:** Plano escrito em [Todo/PLANO_UX_CARDS_MODAL_PRESCRICAO.md](Todo/PLANO_UX_CARDS_MODAL_PRESCRICAO.md), com um item novo no topo de [Todo/TAREFAS_PENDENTES.md](Todo/TAREFAS_PENDENTES.md). Nada de código foi alterado. Antes de planejar, medi a causa no código. São três problemas separados, e vale tratar como três: - **O editor de mesociclo é um formulário único.** [MesocycleFormModal.tsx](personalfit/src/app/personal/_shared/periodizacao/components/MesocycleFormModal.tsx) empilha os 4 campos da fase, o `TrainingsEditor` inteiro e os cards de semana dentro de um só scroll. - **O card de exercício é…
 **Commits:** Adiciona interface do Desafio entre Alunos multi-personal
+
+## 2026-09-11 16:10 — River (via Claude Code)
+**Resumo:** Commitado e pushado nos dois repositórios. As duas árvores estão limpas. | Repositório | Commits | Destino | |---|---|---| | Personal-fit-Back | 1 | `main` | | personalfit | 3 | `master` | No backend, um commit só, porque é uma mudança coerente: os endpoints de salvamento por card, o round-trip do identificador do treino e a extração que tirou o bloco de oitenta linhas duplicado em três lugares. No frontend separei em três, para o histórico ficar legível: a promoção da linha de navegação a componente compartilhado, os três bugs do fluxo do aluno, e o registro de treino por blocos. **Atenção a …
+**Commits:**  telas individuais com cards | Promove NavRow a componente compartilhado | Corrige tres bugs do fluxo do aluno | Registra treino por blocos, um exercicio por card

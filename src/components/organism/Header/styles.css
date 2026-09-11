@@ -412,3 +412,13 @@
     background: var(--mint-glow) !important;
     color: var(--mint) !important;
 }
+/* ── Balão de ajuda por item do menu principal ──
+   O "?" do HelpTooltip é um <button>, então ele é IRMÃO do link do menu e não
+   filho: dentro de um <a>/<Link> o clique no "?" navegaria junto e o HTML
+   ficaria inválido (botão dentro de âncora). Como .nav-link é block, o item
+   precisa virar flex para o "?" ficar na mesma linha do rótulo. */
+.header-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}

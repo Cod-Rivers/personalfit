@@ -13,6 +13,7 @@ import { useBranding } from '@/context/BrandingContext';
 import AvatarUpload from '@/components/molecules/AvatarUpload';
 import { clearSession } from '@/libs/session';
 import { useVisiblePolling } from '@/hooks/useVisiblePolling';
+import HelpTooltip from '@/components/atoms/HelpTooltip';
 
 const Header: React.FC = () => {
     const { theme, toggleTheme } = useTheme();
@@ -289,7 +290,7 @@ const Header: React.FC = () => {
                 >
                     <ul className="navbar-nav me-auto mb-2 mb-lg-0">
                         {!user.has_personal && (
-                            <li className="nav-item dropdown">
+                            <li className="nav-item dropdown header-nav-item">
                                 <a
                                     className={anamineseLinkClass}
                                     href="#"
@@ -309,76 +310,116 @@ const Header: React.FC = () => {
                                         </Link>
                                     </li>
                                 </ul>
+                                <HelpTooltip
+                                    text="Questionário de saúde e dores que orienta a montagem dos seus treinos. Refaça quando algo mudar."
+                                    href="/ajuda#glossario-anamnese"
+                                    label="Ajuda sobre a anamnese"
+                                />
                             </li>
                         )}
                         {user.role === 'personal' && (
-                            <li className="nav-item">
+                            <li className="nav-item header-nav-item">
                                 <Link
                                     className={agendaLinkClass}
                                     href="/personal/agenda"
                                 >
                                     Agenda
                                 </Link>
+                                <HelpTooltip
+                                    text="Seus atendimentos, presença e a grade de horários que o aluno pode escolher ao agendar. Recurso PRO."
+                                    href="/ajuda#agenda"
+                                    label="Ajuda sobre a Agenda"
+                                />
                             </li>
                         )}
                         {user.role === 'personal' && (
-                            <li className="nav-item">
+                            <li className="nav-item header-nav-item">
                                 <Link
                                     className={`nav-link${pathname === '/minha-conta' ? ' nav-link-active' : ''}`}
                                     href="/minha-conta"
                                 >
                                     Minha Conta
                                 </Link>
+                                <HelpTooltip
+                                    text="Corrige seus dados de cadastro, baixa uma cópia deles ou encerra a conta."
+                                    href="/ajuda#conta"
+                                    label="Ajuda sobre Minha Conta"
+                                />
                             </li>
                         )}
                         {user.role === 'student' && (
-                            <li className="nav-item">
+                            <li className="nav-item header-nav-item">
                                 <Link
                                     className={agendamentosLinkClass}
                                     href="/agendamentos"
                                 >
                                     Agendamentos
                                 </Link>
+                                <HelpTooltip
+                                    text="Suas sessões com o personal: pedir horário, confirmar presença ou cancelar."
+                                    href="/ajuda#agendamentos"
+                                    label="Ajuda sobre Agendamentos"
+                                />
                             </li>
                         )}
                         {user.role === 'student' && (
-                            <li className="nav-item">
+                            <li className="nav-item header-nav-item">
                                 <Link
                                     className={`nav-link${pathname === '/minha-conta' ? ' nav-link-active' : ''}`}
                                     href="/minha-conta"
                                 >
                                     Minha Conta
                                 </Link>
+                                <HelpTooltip
+                                    text="Seus dados de cadastro, o download de uma cópia deles e a exclusão da conta."
+                                    href="/ajuda#conta"
+                                    label="Ajuda sobre Minha Conta"
+                                />
                             </li>
                         )}
                         {user.role === 'student' && (
-                            <li className="nav-item">
+                            <li className="nav-item header-nav-item">
                                 <Link
                                     className={`nav-link${pathname === '/plano-alimentar' ? ' nav-link-active' : ''}`}
                                     href="/plano-alimentar"
                                 >
                                     Plano Alimentar
                                 </Link>
+                                <HelpTooltip
+                                    text="As refeições que o seu personal montou para você, com o PDF do plano quando houver."
+                                    href="/ajuda#plano-alimentar"
+                                    label="Ajuda sobre o Plano Alimentar"
+                                />
                             </li>
                         )}
                         {user.role === 'student' && (
-                            <li className="nav-item">
+                            <li className="nav-item header-nav-item">
                                 <Link
                                     className={`nav-link${pathname === '/evolucao' ? ' nav-link-active' : ''}`}
                                     href="/evolucao"
                                 >
                                     Evolução
                                 </Link>
+                                <HelpTooltip
+                                    text="Peso, medidas e fotos ao longo do tempo, com comparação antes/depois e zonas de frequência cardíaca."
+                                    href="/ajuda#evolucao"
+                                    label="Ajuda sobre a Evolução"
+                                />
                             </li>
                         )}
                         {user.role === 'student' && (
-                            <li className="nav-item">
+                            <li className="nav-item header-nav-item">
                                 <Link
                                     className={`nav-link${pathname === '/desafios' ? ' nav-link-active' : ''}`}
                                     href="/desafios"
                                 >
                                     Desafios
                                 </Link>
+                                <HelpTooltip
+                                    text="Campanhas de constância do seu personal: aceite o convite e acompanhe o mural de pontos."
+                                    href="/ajuda#desafios"
+                                    label="Ajuda sobre Desafios"
+                                />
                             </li>
                         )}
                     </ul>
