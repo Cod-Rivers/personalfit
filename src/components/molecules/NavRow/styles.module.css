@@ -1,0 +1,114 @@
+/* Linha de navegação com resumo — a peça central dos editores por blocos
+   (periodização do personal e registro de treino do aluno). Saiu de
+   builder.module.css quando o segundo consumidor apareceu: duplicar as
+   classes faria as duas telas divergirem no primeiro ajuste. */
+
+.group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.row {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    text-align: left;
+    background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition:
+        border-color 0.15s,
+        background 0.15s;
+}
+.row:hover {
+    border-color: var(--mint);
+    background: var(--surface-3, var(--surface-2));
+}
+.row:focus-visible {
+    outline: 2px solid var(--mint);
+    outline-offset: 2px;
+}
+
+/* Mesma linha, sinalizando algo pendente ou fora do padrão (treino sem
+   exercício, fase longa sem deload). Cor de aviso, não de erro: nada aqui
+   impede salvar. */
+.rowWarning {
+    composes: row;
+    border-color: var(--amber, #e0a03c);
+}
+
+/* Sinaliza conclusão — no registro de treino, o exercício que o aluno já
+   conferiu. */
+.rowDone {
+    composes: row;
+    border-color: var(--mint);
+}
+
+.leading {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+}
+
+.text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.summary {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Segunda linha do resumo (prescrição, abaixo das séries) — some em telas
+   estreitas, onde a linha principal já é o suficiente. */
+.summarySecondary {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    opacity: 0.75;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+@media (max-width: 380px) {
+    .summarySecondary {
+        display: none;
+    }
+}
+
+.chevron {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    color: var(--text-muted);
+    font-size: 1rem;
+}
+
+.chevronDone {
+    composes: chevron;
+    color: var(--mint);
+}

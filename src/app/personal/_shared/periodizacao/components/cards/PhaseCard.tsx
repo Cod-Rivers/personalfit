@@ -13,7 +13,7 @@ import {
     METHODOLOGIES,
     type MesoPhaseFormData,
 } from '../../lib/mesocycleTransforms';
-import NavRow from './NavRow';
+import NavRow, { NavRowGroup } from '@/components/molecules/NavRow';
 import s from '../../builder.module.css';
 
 const DURATION_PRESETS = [3, 4, 5, 6];
@@ -173,7 +173,7 @@ export default function PhaseCard({
                 )}
             </div>
 
-            <div className={s.navRowGroup}>
+            <NavRowGroup>
                 <NavRow
                     title="Treinos"
                     summary={trainingsSummary}
@@ -185,7 +185,7 @@ export default function PhaseCard({
                     onClick={onOpenWeeks}
                     tone={deloadWarning ? 'warning' : 'default'}
                 />
-            </div>
+            </NavRowGroup>
 
             {deloadWarning && (
                 <p className={s.inlineWarning}>

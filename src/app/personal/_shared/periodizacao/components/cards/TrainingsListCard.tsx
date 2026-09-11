@@ -19,7 +19,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { FiMove, FiCopy, FiX } from 'react-icons/fi';
 import type { LocalTraining } from '../../lib/mesocycleTransforms';
 import { trainingFullLabel } from '../fields/PrescriptionFields';
-import NavRow from './NavRow';
+import NavRow, { NavRowGroup } from '@/components/molecules/NavRow';
 import s from '../../builder.module.css';
 
 /** Uma linha de treino arrastável. A alça só existe em modo de ordenação, para
@@ -141,7 +141,7 @@ export default function TrainingsListCard({
                         items={trainings.map((t) => t._id)}
                         strategy={verticalListSortingStrategy}
                     >
-                        <div className={s.navRowGroup}>
+                        <NavRowGroup>
                             {trainings.map((t, i) => (
                                 <SortableTrainingRow
                                     key={t._id}
@@ -204,7 +204,7 @@ export default function TrainingsListCard({
                                     </div>
                                 </SortableTrainingRow>
                             ))}
-                        </div>
+                        </NavRowGroup>
                     </SortableContext>
                 </DndContext>
             )}

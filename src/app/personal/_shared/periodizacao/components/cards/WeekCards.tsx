@@ -4,7 +4,7 @@ import { FiAlertTriangle } from 'react-icons/fi';
 import HelpTooltip from '@/components/atoms/HelpTooltip';
 import { getGlossaryTerm } from '@/libs/glossaryContent';
 import type { LocalMicrocycle } from '../../lib/mesocycleTransforms';
-import NavRow from './NavRow';
+import NavRow, { NavRowGroup } from '@/components/molecules/NavRow';
 import s from '../../builder.module.css';
 
 const MICRO_STATUS_LABEL: Record<string, string> = {
@@ -56,7 +56,7 @@ export function WeeksListCard({
                 da fase.
             </p>
 
-            <div className={s.navRowGroup}>
+            <NavRowGroup>
                 {microcycles.map((micro) => (
                     <NavRow
                         key={micro._id}
@@ -77,7 +77,7 @@ export function WeeksListCard({
                         onClick={() => onOpenWeek(micro._id)}
                     />
                 ))}
-            </div>
+            </NavRowGroup>
         </>
     );
 }

@@ -32,7 +32,10 @@ import {
     prescriptionSummary,
     seriesSummary,
 } from '../fields/PrescriptionFields';
-import NavRow from './NavRow';
+import NavRow, {
+    NavRowGroup,
+    navRowSummarySecondary,
+} from '@/components/molecules/NavRow';
 import s from '../../builder.module.css';
 
 /** Bloco arrastável: um exercício avulso ou um combo inteiro. */
@@ -183,7 +186,7 @@ export default function TrainingCard({
                         summary={
                             <>
                                 {seriesSummary(ex)}
-                                <span className={s.navRowSummarySecondary}>
+                                <span className={navRowSummarySecondary}>
                                     {prescriptionSummary(ex)}
                                 </span>
                             </>
@@ -306,7 +309,7 @@ export default function TrainingCard({
                         items={groups.map((g) => g[0].group_id ?? g[0]._id)}
                         strategy={verticalListSortingStrategy}
                     >
-                        <div className={s.navRowGroup}>
+                        <NavRowGroup>
                             {groups.map((group) => {
                                 const isCombo = group.length > 1;
                                 const groupId = group[0].group_id;
@@ -424,7 +427,7 @@ export default function TrainingCard({
                                     </SortableGroup>
                                 );
                             })}
-                        </div>
+                        </NavRowGroup>
                     </SortableContext>
                 </DndContext>
             )}
@@ -447,13 +450,13 @@ export default function TrainingCard({
             </div>
 
             {training.exercises.length > 0 && (
-                <div className={s.navRowGroup}>
+                <NavRowGroup>
                     <NavRow
                         title="Prescrição geral"
                         summary={`Preenche de uma vez os ${training.exercises.length} exercício${training.exercises.length === 1 ? '' : 's'} deste treino`}
                         onClick={onOpenBulkPrescription}
                     />
-                </div>
+                </NavRowGroup>
             )}
         </>
     );
