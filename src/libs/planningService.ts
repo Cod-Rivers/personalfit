@@ -162,6 +162,10 @@ export interface ExerciseRequest {
 }
 
 export interface TrainingRequest {
+    /** ID do treino já existente. Como id de exercício e de microciclo:
+     * reenviar preserva o ObjectID no servidor, o que o salvamento por card do
+     * editor torna crítico (um save por toque, em vez de um por sessão). */
+    id?: string;
     reference: string;
     exercises: ExerciseRequest[];
     weekday?: number;
@@ -523,6 +527,69 @@ export async function updateMacrocycle(
 }
 
 /** PUT /students/:studentId/planning/:planningId/phase/:phaseId */
+/* ── Salvamento por card (uma fase por vez) ──────────────────────────────────
+ *
+ * O editor do personal salva a cada card concluído. Reenviar o macrociclo
+ * inteiro a cada toque, além de pesado, faz duas telas abertas se sobrescreverem
+ * em silêncio: a lista enviada por uma apagaria as fases criadas pela outra.
+ * Estes quatro endpoints gravam UMA fase e devolvem o macrociclo já atualizado,
+ * com os IDs que o servidor atribuiu (ver adoptSavedIds).
+ *
+ * O PUT de macrociclo continua sendo o caminho para o que mexe na LISTA de
+ * fases: remover, duplicar e reordenar. */
+
+/** POST /students/:studentId/planning/:planningId/mesocycle */
+export async function createMesocycle(
+    studentId: string,
+    planningId: string,
+    body: MesocycleRequest,
+): Promise<MacrocycleResponse> {
+    const { data } = await Api.post<MacrocycleResponse>(
+        `/students/${studentId}/planning/${planningId}/mesocycle`,
+        body,
+    );
+    return data;
+}
+
+/** PUT /students/:studentId/planning/:planningId/mesocycle/:mesocycleId */
+export async function updateMesocycle(
+    studentId: string,
+    planningId: string,
+    mesocycleId: string,
+    body: MesocycleRequest,
+): Promise<MacrocycleResponse> {
+    const { data } = await Api.put<MacrocycleResponse>(
+        `/students/${studentId}/planning/${planningId}/mesocycle/${mesocycleId}`,
+        body,
+    );
+    return data;
+}
+
+/** POST /planning/templates/:templateId/mesocycle */
+export async function createTemplateMesocycle(
+    templateId: string,
+    body: MesocycleRequest,
+): Promise<MacrocycleResponse> {
+    const { data } = await Api.post<MacrocycleResponse>(
+        `/planning/templates/${templateId}/mesocycle`,
+        body,
+    );
+    return data;
+}
+
+/** PUT /planning/templates/:templateId/mesocycle/:mesocycleId */
+export async function updateTemplateMesocycle(
+    templateId: string,
+    mesocycleId: string,
+    body: MesocycleRequest,
+): Promise<MacrocycleResponse> {
+    const { data } = await Api.put<MacrocycleResponse>(
+        `/planning/templates/${templateId}/mesocycle/${mesocycleId}`,
+        body,
+    );
+    return data;
+}
+
 export async function updatePhaseDate(
     studentId: string,
     planningId: string,

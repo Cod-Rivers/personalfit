@@ -107,3 +107,34 @@
         box-shadow: var(--shadow-lg);
     }
 }
+
+/* Botão voltar do header — só aparece em modal com navegação interna
+   (ver useCardStack). Mesma métrica do .closeBtn para os dois ficarem
+   opticamente alinhados nas pontas do header. */
+.backBtn {
+    background: none;
+    border: none;
+    font-size: 1.15rem;
+    line-height: 1;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 6px;
+    margin-left: -6px;
+    border-radius: 8px;
+    transition: background 0.15s, color 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.backBtn:hover {
+    background: var(--surface-2);
+    color: var(--text-primary);
+}
+
+/* O título fica entre voltar e fechar: precisa encolher, não empurrar o X
+   para fora quando o nome do exercício é longo. */
+.sheetHeader .title {
+    flex: 1;
+    min-width: 0;
+}

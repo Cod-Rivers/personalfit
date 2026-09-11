@@ -20,6 +20,7 @@ import {
     type MacrocycleResponse,
 } from '@/libs/planningService';
 import Modal from '@/components/system/Modal';
+import NewMacrocycleModal from '@/app/personal/_shared/periodizacao/components/NewMacrocycleModal';
 import s from './periodizacao.module.css';
 
 const STATUS_LABEL: Record<string, string> = {
@@ -59,6 +60,7 @@ export default function PeriodizacaoPage() {
     // template states
     const [savingTemplate, setSavingTemplate] = useState<string | null>(null);
     const [showTemplateModal, setShowTemplateModal] = useState(false);
+    const [creating, setCreating] = useState(false);
     const [templates, setTemplates] = useState<MacrocycleResponse[]>([]);
     const [loadingTemplates, setLoadingTemplates] = useState(false);
     const [applyingTemplate, setApplyingTemplate] = useState<string | null>(
@@ -269,11 +271,7 @@ export default function PeriodizacaoPage() {
                             </button>
                             <button
                                 className={s.btnAdd}
-                                onClick={() =>
-                                    router.push(
-                                        `/personal/aluno/${studentId}/periodizacao/novo`,
-                                    )
-                                }
+                                onClick={() => setCreating(true)}
                             >
                                 + Novo Treino/Macrociclo
                             </button>
@@ -293,16 +291,27 @@ export default function PeriodizacaoPage() {
                     {error && <div className="alert alert-danger">{error}</div>}
 
                     {!loading && !error && plannings.length === 0 && (
-                        <p
-                            style={{
-                                color: 'var(--text-muted)',
-                                textAlign: 'center',
-                                marginTop: 40,
-                            }}
-                        >
-                            Nenhum macrociclo criado ainda. Clique em &quot;+
-                            Novo Macrociclo&quot; para começar.
-                        </p>
+                        <div className={s.emptyPlans}>
+                            <p className={s.emptyPlansText}>
+                                Nenhum plano de treino ainda. Você pode começar
+                                de um modelo pronto e ajustar, ou montar do
+                                zero.
+                            </p>
+                            <div className={s.emptyPlansActions}>
+                                <button
+                                    className={s.btnSecondary}
+                                    onClick={openTemplateModal}
+                                >
+                                    <FiFolder /> Começar de um modelo
+                                </button>
+                                <button
+                                    className={s.btnAdd}
+                                    onClick={() => setCreating(true)}
+                                >
+                                    Montar do zero
+                                </button>
+                            </div>
+                        </div>
                     )}
 
                     {!loading && plannings.length > 0 && (
@@ -569,6 +578,18 @@ export default function PeriodizacaoPage() {
                     </ul>
                 )}
             </Modal>
+
+            {creating && (
+                <NewMacrocycleModal
+                    studentId={studentId}
+                    onClose={() => setCreating(false)}
+                    onCreated={(macro) =>
+                        router.push(
+                            `/personal/aluno/${studentId}/periodizacao/${macro.id}?created=1`,
+                        )
+                    }
+                />
+            )}
         </>
     );
 }

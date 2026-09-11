@@ -1161,3 +1161,390 @@
     border: 1px solid var(--border-subtle);
     margin-top: 8px;
 }
+
+/* ══ Editor por cards ══════════════════════════════════════════════════════
+   Um card = uma decisão = uma tela. O que não cabe nos ~6 controles do card
+   vira uma .navRow com resumo, em vez de um bloco recolhível que empurra o
+   resto para baixo. */
+
+.navRowGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.navRow {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    text-align: left;
+    background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition:
+        border-color 0.15s,
+        background 0.15s;
+}
+.navRow:hover {
+    border-color: var(--mint);
+    background: var(--surface-3, var(--surface-2));
+}
+.navRow:focus-visible {
+    outline: 2px solid var(--mint);
+    outline-offset: 2px;
+}
+
+/* Mesma linha, sinalizando algo pendente ou fora do padrão (treino sem
+   exercício, fase longa sem deload). Cor de aviso, não de erro: nada aqui
+   impede salvar. */
+.navRowWarning {
+    composes: navRow;
+    border-color: var(--amber, #e0a03c);
+}
+
+.navRowLeading {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+}
+
+.navRowText {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.navRowTitle {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.navRowSummary {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Segunda linha do resumo (prescrição, abaixo das séries) — some em telas
+   estreitas, onde a linha principal já é o suficiente. */
+.navRowSummarySecondary {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    opacity: 0.75;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+@media (max-width: 380px) {
+    .navRowSummarySecondary {
+        display: none;
+    }
+}
+
+.navRowChevron {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    color: var(--text-muted);
+    font-size: 1rem;
+}
+
+/* Linha + ações à direita (duplicar, remover). flex-wrap junto de flex-shrink:0
+   nos botões: sem isso os botões estouram o card em telas estreitas — o mesmo
+   padrão de bug já corrigido em outros quatro lugares deste app. */
+.rowWithActions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.exerciseRowThumbBtn {
+    composes: exerciseEditThumbBtn;
+}
+
+.exerciseRowThumbPlay {
+    composes: exerciseEditThumbPlay;
+}
+
+.exerciseCardHeader {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+/* Abas do card de exercício. Rolam na horizontal em vez de quebrar linha:
+   quebrar mudaria a altura do card conforme a largura da tela. */
+.cardTabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 14px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.cardTabs::-webkit-scrollbar {
+    display: none;
+}
+
+.cardTab {
+    flex-shrink: 0;
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border-subtle);
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.cardTabActive {
+    composes: cardTab;
+    background: var(--mint);
+    border-color: var(--mint);
+    color: #000;
+}
+
+.btnBlock {
+    composes: btnSmall;
+    flex: 1;
+    justify-content: center;
+    padding: 10px 14px;
+}
+
+.cardActionsRow {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+}
+
+.presetChipRow {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+}
+
+.cardIntro {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin: 0 0 14px;
+}
+
+.fieldHint {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+}
+
+.inlineWarning {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    font-size: 0.78rem;
+    color: var(--amber, #e0a03c);
+    margin: 0 0 14px;
+}
+
+.weekNumberBadge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+
+/* Indicador de salvamento no rodapé do modal. Fica à esquerda (margin-right
+   auto) para os botões continuarem ancorados à direita, como em todo modal. */
+.saveStatus {
+    margin-right: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.saveStatusOk {
+    composes: saveStatus;
+    color: var(--mint);
+}
+
+.saveStatusError {
+    composes: saveStatus;
+    color: var(--coral, #e74c3c);
+}
+
+/* Cabeçalho do treino dentro da fase: virou botão para abrir/fechar a lista de
+   exercícios (um treino aberto por vez). Mantém a métrica de .trainingHeader —
+   é a mesma linha, agora clicável. */
+.trainingHeaderBtn {
+    composes: trainingHeader;
+    width: 100%;
+    gap: 10px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    text-align: left;
+}
+.trainingHeaderBtn:focus-visible {
+    outline: 2px solid var(--mint);
+    outline-offset: 2px;
+    border-radius: 6px;
+}
+
+/* Resumo do plano em uma linha. Substitui o card de métricas empilhadas que
+   ficava entre o cabeçalho e a lista de fases. */
+.summaryChips {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.summaryChip {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border-subtle);
+    background: var(--surface-2);
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+
+/* Escolhas grandes (como planejar, rótulo dos dias). Uma coluna no celular:
+   lado a lado, os textos de apoio ficavam ilegíveis. */
+.choiceGrid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+}
+@media (min-width: 560px) {
+    .choiceGrid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.choiceCard {
+    text-align: left;
+    padding: 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    border: 1px solid var(--border-subtle);
+    background: transparent;
+    color: var(--text-primary);
+}
+.choiceCard:focus-visible {
+    outline: 2px solid var(--mint);
+    outline-offset: 2px;
+}
+
+.choiceCardActive {
+    composes: choiceCard;
+    border: 1.5px solid var(--mint);
+    background: var(--surface-2);
+}
+
+.choiceTitle {
+    margin: 0 0 4px;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.choiceDesc {
+    margin: 0;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+/* Faixa de próximo passo. Fica entre o resumo e o conteúdo porque é o que
+   responde "e agora?" — a pergunta que o fluxo de periodização nunca
+   respondia em nenhuma das cinco telas. */
+.nextStep {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 12px 14px;
+    margin-bottom: 20px;
+    border-radius: 10px;
+    border: 1px solid var(--mint);
+    background: var(--surface-2);
+}
+
+.nextStepText {
+    margin: 0;
+    flex: 1;
+    min-width: 200px;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+}
+
+.nextStepDone {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 0 20px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+/* Estado vazio da lista de planos: os dois caminhos reais (modelo pronto ou do
+   zero) ficam visíveis aqui, em vez de só um texto mandando procurar o botão
+   no topo. */
+.emptyPlans {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    text-align: center;
+    margin-top: 40px;
+}
+
+.emptyPlansText {
+    margin: 0;
+    max-width: 46ch;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.emptyPlansActions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+}

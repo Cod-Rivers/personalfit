@@ -58,6 +58,10 @@ export default function MesocycleSection({
 }: Props) {
     const isNumbered = simpleMode && dayLabelStyle === 'number';
     const [open, setOpen] = useState(false);
+    // Um treino aberto por vez. Com todos abertos, uma fase de 4 treinos x 6
+    // exercícios enchia a tela de periodização com 24 cards e obrigava a rolar
+    // a página inteira para chegar na fase seguinte.
+    const [openTraining, setOpenTraining] = useState<string | null>(null);
     const [selected, setSelected] = useState<SelectedExercise | null>(null);
 
     return (
@@ -149,7 +153,16 @@ export default function MesocycleSection({
                     ) : (
                         meso.trainings.map((t, index) => (
                             <div key={t.id} className={s.trainingBlock}>
-                                <div className={s.trainingHeader}>
+                                <button
+                                    type="button"
+                                    className={s.trainingHeaderBtn}
+                                    aria-expanded={openTraining === t.id}
+                                    onClick={() =>
+                                        setOpenTraining((prev) =>
+                                            prev === t.id ? null : t.id,
+                                        )
+                                    }
+                                >
                                     <p className={s.trainingLabel}>
                                         {isNumbered
                                             ? `Treino ${index + 1}`
@@ -166,8 +179,19 @@ export default function MesocycleSection({
                                     >
                                         {t.exercises.length} exercício(s)
                                     </span>
-                                </div>
-                                {t.exercises.length > 0 &&
+                                    <span
+                                        aria-hidden
+                                        className={
+                                            openTraining === t.id
+                                                ? s.mesoToggleOpen
+                                                : s.mesoToggle
+                                        }
+                                    >
+                                        <FiChevronRight />
+                                    </span>
+                                </button>
+                                {openTraining === t.id &&
+                                    t.exercises.length > 0 &&
                                     (() => {
                                         const exerciseLogs =
                                             t.exercises.map(toExerciseLog);

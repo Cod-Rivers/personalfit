@@ -1,21 +1,21 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { FiCheck, FiAlertCircle, FiLoader } from 'react-icons/fi';
 import type {
     ExerciseLibraryItem,
     MesocycleRequest,
     MesocycleResponse,
 } from '@/libs/planningService';
 import {
-    PHASES_MATVEYEV,
-    PHASES_FORCE,
-    METHODOLOGIES,
     NEXT_REF,
     SIMPLE_MODE_DEFAULTS,
+    adoptSavedIds,
     genId,
+    localExerciseToLog,
     makeDefaultMicrocycles,
     nextFreeWeekday,
     responseMicroToLocal,
@@ -25,17 +25,29 @@ import {
     type LocalExercise,
     type LocalMicrocycle,
     type LocalTraining,
+    type MesoPhaseFormData,
 } from '../lib/mesocycleTransforms';
-import MicrocycleEditor from './MicrocycleEditor';
-import TrainingsEditor, {
-    type BulkPrescriptionFields,
-} from './TrainingsEditor';
+import {
+    CARD_OF_FIELD,
+    rootCard,
+    type EditorCard,
+    type ExerciseTab,
+} from '../lib/editorNavigation';
+import { useCardStack } from '@/hooks/useCardStack';
+import { useSaveQueue } from '@/hooks/useSaveQueue';
 import Modal from '@/components/system/Modal';
-import HelpTooltip from '@/components/atoms/HelpTooltip';
-import { FiStar, FiChevronDown, FiAlertTriangle } from 'react-icons/fi';
+import ExerciseDetailCard from '@/components/features/ExerciseDetailCard';
+import type { ExerciseLog } from '@/components/features/types';
+import ExercisePicker from './ExercisePicker';
+import PhaseCard from './cards/PhaseCard';
+import TrainingsListCard from './cards/TrainingsListCard';
+import TrainingCard from './cards/TrainingCard';
+import ExerciseCard from './cards/ExerciseCard';
+import BulkPrescriptionCard from './cards/BulkPrescriptionCard';
+import { WeeksListCard, WeekCard } from './cards/WeekCards';
+import { trainingFullLabel } from './fields/PrescriptionFields';
+import type { BulkPrescriptionFields } from './fields/PrescriptionFields';
 import s from '../builder.module.css';
-
-const MESOCYCLE_FORM_ID = 'mesocycle-form-modal';
 
 const mesoSchema = z.object({
     name: z.string().min(1, 'Nome obrigatório'),
@@ -43,33 +55,89 @@ const mesoSchema = z.object({
     duration_weeks: z.number().min(1, 'Mínimo 1 semana').max(52),
     methodology: z.string().min(1, 'Metodologia obrigatória'),
 });
-type MesoFormData = z.infer<typeof mesoSchema>;
+
+/** Como o campo obrigatório em falta é descrito no rodapé do editor. */
+const BLOCKED_FIELD_LABEL: Record<string, string> = {
+    name: 'o nome da fase',
+    phase: 'a fase',
+    duration_weeks: 'a duração',
+    methodology: 'a metodologia',
+};
+
+/** Exercício novo em branco — os campos string vazios são o "não preenchido"
+ * que vira omitempty no backend (ver LocalExercise). */
+function blankExercise(overrides: Partial<LocalExercise> = {}): LocalExercise {
+    return {
+        _id: genId(),
+        name: '',
+        series_mode: 'reps',
+        series_sets: '3',
+        series_value: '10',
+        series_free: '',
+        observations: '',
+        variations: '',
+        rest_seconds: '',
+        load_kg: '',
+        load_percentage: '',
+        tempo_seconds: '',
+        rpe_target: '',
+        muscle_group: '',
+        timed: false,
+        video_url: '',
+        video_thumb: '',
+        technique: '',
+        technique_rounds: '',
+        technique_reduction_pct: '',
+        technique_pause_seconds: '',
+        technique_extra_reps: '',
+        technique_hold_seconds: '',
+        non_substitutable: '',
+        ...overrides,
+    };
+}
 
 interface Props {
     mode: 'add' | 'edit';
     meso: MesocycleResponse | null;
     order: number;
-    saving: boolean;
-    saveError: string;
     onClose: () => void;
-    onSave: (req: MesocycleRequest) => void;
+    /**
+     * Persiste a fase INTEIRA (uma requisição por card concluído) e devolve o
+     * mesociclo como ficou no servidor. O modal adota daí os IDs de treino,
+     * exercício e microciclo — sem isso o próximo card recriaria tudo.
+     *
+     * Quem decide entre criar e atualizar é o chamador, pelo `id` do payload:
+     * plano de aluno e template têm endpoints diferentes.
+     */
+    onPersist: (req: MesocycleRequest) => Promise<MesocycleResponse | null>;
     /** Modo simples: esconde nome/fase/duração/metodologia e usa valores fixos (SIMPLE_MODE_DEFAULTS). */
     simpleMode?: boolean;
     /** "weekday" (padrão) ou "number" — só relevante quando simpleMode=true. */
     dayLabelStyle?: 'weekday' | 'number';
 }
 
+/**
+ * Editor de mesociclo por CARDS: um card por decisão, cada um cabendo numa
+ * tela, com salvamento a cada card concluído.
+ *
+ * Antes, isto era um formulário único que empilhava os campos da fase, o
+ * editor de treinos inteiro e um card por semana — um treino de 6 exercícios
+ * rendia ~48 controles num scroll só, e nada era gravado até o botão final.
+ *
+ * Este componente é a CASCA: ele é o dono do estado local, da fila de
+ * salvamento e da pilha de navegação. Os cards são apresentacionais.
+ */
 export default function MesocycleFormModal({
     mode,
     meso,
     order,
-    saving,
-    saveError,
     onClose,
-    onSave,
+    onPersist,
     simpleMode,
     dayLabelStyle,
 }: Props) {
+    const isNumbered = simpleMode && dayLabelStyle === 'number';
+
     const [localTrainings, setLocalTrainings] = useState<LocalTraining[]>(() =>
         meso ? responseToLocal(meso.trainings) : [],
     );
@@ -79,17 +147,38 @@ export default function MesocycleFormModal({
                 ? responseMicroToLocal(meso.microcycles, meso.duration_weeks)
                 : makeDefaultMicrocycles(4),
     );
-    // Ajustes semanais ficam recolhidos por padrão: a prescrição de
-    // exercícios é a informação mais consultada ao abrir o formulário.
-    const [adjustmentsOpen, setAdjustmentsOpen] = useState(false);
+    /** ID da fase no servidor. Nasce vazio numa fase nova e é preenchido pela
+     * resposta do primeiro save — é o que faz o segundo card virar update em
+     * vez de criar uma fase duplicada. */
+    const [mesoId, setMesoId] = useState<string | undefined>(meso?.id);
+
+    /** A ordem da fase precisa ser estável durante a sessão de edição.
+     * A prop `order` é derivada da lista do macrociclo do PAI; assim que o
+     * primeiro card cria a fase, essa lista cresce e a prop vira length+1 de
+     * novo — o save seguinte mandaria a fase recém-criada para o fim da
+     * periodização. Fixamos no que veio na abertura e, depois, no que o
+     * servidor confirmou. */
+    const orderRef = useRef(order);
+
+    const stack = useCardStack<EditorCard>(rootCard(simpleMode));
+    /** localId é o _id do exercício no estado do editor. ExerciseLog.id carrega
+     * o id do BACKEND quando existe (ver localExerciseToLog), então usar ele
+     * para achar o exercício local faz a carga prescrita pelo preview sumir em
+     * todo exercício já salvo. */
+    const [preview, setPreview] = useState<{
+        exercise: ExerciseLog;
+        siblings: ExerciseLog[];
+        localId: string;
+    } | null>(null);
 
     const {
         register,
-        handleSubmit,
         setValue,
         watch,
+        getValues,
+        trigger,
         formState: { errors },
-    } = useForm<MesoFormData>({
+    } = useForm<MesoPhaseFormData>({
         resolver: zodResolver(mesoSchema),
         defaultValues: simpleMode
             ? SIMPLE_MODE_DEFAULTS
@@ -110,59 +199,143 @@ export default function MesocycleFormModal({
         );
     }, [durationWeeksWatch]);
 
-    /* ── Exercise picker ── */
-    const [pickerFor, setPickerFor] = useState<string | null>(null);
+    /* ── Salvamento por card ───────────────────────────────────────────────
+     * Um contador em vez de chamar a fila direto do handler: o payload precisa
+     * ser montado DEPOIS do re-render provocado pela edição, senão o save leva
+     * o estado anterior. O efeito roda exatamente nesse ponto. */
+    const [saveToken, setSaveToken] = useState(0);
+    const requestSave = useCallback(() => setSaveToken((t) => t + 1), []);
 
-    const openPicker = useCallback((tid: string) => setPickerFor(tid), []);
-    const closePicker = useCallback(() => setPickerFor(null), []);
+    const stateRef = useRef({ localTrainings, localMicrocycles });
+    stateRef.current = { localTrainings, localMicrocycles };
 
-    const pickExercise = useCallback(
-        (tid: string, item: ExerciseLibraryItem) => {
-            setLocalTrainings((prev) =>
-                prev.map((t) =>
-                    t._id !== tid
-                        ? t
-                        : {
-                              ...t,
-                              exercises: [
-                                  ...t.exercises,
-                                  {
-                                      _id: genId(),
-                                      // Vem da biblioteca: já nasce vinculado,
-                                      // é o que permite propagar mídia depois.
-                                      exercise_library_id: item.id,
-                                      name: item.name,
-                                      series_mode: 'reps',
-                                      series_sets: '3',
-                                      series_value: '10',
-                                      series_free: '',
-                                      observations: '',
-                                      variations: '',
-                                      rest_seconds: '',
-                                      load_kg: '',
-                                      load_percentage: '',
-                                      tempo_seconds: '',
-                                      rpe_target: '',
-                                      muscle_group: item.muscle_group ?? '',
-                                      timed: false,
-                                      video_url: item.video_url ?? '',
-                                      video_thumb: item.video_thumb ?? '',
-                                      technique: '',
-                                      technique_rounds: '',
-                                      technique_reduction_pct: '',
-                                      technique_pause_seconds: '',
-                                      technique_extra_reps: '',
-                                      technique_hold_seconds: '',
-                                      non_substitutable: '',
-                                  },
-                              ],
-                          },
-                ),
-            );
-            closePicker();
-        },
-        [closePicker],
+    const buildRequest = useCallback(
+        (data: MesoPhaseFormData): MesocycleRequest =>
+            localToMesoRequest(
+                data,
+                stateRef.current.localTrainings,
+                stateRef.current.localMicrocycles,
+                orderRef.current,
+                mesoId,
+            ),
+        [mesoId],
     );
+
+    const queue = useSaveQueue<MesocycleRequest, MesocycleResponse | null>({
+        persist: onPersist,
+        onSuccess: (saved) => {
+            if (!saved) return;
+            setMesoId(saved.id);
+            if (saved.order) orderRef.current = saved.order;
+            const { trainings, microcycles } = adoptSavedIds(
+                stateRef.current.localTrainings,
+                stateRef.current.localMicrocycles,
+                saved,
+            );
+            setLocalTrainings(trainings);
+            setLocalMicrocycles(microcycles);
+        },
+    });
+
+    const queueRef = useRef(queue);
+    queueRef.current = queue;
+
+    /** Campo obrigatório em branco que está impedindo o autosave. O editor
+     * não pode gravar uma fase sem nome/fase/duração/metodologia — o backend
+     * recusa — e o personal precisa saber disso sem ficar olhando um "Salvo"
+     * que nunca aparece. */
+    const [blockedField, setBlockedField] = useState<string | null>(null);
+
+    /**
+     * Valida a identidade da fase e enfileira o save.
+     *
+     * `navigateOnInvalid` separa os dois motivos de salvar: num autosave de
+     * card concluído, arrastar o personal de volta para o card da fase no meio
+     * da edição seria um sequestro de navegação — basta avisar. Já num pedido
+     * EXPLÍCITO (fechar, ou "tentar de novo"), levá-lo até o campo que falta é
+     * justamente o que evita um botão que parece morto.
+     */
+    const trySave = useCallback(
+        async (navigateOnInvalid = false): Promise<boolean> => {
+            const parsed = mesoSchema.safeParse(getValues());
+            if (!parsed.success) {
+                const field = parsed.error.issues[0]?.path[0] as
+                    | keyof MesoPhaseFormData
+                    | undefined;
+                setBlockedField(field ?? null);
+                if (navigateOnInvalid) {
+                    // trigger() marca os erros nos inputs da tela de destino.
+                    void trigger();
+                    if (field && CARD_OF_FIELD[field]) {
+                        stack.resetTo(CARD_OF_FIELD[field]);
+                    }
+                }
+                return false;
+            }
+            setBlockedField(null);
+            queueRef.current.save(buildRequest(parsed.data));
+            return true;
+        },
+        [getValues, trigger, stack, buildRequest],
+    );
+
+    const trySaveRef = useRef(trySave);
+    trySaveRef.current = trySave;
+
+    /* Some com o aviso assim que o campo que faltava é preenchido. Usa a
+     * assinatura de CALLBACK do watch, que observa sem provocar re-render a
+     * cada tecla — o aviso ficar na tela depois de resolvido faria o personal
+     * achar que ainda está travado. */
+    useEffect(() => {
+        const subscription = watch(() =>
+            setBlockedField((prev) =>
+                prev && mesoSchema.safeParse(getValues()).success ? null : prev,
+            ),
+        );
+        return () => subscription.unsubscribe();
+    }, [watch, getValues]);
+
+    useEffect(() => {
+        if (saveToken === 0) return;
+        void trySaveRef.current(false);
+    }, [saveToken]);
+
+    /* ── Navegação ── */
+    const goBack = useCallback(() => {
+        requestSave();
+        stack.pop();
+    }, [requestSave, stack]);
+
+    const handleClose = useCallback(() => {
+        const parsed = mesoSchema.safeParse(getValues());
+        if (!parsed.success) {
+            const hasContent =
+                localTrainings.length > 0 || mode === 'edit' || !!mesoId;
+            if (
+                hasContent &&
+                !confirm(
+                    'Esta fase ainda não foi salva porque faltam campos obrigatórios (nome, fase, duração e metodologia). Sair mesmo assim e perder o que foi preenchido?',
+                )
+            ) {
+                void trySave(true);
+                return;
+            }
+            onClose();
+            return;
+        }
+        // Enfileira o estado final antes de desmontar: a requisição segue em
+        // voo e o pai continua montado para receber a resposta.
+        queueRef.current.save(buildRequest(parsed.data));
+        onClose();
+    }, [
+        getValues,
+        localTrainings.length,
+        mode,
+        mesoId,
+        onClose,
+        buildRequest,
+        trySave,
+    ]);
 
     /* ── Microcycle CRUD ── */
     const updateMicrocycle = useCallback(
@@ -182,11 +355,12 @@ export default function MesocycleFormModal({
 
     /* ── Training CRUD ── */
     // No modo por dia da semana o dia faz o papel do A/B/C: cada treino novo
-    // já nasce rotulado (Seg, Ter…), senão todas as abas ficariam iguais até
-    // o personal escolher o dia uma a uma.
+    // já nasce rotulado (Seg, Ter…), senão todos ficariam iguais até o
+    // personal escolher o dia um a um.
     const autoWeekday = Boolean(simpleMode) && dayLabelStyle !== 'number';
 
     const addTraining = useCallback(() => {
+        const newId = genId();
         setLocalTrainings((prev) => {
             const usedRefs = prev.map((t) => t.reference);
             const nextRef =
@@ -195,7 +369,7 @@ export default function MesocycleFormModal({
             return [
                 ...prev,
                 {
-                    _id: genId(),
+                    _id: newId,
                     reference: nextRef,
                     weekday: autoWeekday
                         ? nextFreeWeekday(prev.map((t) => t.weekday))
@@ -204,12 +378,17 @@ export default function MesocycleFormModal({
                 },
             ];
         });
-    }, [autoWeekday]);
+        // Abre o treino recém-criado: criar e cair de volta na lista obrigaria
+        // um toque a mais só para começar a preencher.
+        stack.push({ card: 'training', trainingId: newId });
+    }, [autoWeekday, stack]);
 
     const removeTraining = useCallback(
-        (tid: string) =>
-            setLocalTrainings((prev) => prev.filter((t) => t._id !== tid)),
-        [],
+        (tid: string) => {
+            setLocalTrainings((prev) => prev.filter((t) => t._id !== tid));
+            requestSave();
+        },
+        [requestSave],
     );
 
     const duplicateTraining = useCallback(
@@ -225,21 +404,28 @@ export default function MesocycleFormModal({
                     ...prev,
                     {
                         _id: genId(),
+                        // Sem id: a cópia precisa nascer como treino NOVO no
+                        // servidor. Reaproveitar o id do original faria as duas
+                        // gravarem no mesmo documento — e o mesmo vale para os
+                        // exercícios, que carregam histórico de séries do aluno.
+                        id: undefined,
                         reference: nextRef,
                         // A cópia vai para o próximo dia livre — repetir o dia
-                        // da origem criaria duas abas com o mesmo rótulo.
+                        // da origem criaria dois treinos com o mesmo rótulo.
                         weekday: autoWeekday
                             ? nextFreeWeekday(prev.map((t) => t.weekday))
                             : source.weekday,
                         exercises: source.exercises.map((ex) => ({
                             ...ex,
                             _id: genId(),
+                            id: undefined,
                         })),
                     },
                 ];
             });
+            requestSave();
         },
-        [autoWeekday],
+        [autoWeekday, requestSave],
     );
 
     const updateTrainingRef = useCallback(
@@ -260,50 +446,20 @@ export default function MesocycleFormModal({
 
     /* ── Exercise CRUD ── */
     const addExercise = useCallback(
-        (tid: string) =>
+        (tid: string, exercise: LocalExercise) => {
             setLocalTrainings((prev) =>
                 prev.map((t) =>
                     t._id !== tid
                         ? t
-                        : {
-                              ...t,
-                              exercises: [
-                                  ...t.exercises,
-                                  {
-                                      _id: genId(),
-                                      name: '',
-                                      series_mode: 'reps',
-                                      series_sets: '3',
-                                      series_value: '10',
-                                      series_free: '',
-                                      observations: '',
-                                      variations: '',
-                                      rest_seconds: '',
-                                      load_kg: '',
-                                      load_percentage: '',
-                                      tempo_seconds: '',
-                                      rpe_target: '',
-                                      muscle_group: '',
-                                      timed: false,
-                                      video_url: '',
-                                      video_thumb: '',
-                                      technique: '',
-                                      technique_rounds: '',
-                                      technique_reduction_pct: '',
-                                      technique_pause_seconds: '',
-                                      technique_extra_reps: '',
-                                      technique_hold_seconds: '',
-                                      non_substitutable: '',
-                                  },
-                              ],
-                          },
+                        : { ...t, exercises: [...t.exercises, exercise] },
                 ),
-            ),
+            );
+        },
         [],
     );
 
     const removeExercise = useCallback(
-        (tid: string, eid: string) =>
+        (tid: string, eid: string) => {
             setLocalTrainings((prev) =>
                 prev.map((t) =>
                     t._id !== tid
@@ -315,8 +471,10 @@ export default function MesocycleFormModal({
                               ),
                           },
                 ),
-            ),
-        [],
+            );
+            requestSave();
+        },
+        [requestSave],
     );
 
     const updateExercise = useCallback(
@@ -343,7 +501,7 @@ export default function MesocycleFormModal({
 
     /* ── Combinar exercícios (bissérie/trissérie/superssérie) ── */
     const combineWithPrevious = useCallback(
-        (tid: string, eid: string) =>
+        (tid: string, eid: string) => {
             setLocalTrainings((prev) =>
                 prev.map((t) => {
                     if (t._id !== tid) return t;
@@ -359,12 +517,14 @@ export default function MesocycleFormModal({
                         ),
                     };
                 }),
-            ),
-        [],
+            );
+            requestSave();
+        },
+        [requestSave],
     );
 
     const ungroupExercises = useCallback(
-        (tid: string, groupId: string) =>
+        (tid: string, groupId: string) => {
             setLocalTrainings((prev) =>
                 prev.map((t) =>
                     t._id !== tid
@@ -378,12 +538,14 @@ export default function MesocycleFormModal({
                               ),
                           },
                 ),
-            ),
-        [],
+            );
+            requestSave();
+        },
+        [requestSave],
     );
 
     const removeLastFromGroup = useCallback(
-        (tid: string, eid: string) =>
+        (tid: string, eid: string) => {
             setLocalTrainings((prev) =>
                 prev.map((t) => {
                     if (t._id !== tid) return t;
@@ -406,24 +568,28 @@ export default function MesocycleFormModal({
                         ),
                     };
                 }),
-            ),
-        [],
+            );
+            requestSave();
+        },
+        [requestSave],
     );
 
     /* ── Ordenação por arrastar e soltar ── */
     const reorderTrainings = useCallback(
-        (order: string[]) =>
+        (order: string[]) => {
             setLocalTrainings((prev) => {
                 const byId = new Map(prev.map((t) => [t._id, t]));
                 return order
                     .map((id) => byId.get(id))
                     .filter((t): t is LocalTraining => Boolean(t));
-            }),
-        [],
+            });
+            requestSave();
+        },
+        [requestSave],
     );
 
     const reorderExercises = useCallback(
-        (tid: string, exerciseIds: string[]) =>
+        (tid: string, exerciseIds: string[]) => {
             setLocalTrainings((prev) =>
                 prev.map((t) => {
                     if (t._id !== tid) return t;
@@ -435,13 +601,15 @@ export default function MesocycleFormModal({
                             .filter((e): e is LocalExercise => Boolean(e)),
                     };
                 }),
-            ),
-        [],
+            );
+            requestSave();
+        },
+        [requestSave],
     );
 
     /* ── Prescrição geral do treino ── */
     const bulkFillPrescription = useCallback(
-        (tid: string, fields: BulkPrescriptionFields) =>
+        (tid: string, fields: BulkPrescriptionFields) => {
             setLocalTrainings((prev) =>
                 prev.map((t) => {
                     if (t._id !== tid) return t;
@@ -460,335 +628,447 @@ export default function MesocycleFormModal({
                         })),
                     };
                 }),
-            ),
+            );
+            requestSave();
+        },
+        [requestSave],
+    );
+
+    /* ── Derivados para os resumos dos cards ── */
+    const totalExercises = localTrainings.reduce(
+        (acc, t) => acc + t.exercises.length,
+        0,
+    );
+    const trainingsSummary =
+        localTrainings.length === 0
+            ? 'Nenhum treino ainda'
+            : `${localTrainings.length} treino${localTrainings.length === 1 ? '' : 's'} · ${totalExercises} exercício${totalExercises === 1 ? '' : 's'}`;
+
+    const deloadCount = localMicrocycles.filter((m) => m.is_deload).length;
+    const weeksSummary = simpleMode
+        ? 'RPE, volume, intensidade e foco da semana'
+        : `${localMicrocycles.length} semana${localMicrocycles.length === 1 ? '' : 's'}${deloadCount > 0 ? ` · ${deloadCount} deload` : ''}`;
+
+    // Aviso leve (não bloqueia salvar): fases longas sem nenhuma semana de
+    // deload marcada são um sinal comum de risco de overtraining — ver
+    // diretrizes de periodização (Bompa/Fleck: deload a cada 4-6 semanas).
+    const deloadWarning =
+        !simpleMode && durationWeeksWatch >= 5 && deloadCount === 0;
+
+    const current = stack.current;
+    const activeTraining = useMemo(() => {
+        if (
+            current.card !== 'training' &&
+            current.card !== 'exercise' &&
+            current.card !== 'picker' &&
+            current.card !== 'bulkPrescription'
+        )
+            return null;
+        return (
+            localTrainings.find((t) => t._id === current.trainingId) ?? null
+        );
+    }, [current, localTrainings]);
+    const activeTrainingIndex = activeTraining
+        ? localTrainings.indexOf(activeTraining)
+        : -1;
+
+    const activeExercise =
+        current.card === 'exercise' && activeTraining
+            ? (activeTraining.exercises.find(
+                  (e) => e._id === current.exerciseId,
+              ) ?? null)
+            : null;
+
+    const activeMicro =
+        current.card === 'week'
+            ? (localMicrocycles.find((m) => m._id === current.microId) ?? null)
+            : null;
+
+    /* Um card que deixou de existir (treino removido de outra tela, semana que
+     * sumiu ao encurtar a fase) não pode deixar o modal em branco. */
+    useEffect(() => {
+        if (current.card === 'week' && !activeMicro) stack.pop();
+        if (
+            (current.card === 'training' ||
+                current.card === 'exercise' ||
+                current.card === 'picker' ||
+                current.card === 'bulkPrescription') &&
+            !activeTraining
+        )
+            stack.resetTo({ card: 'trainings' });
+        if (current.card === 'exercise' && activeTraining && !activeExercise)
+            stack.pop();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [current, activeTraining, activeExercise, activeMicro]);
+
+    const openPreview = useCallback(
+        (exercise: LocalExercise, siblings: LocalExercise[]) =>
+            setPreview({
+                exercise: localExerciseToLog(exercise),
+                siblings: siblings.map(localExerciseToLog),
+                localId: exercise._id,
+            }),
         [],
     );
 
-    // Aviso leve (não bloqueia salvar): fases longas sem nenhuma semana de
-    // deload marcada são um sinal comum de risco de overtraining/estagnação —
-    // ver diretrizes de periodização (Bompa/Fleck: deload a cada 4-6 semanas).
-    const suggestDeloadWarning =
-        !simpleMode &&
-        durationWeeksWatch >= 5 &&
-        !localMicrocycles.some((m) => m.is_deload);
-
-    // Resumo de 1 linha mostrado com o bloco de ajustes recolhido.
-    const adjustmentsSummary = (() => {
-        if (!simpleMode) {
-            return `${localMicrocycles.length} semana${localMicrocycles.length === 1 ? '' : 's'} configurável${localMicrocycles.length === 1 ? '' : 'is'}`;
+    const previewNextInGroup = (): ExerciseLog | null => {
+        if (!preview) return null;
+        const { exercise, siblings } = preview;
+        const idx = siblings.findIndex((e) => e.id === exercise.id);
+        if (idx === -1) return null;
+        const next = siblings[idx + 1];
+        if (next && exercise.group_id && next.group_id === exercise.group_id) {
+            return next;
         }
-        const week = localMicrocycles[0];
-        const parts: string[] = [];
-        if (week?.target_rpe) parts.push(`RPE ${week.target_rpe}`);
-        if (week?.volume_adjust_pct && week.volume_adjust_pct !== '0')
-            parts.push(`Volume ${week.volume_adjust_pct}%`);
-        if (week?.intensity_adjust_pct && week.intensity_adjust_pct !== '0')
-            parts.push(`Intensidade ${week.intensity_adjust_pct}%`);
-        if (week?.focus) parts.push(`Foco: ${week.focus}`);
-        return parts.length > 0
-            ? parts.join(' · ')
-            : 'Opcional — RPE, volume, intensidade, foco e notas';
-    })();
-
-    const onSubmit = (data: MesoFormData) => {
-        const req = localToMesoRequest(
-            data,
-            localTrainings,
-            localMicrocycles,
-            order,
-            meso?.id,
-        );
-        onSave(req);
+        return null;
     };
 
-    const modalTitle = simpleMode
-        ? 'Treinos da Semana'
-        : mode === 'add'
-          ? 'Nova Fase (Mesociclo)'
-          : `Editar: ${meso?.name}`;
+    /* ── Título e corpo do card atual ── */
+    const cardTitle = (): string => {
+        switch (current.card) {
+            case 'phase':
+                return mode === 'add'
+                    ? 'Nova fase (mesociclo)'
+                    : `Editar: ${meso?.name ?? 'fase'}`;
+            case 'trainings':
+                return simpleMode ? 'Treinos da semana' : 'Treinos da fase';
+            case 'training':
+                return activeTraining
+                    ? trainingFullLabel(
+                          activeTraining,
+                          activeTrainingIndex,
+                          simpleMode,
+                          isNumbered,
+                      )
+                    : 'Treino';
+            case 'exercise':
+                return activeExercise?.name || 'Exercício';
+            case 'picker':
+                return 'Escolher exercício';
+            case 'bulkPrescription':
+                return 'Prescrição geral';
+            case 'weeks':
+                return simpleMode ? 'Ajustes da semana' : 'Ajustes semanais';
+            case 'week':
+                return activeMicro
+                    ? simpleMode
+                        ? 'Semana de treino'
+                        : `Semana ${activeMicro.week_number}`
+                    : 'Semana';
+        }
+    };
+
+    const cardBody = () => {
+        switch (current.card) {
+            case 'phase':
+                return (
+                    <PhaseCard
+                        register={register}
+                        errors={errors}
+                        setValue={setValue}
+                        durationWeeks={durationWeeksWatch}
+                        trainingsSummary={trainingsSummary}
+                        weeksSummary={weeksSummary}
+                        deloadWarning={deloadWarning}
+                        onOpenTrainings={() =>
+                            stack.push({ card: 'trainings' })
+                        }
+                        onOpenWeeks={() => stack.push({ card: 'weeks' })}
+                    />
+                );
+
+            case 'trainings':
+                return (
+                    <TrainingsListCard
+                        trainings={localTrainings}
+                        simpleMode={simpleMode}
+                        isNumbered={isNumbered}
+                        onOpenTraining={(trainingId) =>
+                            stack.push({ card: 'training', trainingId })
+                        }
+                        onAddTraining={addTraining}
+                        onDuplicateTraining={duplicateTraining}
+                        onRemoveTraining={removeTraining}
+                        onReorderTrainings={reorderTrainings}
+                    />
+                );
+
+            case 'training':
+                if (!activeTraining) return null;
+                return (
+                    <TrainingCard
+                        training={activeTraining}
+                        index={activeTrainingIndex}
+                        simpleMode={simpleMode}
+                        isNumbered={isNumbered}
+                        onUpdateRef={(ref) =>
+                            updateTrainingRef(activeTraining._id, ref)
+                        }
+                        onUpdateWeekday={(weekday) =>
+                            updateTrainingWeekday(activeTraining._id, weekday)
+                        }
+                        onOpenExercise={(exerciseId) =>
+                            stack.push({
+                                card: 'exercise',
+                                trainingId: activeTraining._id,
+                                exerciseId,
+                                tab: 'serie',
+                            })
+                        }
+                        onOpenPicker={() =>
+                            stack.push({
+                                card: 'picker',
+                                trainingId: activeTraining._id,
+                            })
+                        }
+                        onOpenBulkPrescription={() =>
+                            stack.push({
+                                card: 'bulkPrescription',
+                                trainingId: activeTraining._id,
+                            })
+                        }
+                        onAddManualExercise={() => {
+                            const exercise = blankExercise();
+                            addExercise(activeTraining._id, exercise);
+                            stack.push({
+                                card: 'exercise',
+                                trainingId: activeTraining._id,
+                                exerciseId: exercise._id,
+                                tab: 'serie',
+                            });
+                        }}
+                        onRemoveExercise={(eid) =>
+                            removeExercise(activeTraining._id, eid)
+                        }
+                        onUpdateExercise={(eid, field, value) =>
+                            updateExercise(activeTraining._id, eid, field, value)
+                        }
+                        onReorderExercises={(ids) =>
+                            reorderExercises(activeTraining._id, ids)
+                        }
+                        onCombineWithPrevious={(eid) =>
+                            combineWithPrevious(activeTraining._id, eid)
+                        }
+                        onUngroupExercises={(groupId) =>
+                            ungroupExercises(activeTraining._id, groupId)
+                        }
+                        onRemoveLastFromGroup={(eid) =>
+                            removeLastFromGroup(activeTraining._id, eid)
+                        }
+                        onPreviewExercise={(ex) =>
+                            openPreview(ex, activeTraining.exercises)
+                        }
+                    />
+                );
+
+            case 'exercise':
+                if (!activeTraining || !activeExercise) return null;
+                return (
+                    <ExerciseCard
+                        exercise={activeExercise}
+                        tab={current.tab}
+                        onTabChange={(tab: ExerciseTab) =>
+                            stack.replace({ ...current, tab })
+                        }
+                        onUpdate={(field, value) =>
+                            updateExercise(
+                                activeTraining._id,
+                                activeExercise._id,
+                                field,
+                                value,
+                            )
+                        }
+                        onSetVideo={(url, thumb) => {
+                            // Link e capa andam juntos (ver ExerciseVideoField);
+                            // o setState do dono é funcional, então as duas
+                            // chamadas se acumulam no mesmo render.
+                            updateExercise(
+                                activeTraining._id,
+                                activeExercise._id,
+                                'video_url',
+                                url,
+                            );
+                            updateExercise(
+                                activeTraining._id,
+                                activeExercise._id,
+                                'video_thumb',
+                                thumb,
+                            );
+                        }}
+                        onPreview={() =>
+                            openPreview(
+                                activeExercise,
+                                activeTraining.exercises,
+                            )
+                        }
+                    />
+                );
+
+            case 'picker':
+                if (!activeTraining) return null;
+                return (
+                    <ExercisePicker
+                        onPick={(item: ExerciseLibraryItem) => {
+                            const exercise = blankExercise({
+                                // Vem da biblioteca: já nasce vinculado, é o
+                                // que permite propagar mídia depois.
+                                exercise_library_id: item.id,
+                                name: item.name,
+                                muscle_group: item.muscle_group ?? '',
+                                video_url: item.video_url ?? '',
+                                video_thumb: item.video_thumb ?? '',
+                            });
+                            addExercise(activeTraining._id, exercise);
+                            stack.replace({
+                                card: 'exercise',
+                                trainingId: activeTraining._id,
+                                exerciseId: exercise._id,
+                                tab: 'serie',
+                            });
+                        }}
+                        onClose={goBack}
+                    />
+                );
+
+            case 'bulkPrescription':
+                if (!activeTraining) return null;
+                return (
+                    <BulkPrescriptionCard
+                        exerciseCount={activeTraining.exercises.length}
+                        onApply={(fields) => {
+                            bulkFillPrescription(activeTraining._id, fields);
+                            stack.pop();
+                        }}
+                    />
+                );
+
+            case 'weeks':
+                return (
+                    <WeeksListCard
+                        microcycles={localMicrocycles}
+                        simpleMode={simpleMode}
+                        deloadWarning={deloadWarning}
+                        onOpenWeek={(microId) =>
+                            stack.push({ card: 'week', microId })
+                        }
+                    />
+                );
+
+            case 'week':
+                if (!activeMicro) return null;
+                return (
+                    <WeekCard
+                        micro={activeMicro}
+                        simpleMode={simpleMode}
+                        onUpdate={(field, value) =>
+                            updateMicrocycle(activeMicro._id, field, value)
+                        }
+                    />
+                );
+        }
+    };
+
+    const saveIndicator = () => {
+        if (blockedField)
+            return (
+                <span className={s.saveStatusError} role="status">
+                    <FiAlertCircle /> Falta preencher{' '}
+                    {BLOCKED_FIELD_LABEL[blockedField] ?? 'um campo obrigatório'}{' '}
+                    para salvar
+                </span>
+            );
+        if (queue.status === 'saving')
+            return (
+                <span className={s.saveStatus}>
+                    <FiLoader /> Salvando…
+                </span>
+            );
+        if (queue.status === 'error')
+            return (
+                <span className={s.saveStatusError} role="alert">
+                    <FiAlertCircle /> {queue.errorMessage}
+                </span>
+            );
+        if (queue.status === 'saved')
+            return (
+                <span className={s.saveStatusOk}>
+                    <FiCheck /> Salvo
+                </span>
+            );
+        return (
+            <span className={s.saveStatus}>
+                As alterações são salvas a cada bloco concluído
+            </span>
+        );
+    };
 
     return (
-        <Modal
-            open
-            onClose={onClose}
-            title={modalTitle}
-            footer={
-                <>
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        style={{
-                            background: 'transparent',
-                            border: '1px solid var(--border-subtle)',
-                            color: 'var(--text-muted)',
-                            padding: '8px 18px',
-                            borderRadius: 8,
-                            cursor: 'pointer',
-                            fontSize: '0.9rem',
-                        }}
-                    >
-                        Cancelar
-                    </button>
-                    <button
-                        type="submit"
-                        form={MESOCYCLE_FORM_ID}
-                        className={s.btnEdit}
-                        disabled={saving}
-                        style={{ padding: '8px 24px', fontSize: '0.9rem' }}
-                    >
-                        {saving
-                            ? 'Salvando...'
-                            : mode === 'add'
-                              ? 'Adicionar'
-                              : 'Salvar'}
-                    </button>
-                </>
-            }
-        >
-            <form id={MESOCYCLE_FORM_ID} onSubmit={handleSubmit(onSubmit)}>
-                {!simpleMode && (
+        <>
+            <Modal
+                open
+                onClose={handleClose}
+                onBack={stack.depth > 0 ? goBack : undefined}
+                title={cardTitle()}
+                closeOnBackdrop={false}
+                footer={
                     <>
-                        {/* ── Phase info ── */}
-                        <div className={s.formGroup}>
-                            <label className={s.formLabel}>Nome *</label>
-                            <input
-                                {...register('name')}
-                                placeholder="Ex: Fase de Hipertrofia"
-                                className={s.formInput}
-                            />
-                            {errors.name && (
-                                <small className="text-danger">
-                                    {errors.name.message}
-                                </small>
-                            )}
-                        </div>
-
-                        <div className={s.formRow}>
-                            <div className={s.formGroup}>
-                                <label className={s.formLabel}>
-                                    Fase *{' '}
-                                    <HelpTooltip
-                                        text="Modelo clássico usado para organizar a fase: Matveyev (Introdução, Base, Preparação, Pré-competição, Competição) ou Força/Bloco (Bompa — Acumulação, Transmutação, Realização e outras)."
-                                        href="/ajuda#autorregulacao-rpe-rir"
-                                        label="Ajuda sobre a fase do mesociclo"
-                                    />
-                                </label>
-                                <select
-                                    {...register('phase')}
-                                    className={s.formSelect}
-                                >
-                                    <option value="">Selecione</option>
-                                    <optgroup label="Clássica (Matveyev)">
-                                        {PHASES_MATVEYEV.map((p) => (
-                                            <option key={p} value={p}>
-                                                {p}
-                                            </option>
-                                        ))}
-                                    </optgroup>
-                                    <optgroup label="Força / Bloco (Bompa)">
-                                        {PHASES_FORCE.map((p) => (
-                                            <option key={p} value={p}>
-                                                {p}
-                                            </option>
-                                        ))}
-                                    </optgroup>
-                                </select>
-                                {errors.phase && (
-                                    <small className="text-danger">
-                                        {errors.phase.message}
-                                    </small>
-                                )}
-                            </div>
-                            <div className={s.formGroup}>
-                                <label className={s.formLabel}>
-                                    Duração{' '}
-                                    <span style={{ fontWeight: 400 }}>
-                                        (semanas = microciclos)
-                                    </span>{' '}
-                                    *
-                                </label>
-                                {/* Presets rápidos */}
-                                <div
-                                    style={{
-                                        display: 'flex',
-                                        gap: 6,
-                                        marginBottom: 6,
-                                        flexWrap: 'wrap',
-                                    }}
-                                >
-                                    {[3, 4, 5, 6].map((w) => {
-                                        const current = watch('duration_weeks');
-                                        const active = current === w;
-                                        return (
-                                            <button
-                                                key={w}
-                                                type="button"
-                                                onClick={() =>
-                                                    setValue(
-                                                        'duration_weeks',
-                                                        w,
-                                                        {
-                                                            shouldValidate:
-                                                                true,
-                                                        },
-                                                    )
-                                                }
-                                                className={
-                                                    active
-                                                        ? s.presetChipActive
-                                                        : s.presetChip
-                                                }
-                                            >
-                                                {w} sem
-                                                {w === 4 ? (
-                                                    <FiStar style={{ fill: 'currentColor' }} />
-                                                ) : (
-                                                    ''
-                                                )}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                                <input
-                                    {...register('duration_weeks', {
-                                        valueAsNumber: true,
-                                    })}
-                                    type="number"
-                                    min={1}
-                                    max={52}
-                                    className={s.formInput}
-                                    placeholder="Outra duração..."
-                                />
-                                <small
-                                    style={{
-                                        color: 'var(--text-muted)',
-                                        fontSize: '0.72rem',
-                                    }}
-                                >
-                                    Recomendado: 3–6 semanas por fase
-                                </small>
-                                {errors.duration_weeks && (
-                                    <small className="text-danger d-block">
-                                        {errors.duration_weeks.message}
-                                    </small>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className={s.formGroup}>
-                            <label className={s.formLabel}>
-                                Metodologia *{' '}
-                                <HelpTooltip
-                                    text="Como a intensidade/volume progride nas semanas desta fase: Linear, Ondulada Diária (DUP), Ondulada Semanal, Conjugada ou Bloco."
-                                    href="/ajuda#autorregulacao-rpe-rir"
-                                    label="Ajuda sobre a metodologia de progressão"
-                                />
-                            </label>
-                            <select
-                                {...register('methodology')}
-                                className={s.formSelect}
+                        {saveIndicator()}
+                        {(queue.status === 'error' || blockedField) && (
+                            <button
+                                type="button"
+                                className={s.btnSmall}
+                                onClick={() => void trySave(true)}
                             >
-                                <option value="">Selecione</option>
-                                {METHODOLOGIES.map((m) => (
-                                    <option key={m} value={m}>
-                                        {m}
-                                    </option>
-                                ))}
-                            </select>
-                            {errors.methodology && (
-                                <small className="text-danger">
-                                    {errors.methodology.message}
-                                </small>
-                            )}
-                        </div>
-                    </>
-                )}
-
-                <TrainingsEditor
-                    trainings={localTrainings}
-                    onAddTraining={addTraining}
-                    onRemoveTraining={removeTraining}
-                    onDuplicateTraining={duplicateTraining}
-                    onUpdateTrainingRef={updateTrainingRef}
-                    onAddExercise={addExercise}
-                    onRemoveExercise={removeExercise}
-                    onUpdateExercise={updateExercise}
-                    pickerFor={pickerFor}
-                    onOpenPicker={openPicker}
-                    onClosePicker={closePicker}
-                    onPickExercise={pickExercise}
-                    simpleMode={simpleMode}
-                    dayLabelStyle={dayLabelStyle}
-                    onUpdateTrainingWeekday={updateTrainingWeekday}
-                    onCombineWithPrevious={combineWithPrevious}
-                    onUngroupExercises={ungroupExercises}
-                    onRemoveLastFromGroup={removeLastFromGroup}
-                    onReorderTrainings={reorderTrainings}
-                    onReorderExercises={reorderExercises}
-                    onBulkFillPrescription={bulkFillPrescription}
-                />
-
-                <div className={s.collapsibleCard}>
-                    <button
-                        type="button"
-                        onClick={() => setAdjustmentsOpen((v) => !v)}
-                        aria-expanded={adjustmentsOpen}
-                        className={s.collapsibleToggle}
-                    >
-                        <span>
-                            <span className={s.collapsibleTitle}>
-                                {simpleMode
-                                    ? 'Ajustes desta semana'
-                                    : 'Ajustes semanais'}
-                            </span>
-                            <span className={s.collapsibleSummary}>
-                                {adjustmentsSummary}
-                            </span>
-                        </span>
-                        <span
-                            aria-hidden
-                            className={
-                                adjustmentsOpen
-                                    ? s.collapsibleChevronOpen
-                                    : s.collapsibleChevron
-                            }
+                                {blockedField ? 'Preencher' : 'Tentar de novo'}
+                            </button>
+                        )}
+                        <button
+                            type="button"
+                            className={s.btnEdit}
+                            onClick={stack.depth > 0 ? goBack : handleClose}
+                            style={{ padding: '8px 24px', fontSize: '0.9rem' }}
                         >
-                            <FiChevronDown />
-                        </span>
-                    </button>
+                            {stack.depth > 0 ? 'Concluir' : 'Fechar'}
+                        </button>
+                    </>
+                }
+            >
+                {cardBody()}
+            </Modal>
 
-                    {adjustmentsOpen && (
-                        <div className={s.collapsibleBody}>
-                            {suggestDeloadWarning && (
-                                <div
-                                    className="alert alert-warning py-2 mb-3"
-                                    style={{ fontSize: '0.8rem' }}
-                                >
-                                    <FiAlertTriangle /> Fase com {durationWeeksWatch} semanas e
-                                    nenhuma marcada como deload. Blocos longos
-                                    sem semana de descarga aumentam o risco de
-                                    overtraining — considere marcar uma semana
-                                    como deload abaixo.
-                                </div>
-                            )}
-                            <MicrocycleEditor
-                                microcycles={localMicrocycles}
-                                onUpdate={updateMicrocycle}
-                                simpleMode={simpleMode}
-                            />
-                        </div>
-                    )}
-                </div>
-
-                {saveError && (
-                    <div
-                        className="alert alert-danger py-2 mb-3"
-                        style={{ fontSize: '0.85rem' }}
-                    >
-                        {saveError}
-                    </div>
-                )}
-            </form>
-        </Modal>
+            {/* Pré-visualização do exercício (o mesmo card que o aluno vê).
+                readOnly: anotações e o registro de carga do próprio aluno não
+                aparecem aqui (essas telas são "/me/..."). A carga PRESCRITA
+                continua editável direto pelo preview. */}
+            {preview && activeTraining && (
+                <ExerciseDetailCard
+                    exercise={preview.exercise}
+                    onClose={() => setPreview(null)}
+                    nextInGroup={previewNextInGroup()}
+                    onSelectExercise={(exercise) =>
+                        setPreview({
+                            exercise,
+                            siblings: preview.siblings,
+                            // Navegar dentro de um bloco troca o exercício em
+                            // foco: o _id local vem do treino ativo, casando
+                            // pelo id que o ExerciseLog carrega.
+                            localId:
+                                activeTraining.exercises.find(
+                                    (e) => (e.id ?? e._id) === exercise.id,
+                                )?._id ?? preview.localId,
+                        })
+                    }
+                    readOnly
+                    onPrescribeWeight={(weightKg) =>
+                        updateExercise(
+                            activeTraining._id,
+                            preview.localId,
+                            'load_kg',
+                            String(weightKg),
+                        )
+                    }
+                />
+            )}
+        </>
     );
 }

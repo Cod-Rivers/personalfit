@@ -6,14 +6,25 @@ import { useCallback, useState } from 'react';
  * Estado de visibilidade do GanttPlanning, persistido em localStorage por
  * tela (storageKey) — sem isso o toggle "ocultar linha do tempo" volta a
  * ligado a cada F5.
+ *
+ * `defaultEnabled` só vale para quem NUNCA mexeu no toggle nesta tela: nas
+ * telas de periodização do personal ele entra desligado, porque a linha do
+ * tempo ficava entre o cabeçalho e a lista de fases e empurrava o conteúdo
+ * que o personal veio editar para fora da primeira tela. Quem já escolheu
+ * mantém a escolha, e o botão "Mostrar linha do tempo" continua visível.
  */
-export function useGanttToggle(storageKey: string): [boolean, (v: boolean) => void] {
+export function useGanttToggle(
+    storageKey: string,
+    defaultEnabled = true,
+): [boolean, (v: boolean) => void] {
     const [enabled, setEnabledState] = useState<boolean>(() => {
-        if (typeof window === 'undefined') return true;
+        if (typeof window === 'undefined') return defaultEnabled;
         try {
-            return window.localStorage.getItem(storageKey) !== 'false';
+            const stored = window.localStorage.getItem(storageKey);
+            if (stored === null) return defaultEnabled;
+            return stored !== 'false';
         } catch {
-            return true;
+            return defaultEnabled;
         }
     });
 

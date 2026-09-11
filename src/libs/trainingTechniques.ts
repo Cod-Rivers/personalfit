@@ -1,7 +1,7 @@
 /**
  * Catálogo de técnicas de treinamento avançadas, aplicáveis a um exercício
  * dentro de um treino. Fonte única usada pelo editor do personal
- * (TrainingsEditor) e pela exibição ao aluno (ExerciseDetailCard) — evita
+ * (cards do editor) e pela exibição ao aluno (ExerciseDetailCard) — evita
  * duplicar labels/regras nos dois lugares.
  *
  * Os 5 campos genéricos (rounds/round_reduction_pct/pause_seconds/extra_reps/

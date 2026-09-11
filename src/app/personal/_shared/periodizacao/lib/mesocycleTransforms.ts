@@ -145,6 +145,10 @@ export interface LocalExercise {
 }
 
 export interface LocalTraining {
+    /** ID real do treino no backend, presente só quando carregado da API. Igual
+     * a LocalExercise.id: precisa voltar no save para o backend não gerar um
+     * ObjectID novo a cada card salvo. */
+    id?: string;
     _id: string;
     reference: string;
     exercises: LocalExercise[];
@@ -331,6 +335,7 @@ export function responseMicroToLocal(
 export function responseToLocal(trainings: TrainingResponse[]): LocalTraining[] {
     return trainings.map((t) => ({
         _id: genId(),
+        id: t.id,
         reference: t.reference,
         weekday: t.weekday,
         exercises: t.exercises.map((ex) => {
@@ -451,6 +456,7 @@ export function localToMesoRequest(
             notes: m.notes || undefined,
         })),
         trainings: trainings.map((t) => ({
+            id: t.id,
             reference: t.reference,
             weekday: t.weekday,
             exercises: t.exercises.map((ex) => {
@@ -559,6 +565,7 @@ export function mesoToRequest(meso: MesocycleResponse): MesocycleRequest {
             notes: micro.notes,
         })),
         trainings: meso.trainings.map((t) => ({
+            id: t.id,
             reference: t.reference,
             weekday: t.weekday,
             exercises: t.exercises.map((ex) => ({
@@ -612,11 +619,102 @@ export function duplicateMesoRequest(
         // Exercícios seguem a mesma regra dos microciclos: reaproveitar os ids
         // faria a cópia compartilhar histórico de séries e anotações com o
         // original (ambos referenciam o exercício por id).
+        // Treinos entram na mesma regra desde que o id do treino passou a ir no
+        // payload (salvamento por card): sem zerar aqui, a cópia sobrescreveria
+        // os treinos do mesociclo original.
         trainings: req.trainings.map((t) => ({
             ...t,
+            id: undefined,
             exercises: t.exercises.map((ex) => ({ ...ex, id: undefined })),
         })),
     };
 }
 
 export type { MacrocycleResponse, MesocycleResponse, MesocycleRequest };
+
+/**
+ * Adota no estado local os IDs que o servidor atribuiu ao salvar a fase.
+ *
+ * É o que torna o salvamento POR CARD idempotente: sem isso, o segundo card
+ * salvo reenviaria treinos e exercícios sem `id`, o backend criaria ObjectIDs
+ * novos a cada toque e o histórico de séries do aluno (ExercisePerformance) e
+ * as anotações dele ficariam órfãs — o mesmo bug de churn de ID que já apareceu
+ * três vezes neste editor, agora multiplicado pela frequência do autosave.
+ *
+ * O casamento é POSICIONAL de propósito: o backend devolve treinos, exercícios
+ * e microciclos exatamente na ordem em que foram enviados (ver buildMesocycle),
+ * e os itens novos ainda não têm `id` para casar por chave.
+ */
+export function adoptSavedIds(
+    localTrainings: LocalTraining[],
+    localMicrocycles: LocalMicrocycle[],
+    saved: MesocycleResponse,
+): { trainings: LocalTraining[]; microcycles: LocalMicrocycle[] } {
+    // Guarda estrutural: se o personal adicionou ou removeu algo enquanto a
+    // requisição estava em voo, os índices não descrevem mais os mesmos itens
+    // e adotar o id daria o histórico de um exercício a outro. Nesse caso não
+    // se adota nada — o próximo save (que já leva o estado novo) resolve.
+    const savedTrainings = saved.trainings ?? [];
+    const trainings =
+        savedTrainings.length !== localTrainings.length
+            ? localTrainings
+            : localTrainings.map((t, ti) => {
+                  const savedTraining = savedTrainings[ti];
+                  const savedExercises = savedTraining.exercises ?? [];
+                  if (savedExercises.length !== t.exercises.length) return t;
+                  return {
+                      ...t,
+                      id: savedTraining.id,
+                      exercises: t.exercises.map((ex, ei) => ({
+                          ...ex,
+                          id: savedExercises[ei].id,
+                          // A mídia da biblioteca é reidratada no servidor
+                          // (hydrateMacrocycleLibraryMedia). Só preenche o que
+                          // está vazio aqui: sobrescrever apagaria um link que
+                          // o personal tenha digitado durante o save.
+                          video_url:
+                              ex.video_url ||
+                              savedExercises[ei].video_url ||
+                              '',
+                          video_thumb:
+                              ex.video_thumb ||
+                              savedExercises[ei].video_thumb ||
+                              '',
+                      })),
+                  };
+              });
+
+    const savedMicros = saved.microcycles ?? [];
+    const microcycles =
+        savedMicros.length !== localMicrocycles.length
+            ? localMicrocycles
+            : localMicrocycles.map((m, mi) => ({
+                  ...m,
+                  id: savedMicros[mi].id,
+                  // Status é derivado dos treinos realmente registrados pelo
+                  // aluno e o servidor ignora o que o form mandou — refletir de
+                  // volta evita mostrar "pendente" numa semana já concluída.
+                  status: savedMicros[mi].status || m.status,
+              }));
+
+    return { trainings, microcycles };
+}
+
+/**
+ * Acha, no macrociclo devolvido por um save por card, a fase que acabou de ser
+ * gravada.
+ *
+ * Numa edição casa pelo id enviado. Numa CRIAÇÃO o cliente ainda não tem id, e
+ * o backend anexa a fase nova no fim da lista (ver AddMesocycle) — daí o
+ * fallback pelo último elemento.
+ */
+export function pickSavedMesocycle(
+    macro: MacrocycleResponse,
+    requestedId?: string,
+): MesocycleResponse | null {
+    const mesocycles = macro.mesocycles ?? [];
+    if (requestedId) {
+        return mesocycles.find((m) => m.id === requestedId) ?? null;
+    }
+    return mesocycles[mesocycles.length - 1] ?? null;
+}

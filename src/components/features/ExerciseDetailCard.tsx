@@ -72,7 +72,7 @@ interface ExerciseDetailCardProps {
      * do aluno. */
     readOnly?: boolean;
     /** Presente só no preview do personal dentro do editor de treinos
-     * (TrainingsEditor): permite editar a carga PRESCRITA (plannedWeight)
+     * (cards do editor de mesociclo): permite editar a carga PRESCRITA (plannedWeight)
      * direto pelo card, em vez de precisar fechar o preview e procurar o
      * campo "Carga" na prescrição do exercício. Grava no estado local do
      * editor (onUpdateExercise), não em /me/exercise-weight — aquele

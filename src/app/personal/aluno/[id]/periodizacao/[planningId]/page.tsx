@@ -5,6 +5,8 @@ import { FiArrowLeft } from 'react-icons/fi';
 import {
     getMacrocycle,
     updateMacrocycle,
+    createMesocycle,
+    updateMesocycle,
     updatePhaseDate,
     getPlanWorkoutLogs,
     macroToGanttPhases,
@@ -24,9 +26,13 @@ import {
     formatDate,
     mesoToRequest,
     duplicateMesoRequest,
+    pickSavedMesocycle,
 } from '@/app/personal/_shared/periodizacao/lib/mesocycleTransforms';
 import MesocycleSection from '@/app/personal/_shared/periodizacao/components/MesocycleSection';
 import MesocycleFormModal from '@/app/personal/_shared/periodizacao/components/MesocycleFormModal';
+import PlanningNextStep from '@/app/personal/_shared/periodizacao/components/PlanningNextStep';
+import HelpTooltip from '@/components/atoms/HelpTooltip';
+import { getGlossaryTerm } from '@/libs/glossaryContent';
 import { useToast } from '@/components/system/Toast';
 import s from '@/app/personal/_shared/periodizacao/builder.module.css';
 
@@ -42,6 +48,7 @@ export default function PeriodizacaoDetalhePage() {
     const [pageError, setPageError] = useState('');
     const [ganttEnabled, setGanttEnabled] = useGanttToggle(
         'venafit:gantt:periodizacao',
+        false,
     );
     const [workoutLogs, setWorkoutLogs] = useState<
         PeriodizedWorkoutLogResponse[]
@@ -54,7 +61,6 @@ export default function PeriodizacaoDetalhePage() {
         null,
     );
     const [saving, setSaving] = useState(false);
-    const [saveError, setSaveError] = useState('');
 
     /* ── Fetch ── */
     useEffect(() => {
@@ -118,13 +124,11 @@ export default function PeriodizacaoDetalhePage() {
     /* ── Modal open/close ── */
     const openAddModal = useCallback(() => {
         setEditingMeso(null);
-        setSaveError('');
         setModalMode('add');
     }, []);
 
     const openEditModal = useCallback((meso: MesocycleResponse) => {
         setEditingMeso(meso);
-        setSaveError('');
         setModalMode('edit');
     }, []);
 
@@ -193,51 +197,20 @@ export default function PeriodizacaoDetalhePage() {
         [macro, studentId, planningId, showSuccess, showError],
     );
 
-    /* ── Save (add ou edit) ── */
-    const onSaveMeso = useCallback(
+    /* ── Salvamento por card ──
+     * O editor grava a cada bloco concluído, então aqui não há mais "salvar e
+     * fechar": só a persistência de UMA fase e a atualização do macrociclo
+     * desta tela com o que voltou do servidor. Erros sobem para o modal, que
+     * os mostra no rodapé com a opção de tentar de novo. */
+    const onPersistMeso = useCallback(
         async (req: MesocycleRequest) => {
-            if (!macro) return;
-            setSaving(true);
-            setSaveError('');
-            try {
-                const allMesos = macro.mesocycles ?? [];
-                const updatedList: MesocycleRequest[] =
-                    modalMode === 'add'
-                        ? [...allMesos.map(mesoToRequest), req]
-                        : allMesos.map((m) =>
-                              m.id === editingMeso?.id ? req : mesoToRequest(m),
-                          );
-
-                const updated = await updateMacrocycle(studentId, planningId, {
-                    mesocycles: updatedList,
-                });
-                setMacro(updated);
-                closeModal();
-                showSuccess(
-                    macro.planning_mode === 'simple'
-                        ? 'Treinos da semana salvos com sucesso!'
-                        : modalMode === 'add'
-                          ? 'Mesociclo criado com sucesso!'
-                          : 'Mesociclo salvo com sucesso!',
-                );
-            } catch (e: unknown) {
-                const msg = (
-                    e as { response?: { data?: { message?: string } } }
-                )?.response?.data?.message;
-                setSaveError(msg || 'Erro ao salvar mesociclo.');
-            } finally {
-                setSaving(false);
-            }
+            const updated = req.id
+                ? await updateMesocycle(studentId, planningId, req.id, req)
+                : await createMesocycle(studentId, planningId, req);
+            setMacro(updated);
+            return pickSavedMesocycle(updated, req.id);
         },
-        [
-            macro,
-            modalMode,
-            editingMeso,
-            studentId,
-            planningId,
-            closeModal,
-            showSuccess,
-        ],
+        [studentId, planningId],
     );
 
     /* ── Loading / error states ── */
@@ -290,37 +263,36 @@ export default function PeriodizacaoDetalhePage() {
                     </button>
                 </div>
 
-                {/* Info Card */}
-                <div className={s.infoCard}>
-                    <div className={s.infoRow}>
-                        <div className={s.infoItem}>
-                            <p className={s.infoLabel}>Status</p>
-                            <p className={s.infoValue}>
-                                <span className={statusClass}>
-                                    {STATUS_LABEL[macro.status] ?? macro.status}
-                                </span>
-                            </p>
-                        </div>
-                        <div className={s.infoItem}>
-                            <p className={s.infoLabel}>Início</p>
-                            <p className={s.infoValue}>
-                                {formatDate(macro.start_date)}
-                            </p>
-                        </div>
-                        <div className={s.infoItem}>
-                            <p className={s.infoLabel}>Término</p>
-                            <p className={s.infoValue}>
-                                {formatDate(macro.end_date)}
-                            </p>
-                        </div>
-                        <div className={s.infoItem}>
-                            <p className={s.infoLabel}>Mesociclos</p>
-                            <p className={s.infoValue}>
-                                {macro.mesocycles?.length ?? 0}
-                            </p>
-                        </div>
-                    </div>
+                {/* Resumo do plano numa linha de chips. Era um card com quatro
+                    métricas empilhadas, que no celular ocupava quase meia tela
+                    antes da primeira fase aparecer. */}
+                <div className={s.summaryChips}>
+                    <span className={statusClass}>
+                        {STATUS_LABEL[macro.status] ?? macro.status}
+                    </span>
+                    <span className={s.summaryChip}>
+                        {formatDate(macro.start_date)} →{' '}
+                        {formatDate(macro.end_date)}
+                    </span>
+                    <span className={s.summaryChip}>
+                        {macro.mesocycles?.length ?? 0}{' '}
+                        {isSimpleMode
+                            ? 'semana configurada'
+                            : `mesociclo${(macro.mesocycles?.length ?? 0) === 1 ? '' : 's'}`}
+                    </span>
                 </div>
+
+                <PlanningNextStep
+                    macro={macro}
+                    isSimpleMode={isSimpleMode}
+                    onAction={(mesocycleId) => {
+                        const target = (macro.mesocycles ?? []).find(
+                            (m) => m.id === mesocycleId,
+                        );
+                        if (target) openEditModal(target);
+                        else openAddModal();
+                    }}
+                />
 
                 {/* Gantt */}
                 {ganttPhases.length > 0 && (
@@ -356,9 +328,26 @@ export default function PeriodizacaoDetalhePage() {
                 >
                     <h2 style={{ fontSize: '1.1rem', margin: 0 }}>
                         {isSimpleMode ? 'Treinos da Semana' : 'Mesociclos'}
+                        {!isSimpleMode && (
+                            <>
+                                {' '}
+                                <HelpTooltip
+                                    text={getGlossaryTerm('mesociclo').short}
+                                    href="/ajuda#glossario-mesociclo"
+                                    label="Ajuda sobre mesociclo"
+                                />
+                            </>
+                        )}
                     </h2>
                     {(!isSimpleMode || !simpleMeso) && (
-                        <button className={s.btnEdit} onClick={openAddModal}>
+                        <button
+                            className={s.btnEdit}
+                            onClick={openAddModal}
+                            // Remover ou duplicar uma fase reescreve a lista
+                            // inteira: abrir o editor no meio disso salvaria
+                            // por cima do resultado que ainda está chegando.
+                            disabled={saving}
+                        >
                             {isSimpleMode
                                 ? '+ Configurar treinos da semana'
                                 : '+ Adicionar Fase'}
@@ -410,10 +399,8 @@ export default function PeriodizacaoDetalhePage() {
                             ? (macro.mesocycles?.length ?? 0) + 1
                             : (editingMeso?.order ?? 1)
                     }
-                    saving={saving}
-                    saveError={saveError}
                     onClose={closeModal}
-                    onSave={onSaveMeso}
+                    onPersist={onPersistMeso}
                     simpleMode={isSimpleMode}
                     dayLabelStyle={dayLabelStyle}
                 />

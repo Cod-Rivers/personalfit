@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { FiX } from 'react-icons/fi';
+import { FiArrowLeft, FiX } from 'react-icons/fi';
 import styles from './Modal.module.css';
 
 interface ModalProps {
@@ -11,6 +11,12 @@ interface ModalProps {
     children: React.ReactNode;
     footer?: React.ReactNode;
     closeOnBackdrop?: boolean;
+    /**
+     * Quando presente, o header ganha um botão voltar e o Escape passa a
+     * VOLTAR em vez de fechar. É o que permite um modal com navegação interna
+     * (ver useCardStack) sem empilhar uma instância de Modal por nível.
+     */
+    onBack?: () => void;
 }
 
 /** Pilha dos modais abertos, na ordem em que foram montados. Só o do topo
@@ -32,6 +38,7 @@ export default function Modal({
     children,
     footer,
     closeOnBackdrop = true,
+    onBack,
 }: ModalProps) {
     const idRef = useRef<symbol | null>(null);
     if (idRef.current === null) idRef.current = Symbol('modal');
@@ -40,8 +47,10 @@ export default function Modal({
     // remontasse a cada nova identidade de onClose, o modal se reempilharia e
     // passaria à frente de um filho já aberto na disputa pelo Escape.
     const onCloseRef = useRef(onClose);
+    const onBackRef = useRef(onBack);
     useEffect(() => {
         onCloseRef.current = onClose;
+        onBackRef.current = onBack;
     });
 
     useEffect(() => {
@@ -53,6 +62,12 @@ export default function Modal({
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key !== 'Escape') return;
             if (openModals[openModals.length - 1] !== id) return;
+            // Num modal com navegação interna, Escape volta um card; só fecha
+            // quando já está na raiz (o chamador deixa de passar onBack).
+            if (onBackRef.current) {
+                onBackRef.current();
+                return;
+            }
             onCloseRef.current();
         };
         window.addEventListener('keydown', handleKeyDown);
@@ -103,6 +118,16 @@ export default function Modal({
             >
                 {title && (
                     <div className={styles.sheetHeader}>
+                        {onBack && (
+                            <button
+                                type="button"
+                                className={styles.backBtn}
+                                onClick={onBack}
+                                aria-label="Voltar"
+                            >
+                                <FiArrowLeft />
+                            </button>
+                        )}
                         <h2 className={styles.title}>{title}</h2>
                         <button
                             type="button"

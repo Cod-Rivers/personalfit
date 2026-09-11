@@ -5,6 +5,8 @@ import { FiArrowLeft } from 'react-icons/fi';
 import {
     getTemplate,
     updateTemplate,
+    createTemplateMesocycle,
+    updateTemplateMesocycle,
     macroToGanttPhases,
     type MacrocycleResponse,
     type MesocycleRequest,
@@ -16,6 +18,7 @@ import {
     STATUS_LABEL,
     mesoToRequest,
     duplicateMesoRequest,
+    pickSavedMesocycle,
 } from '@/app/personal/_shared/periodizacao/lib/mesocycleTransforms';
 import MesocycleSection from '@/app/personal/_shared/periodizacao/components/MesocycleSection';
 import MesocycleFormModal from '@/app/personal/_shared/periodizacao/components/MesocycleFormModal';
@@ -33,6 +36,7 @@ export default function TemplateDetalhePage() {
     const [pageError, setPageError] = useState('');
     const [ganttEnabled, setGanttEnabled] = useGanttToggle(
         'venafit:gantt:templates',
+        false,
     );
 
     /* Modal state */
@@ -41,7 +45,6 @@ export default function TemplateDetalhePage() {
         null,
     );
     const [saving, setSaving] = useState(false);
-    const [saveError, setSaveError] = useState('');
 
     /* ── Fetch ── */
     useEffect(() => {
@@ -54,13 +57,11 @@ export default function TemplateDetalhePage() {
     /* ── Modal open/close ── */
     const openAddModal = useCallback(() => {
         setEditingMeso(null);
-        setSaveError('');
         setModalMode('add');
     }, []);
 
     const openEditModal = useCallback((meso: MesocycleResponse) => {
         setEditingMeso(meso);
-        setSaveError('');
         setModalMode('edit');
     }, []);
 
@@ -129,43 +130,19 @@ export default function TemplateDetalhePage() {
         [macro, templateId, showSuccess, showError],
     );
 
-    /* ── Save (add ou edit) ── */
-    const onSaveMeso = useCallback(
+    /* ── Salvamento por card ──
+     * Mesmo contrato da tela de periodização do aluno: o editor grava uma fase
+     * por bloco concluído, e aqui só atualizamos o template desta tela com o
+     * que voltou do servidor. */
+    const onPersistMeso = useCallback(
         async (req: MesocycleRequest) => {
-            if (!macro) return;
-            setSaving(true);
-            setSaveError('');
-            try {
-                const allMesos = macro.mesocycles ?? [];
-                const updatedList: MesocycleRequest[] =
-                    modalMode === 'add'
-                        ? [...allMesos.map(mesoToRequest), req]
-                        : allMesos.map((m) =>
-                              m.id === editingMeso?.id ? req : mesoToRequest(m),
-                          );
-
-                const updated = await updateTemplate(templateId, {
-                    mesocycles: updatedList,
-                });
-                setMacro(updated);
-                closeModal();
-                showSuccess(
-                    macro.planning_mode === 'simple'
-                        ? 'Treinos da semana salvos com sucesso!'
-                        : modalMode === 'add'
-                          ? 'Mesociclo criado com sucesso!'
-                          : 'Mesociclo salvo com sucesso!',
-                );
-            } catch (e: unknown) {
-                const msg = (
-                    e as { response?: { data?: { message?: string } } }
-                )?.response?.data?.message;
-                setSaveError(msg || 'Erro ao salvar mesociclo.');
-            } finally {
-                setSaving(false);
-            }
+            const updated = req.id
+                ? await updateTemplateMesocycle(templateId, req.id, req)
+                : await createTemplateMesocycle(templateId, req);
+            setMacro(updated);
+            return pickSavedMesocycle(updated, req.id);
         },
-        [macro, modalMode, editingMeso, templateId, closeModal, showSuccess],
+        [templateId],
     );
 
     /* ── Loading / error states ── */
@@ -273,7 +250,14 @@ export default function TemplateDetalhePage() {
                         {isSimpleMode ? 'Treinos da Semana' : 'Mesociclos'}
                     </h2>
                     {(!isSimpleMode || !simpleMeso) && (
-                        <button className={s.btnEdit} onClick={openAddModal}>
+                        <button
+                            className={s.btnEdit}
+                            onClick={openAddModal}
+                            // Remover ou duplicar uma fase reescreve a lista
+                            // inteira: abrir o editor no meio disso salvaria
+                            // por cima do resultado que ainda está chegando.
+                            disabled={saving}
+                        >
                             {isSimpleMode
                                 ? '+ Configurar treinos da semana'
                                 : '+ Adicionar Fase'}
@@ -325,10 +309,8 @@ export default function TemplateDetalhePage() {
                             ? (macro.mesocycles?.length ?? 0) + 1
                             : (editingMeso?.order ?? 1)
                     }
-                    saving={saving}
-                    saveError={saveError}
                     onClose={closeModal}
-                    onSave={onSaveMeso}
+                    onPersist={onPersistMeso}
                     simpleMode={isSimpleMode}
                     dayLabelStyle={dayLabelStyle}
                 />
