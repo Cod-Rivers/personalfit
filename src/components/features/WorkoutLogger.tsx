@@ -29,6 +29,12 @@ import {
     computeElapsedMinutes,
     clearWorkoutStart,
 } from '@/libs/workoutSessionTimer';
+import NavRow, { NavRowGroup } from '@/components/molecules/NavRow';
+import { useCardStack } from '@/hooks/useCardStack';
+import {
+    describeSeries,
+    reviewProgress,
+} from '@/libs/workoutLogSummary';
 import HelpTooltip from '@/components/atoms/HelpTooltip';
 import { getGlossaryTerm } from '@/libs/glossaryContent';
 import s from './WorkoutLogger.module.css';
@@ -40,6 +46,13 @@ import s from './WorkoutLogger.module.css';
 // funcionar offline. Completar o treino (handleComplete) não usa mais esta
 // mensagem: com o endpoint de sessão, completar funciona offline com ou sem
 // log pré-criado (US-01 critério 5 / cenário S-2 do spec).
+/**
+ * Cards do registro de treino. O aluno vê a lista de exercícios e entra em um
+ * de cada vez — antes, seis exercícios de três séries punham ~78 controles na
+ * mesma rolagem, sem nenhuma indicação de onde ele estava.
+ */
+type LoggerCard = { card: 'list' } | { card: 'block'; blockKey: string };
+
 const OFFLINE_NO_PRECREATED_LOG_MESSAGE_SKIP =
     'Sem conexão e este treino não foi baixado para uso offline. Baixe o plano em "Meus Treinos" enquanto estiver online para poder pular o treino sem internet.';
 
@@ -162,6 +175,19 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
     // confirmação (a data planejada, para estimar o aviso de tardio) —
     // calculada no instante em que o aluno pede para completar, não antes.
     const [step, setStep] = useState<'form' | 'checkin'>('form');
+
+    /* Navegação por cards dentro do MESMO modal (ver useCardStack): abrir um
+     * segundo Modal por exercício empilharia backdrop e trava de scroll sem
+     * necessidade, e o Escape fecharia a folha errada. */
+    const stack = useCardStack<LoggerCard>({ card: 'list' });
+    const current = stack.current;
+
+    /** Exercícios que o aluno já abriu. Alimenta o contador de progresso — que
+     * NÃO pode ser medido por campo preenchido, já que as séries nascem com a
+     * prescrição dentro (ver reviewProgress). */
+    const [visited, setVisited] = useState<ReadonlySet<string>>(
+        () => new Set(),
+    );
     const [checkInDraft, setCheckInDraft] = useState<{
         plannedDate: string;
     } | null>(null);
@@ -448,6 +474,26 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
         logs.map((l, idx) => ({ group_id: l.groupId, idx })),
     );
 
+    /** Chave estável do bloco: o id do primeiro exercício dele. Serve de rota
+     * do card e de marca de "já conferi este". Não usar o índice — remover uma
+     * série reindexa nada, mas o índice não sobrevive a uma mudança de ordem. */
+    const blockKey = (block: { idx: number }[]) =>
+        logs[block[0].idx].exerciseId;
+
+    const activeBlock =
+        current.card === 'block'
+            ? (blocks.find((b) => blockKey(b) === current.blockKey) ?? null)
+            : null;
+
+    const openBlock = (block: { idx: number }[]) => {
+        const key = blockKey(block);
+        // Marca ao ABRIR, não ao sair: o que o contador responde é "já olhei
+        // este exercício?", e olhar acontece na abertura. Marcar na saída
+        // deixaria de contar quem fecha o modal a partir do card.
+        setVisited((prev) => new Set(prev).add(key));
+        stack.push({ card: 'block', blockKey: key });
+    };
+
     const seriesGridHeader = (
         <div className={s.gridHeader}>
             <span className={s.gridHeaderLabel}>Reps</span>
@@ -553,11 +599,202 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
         </div>
     );
 
+    /** Card de UM bloco: só as séries dele. Um exercício avulso de 3 séries
+     * são 13 controles; o mesmo bloco dentro da lista antiga competia com os
+     * outros cinco exercícios pela mesma tela. */
+    const renderBlockCard = (block: { idx: number }[]) => {
+        if (block.length === 1) {
+            const exIdx = block[0].idx;
+            const ex = logs[exIdx];
+            return (
+                <div className={s.content}>
+                    <p className={s.blockHeader}>
+                        {ex.plannedSeries.length > 0
+                            ? `Prescrito: ${ex.plannedSeries.join(' / ')} reps`
+                            : 'Sem prescrição de séries — ajuste como você fez'}
+                    </p>
+                    <div className={s.seriesGrid}>
+                        {seriesGridHeader}
+                        {ex.series.map((sr, seriesIdx) =>
+                            renderSeriesRow(
+                                exIdx,
+                                seriesIdx,
+                                sr,
+                                `Série ${sr.seriesNum}`,
+                                ex.series.length > 1
+                                    ? () => removeSeriesRow(exIdx, seriesIdx)
+                                    : undefined,
+                            ),
+                        )}
+                    </div>
+                    <button
+                        type="button"
+                        className={s.addSeriesBtn}
+                        onClick={() => addSeriesRow(exIdx)}
+                        disabled={loading}
+                    >
+                        + Adicionar série
+                    </button>
+                </div>
+            );
+        }
+
+        // Bloco combinado: séries intercaladas por rodada (Série 1 de A,
+        // Série 1 de B, Série 2 de A, ...) — é assim que bi-set/triset/
+        // superset são executados de fato, sem descanso entre os exercícios
+        // do bloco. O bloco inteiro é UM card justamente por isso: separar os
+        // exercícios em cards diferentes desfaria a ordem de execução.
+        const members = block.map((b) => logs[b.idx]);
+        const maxRounds = Math.max(...members.map((m) => m.series.length));
+        const rows: React.ReactNode[] = [];
+        for (let round = 0; round < maxRounds; round++) {
+            block.forEach((b) => {
+                const ex = logs[b.idx];
+                const sr = ex.series[round];
+                if (!sr) return;
+                rows.push(
+                    renderSeriesRow(
+                        b.idx,
+                        round,
+                        sr,
+                        <>
+                            <span className={s.comboSeriesLabel}>
+                                {ex.name}
+                            </span>{' '}
+                            · Série {sr.seriesNum}
+                        </>,
+                    ),
+                );
+            });
+        }
+
+        return (
+            <div className={s.content}>
+                <p className={s.blockHeaderCombo}>
+                    <FiLink />{' '}
+                    {members.map((m) => m.name).join(' + ')} — sem descanso
+                    entre as séries abaixo
+                </p>
+                <div className={s.seriesGrid}>
+                    {seriesGridHeader}
+                    {rows}
+                </div>
+            </div>
+        );
+    };
+
+    /** Card raiz: um exercício por linha, mais duração e notas. Oito controles
+     * contra os ~78 que a lista antiga exibia de uma vez. */
+    const renderListCard = () => (
+        <div className={s.content}>
+            {error && (
+                <div className={s.errorBanner}>
+                    <FiAlertCircle /> {error}
+                </div>
+            )}
+
+            {autoregulation && (
+                <p
+                    className="small text-muted"
+                    style={{ marginTop: -4, marginBottom: 12 }}
+                >
+                    Sugestão de hoje: {autoregulation.message} (RPE e carga já
+                    pré-preenchidos — ajuste livremente).
+                </p>
+            )}
+
+            <div className={s.progressLine}>
+                <span className={s.progressCount}>
+                    {reviewProgress(blocks.length, visited)}
+                </span>
+                <span>Toque num exercício para conferir as séries</span>
+            </div>
+
+            <NavRowGroup>
+                {blocks.map((block) => {
+                    const key = blockKey(block);
+                    const done = visited.has(key);
+                    if (block.length === 1) {
+                        const ex = logs[block[0].idx];
+                        return (
+                            <NavRow
+                                key={key}
+                                title={ex.name}
+                                summary={describeSeries(ex.series)}
+                                tone={done ? 'done' : 'default'}
+                                onClick={() => openBlock(block)}
+                            />
+                        );
+                    }
+                    const members = block.map((b) => logs[b.idx]);
+                    return (
+                        <NavRow
+                            key={key}
+                            title={comboGroupLabel(
+                                block.length,
+                                members[0].groupTechnique,
+                            )}
+                            leading={<FiLink />}
+                            summary={members.map((m) => m.name).join(' + ')}
+                            tone={done ? 'done' : 'default'}
+                            onClick={() => openBlock(block)}
+                        />
+                    );
+                })}
+            </NavRowGroup>
+
+            <div className={s.footerSection}>
+                <label>
+                    Duração (minutos):
+                    <input
+                        type="number"
+                        value={duration ?? ''}
+                        onChange={(e) =>
+                            setDuration(parseInt(e.target.value) || null)
+                        }
+                        disabled={loading}
+                    />
+                    {duration !== null && (
+                        <span className={s.durationHint}>
+                            Calculado a partir de quando você abriu o 1º
+                            exercício. Ajuste se pausou o treino por muito
+                            tempo.
+                        </span>
+                    )}
+                </label>
+                <label>
+                    Notas Gerais:
+                    <textarea
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        placeholder="Cansaço, ânimo, observações..."
+                        disabled={loading}
+                    />
+                </label>
+            </div>
+        </div>
+    );
+
     // Sem footer próprio no passo de check-in: WorkoutCheckIn já tem os
     // botões dele (Voltar/Confirmar) dentro do próprio conteúdo — repetir um
     // footer aqui duplicaria ações na mesma tela.
+    //
+    // No card de um exercício o rodapé só volta para a lista: concluir ou
+    // pular o treino são decisões sobre o treino INTEIRO e ficam na raiz, onde
+    // o aluno vê o que já conferiu antes de finalizar.
     const footer =
-        step === 'checkin' ? null : (
+        step === 'checkin' ? null : activeBlock ? (
+            <div className={s.actions}>
+                <button
+                    type="button"
+                    className={s.btnDoneBlock}
+                    onClick={() => stack.pop()}
+                    disabled={loading}
+                >
+                    <FiCheck /> Concluir exercício
+                </button>
+            </div>
+        ) : (
             <div className={s.actions}>
                 <button
                     className={s.btnSkip}
@@ -577,16 +814,34 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
             </div>
         );
 
+    // Dentro de um exercício o título do modal passa a ser o NOME dele — é o
+    // que substitui o <h3> que a lista antiga repetia por bloco, e o que diz
+    // ao aluno onde ele está depois de entrar.
+    const title =
+        step === 'form' && activeBlock ? (
+            activeBlock.length === 1 ? (
+                logs[activeBlock[0].idx].name
+            ) : (
+                comboGroupLabel(
+                    activeBlock.length,
+                    logs[activeBlock[0].idx].groupTechnique,
+                )
+            )
+        ) : (
+            <>
+                Registrar Treino{' '}
+                <span className={s.ref}>{training.reference}</span>
+            </>
+        );
+
     return (
         <Modal
             open
             onClose={onClose}
-            title={
-                <>
-                    Registrar Treino{' '}
-                    <span className={s.ref}>{training.reference}</span>
-                </>
-            }
+            // Voltar só existe dentro de um exercício. No check-in quem manda
+            // é o botão "Voltar" do próprio WorkoutCheckIn.
+            onBack={step === 'form' && activeBlock ? stack.pop : undefined}
+            title={title}
             footer={footer}
         >
             {step === 'checkin' && checkInDraft ? (
@@ -599,155 +854,10 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                         onCancel={backToForm}
                     />
                 </div>
+            ) : activeBlock ? (
+                renderBlockCard(activeBlock)
             ) : (
-                <div className={s.content}>
-                    {error && (
-                        <div className={s.errorBanner}>
-                            <FiAlertCircle /> {error}
-                        </div>
-                    )}
-
-                    {autoregulation && (
-                        <p
-                            className="small text-muted"
-                            style={{ marginTop: -4, marginBottom: 12 }}
-                        >
-                            Sugestão de hoje: {autoregulation.message} (RPE e
-                            carga já pré-preenchidos abaixo — ajuste livremente).
-                        </p>
-                    )}
-
-                    {blocks.map((block) => {
-                        if (block.length === 1) {
-                            const exIdx = block[0].idx;
-                            const ex = logs[exIdx];
-                            return (
-                                <div
-                                    key={ex.exerciseId}
-                                    className={s.exerciseBlock}
-                                >
-                                    <h3>{ex.name}</h3>
-                                    <div className={s.seriesGrid}>
-                                        {seriesGridHeader}
-                                        {ex.series.map((sr, seriesIdx) =>
-                                            renderSeriesRow(
-                                                exIdx,
-                                                seriesIdx,
-                                                sr,
-                                                `Série ${sr.seriesNum}`,
-                                                ex.series.length > 1
-                                                    ? () =>
-                                                          removeSeriesRow(
-                                                              exIdx,
-                                                              seriesIdx,
-                                                          )
-                                                    : undefined,
-                                            ),
-                                        )}
-                                    </div>
-                                    <button
-                                        type="button"
-                                        className={s.addSeriesBtn}
-                                        onClick={() => addSeriesRow(exIdx)}
-                                        disabled={loading}
-                                    >
-                                        + Adicionar série
-                                    </button>
-                                </div>
-                            );
-                        }
-
-                        // Bloco combinado: séries intercaladas por rodada
-                        // (Série 1 de A, Série 1 de B, Série 2 de A, ...) —
-                        // é assim que bi-set/triset/superset são executados
-                        // de fato, sem descanso entre os exercícios do bloco.
-                        const members = block.map((b) => logs[b.idx]);
-                        const maxRounds = Math.max(
-                            ...members.map((m) => m.series.length),
-                        );
-                        const rows: React.ReactNode[] = [];
-                        for (let round = 0; round < maxRounds; round++) {
-                            block.forEach((b) => {
-                                const ex = logs[b.idx];
-                                const sr = ex.series[round];
-                                if (!sr) return;
-                                rows.push(
-                                    renderSeriesRow(
-                                        b.idx,
-                                        round,
-                                        sr,
-                                        <>
-                                            <span
-                                                className={
-                                                    s.comboSeriesLabel
-                                                }
-                                            >
-                                                {ex.name}
-                                            </span>{' '}
-                                            · Série {sr.seriesNum}
-                                        </>,
-                                    ),
-                                );
-                            });
-                        }
-                        return (
-                            <div
-                                key={members[0].exerciseId}
-                                className={`${s.exerciseBlock} ${s.comboBlock}`}
-                            >
-                                <h3 style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                    <FiLink />{' '}
-                                    {comboGroupLabel(
-                                        block.length,
-                                        members[0].groupTechnique,
-                                    )}
-                                </h3>
-                                <p className={s.comboMembers}>
-                                    {members
-                                        .map((m) => m.name)
-                                        .join(' + ')}{' '}
-                                    — sem descanso entre as séries abaixo
-                                </p>
-                                <div className={s.seriesGrid}>
-                                    {seriesGridHeader}
-                                    {rows}
-                                </div>
-                            </div>
-                        );
-                    })}
-
-                    <div className={s.footerSection}>
-                        <label>
-                            Duração (minutos):
-                            <input
-                                type="number"
-                                value={duration ?? ''}
-                                onChange={(e) =>
-                                    setDuration(
-                                        parseInt(e.target.value) || null,
-                                    )
-                                }
-                                disabled={loading}
-                            />
-                            {duration !== null && (
-                                <span className={s.durationHint}>
-                                    Calculado a partir de quando você abriu o
-                                    1º exercício. Ajuste se pausou o treino
-                                    por muito tempo.
-                                </span>
-                            )}
-                        </label>
-                        <label>
-                            Notas Gerais:
-                            <textarea
-                                value={notes}
-                                onChange={(e) => setNotes(e.target.value)}
-                                placeholder="Cansaço, ânimo, observações..."
-                                disabled={loading}
-                            />
-                        </label>
-                    </div>
-                </div>
+                renderListCard()
             )}
         </Modal>
     );
