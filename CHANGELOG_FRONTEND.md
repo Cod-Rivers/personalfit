@@ -515,3 +515,8 @@
 ## 2026-09-12 03:28 — River (via Claude Code)
 **Resumo:** É exatamente isso que a modalidade nova faz. A competição é individual, aluno contra aluno. O que acontece nela, concretamente: - **Um ranking só.** Todos os alunos de todos os personais entram na mesma lista, ordenados pelos critérios de sempre: streak recorde, streak atual, total de dias, consentimento como desempate final. - **A carteira não pontua.** Não existe placar de equipe, nem soma por personal, nem correção pelo tamanho da carteira. O nome do personal aparece só como etiqueta ao lado do aluno, para você saber de quem ele é. - **O prêmio é individual.** As primeiras colocações do ran…
 **Arquivos:** CHANGELOG_FRONTEND.md
+
+## 2026-09-12 12:50 — River (via Claude Code)
+**Resumo:** Os 24 help tips do app saem todos de um único componente, [HelpTooltip/index.tsx](personalfit/src/components/atoms/HelpTooltip/index.tsx), então os problemas valiam para o app inteiro. Achei três bugs reais, sendo dois que explicam o que você viu nos menus. - **O balão só sabia abrir para cima.** A posição era o topo do "?" menos 10px com `translateY(-100%)`, sem nenhuma checagem de espaço. Nos itens do menu do Header, que ficam a 30-60px do topo da tela, um balão de ~120px saía inteiro da viewport. Agora ele mede a própria altura, escolhe acima ou abaixo, prende nas quatro bordas, ganha rolag…
+**Arquivos:** HelpTooltip.test.tsx, WorkoutLogger.tsx, db.ts, imageCompression.test.ts, imageCompression.ts, index.tsx, personal.module.css, styles.css, styles.module.css
+**Commits:** Espelha a janela de configuracao do desafio na tela do personal
