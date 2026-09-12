@@ -493,3 +493,7 @@
 ## 2026-09-11 22:15 — River (via Claude Code)
 **Resumo:** Está no ar. **Quatro commits, dois em cada repositório.** No backend, o domínio primeiro e a camada de aplicação depois, nessa ordem para que cada um compile sozinho. No frontend, o cliente de API e depois as telas. Os dois pushes dispararam o Cloud Build automático e as duas builds passaram. **A variável está ligada.** O serviço de backend roda em southamerica-east1 e ganhou uma revisão nova com a flag ao lado das duas que já existiam. O passo do Cloud Build passa apenas a imagem no deploy, então essa variável sobrevive aos próximos pushes sem precisar ser reposta. Confirmei em produção que a…
 **Commits:** Adiciona o cliente de antifraude, premio e conteudo do desafio | Adiciona as telas de conferencia, premio, conteudo e grupo do desafio
+
+## 2026-09-11 22:35 — River (via Claude Code)
+**Resumo:** Não, não estava feita. E ao ir conferir, achei que o pouco de admin que existia estava quebrado. Fiz as duas coisas agora, e já estão no ar. **O defeito.** Eu tinha registrado as rotas de baralho no grupo de personal, que usa uma checagem de papel por igualdade e devolve acesso negado para administrador. O ramo que cria o baralho da plataforma, dentro do handler, era código morto: nenhum administrador conseguia chegar nele. O teste de registro de rotas passava, porque ele confere que a rota existe na árvore, não quem consegue atravessar o middleware. Agora o catálogo vive em um grupo próprio q…
+**Commits:** Adiciona a tela de montagem do baralho de poses no admin
