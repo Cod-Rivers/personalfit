@@ -16,6 +16,7 @@ import {
     NewWorkoutLogResponse,
 } from '@/libs/workoutLogService';
 import { getPendingWorkoutLogId } from '@/libs/offline/downloadManager';
+import { OfflineDBUnavailableError } from '@/libs/offline/db';
 import { enqueueSession, enqueueSkip } from '@/libs/offline/syncQueue';
 import { enqueuePhoto } from '@/libs/offline/mediaQueue';
 import Modal from '@/components/system/Modal';
@@ -355,26 +356,60 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                 // apareceria — por isso, diferente de uma foto que falha
                 // DEPOIS de enfileirada (essa sim visível via
                 // SyncPendingBadge), aqui o aluno precisa saber agora.
+                //
+                // A partir daqui NADA pode devolver a tela para "erro ao
+                // salvar": o treino já está na fila, e uma segunda
+                // confirmação do aluno geraria um client_mutation_id novo —
+                // ou seja, um SEGUNDO registro do mesmo treino no servidor.
+                // Por isso o passo da foto tem try/catch próprio;
+                // `enqueuePhoto` promete não lançar, mas essa promessa não
+                // pode ser a única coisa entre o aluno e um registro
+                // duplicado.
                 let photoDiscarded = false;
                 if (checkIn.photoFile) {
-                    const mediaId = await enqueuePhoto({
-                        target: { clientMutationId },
-                        studentId,
-                        planningId,
-                        mesocycleId: mesocycle.id,
-                        microcycleId: microcycle.id,
-                        file: checkIn.photoFile,
-                    });
-                    photoDiscarded = mediaId === null;
+                    try {
+                        const mediaId = await enqueuePhoto({
+                            target: { clientMutationId },
+                            studentId,
+                            planningId,
+                            mesocycleId: mesocycle.id,
+                            microcycleId: microcycle.id,
+                            file: checkIn.photoFile,
+                        });
+                        photoDiscarded = mediaId === null;
+                    } catch (err) {
+                        console.error(
+                            '[WorkoutLogger] Falha inesperada ao enfileirar a foto de check-in',
+                            err,
+                        );
+                        photoDiscarded = true;
+                    }
                 }
 
-                clearWorkoutStart(microcycle.id, training.reference);
+                try {
+                    clearWorkoutStart(microcycle.id, training.reference);
+                } catch (err) {
+                    // localStorage indisponível (aba anônima, cota): não
+                    // limpar o cronômetro local é cosmético e não pode
+                    // impedir a confirmação já enfileirada de fechar a tela.
+                    console.error(
+                        '[WorkoutLogger] Falha ao limpar o cronômetro local',
+                        err,
+                    );
+                }
                 onQueued(photoDiscarded ? { photoDiscarded: true } : undefined);
             } catch (err) {
                 // Só chega aqui se a própria escrita no IndexedDB falhar (quota,
                 // navegador sem suporte) — não é mais possível um erro de rede
                 // aparecer neste ponto, porque a rede não é mais tentada aqui.
-                setError('Erro ao salvar workout. Tente novamente.');
+                // O banco indisponível ganha a mensagem dele: "tente de novo"
+                // não resolve sozinho quando é outra aba segurando o banco, e
+                // o aluno ficaria repetindo um clique que nunca vai funcionar.
+                setError(
+                    err instanceof OfflineDBUnavailableError
+                        ? err.message
+                        : 'Erro ao salvar workout. Tente novamente.',
+                );
                 console.error(err);
             } finally {
                 setLoading(false);

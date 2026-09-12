@@ -138,12 +138,32 @@ interface VenafitOfflineDB extends DBSchema {
 
 let dbPromise: Promise<IDBPDatabase<VenafitOfflineDB>> | null = null;
 
+/** O banco offline não pôde ser aberto. Tipada (em vez de um `Error` solto)
+ *  porque a tela de registro de treino precisa distinguir este caso de uma
+ *  falha qualquer: aqui "tente de novo" não resolve sozinho — o aluno tem de
+ *  fechar a outra aba, ou sair do modo privado. */
+export class OfflineDBUnavailableError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'OfflineDBUnavailableError';
+    }
+}
+
+/** Prazo máximo para abrir o banco. `openDB` NÃO rejeita quando a abertura é
+ *  bloqueada: se outra aba (ou o mesmo app aberto duas vezes) ainda segura uma
+ *  conexão numa versão antiga do banco, o evento é `blocked` e a Promise fica
+ *  pendurada para sempre. Como o botão "Confirmar" do check-in espera por este
+ *  `await`, isso aparecia para o aluno como carregamento infinito, sem
+ *  mensagem nenhuma. Com prazo vira um erro tratável — e a próxima tentativa
+ *  reabre do zero, porque `dbPromise` é limpo em caso de falha. */
+const DB_OPEN_TIMEOUT_MS = 10000;
+
 export function getOfflineDB(): Promise<IDBPDatabase<VenafitOfflineDB>> {
     if (typeof window === 'undefined') {
         return Promise.reject(new Error('IndexedDB só está disponível no client.'));
     }
     if (!dbPromise) {
-        dbPromise = openDB<VenafitOfflineDB>(DB_NAME, DB_VERSION, {
+        const opening = openDB<VenafitOfflineDB>(DB_NAME, DB_VERSION, {
             upgrade(db) {
                 if (!db.objectStoreNames.contains('macrocycles')) {
                     db.createObjectStore('macrocycles', { keyPath: 'id' });
@@ -170,6 +190,58 @@ export function getOfflineDB(): Promise<IDBPDatabase<VenafitOfflineDB>> {
                     db.createObjectStore('meta');
                 }
             },
+            // Outra conexão antiga está impedindo o upgrade desta. Só dá para
+            // registrar: quem precisa fechar é a OUTRA aba (ver `blocking`).
+            blocked() {
+                console.warn(
+                    '[offlineDB] Abertura bloqueada por outra aba do Venafit numa versão antiga do banco.',
+                );
+            },
+            // Nós é que estamos segurando: outra aba pediu o upgrade. Fecha
+            // esta conexão para destravá-la e esquece o singleton, para que a
+            // próxima chamada reabra já na versão nova em vez de reutilizar
+            // uma conexão fechada (que só lançaria InvalidStateError).
+            blocking(_currentVersion, _blockedVersion, event) {
+                // `event.target` é a conexão crua (IDBDatabase) por trás do
+                // wrapper do idb — fechá-la é o que libera o upgrade da outra aba.
+                (event.target as IDBDatabase | null)?.close();
+                dbPromise = null;
+            },
+            // Conexão derrubada pelo navegador (aba em segundo plano com
+            // pouca memória, dados do site limpos): o singleton aponta para
+            // algo morto, então zera para reabrir na próxima chamada.
+            terminated() {
+                dbPromise = null;
+            },
+        });
+
+        let timer: ReturnType<typeof setTimeout>;
+        const guarded = Promise.race([
+            opening,
+            new Promise<never>((_, rejectOpen) => {
+                timer = setTimeout(
+                    () =>
+                        rejectOpen(
+                            new OfflineDBUnavailableError(
+                                'Tempo esgotado ao abrir o armazenamento offline. Se o Venafit estiver aberto em outra aba, feche-a e tente de novo.',
+                            ),
+                        ),
+                    DB_OPEN_TIMEOUT_MS,
+                );
+            }),
+        ]).finally(() => clearTimeout(timer));
+
+        dbPromise = guarded.catch((err) => {
+            // Sem isto, uma falha momentânea ficaria guardada no singleton e
+            // TODA chamada seguinte falharia igual, até recarregar o app.
+            dbPromise = null;
+            if (err instanceof OfflineDBUnavailableError) throw err;
+            // Navegador em modo privado, armazenamento bloqueado pelo usuário,
+            // banco corrompido: tudo chega aqui como um erro genérico do
+            // IndexedDB, que não diz nada a quem está olhando a tela.
+            throw new OfflineDBUnavailableError(
+                'Não foi possível abrir o armazenamento offline deste navegador. Verifique se o armazenamento de dados do site está liberado.',
+            );
         });
     }
     return dbPromise;

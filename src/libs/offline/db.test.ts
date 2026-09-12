@@ -98,6 +98,41 @@ describe('offline/db', () => {
         });
     });
 
+    // Duas abas do Venafit abertas: a antiga segura o banco na v1 e o
+    // upgrade para a v2 desta aba nunca acontece. O navegador dispara
+    // `blocked` e NÃO rejeita nada — antes do prazo de abertura, `openDB`
+    // ficava pendurado para sempre e o botão "Confirmar" do check-in girava
+    // sem fim, sem mensagem nenhuma para o aluno.
+    it('rejeita (em vez de pendurar) quando outra aba bloqueia o upgrade', async () => {
+        const v1 = await new Promise<IDBDatabase>((resolve, reject) => {
+            const req = indexedDB.open(DB_NAME, 1);
+            req.onupgradeneeded = () => {
+                req.result.createObjectStore('meta');
+            };
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+        });
+
+        // Só `setTimeout` é falsificado: fake-indexeddb depende dos outros
+        // agendadores para as próprias transações andarem.
+        vi.useFakeTimers({ toFake: ['setTimeout'] });
+        try {
+            const { getOfflineDB, OfflineDBUnavailableError } = await import('./db');
+            const pending = getOfflineDB();
+            const assertion = expect(pending).rejects.toSatisfy(
+                (err: unknown) =>
+                    err instanceof OfflineDBUnavailableError &&
+                    /Tempo esgotado/.test(err.message),
+            );
+
+            await vi.advanceTimersByTimeAsync(15000);
+            await assertion;
+        } finally {
+            vi.useRealTimers();
+            v1.close();
+        }
+    });
+
     // Simula um aparelho que já tinha o app instalado antes desta sprint
     // (schema v1, sem `pendingMedia` e sem os campos novos de
     // `PendingMutation`). O bump pra v2 precisa criar a store nova SEM
