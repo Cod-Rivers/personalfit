@@ -219,6 +219,15 @@ export interface WorkoutSessionExerciseRequest {
 
 export interface WorkoutSessionCheckInRequest {
     confirmed_at: string;
+    /** Prova de pose do antifraude do Desafio entre Alunos. Ausentes em todo
+     * check-in de quem não participa de desafio com pose — e também no
+     * check-in feito OFFLINE, que é o caso legítimo de "sem prova": o registro
+     * nunca pode ser bloqueado por falta de rede.
+     *
+     * `pose_id` é só uma DECLARAÇÃO: quem sorteia a carta e gera o código é o
+     * servidor, e é ele quem decide se a prova vale. */
+    pose_challenge_id?: string;
+    pose_id?: string;
 }
 
 export interface WorkoutSessionRequest {

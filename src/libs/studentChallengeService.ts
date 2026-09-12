@@ -92,6 +92,41 @@ export interface StudentChallenge {
     personals: StudentChallengePersonal[];
     /** Total real — `participants` pode vir filtrado pelo escopo do leitor. */
     participants_count: number;
+
+    /* ── Antifraude / motivação ──
+     * Todos opcionais: um servidor com ADHERENCE_ANTIFRAUD_ENABLED desligado
+     * simplesmente não os envia, e nenhuma tela pode quebrar por isso. */
+    /** Configuração de antifraude. Só vem na visão do PROFISSIONAL. */
+    anti_fraud?: {
+        enabled: boolean;
+        pose_enabled: boolean;
+        deck_id?: string;
+        count_policy: 'trust' | 'strict';
+        auto_accept_after_hours: number;
+    };
+    /** O aluno precisa fazer a pose do dia ao registrar o treino. */
+    pose_required?: boolean;
+    /** Prêmio prometido. Visível também a quem só foi convidado: é o
+     * argumento de aceite do convite. */
+    prize?: {
+        title: string;
+        description?: string;
+        image_url?: string;
+        positions: number;
+        awarded_to?: string[];
+        awarded_at?: string;
+        award_note?: string;
+        delivery_pending: boolean;
+    };
+    /** Existe material exclusivo (treino geral, guia alimentar ou grupo). */
+    has_exclusive_content?: boolean;
+    /** Link do grupo. Só vem para quem PODE vê-lo — o convidado recebe
+     * `undefined` mesmo quando o desafio tem grupo. */
+    group?: {
+        platform: 'whatsapp' | 'telegram';
+        url: string;
+        note?: string;
+    };
 }
 
 export interface LeaderboardEntry {
