@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
-import { FiMail, FiUserPlus, FiUsers } from 'react-icons/fi';
+import { FiAward, FiMail, FiShield, FiUserPlus, FiUsers } from 'react-icons/fi';
 import { usePersonalStudents } from '@/hooks/usePersonalStudents';
 import { getUser } from '@/libs/session';
 import Modal from '@/components/system/Modal';
@@ -10,6 +10,8 @@ import StudentChallengeLeaderboard from '@/components/features/StudentChallengeL
 import StudentChallengeTeamLeaderboard from '@/components/features/StudentChallengeTeamLeaderboard';
 import StudentChallengeGoalProgress from '@/components/features/StudentChallengeGoalProgress';
 import PersonalInviteModal from './PersonalInviteModal';
+import ReviewQueueModal from './ReviewQueueModal';
+import ChallengeExtrasModal from './ChallengeExtrasModal';
 import {
     createStudentChallenge,
     listStudentChallenges,
@@ -154,6 +156,13 @@ export default function StudentChallengeTab() {
         null,
     );
     const [renameValue, setRenameValue] = useState('');
+
+    // Antifraude/motivação: a fila de conferência e o painel de configuração
+    // (antifraude, prêmio, conteúdo exclusivo e grupo).
+    const [reviewTarget, setReviewTarget] =
+        useState<StudentChallenge | null>(null);
+    const [extrasTarget, setExtrasTarget] =
+        useState<StudentChallenge | null>(null);
 
     const [modeTarget, setModeTarget] = useState<StudentChallenge | null>(null);
     const [modeValue, setModeValue] =
@@ -695,6 +704,27 @@ export default function StudentChallengeTab() {
                         </button>
                     )}
 
+                    {/* Conferência de fotos: aparece para organizador E membro
+                        — cada um confere apenas os próprios alunos, regra que
+                        o backend impõe em CanManageStudent. */}
+                    {c.anti_fraud?.enabled && (
+                        <button
+                            className={s.btnAction}
+                            onClick={() => setReviewTarget(c)}
+                        >
+                            <FiShield /> Conferir fotos
+                        </button>
+                    )}
+
+                    {owner && (
+                        <button
+                            className={s.btnAction}
+                            onClick={() => setExtrasTarget(c)}
+                        >
+                            <FiAward /> Antifraude, prêmio e conteúdo
+                        </button>
+                    )}
+
                     {owner && c.status === 'active' && !hasStarted(c) && (
                         <button
                             className={s.btnAction}
@@ -1205,6 +1235,36 @@ export default function StudentChallengeTab() {
                         </div>
                     ))}
             </Modal>
+
+            {reviewTarget && (
+                <ReviewQueueModal
+                    open
+                    challenge={reviewTarget}
+                    onClose={() => setReviewTarget(null)}
+                    onReviewed={() => {
+                        // A pontuação é calculada na leitura: aceitar ou
+                        // recusar muda o mural na hora. Descartar o mural em
+                        // cache força o recálculo na próxima abertura.
+                        setLeaderboards((prev) => {
+                            const next = { ...prev };
+                            delete next[reviewTarget.id];
+                            return next;
+                        });
+                        if (expandedId === reviewTarget.id) {
+                            setExpandedId(null);
+                        }
+                    }}
+                />
+            )}
+
+            {extrasTarget && (
+                <ChallengeExtrasModal
+                    open
+                    challenge={extrasTarget}
+                    onClose={() => setExtrasTarget(null)}
+                    onSaved={() => void load()}
+                />
+            )}
 
             <PersonalInviteModal
                 open={!!personalInviteTarget}

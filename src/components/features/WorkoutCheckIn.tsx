@@ -16,6 +16,8 @@ import {
 } from '@/libs/logWindow';
 import { getCachedMyLogWindow, getMyLogWindow } from '@/libs/logWindowService';
 import { clientCompletedAtNow } from '@/libs/workoutLogService';
+import { usePoseOfDay } from '@/hooks/usePoseOfDay';
+import PoseCapture from './PoseCapture';
 import s from './WorkoutCheckIn.module.css';
 
 interface WorkoutCheckInProps {
@@ -26,7 +28,17 @@ interface WorkoutCheckInProps {
      * os botões para não disparar duas confirmações. */
     loading: boolean;
     error: string | null;
-    onConfirm: (params: { confirmedAt: string; photoFile: File | null }) => void;
+    onConfirm: (params: {
+        confirmedAt: string;
+        photoFile: File | null;
+        /** Prova de pose do antifraude do Desafio entre Alunos.
+         * Ausente quando o aluno não participa de desafio com pose, ou
+         * quando estava offline — e nos dois casos o registro segue
+         * normalmente, marcado como "sem prova" para o personal
+         * conferir depois. */
+        poseChallengeId?: string;
+        poseId?: string;
+    }) => void;
     onCancel: () => void;
 }
 
@@ -51,6 +63,11 @@ const WorkoutCheckIn: React.FC<WorkoutCheckInProps> = ({
     onCancel,
 }) => {
     const [photoFile, setPhotoFile] = useState<File | null>(null);
+    const [capturing, setCapturing] = useState(false);
+    // A pose do dia é buscada aqui, e não recebida por prop: o fluxo de
+    // treino não sabe nada de desafio, e descer isso por três telas não
+    // traria ganho nenhum. Falha silenciosa = sem pose hoje.
+    const { pose } = usePoseOfDay();
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [lateWarning, setLateWarning] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -93,7 +110,12 @@ const WorkoutCheckIn: React.FC<WorkoutCheckInProps> = ({
     }, [photoFile]);
 
     const handleConfirm = () => {
-        onConfirm({ confirmedAt: clientCompletedAtNow(), photoFile });
+        onConfirm({
+            confirmedAt: clientCompletedAtNow(),
+            photoFile,
+            poseChallengeId: pose?.challengeId,
+            poseId: pose?.pose.pose_id,
+        });
     };
 
     return (
@@ -116,6 +138,27 @@ const WorkoutCheckIn: React.FC<WorkoutCheckInProps> = ({
                 </div>
             )}
 
+            {pose && !previewUrl && (
+                <div className={s.poseBanner}>
+                    <strong>Pose de hoje: {pose.pose.label}</strong>
+                    <span>
+                        Envie a foto fazendo esta pose, com o código{' '}
+                        <strong>{pose.pose.code}</strong> à mostra. Seu personal
+                        confere e pode não aceitar a foto.
+                    </span>
+                </div>
+            )}
+
+            {capturing && pose ? (
+                <PoseCapture
+                    pose={pose}
+                    onCaptured={(file) => {
+                        setPhotoFile(file);
+                        setCapturing(false);
+                    }}
+                    onCancel={() => setCapturing(false)}
+                />
+            ) : (
             <div className={s.photoSection}>
                 {previewUrl ? (
                     <div className={s.previewWrap}>
@@ -139,10 +182,17 @@ const WorkoutCheckIn: React.FC<WorkoutCheckInProps> = ({
                     <button
                         type="button"
                         className={s.addPhotoBtn}
-                        onClick={() => fileInputRef.current?.click()}
+                        onClick={() =>
+                            pose
+                                ? setCapturing(true)
+                                : fileInputRef.current?.click()
+                        }
                         disabled={loading}
                     >
-                        <FiCamera /> Adicionar foto (opcional)
+                        <FiCamera />{' '}
+                        {pose
+                            ? 'Fazer a pose e tirar a foto'
+                            : 'Adicionar foto (opcional)'}
                     </button>
                 )}
                 <input
@@ -154,6 +204,7 @@ const WorkoutCheckIn: React.FC<WorkoutCheckInProps> = ({
                     disabled={loading}
                 />
             </div>
+            )}
 
             <div className={s.actions}>
                 <button

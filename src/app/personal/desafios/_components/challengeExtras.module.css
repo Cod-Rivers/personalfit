@@ -1,0 +1,213 @@
+/* Configuração de antifraude, prêmio, conteúdo exclusivo e grupo de um
+   desafio. Cores e espaçamentos por token (rules/css-design-tokens.md). */
+
+.tabs {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--border-subtle);
+    padding-bottom: 10px;
+}
+
+.tab,
+.tabActive {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 999px;
+    padding: 7px 14px;
+    font-size: 0.88rem;
+    cursor: pointer;
+    flex-shrink: 0;
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    color: inherit;
+}
+
+.tabActive {
+    border-color: var(--mint);
+    color: var(--mint-text);
+    font-weight: 650;
+}
+
+.section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.explain,
+.hint {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+}
+
+.hint {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+}
+
+.warn {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--amber-text);
+    background: var(--surface-2);
+    border: 1px solid var(--amber);
+    border-radius: 10px;
+    padding: 8px 10px;
+}
+
+/* Avisos de natureza legal (prêmio por mérito, guia alimentar educativo).
+   Estilo mais sóbrio que .warn de propósito: é contexto permanente, não
+   alerta pontual. */
+.legal {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    border-left: 3px solid var(--border-mid);
+    padding-left: 10px;
+}
+
+.label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.blockTitle {
+    margin: 14px 0 0;
+    font-size: 1rem;
+}
+
+.checkRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.92rem;
+}
+
+.input,
+.inputSmall,
+.select,
+.textarea,
+.textareaTall {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    font-size: 1rem;
+    color: inherit;
+    background: var(--surface-1);
+}
+
+.input:focus,
+.inputSmall:focus,
+.select:focus,
+.textarea:focus,
+.textareaTall:focus {
+    outline: none;
+    border-color: var(--mint);
+    box-shadow: 0 0 0 2px var(--mint-glow);
+}
+
+.textarea {
+    min-height: 72px;
+    resize: vertical;
+}
+
+.textareaTall {
+    min-height: 140px;
+    resize: vertical;
+}
+
+/* Linha de exercício: o nome ocupa a linha inteira no celular e os três
+   campos curtos se dividem abaixo. */
+.exerciseRow {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 6px;
+}
+
+@media (min-width: 560px) {
+    .exerciseRow {
+        grid-template-columns: 2fr 1fr 1fr 1fr;
+    }
+}
+
+.actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+.btnPrimary,
+.btnGhost,
+.btnDanger {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 8px;
+    padding: 9px 14px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.btnPrimary {
+    background: var(--grad-mint);
+    color: var(--btn-text);
+    border: none;
+    font-weight: 650;
+}
+
+.btnGhost {
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    color: inherit;
+}
+
+.btnDanger {
+    background: transparent;
+    border: 1px solid var(--coral);
+    color: var(--coral);
+}
+
+.btnPrimary:disabled,
+.btnGhost:disabled,
+.btnDanger:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.awardBox {
+    margin-top: 14px;
+    border: 1px solid var(--mint);
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: var(--surface-2);
+}
+
+.awardTitle {
+    margin: 0;
+    font-weight: 650;
+    font-size: 0.92rem;
+}
+
+.errorMsg {
+    color: var(--coral);
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+}
+
+.okMsg {
+    color: var(--mint-text);
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+}

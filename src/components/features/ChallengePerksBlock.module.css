@@ -1,0 +1,132 @@
+/* Bloco de vantagens do desafio na visão do aluno: prêmio, grupo, treino
+   geral e guia alimentar. Cores por token (rules/css-design-tokens.md). */
+
+.block {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.card {
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    background: var(--surface-2);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.cardTitle {
+    margin: 0;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.prizeTitle {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--mint-text);
+}
+
+.text {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+}
+
+.meta {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.warn {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--amber-text);
+}
+
+.legal {
+    margin: 4px 0 0;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    border-left: 3px solid var(--border-mid);
+    padding-left: 8px;
+}
+
+.lockedBox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 10px 12px;
+    border: 1px dashed var(--border-mid);
+    border-radius: 12px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.btnGroup {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--grad-mint);
+    color: var(--btn-text);
+    border: none;
+    border-radius: 8px;
+    padding: 9px 14px;
+    font-size: 0.9rem;
+    font-weight: 650;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.exerciseList {
+    list-style: none;
+    margin: 6px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.exercise {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.exercise:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.exerciseName {
+    font-weight: 600;
+    font-size: 0.92rem;
+}
+
+.exerciseDetail {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+}
+
+.exerciseNotes {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.guideBody {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    white-space: pre-wrap;
+}

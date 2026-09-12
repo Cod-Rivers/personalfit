@@ -178,3 +178,18 @@
         flex-direction: column;
     }
 }
+
+/* Faixa da pose do dia (antifraude do Desafio entre Alunos). Aparece só para
+   quem participa de desafio com pose — o check-in comum segue idêntico. */
+.poseBanner {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    border: 1px solid var(--mint);
+    border-radius: 10px;
+    background: var(--mint-glow);
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}

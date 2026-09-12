@@ -253,7 +253,12 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
     // `goToCheckIn` abaixo). `checkIn` traz o instante confirmado e a foto
     // opcional, já escolhidos na tela anterior.
     const handleComplete = useCallback(
-        async (checkIn: { confirmedAt: string; photoFile: File | null }) => {
+        async (checkIn: {
+            confirmedAt: string;
+            photoFile: File | null;
+            poseChallengeId?: string;
+            poseId?: string;
+        }) => {
             try {
                 setLoading(true);
                 setError(null);
@@ -285,7 +290,15 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                     // instante em que o aluno apertou "Confirmar" na tela
                     // anterior, não o instante em que a fila conseguir
                     // sincronizar.
-                    check_in: { confirmed_at: checkIn.confirmedAt },
+                    check_in: {
+                        confirmed_at: checkIn.confirmedAt,
+                        // Prova de pose: o cliente só DECLARA de qual
+                        // desafio e qual carta recebeu. Quem sorteia e
+                        // gera o código é o servidor, que compara e
+                        // decide entre "com prova" e "sem prova".
+                        pose_challenge_id: checkIn.poseChallengeId,
+                        pose_id: checkIn.poseId,
+                    },
                     exercises: logs.flatMap((ex) =>
                         ex.series.map((s) => ({
                             exercise_id: ex.exerciseId,

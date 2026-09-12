@@ -7,6 +7,8 @@ import { getToken, getUser, getStudentHomeRoute } from '@/libs/session';
 import StudentChallengeLeaderboard from '@/components/features/StudentChallengeLeaderboard';
 import StudentChallengeTeamLeaderboard from '@/components/features/StudentChallengeTeamLeaderboard';
 import StudentChallengeGoalProgress from '@/components/features/StudentChallengeGoalProgress';
+import ChallengePerksBlock from '@/components/features/ChallengePerksBlock';
+import ChallengeReviewNotice from '@/components/features/ChallengeReviewNotice';
 import StudentChallengeConsentModal, {
     type ConsentModalMode,
 } from '@/components/features/StudentChallengeConsentModal';
@@ -326,6 +328,28 @@ export default function MyStudentChallengesPage() {
                                                             : 'Sair do desafio'}
                                                     </button>
                                                 </div>
+
+                                                {/* Fotos recusadas: o aluno
+                                                    precisa saber por que a
+                                                    sequência dele caiu. */}
+                                                <ChallengeReviewNotice
+                                                    challengeId={c.id}
+                                                    enabled={
+                                                        !!c.pose_required ||
+                                                        !!c.anti_fraud?.enabled
+                                                    }
+                                                />
+
+                                                {/* Prêmio, grupo e material
+                                                    exclusivo — o que o aluno
+                                                    ganha por participar. */}
+                                                <ChallengePerksBlock
+                                                    challengeId={c.id}
+                                                    hasContent={
+                                                        !!c.has_exclusive_content ||
+                                                        !!c.prize
+                                                    }
+                                                />
 
                                                 {mode === 'collaborative' &&
                                                     lb?.collaborative && (

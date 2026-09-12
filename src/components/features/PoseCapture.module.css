@@ -1,0 +1,127 @@
+/* Captura da foto de check-in com a pose do dia sobreposta.
+   Cores por token (rules/css-design-tokens.md). */
+
+.wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.poseHeader {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.poseLabel {
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+.code {
+    margin: 0;
+    font-size: 0.9rem;
+    letter-spacing: 0.1em;
+    color: var(--mint-text);
+}
+
+/* O palco empilha vídeo, silhueta e código no mesmo espaço. */
+.stage {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--surface-3);
+    border: 1px solid var(--border-subtle);
+}
+
+.video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* Semitransparente de propósito: o aluno precisa enxergar a si mesmo por
+   baixo para se encaixar na pose. */
+.silhouette {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    opacity: 0.35;
+    pointer-events: none;
+}
+
+.codeOverlay {
+    position: absolute;
+    left: 10px;
+    bottom: 10px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    font-size: 1rem;
+    pointer-events: none;
+}
+
+.fallback {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 16px;
+    border: 1px dashed var(--border-mid);
+    border-radius: 12px;
+}
+
+.fallbackText {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+}
+
+.hiddenInput {
+    display: none;
+}
+
+.actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+.btnPrimary,
+.btnGhost {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.btnPrimary {
+    background: var(--grad-mint);
+    color: var(--btn-text);
+    border: none;
+    font-weight: 650;
+}
+
+.btnGhost {
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    color: inherit;
+}
+
+.btnPrimary:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}

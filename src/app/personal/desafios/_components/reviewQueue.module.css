@@ -1,0 +1,267 @@
+/* Fila de conferência de fotos do Desafio entre Alunos.
+   Tokens de cor e espaçamento vêm de css/constants.css — nada de hex solto
+   (rules/css-design-tokens.md). */
+
+.toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.filterLabel {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.summary {
+    margin: 0 0 12px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.item {
+    border: 1px solid var(--border-subtle);
+    border-radius: 14px;
+    background: var(--surface-1);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.itemHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.itemName {
+    font-size: 1rem;
+}
+
+.itemDay {
+    margin-left: 8px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.statusTag {
+    font-size: 0.75rem;
+    font-weight: 650;
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border-subtle);
+}
+
+.status_pending {
+    color: var(--amber-text);
+    border-color: var(--amber);
+}
+
+.status_accepted {
+    color: var(--mint-text);
+    border-color: var(--mint);
+}
+
+.status_rejected {
+    color: var(--coral);
+    border-color: var(--coral);
+}
+
+.contested {
+    font-size: 0.85rem;
+    color: var(--amber-text);
+    background: var(--surface-2);
+    border: 1px solid var(--amber);
+    border-radius: 10px;
+    padding: 8px 10px;
+}
+
+/* As duas imagens lado a lado são o coração da tela: comparar precisa ser
+   olhar, não investigar. Em telas estreitas viram uma coluna só. */
+.photos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+}
+
+.photoBox {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.photoCaption {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+}
+
+.photo {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 1px solid var(--border-subtle);
+    background: var(--surface-3);
+}
+
+.photoMissing {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    border: 1px dashed var(--border-subtle);
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.poseLabel {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.poseCode {
+    margin: 0;
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+}
+
+.signals {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.signal {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    color: var(--amber-text);
+    background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
+    border-radius: 999px;
+    padding: 3px 10px;
+}
+
+.reasonShown,
+.hint {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.rejectForm {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-top: 1px solid var(--border-subtle);
+    padding-top: 10px;
+}
+
+.rejectWarning {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--coral);
+}
+
+.select,
+.textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    font-size: 1rem;
+    color: inherit;
+    background: var(--surface-1);
+}
+
+.textarea {
+    min-height: 64px;
+    resize: vertical;
+}
+
+/* flex-wrap junto de flex-shrink:0 — sem ele os botões estouram o card em
+   telas estreitas, que é um padrão de bug já corrigido em outros quatro
+   lugares deste projeto. */
+.itemActions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+.btnPrimary,
+.btnGhost,
+.btnDanger {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 8px;
+    padding: 9px 14px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.btnPrimary {
+    background: var(--grad-mint);
+    color: var(--btn-text);
+    border: none;
+    font-weight: 650;
+}
+
+.btnGhost {
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    color: inherit;
+}
+
+.btnDanger {
+    background: transparent;
+    border: 1px solid var(--coral);
+    color: var(--coral);
+}
+
+.btnPrimary:disabled,
+.btnGhost:disabled,
+.btnDanger:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.errorMsg {
+    color: var(--coral);
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+}
+
+.loading,
+.empty {
+    text-align: center;
+    padding: 24px 16px;
+    color: var(--text-secondary);
+}
