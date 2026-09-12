@@ -229,3 +229,104 @@
     color: var(--mint-text);
     font-size: 0.9rem;
 }
+
+/* ── Manutenção dos baralhos (editar, aposentar, excluir) ── */
+
+.formHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.deckInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1 1 240px;
+}
+
+.deckWarn {
+    font-size: 0.78rem;
+    color: var(--amber-text);
+    max-width: 60ch;
+}
+
+.retiredTag {
+    margin-left: 8px;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    border: 1px solid var(--border-subtle);
+    border-radius: 999px;
+    padding: 1px 8px;
+}
+
+/* flex-wrap junto de flex-shrink: 0 nos botões — sem ele a fileira de ações
+   estoura o card em tela estreita. */
+.deckActions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.warn {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--amber-text);
+    background: var(--surface-2);
+    border: 1px solid var(--amber);
+    border-radius: 10px;
+    padding: 8px 10px;
+}
+
+.poseLabelInput {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    font-size: 0.82rem;
+    color: inherit;
+    background: var(--surface-1);
+}
+
+.poseLabelInput:focus {
+    outline: none;
+    border-color: var(--mint);
+}
+
+.poseImgMissing {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    border: 1px dashed var(--border-subtle);
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.poseActions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.btnMini {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    color: inherit;
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    flex-shrink: 0;
+}

@@ -120,6 +120,11 @@ export default function MeusTreinosExercisesPage({
     const [sendStatus, setSendStatus] = useState<
         'idle' | 'success' | 'queued' | 'error'
     >('idle');
+    // Independente de sendStatus (que só fala do TREINO): a foto pode se
+    // perder mesmo quando o treino sincroniza perfeitamente, então o aviso
+    // precisa sobreviver à promoção 'queued' -> 'success' abaixo (pendência
+    // -19 — sem isto, o aluno nunca saberia que a foto não foi salva).
+    const [photoDiscardedWarning, setPhotoDiscardedWarning] = useState(false);
     const [showWorkoutLogger, setShowWorkoutLogger] = useState(false);
     const [currentMeso, setCurrentMeso] = useState<MesocycleResponse | null>(
         null,
@@ -1012,7 +1017,10 @@ export default function MeusTreinosExercisesPage({
                     ) : (
                         <button
                             className={styles.finalizarBtn}
-                            onClick={() => setShowWorkoutLogger(true)}
+                            onClick={() => {
+                                setPhotoDiscardedWarning(false);
+                                setShowWorkoutLogger(true);
+                            }}
                             disabled={exercises.length === 0}
                         >
                             Finalizar Treino
@@ -1054,9 +1062,10 @@ export default function MeusTreinosExercisesPage({
                         setShowWorkoutLogger(false);
                         setSendStatus('success');
                     }}
-                    onQueued={() => {
+                    onQueued={(info) => {
                         setShowWorkoutLogger(false);
                         setSendStatus('queued');
+                        if (info?.photoDiscarded) setPhotoDiscardedWarning(true);
                     }}
                 />
             )}

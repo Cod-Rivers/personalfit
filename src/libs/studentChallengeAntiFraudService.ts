@@ -37,6 +37,20 @@ export interface PoseDeck {
     name: string;
     active: boolean;
     poses: Pose[];
+    /** O que a tela pode oferecer para este baralho agora. Só vem para o DONO
+     * dele; ausente para quem apenas o escolhe num desafio. */
+    editability?: PoseDeckEditability;
+}
+
+/** Acrescentar ou remover carta muda o TAMANHO do baralho, e o tamanho entra
+ * no sorteio da pose do dia — por isso só é liberado enquanto nenhum desafio
+ * que usa o baralho tiver começado. Renomear, corrigir rótulo e trocar imagem
+ * continuam valendo sempre. */
+export interface PoseDeckEditability {
+    can_edit_poses: boolean;
+    can_delete: boolean;
+    used_by_challenges: number;
+    used_by_started: number;
 }
 
 /** Carta e código do dia. O código é do aluno que pediu, e de mais ninguém —
@@ -386,4 +400,33 @@ export async function requestPoseUploadUrl(
         { pose_id: poseId, content_type: contentType },
     );
     return data;
+}
+
+/** Edita um baralho. Todo campo é opcional: ausente significa "não mexer". */
+export async function updatePoseDeck(
+    deckId: string,
+    payload: {
+        name?: string;
+        labels?: Record<string, string>;
+        replace_images?: Record<string, string>;
+        poses?: {
+            id: string;
+            label: string;
+            image_key: string;
+            order: number;
+        }[];
+        active?: boolean;
+    },
+): Promise<PoseDeck> {
+    const { data } = await Api.patch<PoseDeck>(
+        `/pose-decks/${deckId}`,
+        payload,
+    );
+    return data;
+}
+
+/** Exclui um baralho que nenhum desafio referencia. Para os demais, a saída é
+ * aposentar (updatePoseDeck com active: false). */
+export async function deletePoseDeck(deckId: string): Promise<void> {
+    await Api.delete(`/pose-decks/${deckId}`);
 }

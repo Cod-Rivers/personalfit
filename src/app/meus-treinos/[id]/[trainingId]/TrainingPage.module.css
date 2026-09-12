@@ -141,6 +141,17 @@
     text-align: center;
 }
 
+.finalizarWarning {
+    font-size: 0.875rem;
+    color: var(--amber-text, var(--amber));
+    margin-top: 0.5rem;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
 .microPanelToggle {
     cursor: pointer;
 }

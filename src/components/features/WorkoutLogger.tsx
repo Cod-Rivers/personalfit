@@ -81,8 +81,12 @@ interface WorkoutLoggerProps {
     onClose: () => void;
     onComplete: (log: NewWorkoutLogResponse) => void;
     /** Chamado quando a conclusão/skip não pôde ir ao servidor (offline) mas
-     * foi enfileirada localmente para sincronizar depois. */
-    onQueued: () => void;
+     * foi enfileirada localmente para sincronizar depois. `photoDiscarded`
+     * avisa que o aluno anexou foto no check-in, mas ela nem chegou a ser
+     * guardada localmente (cota de armazenamento estourada ou falha ao
+     * comprimir) — o treino em si está enfileirado normalmente, só a foto
+     * se perdeu; quem chama decide como avisar. */
+    onQueued: (info?: { photoDiscarded?: boolean }) => void;
     autoregulation?: AutoregulationHint;
 }
 
@@ -343,12 +347,17 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                 // critérios 2 e 4): o check-in acima já está enfileirado e
                 // vale por si só. `enqueuePhoto` já comprime a imagem
                 // internamente (mediaQueue.ts) e nunca lança — se cota ou
-                // compressão falharem, devolve `null` e o aluno só não tem
-                // aviso nenhum aqui (a foto simplesmente não entra na fila);
-                // não há por que barrar ou avisar sobre algo que não afeta
-                // o registro já confirmado.
+                // compressão falharem, devolve `null`. Isso não afeta o
+                // registro já confirmado, mas é o ÚNICO caso em que a foto
+                // nem chega a virar uma linha em `pendingMedia` (pendência
+                // -19): sem aviso aqui, não há mais nenhum lugar (nem o
+                // badge de sincronização) onde essa perda algum dia
+                // apareceria — por isso, diferente de uma foto que falha
+                // DEPOIS de enfileirada (essa sim visível via
+                // SyncPendingBadge), aqui o aluno precisa saber agora.
+                let photoDiscarded = false;
                 if (checkIn.photoFile) {
-                    void enqueuePhoto({
+                    const mediaId = await enqueuePhoto({
                         target: { clientMutationId },
                         studentId,
                         planningId,
@@ -356,10 +365,11 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                         microcycleId: microcycle.id,
                         file: checkIn.photoFile,
                     });
+                    photoDiscarded = mediaId === null;
                 }
 
                 clearWorkoutStart(microcycle.id, training.reference);
-                onQueued();
+                onQueued(photoDiscarded ? { photoDiscarded: true } : undefined);
             } catch (err) {
                 // Só chega aqui se a própria escrita no IndexedDB falhar (quota,
                 // navegador sem suporte) — não é mais possível um erro de rede
