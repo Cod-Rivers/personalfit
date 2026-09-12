@@ -420,5 +420,8 @@
 .header-nav-item {
     display: flex;
     align-items: center;
-    gap: 2px;
+    /* 6px e nao 2px: a area de toque invisivel do "?" avanca alguns pixels
+       para a esquerda e, com o vao apertado, cobria a borda do link do menu
+       roubando o clique dele. */
+    gap: 6px;
 }

@@ -619,10 +619,12 @@
     display: inline-flex;
     align-items: center;
     flex-shrink: 0;
-    padding-right: 12px;
+    padding-right: 8px; /* 12px antes: 4px migraram para o botao da aba */
 }
 .tabSlot > .tab {
-    padding-right: 2px;
+    /* Mesmo motivo do .header-nav-item: vao suficiente para a area de toque
+       do "?" ao lado nao cobrir a borda do botao da aba. */
+    padding-right: 6px;
 }
 
 /* ── Exercise cards (Meus Exercícios) ── */

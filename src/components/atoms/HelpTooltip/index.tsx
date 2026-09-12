@@ -1,6 +1,13 @@
 'use client';
 
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, {
+    useCallback,
+    useEffect,
+    useId,
+    useLayoutEffect,
+    useRef,
+    useState,
+} from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { FiX, FiChevronRight } from 'react-icons/fi';
@@ -18,14 +25,42 @@ interface HelpTooltipProps {
 
 const BUBBLE_WIDTH = 240;
 const VIEWPORT_MARGIN = 12;
+/** Distância entre o "?" e a borda do balão (o rabicho ocupa esse vão). */
+const TRIGGER_GAP = 10;
+/** Folga lateral mínima para o rabicho não vazar da borda arredondada. */
+const TAIL_INSET = 16;
+const MIN_BUBBLE_HEIGHT = 96;
+/** Carência ao sair do gatilho, para dar tempo de levar o mouse até o balão. */
+const HOVER_CLOSE_DELAY = 160;
 
-/** Balão de ajuda estilo diálogo de RPG: abre com hover (desktop) ou toque
- * (mobile/WebView), mostra uma explicação curta e um link para a página de
- * ajuda completa.
+type Placement = 'top' | 'bottom';
+
+interface BubblePos {
+    left: number;
+    top: number;
+    width: number;
+    /** Definido só quando o balão não cabe inteiro no espaço disponível. */
+    maxHeight: number | null;
+    placement: Placement;
+    /** Posição do rabicho dentro do balão; null quando ele não encosta no "?". */
+    tailLeft: number | null;
+}
+
+function clamp(value: number, min: number, max: number) {
+    return Math.min(Math.max(value, min), max);
+}
+
+/** Balão de ajuda estilo diálogo de RPG: abre com hover (ponteiro fino) ou
+ * toque (mobile/WebView), mostra uma explicação curta e um link para a página
+ * de ajuda completa.
  *
  * Sempre renderizado via portal em document.body e posicionado a partir do
  * retângulo do gatilho: qualquer ancestral com overflow (ex.: o corpo
- * rolável de Modal) cortaria o balão se ele ficasse no fluxo normal do DOM. */
+ * rolável de Modal) cortaria o balão se ele ficasse no fluxo normal do DOM.
+ *
+ * O balão abre acima do "?" quando há espaço e vira para baixo quando não há
+ * — é o caso dos itens do menu do Header, que ficam a poucos pixels do topo
+ * da viewport e teriam o balão inteiro cortado se ele só soubesse subir. */
 export default function HelpTooltip({
     text,
     href,
@@ -33,50 +68,142 @@ export default function HelpTooltip({
     label = 'Ajuda',
 }: HelpTooltipProps) {
     const [open, setOpen] = useState(false);
-    const [isMobile, setIsMobile] = useState(false);
+    /** Telas estreitas viram caixa de diálogo fixa no rodapé. */
+    const [sheetMode, setSheetMode] = useState(false);
+    /** Só abre no hover quando existe ponteiro de verdade: num toque o
+     * navegador emula mouseenter antes do click, e o par abrir + alternar
+     * fecharia o balão no mesmo toque que o abriu. */
+    const [canHover, setCanHover] = useState(false);
     const [mounted, setMounted] = useState(false);
-    const [desktopPos, setDesktopPos] = useState<{
-        left: number;
-        top: number;
-        width: number;
-        tailLeft: number;
-    } | null>(null);
+    const [pos, setPos] = useState<BubblePos | null>(null);
     const wrapperRef = useRef<HTMLSpanElement>(null);
     const triggerRef = useRef<HTMLButtonElement>(null);
     const bubbleRef = useRef<HTMLSpanElement>(null);
+    const closeTimer = useRef<number | null>(null);
+    /** Altura natural do balão, medida uma vez por abertura. Não pode ser
+     * remedida depois: a partir da 2ª passada o React já aplicou max-height
+     * inline, e limpar esse estilo por fora faria o diff do React achar que
+     * não há nada para reaplicar. */
+    const naturalHeight = useRef<number | null>(null);
+    const bubbleId = useId();
 
     useEffect(() => setMounted(true), []);
 
     useEffect(() => {
-        const mql = window.matchMedia('(max-width: 640px)');
-        const update = () => setIsMobile(mql.matches);
-        update();
-        mql.addEventListener('change', update);
-        return () => mql.removeEventListener('change', update);
+        const sheetMql = window.matchMedia('(max-width: 640px)');
+        const hoverMql = window.matchMedia(
+            '(hover: hover) and (pointer: fine)',
+        );
+        const sync = () => {
+            setSheetMode(sheetMql.matches);
+            setCanHover(hoverMql.matches);
+        };
+        sync();
+        sheetMql.addEventListener('change', sync);
+        hoverMql.addEventListener('change', sync);
+        return () => {
+            sheetMql.removeEventListener('change', sync);
+            hoverMql.removeEventListener('change', sync);
+        };
     }, []);
 
+    const cancelClose = useCallback(() => {
+        if (closeTimer.current !== null) {
+            window.clearTimeout(closeTimer.current);
+            closeTimer.current = null;
+        }
+    }, []);
+
+    const scheduleClose = useCallback(() => {
+        cancelClose();
+        closeTimer.current = window.setTimeout(() => {
+            closeTimer.current = null;
+            setOpen(false);
+        }, HOVER_CLOSE_DELAY);
+    }, [cancelClose]);
+
+    useEffect(() => cancelClose, [cancelClose]);
+
     useLayoutEffect(() => {
-        if (!open || isMobile) {
-            setDesktopPos(null);
+        naturalHeight.current = null;
+        if (!open || sheetMode) {
+            // A largura escrita na medição abaixo não passa pelo React, então
+            // ela não seria removida ao virar caixa de rodapé (onde o balão
+            // ocupa a linha inteira e não recebe estilo inline).
+            if (bubbleRef.current) bubbleRef.current.style.width = '';
+            setPos(null);
             return;
         }
 
         const updatePosition = () => {
             const trigger = triggerRef.current;
-            if (!trigger) return;
+            const bubble = bubbleRef.current;
+            if (!trigger || !bubble) return;
+
             const rect = trigger.getBoundingClientRect();
-            const width = Math.min(BUBBLE_WIDTH, window.innerWidth - VIEWPORT_MARGIN * 2);
-            let left = rect.left + rect.width / 2 - width / 2;
-            left = Math.max(
+            const vw =
+                document.documentElement.clientWidth || window.innerWidth;
+            const vh =
+                document.documentElement.clientHeight || window.innerHeight;
+            const width = Math.min(BUBBLE_WIDTH, vw - VIEWPORT_MARGIN * 2);
+
+            // A altura só é conhecida com a largura final aplicada. Na 1ª
+            // passada o balão já está no DOM (invisível, ainda sem estilo do
+            // React), então medimos nele mesmo em vez de chutar um valor.
+            if (naturalHeight.current === null) {
+                bubble.style.width = `${width}px`;
+                naturalHeight.current = bubble.offsetHeight;
+            }
+            const height = naturalHeight.current;
+
+            const spaceAbove = rect.top - VIEWPORT_MARGIN - TRIGGER_GAP;
+            const spaceBelow = vh - rect.bottom - VIEWPORT_MARGIN - TRIGGER_GAP;
+            const placement: Placement =
+                height <= spaceAbove
+                    ? 'top'
+                    : height <= spaceBelow
+                      ? 'bottom'
+                      : spaceBelow > spaceAbove
+                        ? 'bottom'
+                        : 'top';
+
+            const available = placement === 'top' ? spaceAbove : spaceBelow;
+            const maxHeight =
+                height > available
+                    ? Math.max(available, MIN_BUBBLE_HEIGHT)
+                    : null;
+            const finalHeight = maxHeight ?? height;
+
+            const left = clamp(
+                rect.left + rect.width / 2 - width / 2,
                 VIEWPORT_MARGIN,
-                Math.min(left, window.innerWidth - width - VIEWPORT_MARGIN),
+                Math.max(VIEWPORT_MARGIN, vw - width - VIEWPORT_MARGIN),
             );
-            const tailLeft = rect.left + rect.width / 2 - left;
-            setDesktopPos({
+            const wantedTop =
+                placement === 'top'
+                    ? rect.top - TRIGGER_GAP - finalHeight
+                    : rect.bottom + TRIGGER_GAP;
+            const top = clamp(
+                wantedTop,
+                VIEWPORT_MARGIN,
+                Math.max(VIEWPORT_MARGIN, vh - finalHeight - VIEWPORT_MARGIN),
+            );
+
+            // O rabicho só aparece se, depois dos clamps, o balão continuar
+            // encostado no "?": apontar para o lugar errado é pior que não ter.
+            const centerX = rect.left + rect.width / 2;
+            const tailFits =
+                Math.abs(top - wantedTop) < 1 &&
+                centerX >= left + TAIL_INSET &&
+                centerX <= left + width - TAIL_INSET;
+
+            setPos({
                 left,
-                top: rect.top - 10,
+                top,
                 width,
-                tailLeft,
+                maxHeight,
+                placement,
+                tailLeft: tailFits ? centerX - left : null,
             });
         };
 
@@ -87,7 +214,7 @@ export default function HelpTooltip({
             window.removeEventListener('scroll', updatePosition, true);
             window.removeEventListener('resize', updatePosition);
         };
-    }, [open, isMobile]);
+    }, [open, sheetMode, text]);
 
     useEffect(() => {
         if (!open) return;
@@ -100,49 +227,65 @@ export default function HelpTooltip({
             ) {
                 return;
             }
+            cancelClose();
             setOpen(false);
+        }
+
+        function handleKey(event: KeyboardEvent) {
+            if (event.key !== 'Escape') return;
+            cancelClose();
+            setOpen(false);
+            triggerRef.current?.focus();
         }
 
         document.addEventListener('mousedown', handleOutside);
         document.addEventListener('touchstart', handleOutside);
+        document.addEventListener('keydown', handleKey);
         return () => {
             document.removeEventListener('mousedown', handleOutside);
             document.removeEventListener('touchstart', handleOutside);
+            document.removeEventListener('keydown', handleKey);
         };
-    }, [open]);
+    }, [open, cancelClose]);
 
-    const desktopBubbleStyle: React.CSSProperties | undefined =
-        !isMobile && desktopPos
-            ? {
-                  position: 'fixed',
-                  left: desktopPos.left,
-                  top: desktopPos.top,
-                  width: desktopPos.width,
-                  marginLeft: 0,
-                  transform: 'translateY(-100%)',
-                  visibility: desktopPos ? 'visible' : 'hidden',
-              }
-            : !isMobile
-              ? { visibility: 'hidden' }
-              : undefined;
+    const bubbleStyle: React.CSSProperties | undefined = sheetMode
+        ? undefined
+        : pos
+          ? {
+                left: pos.left,
+                top: pos.top,
+                width: pos.width,
+                maxHeight: pos.maxHeight ?? undefined,
+                overflowY: pos.maxHeight ? 'auto' : undefined,
+            }
+          : // Primeira passada: precisa estar no DOM para ser medido, mas
+            // ainda não se sabe onde ele cabe.
+            { visibility: 'hidden' };
 
-    const desktopTailStyle: React.CSSProperties | undefined =
-        !isMobile && desktopPos
-            ? { left: desktopPos.tailLeft }
-            : undefined;
+    const bubbleClassName = `${styles.bubble}${
+        !sheetMode && pos?.placement === 'bottom'
+            ? ` ${styles.bubbleBelow}`
+            : ''
+    }`;
 
     const bubbleContent = (
         <>
             <span
                 className={styles.backdrop}
                 aria-hidden="true"
-                onClick={() => setOpen(false)}
+                onClick={() => {
+                    cancelClose();
+                    setOpen(false);
+                }}
             />
             <span
-                className={styles.bubble}
+                className={bubbleClassName}
                 role="tooltip"
+                id={bubbleId}
                 ref={bubbleRef}
-                style={desktopBubbleStyle}
+                style={bubbleStyle}
+                onMouseEnter={canHover ? cancelClose : undefined}
+                onMouseLeave={canHover ? scheduleClose : undefined}
             >
                 <button
                     type="button"
@@ -150,6 +293,7 @@ export default function HelpTooltip({
                     aria-label="Fechar ajuda"
                     onClick={(event) => {
                         event.stopPropagation();
+                        cancelClose();
                         setOpen(false);
                     }}
                 >
@@ -159,15 +303,24 @@ export default function HelpTooltip({
                 <Link
                     href={href}
                     className={styles.bubbleLink}
-                    onClick={() => setOpen(false)}
+                    onClick={() => {
+                        cancelClose();
+                        setOpen(false);
+                    }}
                 >
                     {linkLabel} <FiChevronRight />
                 </Link>
-                <span
-                    className={styles.bubbleTail}
-                    aria-hidden="true"
-                    style={desktopTailStyle}
-                />
+                {!sheetMode && pos?.tailLeft != null && (
+                    <span
+                        className={`${styles.bubbleTail}${
+                            pos.placement === 'bottom'
+                                ? ` ${styles.bubbleTailUp}`
+                                : ''
+                        }`}
+                        aria-hidden="true"
+                        style={{ left: pos.tailLeft }}
+                    />
+                )}
             </span>
         </>
     );
@@ -176,8 +329,15 @@ export default function HelpTooltip({
         <span
             className={styles.wrapper}
             ref={wrapperRef}
-            onMouseEnter={() => setOpen(true)}
-            onMouseLeave={() => setOpen(false)}
+            onMouseEnter={
+                canHover
+                    ? () => {
+                          cancelClose();
+                          setOpen(true);
+                      }
+                    : undefined
+            }
+            onMouseLeave={canHover ? scheduleClose : undefined}
         >
             <button
                 type="button"
@@ -185,8 +345,10 @@ export default function HelpTooltip({
                 className={styles.trigger}
                 aria-label={label}
                 aria-expanded={open}
+                aria-describedby={open ? bubbleId : undefined}
                 onClick={(event) => {
                     event.stopPropagation();
+                    cancelClose();
                     setOpen((prev) => !prev);
                 }}
             >

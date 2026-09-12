@@ -28,11 +28,16 @@
         transform 0.15s;
 }
 
-/* Área de toque estendida a ~44px sem alterar o círculo "?" de 18px visível. */
+/* Área de toque ampliada sem mexer no círculo "?" de 18px visível.
+   Assimétrica de propósito: o "?" é sempre o último elemento de um rótulo
+   (link de menu, botão de aba, <label> de um campo) e o botão tem
+   position:relative, então ele pinta acima dos irmãos não posicionados. Uma
+   área grande à esquerda/abaixo roubaria o clique do próprio rótulo e do
+   campo logo abaixo dele. */
 .trigger::after {
     content: '';
     position: absolute;
-    inset: -13px;
+    inset: -8px -8px -8px -4px;
 }
 
 .trigger:hover,
@@ -46,14 +51,16 @@
 }
 
 /* Balão estilo "diálogo de RPG": caixa arredondada, borda destacada e
-   rabicho apontando para o gatilho que o abriu. */
+   rabicho apontando para o gatilho que o abriu.
+
+   Posição vem do JS (portal em document.body, coordenadas de viewport); o
+   top/left daqui é só o ponto de partida da medição na primeira passada. */
 .bubble {
-    position: absolute;
-    bottom: calc(100% + 10px);
-    left: 50%;
-    margin-left: -120px;
+    position: fixed;
+    top: 0;
+    left: 0;
     width: 240px;
-    max-width: min(240px, 70vw);
+    max-width: calc(100vw - 24px);
     background: var(--surface-1);
     border: 2px solid var(--mint);
     border-radius: 14px;
@@ -64,7 +71,14 @@
     flex-direction: column;
     gap: 6px;
     text-align: left;
+    overscroll-behavior: contain;
     animation: popIn 0.15s ease-out;
+}
+
+/* Quando não cabe acima do "?", o balão abre para baixo e a animação entra
+   no sentido contrário. */
+.bubbleBelow {
+    animation: popInBelow 0.15s ease-out;
 }
 
 .bubbleClose {
@@ -123,10 +137,10 @@
     gap: 4px;
 }
 
+/* Rabicho apontando para baixo (balão acima do gatilho). */
 .bubbleTail {
     position: absolute;
     top: 100%;
-    left: 50%;
     transform: translateX(-50%);
     width: 0;
     height: 0;
@@ -147,10 +161,37 @@
     border-top: 7px solid var(--surface-1);
 }
 
+/* Rabicho apontando para cima (balão abaixo do gatilho) — espelho exato do
+   de cima, inclusive a sobreposição de 1px que esconde a borda mint. */
+.bubbleTailUp {
+    top: auto;
+    bottom: 100%;
+    border-top: none;
+    border-bottom: 9px solid var(--mint);
+}
+
+.bubbleTailUp::after {
+    top: auto;
+    bottom: -10px;
+    border-top: none;
+    border-bottom: 7px solid var(--surface-1);
+}
+
 @keyframes popIn {
     from {
         opacity: 0;
         transform: translateY(4px) scale(0.92);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes popInBelow {
+    from {
+        opacity: 0;
+        transform: translateY(-4px) scale(0.92);
     }
     to {
         opacity: 1;
@@ -174,11 +215,16 @@
         position: fixed;
         left: 12px;
         right: 12px;
-        bottom: calc(16px + env(safe-area-inset-bottom));
+        /* Ancorado acima do footer, como todo elemento fixo de rodapé do app
+           (banner de anúncio, prompt de instalação). */
+        bottom: calc(
+            16px + env(safe-area-inset-bottom) + var(--app-footer-height, 0px)
+        );
         top: auto;
-        margin-left: 0;
         width: auto;
         max-width: none;
+        max-height: 60vh;
+        overflow-y: auto;
         animation: slideUp 0.18s ease-out;
     }
 
