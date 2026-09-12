@@ -507,3 +507,11 @@
 **Resumo:** A modalidade está implementada nos dois repos, com build, vet, testes, typecheck e lint limpos. Nada foi commitado. **Como ela funciona.** O valor novo é `individual_multi`, rotulado "Individual entre carteiras (multi-personal)". Os alunos de todos os personais convidados entram num ranking único, ordenado pelos mesmos critérios de sempre: streak recorde, streak atual, total de dias, consentimento. Não há quadro de equipes e não há correção pelo tamanho da carteira. O personal de cada aluno continua viajando na linha do mural como etiqueta ao lado do nome, só que sem pontuar. **Uma descoberta …
 **Arquivos:** StudentChallengeTab.tsx, glossaryContent.ts, page.tsx, studentChallengeService.ts
 **Commits:** Cria a pagina publica de exclusao de conta e dados
+
+## 2026-09-12 03:23 — River (via Claude Code)
+**Resumo:** Commitado e pushado nos dois repos. | Repo | Branch | Commit | |---|---|---| | Personal-fit-Back | main | 7cfaa0c | | personalfit | master | e028958 | Os changelogs gerados pelo hook entraram junto, como nos commits anteriores. O push dispara o Cloud Build automaticamente, então a modalidade deve aparecer em produção assim que o build terminar. Ainda não testei ao vivo. O que vale conferir quando subir: criar um desafio na modalidade nova exige plano PRO, e com um personal só o card mostra o aviso para convidar um colega.
+**Commits:** Oferece a modalidade individual entre carteiras no Desafio
+
+## 2026-09-12 03:28 — River (via Claude Code)
+**Resumo:** É exatamente isso que a modalidade nova faz. A competição é individual, aluno contra aluno. O que acontece nela, concretamente: - **Um ranking só.** Todos os alunos de todos os personais entram na mesma lista, ordenados pelos critérios de sempre: streak recorde, streak atual, total de dias, consentimento como desempate final. - **A carteira não pontua.** Não existe placar de equipe, nem soma por personal, nem correção pelo tamanho da carteira. O nome do personal aparece só como etiqueta ao lado do aluno, para você saber de quem ele é. - **O prêmio é individual.** As primeiras colocações do ran…
+**Arquivos:** CHANGELOG_FRONTEND.md

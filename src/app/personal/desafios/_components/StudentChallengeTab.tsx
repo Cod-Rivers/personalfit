@@ -60,9 +60,13 @@ function activeParticipantCount(c: StudentChallenge): number {
     return c.participants.filter((p) => p.status === 'active').length;
 }
 
-/** Modo só é editável enquanto o desafio não começou (plano, 7.1). */
+/**
+ * Modo só é editável dentro da janela de configuração (plano, 7.1), que
+ * espelha ConfigWindowOpen do backend: aberta até o FIM do dia de início. Um
+ * desafio que começa hoje ainda pode ser configurado hoje.
+ */
 function hasStarted(c: StudentChallenge): boolean {
-    return c.start_date <= todayISO();
+    return c.start_date < todayISO();
 }
 
 const MODE_LABEL: Record<StudentChallengeMode, string> = {

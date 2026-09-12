@@ -33,8 +33,14 @@ interface ExerciseRow {
     rest: string;
 }
 
+/**
+ * Espelha ConfigWindowOpen do backend: a configuração do jogo fica aberta até
+ * o FIM do primeiro dia. Comparar por instante (start_date à meia-noite <=
+ * agora) trancava o antifraude no mesmo segundo em que o desafio nascia,
+ * porque o formulário propõe "começa hoje".
+ */
 function hasStarted(c: StudentChallenge) {
-    return new Date(c.start_date + 'T00:00:00') <= new Date();
+    return c.start_date < new Date().toISOString().slice(0, 10);
 }
 
 /**
@@ -179,10 +185,10 @@ export default function ChallengeExtrasModal({
                     </p>
                     {started && (
                         <p className={s.warn}>
-                            Este desafio já começou. A configuração de
-                            antifraude só pode ser mudada antes do início, para
-                            não invalidar os dias que os alunos já registraram
-                            sob a regra anterior.
+                            Este desafio já passou do primeiro dia. A
+                            configuração de antifraude só pode ser mudada até o
+                            fim do dia de início, para não invalidar os dias que
+                            os alunos já registraram sob a regra anterior.
                         </p>
                     )}
 
