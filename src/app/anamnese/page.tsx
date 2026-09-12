@@ -6,6 +6,7 @@ import { getStudentHomeRoute } from '@/libs/session';
 import QuestionsRenderer from '@/components/organism/QuestionsRenderer';
 import { IQuestionProps } from '@/components/organism/QuestionsRenderer/types';
 import { useRouter } from 'next/navigation';
+import ExternalLink from '@/components/atoms/ExternalLink';
 
 const DOR_LABELS: Record<string, string> = {
     tornozelo: 'Tornozelo',
@@ -324,9 +325,9 @@ const Questions: FC = () => {
                                 Autorizo o tratamento dos meus dados de saúde
                                 (respostas da anamnese e histórico de dores) para
                                 montar e acompanhar meu treino, conforme a{' '}
-                                <a href="/politica-privacidade" target="_blank" rel="noopener noreferrer">
+                                <ExternalLink href="/politica-privacidade">
                                     Política de Privacidade
-                                </a>
+                                </ExternalLink>
                                 . Posso revogar este consentimento a qualquer
                                 momento na área da minha conta.
                             </label>

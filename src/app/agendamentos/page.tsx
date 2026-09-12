@@ -25,6 +25,7 @@ import {
 import Modal from '@/components/system/Modal';
 import { useToast } from '@/components/system/Toast';
 import SlotPicker from '@/components/agenda/SlotPicker';
+import ExternalLink from '@/components/atoms/ExternalLink';
 import s from './agendamentos.module.css';
 
 function todayStr(): string {
@@ -399,14 +400,12 @@ export default function AgendamentosPage() {
                                     {formatDate(a.end_at)}
                                 </p>
                                 {a.meeting_link && (
-                                    <a
+                                    <ExternalLink
                                         className={s.meetingLink}
                                         href={a.meeting_link}
-                                        target="_blank"
-                                        rel="noreferrer"
                                     >
                                         <FiLink /> Entrar na reunião
-                                    </a>
+                                    </ExternalLink>
                                 )}
                                 {a.notes && (
                                     <p className={s.apptNotes}>{a.notes}</p>

@@ -41,6 +41,7 @@ import {
 } from '@/libs/exerciseWeightService';
 import { LoadSuggestion } from '@/libs/loadSuggestion';
 import HelpTooltip from '@/components/atoms/HelpTooltip';
+import ExternalLink from '@/components/atoms/ExternalLink';
 import { getGlossaryTerm } from '@/libs/glossaryContent';
 
 interface ExerciseDetailCardProps {
@@ -304,14 +305,12 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                     <p style={{ color: '#ccc', marginBottom: '1rem' }}>
                         Este vídeo está hospedado no {platform}.
                     </p>
-                    <a
+                    <ExternalLink
                         href={exercise.video_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
                         className="btn btn-primary"
                     >
                         Ver no {platform} ↗
-                    </a>
+                    </ExternalLink>
                 </div>
             );
         }

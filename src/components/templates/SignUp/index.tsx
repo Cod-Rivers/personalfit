@@ -6,6 +6,7 @@ import Input from '@/components/molecules/Input';
 import BackButton from '@/components/molecules/BackButton';
 import Image from 'next/image';
 import Link from 'next/link';
+import ExternalLink from '@/components/atoms/ExternalLink';
 import './styles.css';
 import { Api } from '@/libs/api';
 import { useForm } from 'react-hook-form';
@@ -214,9 +215,9 @@ const TSignUp: FC = () => {
                         />
                         <label className="form-check-label" htmlFor="accept-terms" style={{ fontSize: 13 }}>
                             Li e aceito a{' '}
-                            <Link href="/politica-privacidade" target="_blank">
+                            <ExternalLink href="/politica-privacidade">
                                 Política de Privacidade
-                            </Link>{' '}
+                            </ExternalLink>{' '}
                             e autorizo o tratamento dos meus dados pessoais.
                         </label>
                     </div>

@@ -13,6 +13,7 @@ import {
     updateMyAutoregulationPolicy,
 } from '@/libs/autoregulationPolicyService';
 import { computeAutoregulationDecision } from '@/libs/microcycleAutoregulation';
+import ExternalLink from '@/components/atoms/ExternalLink';
 import styles from './AutoregulationPolicySettings.module.css';
 
 type Key = keyof AutoregulationPolicy;
@@ -207,13 +208,9 @@ export default function AutoregulationPolicySettings() {
                     não só a reação de cada sessão — baseado na regra
                     &quot;2-for-2&quot; do ACSM/NSCA e num teto de
                     progressão por semana.{' '}
-                    <a
-                        href="/ajuda#progressao-carga"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                    >
+                    <ExternalLink href="/ajuda#progressao-carga">
                         Ver fontes científicas
-                    </a>
+                    </ExternalLink>
                     .
                 </p>
                 {TEMPORAL_FIELDS.map((key) => (

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { FiArrowLeft } from 'react-icons/fi';
+import ExternalLink from '@/components/atoms/ExternalLink';
 
 export const metadata = {
     title: 'Política de Privacidade — Venafit',
@@ -167,13 +168,9 @@ export default function PoliticaPrivacidadePage() {
                 <p>
                     Você pode gerenciar suas preferências de anúncios do Google
                     em{' '}
-                    <a
-                        href="https://myadcenter.google.com/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                    >
+                    <ExternalLink href="https://myadcenter.google.com/">
                         myadcenter.google.com
-                    </a>
+                    </ExternalLink>
                     . Seus dados de saúde e de treino nunca são enviados ao
                     AdSense nem usados para segmentar anúncios.
                 </p>

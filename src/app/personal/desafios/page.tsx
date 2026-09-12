@@ -17,6 +17,7 @@ import {
     type Challenge,
 } from '@/libs/challengeService';
 import StudentChallengeTab from './_components/StudentChallengeTab';
+import ExternalLink from '@/components/atoms/ExternalLink';
 import s from './desafios.module.css';
 
 type DesafiosTab = 'leads' | 'entre-alunos';
@@ -367,16 +368,14 @@ export default function DesafiosPage() {
                                                     </div>
                                                     <div className={s.pActions}>
                                                         {p.phone && (
-                                                            <a
+                                                            <ExternalLink
                                                                 className={
                                                                     s.btnAction
                                                                 }
                                                                 href={`https://wa.me/${p.phone.replace(/\D/g, '')}`}
-                                                                target="_blank"
-                                                                rel="noreferrer"
                                                             >
                                                                 WhatsApp
-                                                            </a>
+                                                            </ExternalLink>
                                                         )}
                                                         {p.converted ? (
                                                             <span

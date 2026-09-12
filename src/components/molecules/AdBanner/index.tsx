@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Advertisement } from '@/libs/advertisementService';
+import ExternalLink from '@/components/atoms/ExternalLink';
 import styles from './AdBanner.module.css';
 
 interface AdBannerProps {
@@ -34,14 +35,9 @@ export default function AdBanner({ ad, placement }: AdBannerProps) {
 
     if (ad.link) {
         return (
-            <a
-                href={ad.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={styles.link}
-            >
+            <ExternalLink href={ad.link} className={styles.link}>
                 {content}
-            </a>
+            </ExternalLink>
         );
     }
 

@@ -41,6 +41,7 @@ import Modal from '@/components/system/Modal';
 import { useToast } from '@/components/system/Toast';
 import AvailabilityEditor from '@/components/agenda/AvailabilityEditor';
 import SlotPicker from '@/components/agenda/SlotPicker';
+import ExternalLink from '@/components/atoms/ExternalLink';
 import s from './agenda.module.css';
 
 function todayStr(): string {
@@ -573,14 +574,12 @@ export default function AgendaPage() {
                                             {formatDate(a.end_at)}
                                         </p>
                                         {a.meeting_link && (
-                                            <a
+                                            <ExternalLink
                                                 className={s.meetingLink}
                                                 href={a.meeting_link}
-                                                target="_blank"
-                                                rel="noreferrer"
                                             >
                                                 <FiLink /> Entrar na reunião
-                                            </a>
+                                            </ExternalLink>
                                         )}
                                         {a.notes && (
                                             <p className={s.apptNotes}>
@@ -714,14 +713,12 @@ export default function AgendaPage() {
                                             </p>
                                         )}
                                         {r.meeting_link && (
-                                            <a
+                                            <ExternalLink
                                                 className={s.meetingLink}
                                                 href={r.meeting_link}
-                                                target="_blank"
-                                                rel="noreferrer"
                                             >
                                                 <FiLink /> Link
-                                            </a>
+                                            </ExternalLink>
                                         )}
 
                                         {/* Exceptions */}

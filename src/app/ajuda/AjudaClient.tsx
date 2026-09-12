@@ -6,6 +6,7 @@ import { FiBookOpen } from 'react-icons/fi';
 import { microcycleHelpTopics } from '@/libs/microcycleHelpContent';
 import { getSortedGlossaryTerms } from '@/libs/glossaryContent';
 import GlossaryLink from '@/components/atoms/GlossaryLink';
+import ExternalLink from '@/components/atoms/ExternalLink';
 
 type Audience = 'student' | 'personal';
 
@@ -1200,21 +1201,13 @@ const personalSections: HelpSection[] = [
                     2–3 sessões numa frequência de treino comum) para uma
                     janela de calendário. Fontes com identificador estável
                     para consulta:{' '}
-                    <a
-                        href="https://pubmed.ncbi.nlm.nih.gov/19204579/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                    >
+                    <ExternalLink href="https://pubmed.ncbi.nlm.nih.gov/19204579/">
                         ACSM 2009 (PubMed 19204579)
-                    </a>{' '}
+                    </ExternalLink>{' '}
                     e{' '}
-                    <a
-                        href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7810043/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                    >
+                    <ExternalLink href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7810043/">
                         revisão sistemática de autorregulação (PMC7810043)
-                    </a>
+                    </ExternalLink>
                     . As demais (NSCA Essentials, Helms/Muscle and Strength
                     Pyramid, o estudo de deload) são citadas por título/autor
                     por não terem um identificador único e estável que

@@ -11,6 +11,7 @@ import {
     deleteAdvertisement,
 } from '@/libs/advertisementService';
 import Button from '@/components/atoms/Button';
+import ExternalLink from '@/components/atoms/ExternalLink';
 import styles from './MyAdvertisements.module.css';
 
 const emptyForm: CreateAdvertisementRequest = {
@@ -157,16 +158,14 @@ export default function MyAdvertisements() {
                                         </span>
                                     )}
                                 </span>
-                                <a
+                                <ExternalLink
                                     href={ad.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
                                     className={styles.adUrl}
                                 >
                                     {ad.url.length > 50
                                         ? ad.url.slice(0, 50) + '…'
                                         : ad.url}
-                                </a>
+                                </ExternalLink>
                             </div>
                             <div className={styles.adActions}>
                                 <Button

@@ -9,6 +9,7 @@ import {
     isSupportedExternalVideoUrl,
     resolveExternalVideoLink,
 } from '@/libs/exerciseVideoService';
+import ExternalLink from '@/components/atoms/ExternalLink';
 import s from '../builder.module.css';
 
 interface Props {
@@ -112,15 +113,13 @@ export default function ExerciseVideoField({
                                 <FiVideo aria-hidden /> {sourceLabel}
                             </span>
                             {platform && (
-                                <a
+                                <ExternalLink
                                     href={videoUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
                                     className={s.linkBtn}
-                                    title="Abrir o vídeo em nova aba"
+                                    title="Abrir o vídeo"
                                 >
                                     <FiExternalLink aria-hidden /> Abrir
-                                </a>
+                                </ExternalLink>
                             )}
                             <button
                                 type="button"

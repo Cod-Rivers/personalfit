@@ -21,6 +21,7 @@ import { getStudentHomeRoute, getUser } from '@/libs/session';
 import { getLinkedShowcase, Showcase } from '@/libs/showcaseService';
 import { showcaseThemeStyle } from '@/libs/showcaseThemes';
 import ShowcaseEditor from './_components/ShowcaseEditor';
+import ExternalLink from '@/components/atoms/ExternalLink';
 import styles from './vitrine.module.css';
 
 /*
@@ -288,17 +289,15 @@ export default function VitrinePage() {
                         {sec.social && socials.length > 0 && (
                             <div className={styles.social}>
                                 {socials.map((s) => (
-                                    <a
+                                    <ExternalLink
                                         key={s.label}
                                         href={s.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
                                         aria-label={s.label}
                                         title={s.label}
                                         className={styles.socialLink}
                                     >
                                         {s.icon}
-                                    </a>
+                                    </ExternalLink>
                                 ))}
                             </div>
                         )}

@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import { FiFileText } from 'react-icons/fi';
+import ExternalLink from '@/components/atoms/ExternalLink';
 import {
     getCurrentMealPlan,
     getMealPlanHistory,
@@ -246,14 +247,12 @@ export default function MealPlanEditor({ studentId }: Props) {
                         {plan.current.pdf_url && (
                             <p className={s.pdfRow}>
                                 <FiFileText />{' '}
-                                <a
+                                <ExternalLink
                                     className={s.pdfLink}
                                     href={plan.current.pdf_url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
                                 >
                                     {plan.current.pdf_file_name || 'plano.pdf'}
-                                </a>
+                                </ExternalLink>
                             </p>
                         )}
                         {plan.current.notes && <p>{plan.current.notes}</p>}
@@ -293,14 +292,12 @@ export default function MealPlanEditor({ studentId }: Props) {
                                             </p>
                                         ))}
                                         {v.pdf_url && (
-                                            <a
+                                            <ExternalLink
                                                 className={s.pdfLink}
                                                 href={v.pdf_url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
                                             >
                                                 {v.pdf_file_name || 'plano.pdf'}
-                                            </a>
+                                            </ExternalLink>
                                         )}
                                         {canEdit && (
                                             <button
