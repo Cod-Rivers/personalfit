@@ -3,7 +3,17 @@ import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import Header from '@/components/organism/Header';
 
-const PUBLIC_PATHS = ['/', '/cadastro', '/esqueceu-senha', '/politica-privacidade'];
+// /excluir-conta entra aqui pelo mesmo motivo da política de privacidade: é
+// uma página que o Google Play exige que abra para quem NÃO está logado (e,
+// muitas vezes, nem tem mais o app), então não pode vir com o cabeçalho de
+// navegação interna do aplicativo.
+const PUBLIC_PATHS = [
+    '/',
+    '/cadastro',
+    '/esqueceu-senha',
+    '/politica-privacidade',
+    '/excluir-conta',
+];
 
 export default function HeaderCondicional() {
     const pathname = usePathname();
@@ -12,7 +22,8 @@ export default function HeaderCondicional() {
     const isPublic =
         PUBLIC_PATHS.includes(pathname) ||
         pathname.startsWith('/cadastro/') ||
-        pathname.startsWith('/redefinir-senha/');
+        pathname.startsWith('/redefinir-senha/') ||
+        pathname.startsWith('/excluir-conta/');
 
     // Publica a altura real do header como CSS var, usada pelos modais
     // full-screen (components/system/Modal) para começar exatamente abaixo

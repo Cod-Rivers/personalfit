@@ -53,6 +53,8 @@ const Footer: React.FC = () => {
                     <Link href="/politica-privacidade">
                         Política de Privacidade
                     </Link>
+                    {' · '}
+                    <Link href="/excluir-conta">Excluir conta</Link>
                 </p>
             </div>
         </footer>

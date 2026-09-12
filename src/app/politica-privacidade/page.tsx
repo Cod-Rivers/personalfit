@@ -228,7 +228,11 @@ export default function PoliticaPrivacidadePage() {
                         a qualquer momento em{' '}
                         <Link href="/minha-conta">Minha Conta</Link>. Seus dados
                         de identificação e de saúde são anonimizados
-                        imediatamente.
+                        imediatamente. Se você não consegue mais entrar na
+                        conta, peça a exclusão sem login em{' '}
+                        <Link href="/excluir-conta">Excluir conta e dados</Link>
+                        , onde também estão os prazos do que precisa ser
+                        retido.
                     </li>
                     <li>
                         <strong>Correção:</strong> dados cadastrais como nome,

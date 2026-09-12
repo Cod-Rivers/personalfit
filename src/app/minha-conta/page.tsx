@@ -308,7 +308,12 @@ export default function MinhaContaPage() {
                         >
                             Ao excluir sua conta, todos os seus dados pessoais
                             serão anonimizados permanentemente conforme a LGPD.
-                            Esta ação não pode ser desfeita.
+                            Esta ação não pode ser desfeita. Veja o que é
+                            apagado, o que é retido e por quanto tempo em{' '}
+                            <Link href="/excluir-conta">
+                                Excluir conta e dados
+                            </Link>
+                            .
                         </p>
                         <button
                             className="btn btn-outline-danger"

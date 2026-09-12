@@ -497,3 +497,8 @@
 ## 2026-09-11 22:35 — River (via Claude Code)
 **Resumo:** Não, não estava feita. E ao ir conferir, achei que o pouco de admin que existia estava quebrado. Fiz as duas coisas agora, e já estão no ar. **O defeito.** Eu tinha registrado as rotas de baralho no grupo de personal, que usa uma checagem de papel por igualdade e devolve acesso negado para administrador. O ramo que cria o baralho da plataforma, dentro do handler, era código morto: nenhum administrador conseguia chegar nele. O teste de registro de rotas passava, porque ele confere que a rota existe na árvore, não quem consegue atravessar o middleware. Agora o catálogo vive em um grupo próprio q…
 **Commits:** Adiciona a tela de montagem do baralho de poses no admin
+
+## 2026-09-12 02:55 — River (via Claude Code)
+**Resumo:** A página pública de exclusão está pronta nos dois repos, com builds e testes verdes. Nada foi commitado. **O que foi criado** - [excluir-conta/page.tsx](personalfit/src/app/excluir-conta/page.tsx): página estática, sem login e sem guard, com os dois caminhos que o Google exige. Identifica app e desenvolvedor, ensina a excluir dentro do app e oferece um formulário para quem não consegue mais entrar. - [confirmar/[token]/page.tsx](personalfit/src/app/excluir-conta/confirmar/[token]/page.tsx): confirma o link recebido por e-mail. A exclusão dispara só no clique, nunca ao abrir a URL, porque pré-v…
+**Arquivos:** excluir-conta, index.tsx, next.config.ts, page.tsx
+**Commits:** Registra no changelog a tela de baralho de poses do admin | Permite manter varios baralhos de poses e editar os existentes | Completa o aviso de foto de check-in descartada | Corrige links externos mortos dentro do app Android (WebView sem onCreateWindow)

@@ -65,17 +65,37 @@ const nextConfig: NextConfig = {
   // antigos costumam apontar para variações em inglês ou com hífen a mais.
   // Sem estes aliases, essas variações caem em 404 — o que uma revisão de
   // loja lê como "política inacessível".
+  // A mesma lógica vale para a página de exclusão de conta (canônica:
+  // /excluir-conta), que é a URL declarada no Play Console em Segurança de
+  // dados → Exclusão de conta. Um 404 ali é lido como "não existe forma de
+  // pedir exclusão" e reprova a versão.
   async redirects() {
+    const alias = (sources: string[], destination: string) =>
+      sources.map((source) => ({ source, destination, permanent: true }));
+
     return [
-      "/privacy",
-      "/privacy-policy",
-      "/politica-de-privacidade",
-      "/politica",
-    ].map((source) => ({
-      source,
-      destination: "/politica-privacidade",
-      permanent: true,
-    }));
+      ...alias(
+        [
+          "/privacy",
+          "/privacy-policy",
+          "/politica-de-privacidade",
+          "/politica",
+        ],
+        "/politica-privacidade",
+      ),
+      ...alias(
+        [
+          "/exclusao-de-conta",
+          "/exclusao-conta",
+          "/excluir-cadastro",
+          "/excluir-dados",
+          "/delete-account",
+          "/account-deletion",
+          "/data-deletion",
+        ],
+        "/excluir-conta",
+      ),
+    ];
   },
   webpack: (config) => {
     // Desativa source maps de JS e CSS no nível do webpack
