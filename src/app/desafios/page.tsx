@@ -397,7 +397,10 @@ export default function MyStudentChallengesPage() {
                                                             ms.blockTitle
                                                         }
                                                     >
-                                                        Mural de constância
+                                                        {mode ===
+                                                        'individual_multi'
+                                                            ? 'Mural de constância (todas as carteiras)'
+                                                            : 'Mural de constância'}
                                                     </h3>
                                                 )}
                                                 <StudentChallengeLeaderboard

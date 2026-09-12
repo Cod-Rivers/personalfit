@@ -502,3 +502,8 @@
 **Resumo:** A página pública de exclusão está pronta nos dois repos, com builds e testes verdes. Nada foi commitado. **O que foi criado** - [excluir-conta/page.tsx](personalfit/src/app/excluir-conta/page.tsx): página estática, sem login e sem guard, com os dois caminhos que o Google exige. Identifica app e desenvolvedor, ensina a excluir dentro do app e oferece um formulário para quem não consegue mais entrar. - [confirmar/[token]/page.tsx](personalfit/src/app/excluir-conta/confirmar/[token]/page.tsx): confirma o link recebido por e-mail. A exclusão dispara só no clique, nunca ao abrir a URL, porque pré-v…
 **Arquivos:** excluir-conta, index.tsx, next.config.ts, page.tsx
 **Commits:** Registra no changelog a tela de baralho de poses do admin | Permite manter varios baralhos de poses e editar os existentes | Completa o aviso de foto de check-in descartada | Corrige links externos mortos dentro do app Android (WebView sem onCreateWindow)
+
+## 2026-09-12 03:17 — River (via Claude Code)
+**Resumo:** A modalidade está implementada nos dois repos, com build, vet, testes, typecheck e lint limpos. Nada foi commitado. **Como ela funciona.** O valor novo é `individual_multi`, rotulado "Individual entre carteiras (multi-personal)". Os alunos de todos os personais convidados entram num ranking único, ordenado pelos mesmos critérios de sempre: streak recorde, streak atual, total de dias, consentimento. Não há quadro de equipes e não há correção pelo tamanho da carteira. O personal de cada aluno continua viajando na linha do mural como etiqueta ao lado do nome, só que sem pontuar. **Uma descoberta …
+**Arquivos:** StudentChallengeTab.tsx, glossaryContent.ts, page.tsx, studentChallengeService.ts
+**Commits:** Cria a pagina publica de exclusao de conta e dados

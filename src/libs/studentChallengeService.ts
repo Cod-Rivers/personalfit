@@ -27,8 +27,17 @@ export interface StudentChallengeParticipant {
 }
 
 /** Modalidade do desafio. Documento antigo não tem o campo — `challengeMode()`
- * resolve para `individual`, que é o comportamento de sempre. */
-export type StudentChallengeMode = 'individual' | 'teams' | 'collaborative';
+ * resolve para `individual`, que é o comportamento de sempre.
+ *
+ * `individual_multi` é um ranking individual único somando os alunos de
+ * todos os personais: quem disputa é o aluno, e a carteira dele é só uma
+ * etiqueta ao lado do nome. É o que a separa de `teams`, onde quem disputa é
+ * a carteira e a pontuação é corrigida pelo tamanho dela. */
+export type StudentChallengeMode =
+    | 'individual'
+    | 'individual_multi'
+    | 'teams'
+    | 'collaborative';
 
 export type StudentChallengePersonalRole = 'owner' | 'member';
 
@@ -239,6 +248,14 @@ export function challengeMode(
     challenge: StudentChallenge,
 ): StudentChallengeMode {
     return challenge.mode || 'individual';
+}
+
+/** Modalidades que reúnem alunos de mais de uma carteira. Todas exigem PRO do
+ * organizador e disparam o consentimento v2 assim que um segundo personal
+ * aceita — o gate real é o backend, isto aqui só evita oferecer ao personal
+ * gratuito uma modalidade que ele receberia 402 ao salvar. */
+export function isMultiPersonalMode(mode: StudentChallengeMode): boolean {
+    return mode !== 'individual';
 }
 
 export function challengePersonals(

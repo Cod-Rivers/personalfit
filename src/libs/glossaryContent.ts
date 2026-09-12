@@ -402,8 +402,14 @@ const studentChallengeTerms: GlossaryTerm[] = [
     {
         id: 'desafio-multi-personal',
         term: 'Desafio multi-personal',
-        short: 'Desafio que reúne alunos de mais de um personal, cada personal formando uma equipe.',
-        long: 'Um desafio multi-personal acontece quando o personal que organizou convida outros personais, e cada um inscreve os próprios alunos. Cada personal vira uma equipe. Isso muda quem enxerga os seus dados: além dos colegas da sua carteira e do seu personal, passam a ver sua foto de check-in, sua sequência, seu nome e seu avatar também os alunos das outras carteiras e os outros personais participantes. Por isso o app pede um consentimento novo, listando nominalmente quem participa — e, enquanto você não confirmar, você fica fora do mural: ninguém vê seus dados e você também não vê os dos outros. Sua sequência não é perdida nesse período, ela volta intacta assim que você confirmar. Nenhum desses personais tem acesso ao seu treino, à sua avaliação, ao seu telefone ou ao seu e-mail — só ao que aparece no mural.',
+        short: 'Desafio que reúne alunos de mais de um personal, disputando entre si ou somando forças.',
+        long: 'Um desafio multi-personal acontece quando o personal que organizou convida outros personais, e cada um inscreve os próprios alunos. O que se faz com essas carteiras depende da modalidade: no individual entre carteiras todo mundo entra num ranking só, aluno contra aluno; no modo de equipes cada personal vira uma equipe que disputa como bloco; no colaborativo ninguém disputa e todos somam para uma meta única. Em qualquer uma delas, isso muda quem enxerga os seus dados: além dos colegas da sua carteira e do seu personal, passam a ver sua foto de check-in, sua sequência, seu nome e seu avatar também os alunos das outras carteiras e os outros personais participantes. Por isso o app pede um consentimento novo, listando nominalmente quem participa — e, enquanto você não confirmar, você fica fora do mural: ninguém vê seus dados e você também não vê os dos outros. Sua sequência não é perdida nesse período, ela volta intacta assim que você confirmar. Nenhum desses personais tem acesso ao seu treino, à sua avaliação, ao seu telefone ou ao seu e-mail — só ao que aparece no mural.',
+    },
+    {
+        id: 'individual-entre-carteiras',
+        term: 'Individual entre carteiras',
+        short: 'Modalidade em que os alunos de todos os personais disputam num ranking único, sem quadro de equipes.',
+        long: 'No individual entre carteiras o desafio reúne os alunos de dois ou mais personais num único mural, e quem disputa é o aluno: a classificação usa exatamente os mesmos critérios do desafio individual de sempre (streak recorde, depois streak atual, depois total de dias qualificados), sem nenhuma correção pelo tamanho da carteira. O personal de cada aluno aparece como etiqueta ao lado do nome, só para você saber de quem é cada um — a carteira não pontua e não existe quadro de equipes. É a diferença para o modo de equipes, onde quem disputa é a carteira e a pontuação precisa ser ajustada para que um personal com 3 alunos não leve vantagem sobre um com 30. Como reúne carteiras diferentes, vale o mesmo consentimento novo de qualquer desafio multi-personal.',
     },
     {
         id: 'taxa-ajustada-equipe',

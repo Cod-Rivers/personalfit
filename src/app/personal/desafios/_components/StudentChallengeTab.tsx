@@ -33,6 +33,7 @@ import {
     cancelOwnerTransfer,
     challengeMode,
     challengePersonals,
+    isMultiPersonalMode,
     participantsCount,
     teamLabel,
     suggestCollaborativeGoal,
@@ -66,17 +67,29 @@ function hasStarted(c: StudentChallenge): boolean {
 
 const MODE_LABEL: Record<StudentChallengeMode, string> = {
     individual: 'Individual',
+    individual_multi: 'Individual entre carteiras (multi-personal)',
     teams: 'Equipes (personal x personal)',
     collaborative: 'Colaborativo (meta do grupo)',
 };
 
 const MODE_HINT: Record<StudentChallengeMode, string> = {
     individual:
-        'Ranking de constância entre os alunos, um a um. É o formato de sempre.',
+        'Ranking de constância entre os seus alunos, um a um. É o formato de sempre.',
+    individual_multi:
+        'Um ranking só, somando os alunos de todos os personais convidados. Sem quadro de equipes: quem disputa é o aluno, e o personal dele aparece como etiqueta ao lado do nome.',
     teams: 'Além do mural individual, um quadro de equipes: cada personal é uma equipe, com a pontuação ajustada para que carteiras de tamanhos diferentes disputem em pé de igualdade.',
     collaborative:
         'Sem disputa: todos somam dias de treino rumo a uma meta única do grupo.',
 };
+
+/** Ordem em que as modalidades aparecem nos dois seletores (criar e editar) —
+ * do formato de sempre ao mais elaborado. */
+const MODE_OPTIONS: StudentChallengeMode[] = [
+    'individual',
+    'individual_multi',
+    'teams',
+    'collaborative',
+];
 
 const PERSONAL_STATUS_LABEL: Record<
     StudentChallengePersonal['status'],
@@ -561,6 +574,21 @@ export default function StudentChallengeTab() {
                     )}
                 </div>
 
+                {/* Uma modalidade multi-personal com um personal só ainda não
+                    está fazendo nada: ela existe para reunir carteiras. Avisa
+                    o organizador em vez de deixá-lo achar que o mural está
+                    quebrado. */}
+                {owner &&
+                    c.status === 'active' &&
+                    isMultiPersonalMode(mode) &&
+                    personals.length <= 1 && (
+                        <p className={s.cardMeta} style={{ marginTop: 8 }}>
+                            Esta modalidade só entra em ação com mais de um
+                            personal. Use <b>Convidar outro personal</b> para
+                            somar as carteiras.
+                        </p>
+                    )}
+
                 {/* Roster de personais: só aparece quando existe mais de um,
                     para o desafio single-personal continuar idêntico. */}
                 {personals.length > 1 && (
@@ -840,7 +868,9 @@ export default function StudentChallengeTab() {
 
                         {mode !== 'individual' && (
                             <div className={s.blockTitle}>
-                                Mural de constância
+                                {mode === 'individual_multi'
+                                    ? 'Mural de constância (todas as carteiras)'
+                                    : 'Mural de constância'}
                             </div>
                         )}
                         <StudentChallengeLeaderboard
@@ -1034,13 +1064,7 @@ export default function StudentChallengeTab() {
                         <div>
                             <label className={s.label}>Modalidade</label>
                             <div className={s.modePick}>
-                                {(
-                                    [
-                                        'individual',
-                                        'teams',
-                                        'collaborative',
-                                    ] as StudentChallengeMode[]
-                                ).map((m) => (
+                                {MODE_OPTIONS.map((m) => (
                                     <label className={s.modeOption} key={m}>
                                         <input
                                             type="radio"
@@ -1338,13 +1362,7 @@ export default function StudentChallengeTab() {
                     quem já está pontuando.
                 </p>
                 <div className={s.modePick}>
-                    {(
-                        [
-                            'individual',
-                            'teams',
-                            'collaborative',
-                        ] as StudentChallengeMode[]
-                    ).map((m) => (
+                    {MODE_OPTIONS.map((m) => (
                         <label className={s.modeOption} key={m}>
                             <input
                                 type="radio"
