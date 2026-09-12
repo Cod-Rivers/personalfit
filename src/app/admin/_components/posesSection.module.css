@@ -1,0 +1,231 @@
+/* Montagem do baralho de poses do antifraude.
+   Cores e espaçamentos por token (rules/css-design-tokens.md). */
+
+.page {
+    min-height: 100%;
+}
+
+.container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 24px 16px 48px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.sub {
+    margin: 4px 0 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    max-width: 52ch;
+}
+
+.card {
+    border: 1px solid var(--border-subtle);
+    border-radius: 14px;
+    background: var(--surface-1);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.cardTitle {
+    margin: 0;
+    font-size: 1.05rem;
+}
+
+.label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.hint {
+    margin: 0;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+}
+
+.counter {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    font-size: 1rem;
+    color: inherit;
+    background: var(--surface-1);
+}
+
+.input:focus {
+    outline: none;
+    border-color: var(--mint);
+    box-shadow: 0 0 0 2px var(--mint-glow);
+}
+
+/* Descrição e botão de imagem na mesma linha em tela larga, empilhados no
+   celular. */
+.addRow {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+}
+
+@media (min-width: 560px) {
+    .addRow {
+        grid-template-columns: 1fr auto;
+        align-items: center;
+    }
+}
+
+.hiddenInput {
+    display: none;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+}
+
+.poseCard {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    padding: 8px;
+    background: var(--surface-2);
+}
+
+.poseImg {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    border-radius: 8px;
+    background: var(--surface-3);
+}
+
+.poseLabel {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+}
+
+.uploading {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+.deckList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.deckItem {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.deckItem:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.deckName {
+    font-weight: 600;
+}
+
+.deckMeta {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+}
+
+.actions {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.btnPrimary,
+.btnGhost,
+.btnUpload,
+.btnRemove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border-radius: 8px;
+    padding: 9px 14px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.btnPrimary {
+    background: var(--grad-mint);
+    color: var(--btn-text);
+    border: none;
+    font-weight: 650;
+}
+
+.btnGhost,
+.btnUpload {
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    color: inherit;
+}
+
+.btnRemove {
+    background: transparent;
+    border: 1px solid var(--coral);
+    color: var(--coral);
+    padding: 6px 10px;
+    font-size: 0.8rem;
+}
+
+.btnPrimary:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.errorMsg {
+    color: var(--coral);
+    font-size: 0.9rem;
+}
+
+.okMsg {
+    color: var(--mint-text);
+    font-size: 0.9rem;
+}

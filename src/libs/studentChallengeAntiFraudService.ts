@@ -372,3 +372,18 @@ export async function getMyReviews(challengeId: string): Promise<ReviewQueue> {
     );
     return data;
 }
+
+/** Pede a URL assinada de upload da imagem de uma carta. O CAMINHO no bucket
+ * é decidido pelo servidor a partir de quem está pedindo — admin escreve na
+ * pasta da plataforma, personal na própria —, então o cliente não consegue
+ * sobrescrever a carta de ninguém. */
+export async function requestPoseUploadUrl(
+    poseId: string,
+    contentType: string,
+): Promise<{ upload_url: string; image_key: string }> {
+    const { data } = await Api.post<{ upload_url: string; image_key: string }>(
+        '/pose-decks/upload-url',
+        { pose_id: poseId, content_type: contentType },
+    );
+    return data;
+}

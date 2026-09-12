@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import PosesSection from './_components/PosesSection';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import { isAxiosError } from 'axios';
@@ -24,6 +25,7 @@ import {
     FiClipboard,
     FiStar,
     FiActivity,
+    FiCamera,
     FiBell,
     FiFileText,
     FiUsers,
@@ -76,6 +78,7 @@ type Section =
     | 'ads'
     | 'referral-partners'
     | 'protocols'
+    | 'poses'
     | 'relatorios'
     | 'diagnostics';
 
@@ -131,6 +134,10 @@ export default function AdminDashboard() {
         { key: 'templates', label: 'Templates', icon: FiClipboard },
         { key: 'ratings', label: 'Avaliações', icon: FiStar },
         { key: 'exercises', label: 'Exercícios', icon: FiActivity },
+        // Baralhos de poses do antifraude do Desafio entre Alunos. Sem um
+        // baralho da plataforma, a Pose do Dia não existe na prática e o
+        // antifraude fica limitado a conferir fotos.
+        { key: 'poses', label: 'Poses do desafio', icon: FiCamera },
         {
             key: 'notifications',
             label: 'Notificações',
@@ -237,6 +244,7 @@ export default function AdminDashboard() {
                 )}
                 {section === 'ratings' && <RatingsSection />}
                 {section === 'exercises' && <ExercisesSection />}
+                {section === 'poses' && <PosesSection />}
                 {section === 'notifications' && <NotificationsSection />}
                 {section === 'logs' && <LogsSection />}
                 {section === 'users' && <UsersSection currentUserId={user.id} />}
