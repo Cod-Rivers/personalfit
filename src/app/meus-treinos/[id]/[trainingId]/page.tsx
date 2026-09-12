@@ -11,6 +11,7 @@ import {
     FiLink,
     FiCheck,
     FiSave,
+    FiAlertTriangle,
 } from 'react-icons/fi';
 import { getStudentHomeRoute } from '@/libs/session';
 import {
@@ -1029,6 +1030,14 @@ export default function MeusTreinosExercisesPage({
                     {sendStatus === 'error' && (
                         <p className={styles.finalizarError}>
                             Erro ao finalizar. Tente novamente.
+                        </p>
+                    )}
+                    {photoDiscardedWarning && (
+                        <p className={styles.finalizarWarning}>
+                            <FiAlertTriangle /> O treino foi salvo, mas a foto do
+                            check-in não pôde ser guardada (sem espaço no
+                            aparelho ou arquivo inválido) — tente anexar uma
+                            foto menor no próximo treino.
                         </p>
                     )}
                 </div>
