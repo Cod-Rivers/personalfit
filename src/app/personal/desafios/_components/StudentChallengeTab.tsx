@@ -2,7 +2,19 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
-import { FiAward, FiMail, FiShield, FiUserPlus, FiUsers } from 'react-icons/fi';
+import {
+    FiAward,
+    FiInstagram,
+    FiMail,
+    FiMessageCircle,
+    FiShare2,
+    FiShield,
+    FiUserPlus,
+    FiUsers,
+} from 'react-icons/fi';
+import ExternalLink from '@/components/atoms/ExternalLink';
+import ShareAchievementModal from '@/components/features/ShareAchievementModal';
+import { GROUP_PLATFORM_LABEL } from '@/libs/studentChallengeAntiFraudService';
 import { usePersonalStudents } from '@/hooks/usePersonalStudents';
 import { getUser } from '@/libs/session';
 import Modal from '@/components/system/Modal';
@@ -67,6 +79,14 @@ function activeParticipantCount(c: StudentChallenge): number {
  */
 function hasStarted(c: StudentChallenge): boolean {
     return c.start_date < todayISO();
+}
+
+/** Links de grupo/redes do desafio, resolvendo o campo antigo (`group`, um
+ * link só) e o atual (`groups`) num lugar só — desafio gravado antes dos
+ * múltiplos links continua trazendo apenas o primeiro, e não há backfill. */
+function groupLinksOf(c: StudentChallenge) {
+    if (c.groups && c.groups.length > 0) return c.groups;
+    return c.group ? [c.group] : [];
 }
 
 const MODE_LABEL: Record<StudentChallengeMode, string> = {
@@ -179,6 +199,11 @@ export default function StudentChallengeTab() {
     const [reviewTarget, setReviewTarget] =
         useState<StudentChallenge | null>(null);
     const [extrasTarget, setExtrasTarget] =
+        useState<StudentChallenge | null>(null);
+    // Desafio que o personal escolheu divulgar. O card sai com a marca do
+    // app: é peça de captação, e a captação é dele e da plataforma ao mesmo
+    // tempo.
+    const [shareTarget, setShareTarget] =
         useState<StudentChallenge | null>(null);
 
     const [modeTarget, setModeTarget] = useState<StudentChallenge | null>(null);
@@ -708,6 +733,41 @@ export default function StudentChallengeTab() {
                     </div>
                 )}
 
+                {/* O que o ALUNO vê como grupo/redes deste desafio. Fica no
+                    card do personal para ele conferir de fora o que ofereceu
+                    — link de convite de grupo expira e é revogado, e sem isto
+                    só o aluno descobriria (e provavelmente não avisaria). */}
+                {groupLinksOf(c).length > 0 ? (
+                    <div className={s.groupLinks}>
+                        <span className={s.groupLinksLabel}>
+                            Grupo e redes do desafio
+                        </span>
+                        {groupLinksOf(c).map((link) => (
+                            <ExternalLink
+                                key={link.url}
+                                href={link.url}
+                                className={s.groupLinkChip}
+                            >
+                                {link.platform === 'instagram' ? (
+                                    <FiInstagram />
+                                ) : (
+                                    <FiMessageCircle />
+                                )}
+                                {GROUP_PLATFORM_LABEL[link.platform]}
+                            </ExternalLink>
+                        ))}
+                    </div>
+                ) : (
+                    owner && (
+                        <p className={s.groupLinksEmpty}>
+                            Sem grupo ou rede neste desafio. Em
+                            &ldquo;Antifraude, prêmio, conteúdo e grupo&rdquo;
+                            você cola o convite do WhatsApp/Telegram e o seu
+                            Instagram — eles aparecem na tela do aluno.
+                        </p>
+                    )
+                )}
+
                 <div className={s.cardActions}>
                     <button
                         className={s.btnAction}
@@ -753,9 +813,16 @@ export default function StudentChallengeTab() {
                             className={s.btnAction}
                             onClick={() => setExtrasTarget(c)}
                         >
-                            <FiAward /> Antifraude, prêmio e conteúdo
+                            <FiAward /> Antifraude, prêmio, conteúdo e grupo
                         </button>
                     )}
+
+                    <button
+                        className={s.btnAction}
+                        onClick={() => setShareTarget(c)}
+                    >
+                        <FiShare2 /> Compartilhar
+                    </button>
 
                     {owner && c.status === 'active' && !hasStarted(c) && (
                         <button
@@ -1291,6 +1358,38 @@ export default function StudentChallengeTab() {
                     challenge={extrasTarget}
                     onClose={() => setExtrasTarget(null)}
                     onSaved={() => void load()}
+                />
+            )}
+
+            {shareTarget && (
+                <ShareAchievementModal
+                    open
+                    onClose={() => setShareTarget(null)}
+                    title="Divulgar desafio"
+                    card={{
+                        headline: shareTarget.name,
+                        subline: shareTarget.description || 'Desafio de constância',
+                        stats: [
+                            {
+                                label: 'participantes',
+                                value: String(participantsCount(shareTarget)),
+                            },
+                            {
+                                label: 'dias',
+                                value: String(
+                                    windowDaysBetween(
+                                        shareTarget.start_date,
+                                        shareTarget.end_date,
+                                    ),
+                                ),
+                            },
+                        ],
+                        callToAction: 'Desafio dos meus alunos no',
+                    }}
+                    captionLines={[
+                        `Desafio "${shareTarget.name}" rolando com meus alunos.`,
+                        'Quer treinar comigo? Chama no direct.',
+                    ]}
                 />
             )}
 

@@ -211,3 +211,18 @@
     font-size: 0.9rem;
     margin-bottom: 10px;
 }
+
+/* Uma linha do formulário de links de grupo/redes: o campo do link, o aviso
+   de link inválido e a observação. A borda só entre linhas deixa claro que
+   são registros independentes, sem transformar a seção numa tabela. */
+.groupLinkRow {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.groupLinkRow + .groupLinkRow {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-subtle);
+}

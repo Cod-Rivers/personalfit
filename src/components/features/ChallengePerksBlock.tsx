@@ -5,14 +5,32 @@ import {
     FiAward,
     FiBookOpen,
     FiExternalLink,
+    FiInstagram,
     FiLock,
     FiMessageCircle,
 } from 'react-icons/fi';
 import {
     getMyChallengeContent,
+    GROUP_PLATFORM_LABEL,
     type ChallengeContent,
+    type ChallengeGroup,
 } from '@/libs/studentChallengeAntiFraudService';
 import s from './ChallengePerksBlock.module.css';
+
+/** Aviso por plataforma, porque o risco NÃO é o mesmo em todas.
+ *
+ * Entrar num grupo de WhatsApp expõe o telefone do aluno aos demais
+ * participantes — é um dado pessoal indo para terceiros, e ele precisa saber
+ * disso ANTES de tocar no botão. Telegram expõe o @usuário (ou o telefone,
+ * conforme a configuração dele), e o Instagram só leva para um perfil
+ * público, onde seguir é decisão dele e não há exposição automática. */
+const GROUP_PRIVACY_WARNING: Record<ChallengeGroup['platform'], string> = {
+    whatsapp:
+        'Ao entrar, seu número de telefone fica visível para os outros participantes.',
+    telegram:
+        'Ao entrar, seu nome de usuário do Telegram fica visível para os outros participantes.',
+    instagram: '',
+};
 
 interface Props {
     challengeId: string;
@@ -69,8 +87,17 @@ export default function ChallengePerksBlock({
         );
     }
 
-    const { prize, group, workout, nutrition_guide: guide } = content;
-    if (!prize && !group && !workout && !guide) return null;
+    const { prize, workout, nutrition_guide: guide } = content;
+    // `groups` é a lista atual; `group` é o campo antigo, de um link só, que
+    // ainda chega de desafios gravados antes dos múltiplos links. Resolver
+    // isso aqui evita espalhar a dúvida pelo resto da tela.
+    const groups: ChallengeGroup[] =
+        content.groups && content.groups.length > 0
+            ? content.groups
+            : content.group
+              ? [content.group]
+              : [];
+    if (!prize && groups.length === 0 && !workout && !guide) return null;
 
     return (
         <div className={s.block}>
@@ -96,37 +123,51 @@ export default function ChallengePerksBlock({
                 </section>
             )}
 
-            {group && (
+            {groups.length > 0 && (
                 <section className={s.card}>
                     <h4 className={s.cardTitle}>
-                        <FiMessageCircle aria-hidden="true" /> Grupo do desafio
+                        <FiMessageCircle aria-hidden="true" /> Grupo e redes do
+                        desafio
                     </h4>
-                    {group.note && <p className={s.text}>{group.note}</p>}
-                    <p className={s.warn}>
-                        Ao entrar, seu número de telefone fica visível para os
-                        outros participantes. Participar do grupo é opcional e
-                        não afeta sua pontuação.
+                    <p className={s.meta}>
+                        Entrar é opcional e não afeta a sua pontuação.
                     </p>
-                    {/*
-                      Navegação na MESMA janela, de propósito. Dentro do app
-                      Android, um link com target="_blank" simplesmente não faz
-                      nada (a WebView não implementa onCreateWindow); já a
-                      navegação normal cai em shouldOverrideUrlLoading e abre o
-                      WhatsApp/Telegram nativo.
-                    */}
-                    <button
-                        type="button"
-                        className={s.btnGroup}
-                        onClick={() => {
-                            window.location.href = group.url;
-                        }}
-                    >
-                        <FiExternalLink aria-hidden="true" />
-                        Abrir grupo no{' '}
-                        {group.platform === 'whatsapp'
-                            ? 'WhatsApp'
-                            : 'Telegram'}
-                    </button>
+                    {groups.map((group) => {
+                        const warning = GROUP_PRIVACY_WARNING[group.platform];
+                        const isInstagram = group.platform === 'instagram';
+                        return (
+                            <div key={group.url} className={s.groupRow}>
+                                {group.note && (
+                                    <p className={s.text}>{group.note}</p>
+                                )}
+                                {warning && <p className={s.warn}>{warning}</p>}
+                                {/*
+                                  Navegação na MESMA janela, de propósito.
+                                  Dentro do app Android, um link com
+                                  target="_blank" simplesmente não faz nada (a
+                                  WebView não implementa onCreateWindow); já a
+                                  navegação normal cai em
+                                  shouldOverrideUrlLoading e abre o app nativo
+                                  correspondente.
+                                */}
+                                <button
+                                    type="button"
+                                    className={s.btnGroup}
+                                    onClick={() => {
+                                        window.location.href = group.url;
+                                    }}
+                                >
+                                    {isInstagram ? (
+                                        <FiInstagram aria-hidden="true" />
+                                    ) : (
+                                        <FiExternalLink aria-hidden="true" />
+                                    )}
+                                    {isInstagram ? 'Abrir no ' : 'Abrir grupo no '}
+                                    {GROUP_PLATFORM_LABEL[group.platform]}
+                                </button>
+                            </div>
+                        );
+                    })}
                 </section>
             )}
 

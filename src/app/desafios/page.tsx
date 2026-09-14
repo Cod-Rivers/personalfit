@@ -2,7 +2,14 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiAward, FiArrowLeft, FiLogOut, FiAlertCircle } from 'react-icons/fi';
+import {
+    FiAward,
+    FiArrowLeft,
+    FiLogOut,
+    FiAlertCircle,
+    FiShare2,
+} from 'react-icons/fi';
+import ShareAchievementModal from '@/components/features/ShareAchievementModal';
 import { getToken, getUser, getStudentHomeRoute } from '@/libs/session';
 import StudentChallengeLeaderboard from '@/components/features/StudentChallengeLeaderboard';
 import StudentChallengeTeamLeaderboard from '@/components/features/StudentChallengeTeamLeaderboard';
@@ -21,6 +28,7 @@ import {
     isMultiPersonal,
     type StudentChallenge,
     type StudentChallengeLeaderboard as Leaderboard,
+    type LeaderboardEntry,
 } from '@/libs/studentChallengeService';
 import s from '../agendamentos/agendamentos.module.css';
 import ms from './desafios.module.css';
@@ -44,6 +52,14 @@ export default function MyStudentChallengesPage() {
         null,
     );
     const [optOutTargetId, setOptOutTargetId] = useState<string | null>(null);
+    // Desafio que o aluno escolheu compartilhar. `entry` é a linha DELE no
+    // mural (pode faltar: mural ainda carregando, ou aluno que entrou hoje e
+    // ainda não pontuou) — e nesse caso o card sai só com o nome do desafio,
+    // sem números inventados.
+    const [shareTarget, setShareTarget] = useState<{
+        challenge: StudentChallenge;
+        entry: LeaderboardEntry | null;
+    } | null>(null);
 
     const load = useCallback(async () => {
         try {
@@ -312,21 +328,51 @@ export default function MyStudentChallengesPage() {
                                                             </div>
                                                         )}
                                                     </div>
-                                                    <button
-                                                        className={ms.btnLeave}
-                                                        onClick={() =>
-                                                            handleOptOut(c)
-                                                        }
-                                                        disabled={
-                                                            optOutTargetId ===
-                                                            c.id
+                                                    <div
+                                                        className={
+                                                            ms.cardActions
                                                         }
                                                     >
-                                                        <FiLogOut />{' '}
-                                                        {optOutTargetId === c.id
-                                                            ? 'Saindo…'
-                                                            : 'Sair do desafio'}
-                                                    </button>
+                                                        <button
+                                                            className={
+                                                                ms.btnShare
+                                                            }
+                                                            onClick={() =>
+                                                                setShareTarget({
+                                                                    challenge: c,
+                                                                    entry:
+                                                                        lb?.entries.find(
+                                                                            (
+                                                                                e,
+                                                                            ) =>
+                                                                                e.is_self,
+                                                                        ) ??
+                                                                        null,
+                                                                })
+                                                            }
+                                                        >
+                                                            <FiShare2 />{' '}
+                                                            Compartilhar
+                                                        </button>
+                                                        <button
+                                                            className={
+                                                                ms.btnLeave
+                                                            }
+                                                            onClick={() =>
+                                                                handleOptOut(c)
+                                                            }
+                                                            disabled={
+                                                                optOutTargetId ===
+                                                                c.id
+                                                            }
+                                                        >
+                                                            <FiLogOut />{' '}
+                                                            {optOutTargetId ===
+                                                            c.id
+                                                                ? 'Saindo…'
+                                                                : 'Sair do desafio'}
+                                                        </button>
+                                                    </div>
                                                 </div>
 
                                                 {/* Fotos recusadas: o aluno
@@ -436,6 +482,60 @@ export default function MyStudentChallengesPage() {
                     }}
                 />
             )}
+
+            {shareTarget && (
+                <ShareAchievementModal
+                    open
+                    onClose={() => setShareTarget(null)}
+                    title="Compartilhar desafio"
+                    card={{
+                        headline: challengeHeadline(shareTarget.entry),
+                        subline: shareTarget.challenge.name,
+                        stats: challengeShareStats(shareTarget.entry),
+                        callToAction: 'Estou no desafio pelo',
+                    }}
+                    captionLines={[
+                        `Participando do desafio "${shareTarget.challenge.name}" com meu personal.`,
+                        challengeShareStats(shareTarget.entry)
+                            .map((st) => `${st.value} ${st.label}`)
+                            .join(' · '),
+                    ]}
+                />
+            )}
         </div>
     );
+}
+
+/** Chamada do card do desafio. Sem linha no mural (aluno recém-entrado, ou
+ * mural ainda carregando) o card fala do desafio, não de um desempenho que
+ * ainda não existe. */
+function challengeHeadline(entry: LeaderboardEntry | null): string {
+    if (!entry) return 'Aceitei o desafio';
+    if (entry.current_streak > 1) {
+        return `${entry.current_streak} dias seguidos treinando`;
+    }
+    return 'Aceitei o desafio';
+}
+
+/** Números do aluno no mural. Só entram os que existem: "0 dias" num post é
+ * pior que nenhum número. */
+function challengeShareStats(entry: LeaderboardEntry | null) {
+    if (!entry) return [];
+    const stats: Array<{ label: string; value: string }> = [];
+    if (entry.rank > 0) {
+        stats.push({ label: 'lugar no mural', value: `${entry.rank}º` });
+    }
+    if (entry.current_streak > 0) {
+        stats.push({
+            label: 'dias seguidos',
+            value: String(entry.current_streak),
+        });
+    }
+    if (entry.total_qualifying_days > 0) {
+        stats.push({
+            label: 'treinos no desafio',
+            value: String(entry.total_qualifying_days),
+        });
+    }
+    return stats;
 }

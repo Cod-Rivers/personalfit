@@ -124,8 +124,10 @@ export interface ChallengePrize {
     delivery_pending: boolean;
 }
 
+export type GroupPlatform = 'whatsapp' | 'telegram' | 'instagram';
+
 export interface ChallengeGroup {
-    platform: 'whatsapp' | 'telegram';
+    platform: GroupPlatform;
     url: string;
     note?: string;
 }
@@ -164,7 +166,10 @@ export interface ChallengeContent {
     has_content: boolean;
     workout?: ChallengeWorkout;
     nutrition_guide?: ChallengeGuide;
+    /** Primeiro link, repetido pelo servidor para os clientes em cache que
+     * ainda não conhecem `groups`. Telas novas leem `groups`. */
     group?: ChallengeGroup;
+    groups?: ChallengeGroup[];
     prize?: ChallengePrize;
 }
 
@@ -330,7 +335,15 @@ export async function setChallengeContent(
 
 export async function setChallengeGroup(
     challengeId: string,
-    payload: { remove?: boolean; url?: string; note?: string },
+    payload: {
+        remove?: boolean;
+        /** Forma atual: até três links (grupo de conversa + redes). */
+        links?: Array<{ url: string; note?: string }>;
+        /** Forma original, de um link só. O backend continua aceitando as
+         * duas, então quem só tem um link pode seguir mandando assim. */
+        url?: string;
+        note?: string;
+    },
 ): Promise<void> {
     await Api.put(`/student-challenges/${challengeId}/group`, payload);
 }
@@ -353,15 +366,30 @@ export async function getMyChallengeContent(
  * Comparação de host EXATA, igual à do backend — `endsWith` deixaria passar
  * `chat.whatsapp.com.algumacoisa.com`.
  */
-const GROUP_HOSTS: Record<string, 'whatsapp' | 'telegram'> = {
+const GROUP_HOSTS: Record<string, GroupPlatform> = {
     'chat.whatsapp.com': 'whatsapp',
     't.me': 'telegram',
     'telegram.me': 'telegram',
+    // Dois usos legítimos e diferentes do Instagram: `ig.me/j/...` é convite
+    // de GRUPO de mensagens, e `instagram.com/<perfil>` é o perfil do
+    // personal — que é o que a maioria tem para oferecer.
+    'instagram.com': 'instagram',
+    'www.instagram.com': 'instagram',
+    'ig.me': 'instagram',
+};
+
+/** Nome de cada plataforma na interface. Fica aqui, e não em cada tela, para
+ * o formulário do personal e o botão do aluno chamarem a mesma coisa pelo
+ * mesmo nome. */
+export const GROUP_PLATFORM_LABEL: Record<GroupPlatform, string> = {
+    whatsapp: 'WhatsApp',
+    telegram: 'Telegram',
+    instagram: 'Instagram',
 };
 
 export function validateGroupUrl(
     raw: string,
-): { ok: true; platform: 'whatsapp' | 'telegram' } | { ok: false } {
+): { ok: true; platform: GroupPlatform } | { ok: false } {
     try {
         const url = new URL(raw.trim());
         if (url.protocol !== 'https:') return { ok: false };

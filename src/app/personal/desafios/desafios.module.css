@@ -572,3 +572,40 @@
     margin-top: 3px;
     flex-shrink: 0;
 }
+
+/* Grupo e redes do desafio, na visão do personal: as mesmas portas que o
+   aluno vê, para ele conferir de fora o que ofereceu (link de convite de
+   grupo expira e é revogado). Chips com flex-wrap — sem isso estouram o card
+   no celular, que é o bug recorrente do projeto. */
+.groupLinks {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.groupLinksLabel {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+.groupLinkChip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border-mid);
+    background: var(--surface-2);
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.groupLinksEmpty {
+    margin: 12px 0 0;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}

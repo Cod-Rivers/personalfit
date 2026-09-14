@@ -129,13 +129,19 @@ export interface StudentChallenge {
     };
     /** Existe material exclusivo (treino geral, guia alimentar ou grupo). */
     has_exclusive_content?: boolean;
-    /** Link do grupo. Só vem para quem PODE vê-lo — o convidado recebe
-     * `undefined` mesmo quando o desafio tem grupo. */
-    group?: {
-        platform: 'whatsapp' | 'telegram';
-        url: string;
-        note?: string;
-    };
+    /** Primeiro link de grupo/rede, repetido pelo servidor para os clientes
+     * em cache que ainda não conhecem `groups`. Só vem para quem PODE vê-lo —
+     * o convidado recebe `undefined` mesmo quando o desafio tem grupo. */
+    group?: ChallengeGroupLink;
+    /** Lista completa (WhatsApp, Telegram, Instagram), mesmo portão de
+     * visibilidade de `group`. */
+    groups?: ChallengeGroupLink[];
+}
+
+export interface ChallengeGroupLink {
+    platform: 'whatsapp' | 'telegram' | 'instagram';
+    url: string;
+    note?: string;
 }
 
 export interface LeaderboardEntry {

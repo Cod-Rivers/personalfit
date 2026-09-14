@@ -130,3 +130,18 @@
     color: var(--text-secondary);
     white-space: pre-wrap;
 }
+
+/* Uma linha por link de grupo/rede. O separador só aparece entre linhas
+   (a primeira não tem borda em cima) para o bloco não parecer uma lista
+   solta quando há um link só. */
+.groupRow {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.groupRow + .groupRow {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-subtle);
+}

@@ -7,7 +7,9 @@ import {
     FiSend,
     FiLink,
     FiCheck,
+    FiShare2,
 } from 'react-icons/fi';
+import ShareAchievementModal from '@/components/features/ShareAchievementModal';
 import {
     listChallenges,
     createChallenge,
@@ -40,6 +42,9 @@ export default function DesafiosPage() {
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [expanded, setExpanded] = useState<string | null>(null);
+    // Desafio de captação que o personal escolheu divulgar. O card leva o
+    // link público na legenda — é ele que transforma quem viu em inscrito.
+    const [shareTarget, setShareTarget] = useState<Challenge | null>(null);
 
     // form state
     const [name, setName] = useState('');
@@ -319,6 +324,12 @@ export default function DesafiosPage() {
                                     </button>
                                     <button
                                         className={s.btnAction}
+                                        onClick={() => setShareTarget(c)}
+                                    >
+                                        <FiShare2 /> Compartilhar
+                                    </button>
+                                    <button
+                                        className={s.btnAction}
                                         onClick={() =>
                                             setExpanded(
                                                 expanded === c.id ? null : c.id,
@@ -411,6 +422,35 @@ export default function DesafiosPage() {
                     </div>
                 ))}
             </div>
+
+            {shareTarget && (
+                <ShareAchievementModal
+                    open
+                    onClose={() => setShareTarget(null)}
+                    title="Divulgar desafio"
+                    card={{
+                        headline: shareTarget.name,
+                        subline:
+                            shareTarget.description ||
+                            `De ${fmt(shareTarget.start_date)} a ${fmt(shareTarget.end_date)}`,
+                        stats: [
+                            {
+                                label: 'inscritos',
+                                value: String(shareTarget.participant_count),
+                            },
+                        ],
+                        callToAction: 'Inscrições pelo link na bio —',
+                    }}
+                    captionLines={[
+                        `${shareTarget.name} — inscrições abertas.`,
+                        shareTarget.description || '',
+                        // O link público é o que converte quem viu em
+                        // inscrito, então ele vai na legenda (e não só na
+                        // imagem, de onde ninguém copia).
+                        challengePublicLink(shareTarget.public_token),
+                    ]}
+                />
+            )}
         </div>
     );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FiAward, FiBookOpen, FiShield, FiUsers } from 'react-icons/fi';
 import Modal from '@/components/system/Modal';
 import {
@@ -11,6 +11,7 @@ import {
     setChallengeGroup,
     setPrize,
     validateGroupUrl,
+    GROUP_PLATFORM_LABEL,
     type CountPolicy,
     type PoseDeck,
 } from '@/libs/studentChallengeAntiFraudService';
@@ -31,6 +32,16 @@ interface ExerciseRow {
     sets: string;
     reps: string;
     rest: string;
+}
+
+/** Uma linha do formulário de links. Espelha o teto do backend
+ * (maxGroupLinks): passar disso volta 400, e o formulário não deve oferecer
+ * o que o servidor recusa. */
+const MAX_GROUP_LINKS = 3;
+
+interface GroupLinkForm {
+    url: string;
+    note: string;
 }
 
 /**
@@ -92,9 +103,33 @@ export default function ChallengeExtrasModal({
     const [guideTitle, setGuideTitle] = useState('');
     const [guideBody, setGuideBody] = useState('');
 
-    // ── Grupo ──
-    const [groupUrl, setGroupUrl] = useState(challenge.group?.url ?? '');
-    const [groupNote, setGroupNote] = useState(challenge.group?.note ?? '');
+    // ── Grupo e redes ──
+    // `groups` é a lista atual; `group` é o campo antigo (um link só), que
+    // ainda vem preenchido em desafio gravado antes dos múltiplos links.
+    const savedGroupLinks = useMemo<GroupLinkForm[]>(() => {
+        const saved =
+            challenge.groups && challenge.groups.length > 0
+                ? challenge.groups
+                : challenge.group
+                  ? [challenge.group]
+                  : [];
+        return saved.map((g) => ({ url: g.url, note: g.note ?? '' }));
+    }, [challenge.groups, challenge.group]);
+    const [groupLinks, setGroupLinks] = useState<GroupLinkForm[]>(
+        savedGroupLinks.length > 0 ? savedGroupLinks : [{ url: '', note: '' }],
+    );
+
+    const updateGroupLink = (index: number, patch: Partial<GroupLinkForm>) => {
+        setGroupLinks((prev) =>
+            prev.map((l, i) => (i === index ? { ...l, ...patch } : l)),
+        );
+    };
+
+    // Salvar exige que TODA linha preenchida seja válida. Linha em branco não
+    // invalida nada — é o campo que o personal não usou.
+    const groupLinksValid = groupLinks.every(
+        (l) => l.url.trim() === '' || validateGroupUrl(l.url).ok,
+    );
 
     const loadDecks = useCallback(async () => {
         try {
@@ -586,73 +621,123 @@ export default function ChallengeExtrasModal({
             {section === 'group' && (
                 <section className={s.section}>
                     <p className={s.explain}>
-                        Cole o link de convite do grupo de WhatsApp ou Telegram.
-                        Ele aparece só para quem aceitou o desafio.
+                        Cole aqui o convite do grupo de WhatsApp ou Telegram e o
+                        seu Instagram. Os links aparecem para quem aceitou o
+                        desafio, na tela do desafio do aluno.
                     </p>
                     <p className={s.warn}>
-                        A Venafit não modera esse grupo, e quem sair do desafio
-                        continua lá dentro — tirar é trabalho manual seu.
+                        A Venafit não modera esses grupos, e quem sair do
+                        desafio continua lá dentro — tirar é trabalho manual
+                        seu.
                     </p>
 
-                    <label className={s.label}>Link do grupo</label>
-                    <input
-                        className={s.input}
-                        placeholder="https://chat.whatsapp.com/… ou https://t.me/…"
-                        value={groupUrl}
-                        onChange={(e) => setGroupUrl(e.target.value)}
-                    />
-                    {groupUrl.trim() !== '' &&
-                        !validateGroupUrl(groupUrl).ok && (
-                            <p className={s.warn}>
-                                Só aceitamos links de convite do WhatsApp
-                                (chat.whatsapp.com) e do Telegram (t.me).
-                            </p>
-                        )}
+                    {groupLinks.map((link, i) => {
+                        const invalid =
+                            link.url.trim() !== '' &&
+                            !validateGroupUrl(link.url).ok;
+                        const platform = validateGroupUrl(link.url);
+                        return (
+                            <div key={i} className={s.groupLinkRow}>
+                                <label className={s.label}>
+                                    Link {i + 1}
+                                    {platform.ok
+                                        ? ` — ${GROUP_PLATFORM_LABEL[platform.platform]}`
+                                        : ''}
+                                </label>
+                                <input
+                                    className={s.input}
+                                    placeholder="https://chat.whatsapp.com/… , https://t.me/… ou https://instagram.com/…"
+                                    value={link.url}
+                                    onChange={(e) =>
+                                        updateGroupLink(i, {
+                                            url: e.target.value,
+                                        })
+                                    }
+                                />
+                                {invalid && (
+                                    <p className={s.warn}>
+                                        Aceitamos convite de grupo do WhatsApp
+                                        (chat.whatsapp.com), do Telegram (t.me)
+                                        e do Instagram (instagram.com ou
+                                        ig.me), sempre em https.
+                                    </p>
+                                )}
+                                <input
+                                    className={s.input}
+                                    maxLength={200}
+                                    placeholder="Observação (opcional). Ex.: regras no fixado do grupo"
+                                    value={link.note}
+                                    onChange={(e) =>
+                                        updateGroupLink(i, {
+                                            note: e.target.value,
+                                        })
+                                    }
+                                />
+                            </div>
+                        );
+                    })}
 
-                    <label className={s.label}>Observação (opcional)</label>
-                    <input
-                        className={s.input}
-                        maxLength={200}
-                        placeholder="Ex.: regras no fixado do grupo"
-                        value={groupNote}
-                        onChange={(e) => setGroupNote(e.target.value)}
-                    />
+                    {groupLinks.length < MAX_GROUP_LINKS && (
+                        <button
+                            type="button"
+                            className={s.btnGhost}
+                            onClick={() =>
+                                setGroupLinks((prev) => [
+                                    ...prev,
+                                    { url: '', note: '' },
+                                ])
+                            }
+                        >
+                            + Adicionar outro link
+                        </button>
+                    )}
 
                     <div className={s.actions}>
-                        {challenge.group && (
+                        {savedGroupLinks.length > 0 && (
                             <button
                                 type="button"
                                 className={s.btnDanger}
                                 disabled={saving}
                                 onClick={() =>
-                                    void run(
-                                        () =>
-                                            setChallengeGroup(challenge.id, {
-                                                remove: true,
-                                            }),
-                                        'Link removido.',
-                                    )
+                                    void run(async () => {
+                                        await setChallengeGroup(challenge.id, {
+                                            remove: true,
+                                        });
+                                        setGroupLinks([{ url: '', note: '' }]);
+                                    }, 'Links removidos.')
                                 }
                             >
-                                Remover link
+                                Remover todos
                             </button>
                         )}
                         <button
                             type="button"
                             className={s.btnPrimary}
-                            disabled={saving || !validateGroupUrl(groupUrl).ok}
+                            disabled={saving || !groupLinksValid}
                             onClick={() =>
-                                void run(
-                                    () =>
-                                        setChallengeGroup(challenge.id, {
-                                            url: groupUrl,
-                                            note: groupNote,
-                                        }),
-                                    'Link do grupo salvo.',
-                                )
+                                void run(() => {
+                                    const links = groupLinks
+                                        .filter((l) => l.url.trim() !== '')
+                                        .map((l) => ({
+                                            url: l.url.trim(),
+                                            note: l.note.trim(),
+                                        }));
+                                    // Formulário esvaziado é remoção: o
+                                    // endpoint recusa lista vazia (URL em
+                                    // branco é erro de digitação em quem quis
+                                    // salvar um link), então quem apagou tudo
+                                    // está pedindo para remover.
+                                    return links.length === 0
+                                        ? setChallengeGroup(challenge.id, {
+                                              remove: true,
+                                          })
+                                        : setChallengeGroup(challenge.id, {
+                                              links,
+                                          });
+                                }, 'Links salvos.')
                             }
                         >
-                            Salvar link
+                            Salvar links
                         </button>
                     </div>
                 </section>
