@@ -192,3 +192,26 @@
     margin-top: 0.35rem;
     margin-bottom: 0.35rem;
 }
+
+/* Convite para compartilhar o treino nas redes. Secundário de propósito: o
+   assunto da tela continua sendo registrar o treino, e o botão principal
+   (Finalizar) não pode competir com ele. */
+.compartilharBtn {
+    margin-top: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    background: var(--surface-2);
+    border: 1px solid var(--border-mid);
+    border-radius: 0.75rem;
+    cursor: pointer;
+}
+
+.compartilharBtn:active {
+    transform: scale(0.98);
+}

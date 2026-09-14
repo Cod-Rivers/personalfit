@@ -1,0 +1,152 @@
+/* Tela de compartilhamento (foto de check-in e conquistas do desafio).
+   Cores por token (rules/css-design-tokens.md). */
+
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+}
+
+.intro {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+}
+
+.previewBox {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 12rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    background: var(--surface-3);
+    overflow: hidden;
+}
+
+.preview {
+    display: block;
+    width: 100%;
+    max-width: 22rem;
+    height: auto;
+    border-radius: 10px;
+}
+
+.previewLoading {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 2rem 0;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.btnPrimary,
+.btnSecondary,
+.btnGhost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    /* flex-shrink fica no padrão (1) de propósito: com flex-wrap acima, botão
+       que não encolhe estoura o card em tela estreita. */
+    flex: 1 1 10rem;
+    padding: 0.7rem 1rem;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+
+.btnPrimary {
+    background: var(--grad-mint);
+    color: var(--btn-text);
+}
+
+.btnPrimary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btnSecondary {
+    background: var(--surface-2);
+    border-color: var(--border-mid);
+    color: var(--text-primary);
+}
+
+.btnGhost {
+    background: transparent;
+    border-color: var(--border-mid);
+    color: var(--text-secondary);
+}
+
+.captionBox {
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    background: var(--surface-2);
+    padding: 0.5rem 0.75rem;
+}
+
+.captionSummary {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.caption {
+    margin: 0.5rem 0 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-family: inherit;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+}
+
+.okBanner,
+.warnBanner,
+.errorBanner {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    border: 1px solid var(--border-subtle);
+}
+
+.okBanner {
+    background: var(--mint-glow);
+    color: var(--mint-text);
+}
+
+.warnBanner {
+    background: var(--surface-2);
+    color: var(--amber-text);
+}
+
+.errorBanner {
+    background: var(--surface-2);
+    color: var(--coral-dim);
+}

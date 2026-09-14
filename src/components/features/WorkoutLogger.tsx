@@ -87,8 +87,32 @@ interface WorkoutLoggerProps {
      * guardada localmente (cota de armazenamento estourada ou falha ao
      * comprimir) — o treino em si está enfileirado normalmente, só a foto
      * se perdeu; quem chama decide como avisar. */
-    onQueued: (info?: { photoDiscarded?: boolean }) => void;
+    onQueued: (info?: {
+        photoDiscarded?: boolean;
+        /** Material para a tela de compartilhamento nas redes, quando ela
+         * fizer sentido. Vai junto do aviso de enfileiramento porque é o
+         * ÚNICO instante em que a foto ainda existe como arquivo em memória:
+         * depois disso ela é só uma linha comprimida no IndexedDB a caminho
+         * do R2, e reconstituí-la para o card custaria uma volta de rede que
+         * nem sempre existe (o check-in offline é o caso de uso). */
+        share?: WorkoutShareData;
+    }) => void;
     autoregulation?: AutoregulationHint;
+}
+
+/** O que a tela de compartilhamento precisa saber sobre o treino recém
+ * concluído. Montado aqui porque é aqui que esses números existem. */
+export interface WorkoutShareData {
+    /** A foto do check-in, ou null quando o aluno confirmou sem foto — o
+     * card continua sendo gerado, só que sobre o fundo da marca. */
+    photo: File | null;
+    trainingName: string;
+    exerciseCount: number;
+    durationMinutes: number | null;
+    /** Soma de reps × carga de todas as séries registradas, em kg. Zero em
+     * treino sem carga (corrida, mobilidade), e nesse caso a tela não
+     * exibe o número em vez de exibir "0 kg". */
+    volumeKg: number;
 }
 
 interface ExerciseLog {
@@ -397,7 +421,32 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                         err,
                     );
                 }
-                onQueued(photoDiscarded ? { photoDiscarded: true } : undefined);
+                // Volume do dia: só o que o aluno REGISTROU, nunca o que
+                // estava prescrito — o card vai para fora do app com o nome
+                // dele embaixo, então o número precisa ser o que aconteceu.
+                const volumeKg = logs.reduce(
+                    (total, ex) =>
+                        total +
+                        ex.series.reduce(
+                            (sum, sr) => sum + sr.reps * sr.loadKg,
+                            0,
+                        ),
+                    0,
+                );
+
+                onQueued({
+                    photoDiscarded: photoDiscarded || undefined,
+                    share: {
+                        // A foto descartada (cota estourada) não vira card:
+                        // prometer uma imagem que não temos seria pior que
+                        // não oferecer o compartilhamento.
+                        photo: photoDiscarded ? null : checkIn.photoFile,
+                        trainingName: training.reference,
+                        exerciseCount: logs.length,
+                        durationMinutes: duration ?? null,
+                        volumeKg: Math.round(volumeKg),
+                    },
+                });
             } catch (err) {
                 // Só chega aqui se a própria escrita no IndexedDB falhar (quota,
                 // navegador sem suporte) — não é mais possível um erro de rede

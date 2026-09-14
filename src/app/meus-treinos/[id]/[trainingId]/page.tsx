@@ -12,6 +12,7 @@ import {
     FiCheck,
     FiSave,
     FiAlertTriangle,
+    FiShare2,
 } from 'react-icons/fi';
 import { getStudentHomeRoute } from '@/libs/session';
 import {
@@ -26,7 +27,10 @@ import {
 import { ExerciseLog } from '../../../../components/features/types';
 import ExerciseDetailCard from '../../../../components/features/ExerciseDetailCard';
 import ExerciseSubstitutionModal from '../../../../components/features/ExerciseSubstitutionModal';
-import WorkoutLogger from '../../../../components/features/WorkoutLogger';
+import WorkoutLogger, {
+    type WorkoutShareData,
+} from '../../../../components/features/WorkoutLogger';
+import ShareAchievementModal from '../../../../components/features/ShareAchievementModal';
 import { SubstitutionSuggestion } from '@/libs/aiSubstitutionAccessService';
 import SyncPendingBadge from '../../../../components/features/SyncPendingBadge';
 import styles from './TrainingPage.module.css';
@@ -127,6 +131,13 @@ export default function MeusTreinosExercisesPage({
     // -19 — sem isto, o aluno nunca saberia que a foto não foi salva).
     const [photoDiscardedWarning, setPhotoDiscardedWarning] = useState(false);
     const [showWorkoutLogger, setShowWorkoutLogger] = useState(false);
+    // Material do card de compartilhamento do treino recém-concluído. Fica
+    // NESTA página, e não dentro do WorkoutLogger, porque o diálogo de
+    // registro se fecha no instante da confirmação (é o que o aluno espera)
+    // e o convite para compartilhar precisa sobreviver a esse fechamento —
+    // inclusive para ser reaberto pelo botão do aviso de sucesso.
+    const [shareData, setShareData] = useState<WorkoutShareData | null>(null);
+    const [shareOpen, setShareOpen] = useState(false);
     const [currentMeso, setCurrentMeso] = useState<MesocycleResponse | null>(
         null,
     );
@@ -1033,6 +1044,15 @@ export default function MeusTreinosExercisesPage({
                             Erro ao finalizar. Tente novamente.
                         </p>
                     )}
+                    {shareData && !shareOpen && (
+                        <button
+                            type="button"
+                            className={styles.compartilharBtn}
+                            onClick={() => setShareOpen(true)}
+                        >
+                            <FiShare2 /> Compartilhar treino
+                        </button>
+                    )}
                     {photoDiscardedWarning && (
                         <p className={styles.finalizarWarning}>
                             <FiAlertTriangle /> O treino foi salvo, mas a foto do
@@ -1076,9 +1096,59 @@ export default function MeusTreinosExercisesPage({
                         setShowWorkoutLogger(false);
                         setSendStatus('queued');
                         if (info?.photoDiscarded) setPhotoDiscardedWarning(true);
+                        if (info?.share) {
+                            setShareData(info.share);
+                            // Abre sozinho SÓ quando há foto: aí o convite é
+                            // sobre algo que o aluno acabou de criar. Sem
+                            // foto, o card existe igual, mas quem decide
+                            // abri-lo é o botão do aviso de sucesso — abrir
+                            // um diálogo de divulgação por conta própria a
+                            // cada treino cansaria rápido.
+                            setShareOpen(!!info.share.photo);
+                        }
                     }}
+                />
+            )}
+            {shareData && (
+                <ShareAchievementModal
+                    open={shareOpen}
+                    onClose={() => setShareOpen(false)}
+                    title="Compartilhar treino"
+                    card={{
+                        photo: shareData.photo,
+                        headline: 'Treino concluído',
+                        subline: `Treino ${shareData.trainingName} · ${new Date().toLocaleDateString('pt-BR')}`,
+                        stats: workoutShareStats(shareData),
+                        callToAction: 'Meu treino de hoje, registrado no',
+                    }}
+                    captionLines={[
+                        `Treino ${shareData.trainingName} concluído. Mais um dia feito.`,
+                        workoutShareStats(shareData)
+                            .map((st) => `${st.value} ${st.label}`)
+                            .join(' · '),
+                    ]}
                 />
             )}
         </>
     );
+}
+
+/** Números que entram no card do treino. Cada um só aparece quando existe de
+ * verdade: "0 kg" ou "0 min" num post diz que o app não sabe o que
+ * aconteceu. */
+function workoutShareStats(data: WorkoutShareData) {
+    const stats: Array<{ label: string; value: string }> = [];
+    if (data.exerciseCount > 0) {
+        stats.push({ label: 'exercícios', value: String(data.exerciseCount) });
+    }
+    if (data.durationMinutes && data.durationMinutes > 0) {
+        stats.push({ label: 'minutos', value: String(data.durationMinutes) });
+    }
+    if (data.volumeKg > 0) {
+        stats.push({
+            label: 'kg levantados',
+            value: data.volumeKg.toLocaleString('pt-BR'),
+        });
+    }
+    return stats;
 }
