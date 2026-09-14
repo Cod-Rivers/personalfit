@@ -373,6 +373,7 @@ export default function PeriodizacaoDetalhePage() {
                             onDelete={() => deleteMeso(simpleMeso.id)}
                             simpleMode
                             dayLabelStyle={dayLabelStyle}
+                            onPersistMeso={onPersistMeso}
                         />
                     )
                 ) : (macro.mesocycles?.length ?? 0) === 0 ? (
@@ -389,6 +390,10 @@ export default function PeriodizacaoDetalhePage() {
                                 onEdit={() => openEditModal(meso)}
                                 onDelete={() => deleteMeso(meso.id)}
                                 onDuplicate={() => duplicateMeso(meso)}
+                                // Ajuste de série/carga direto no card do
+                                // exercício, sem abrir o editor de fase — é o
+                                // fluxo de quem está acompanhando o treino.
+                                onPersistMeso={onPersistMeso}
                             />
                         ))
                 )}

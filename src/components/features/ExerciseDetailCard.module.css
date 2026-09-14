@@ -1,1 +1,112 @@
 .exerciseTitle {    font-size: 1.2rem;    font-weight: 600;    color: var(--text-primary);    margin-bottom: 0.5rem;    padding-right: auto;}.contentLayout {    display: flex;    flex-direction: column;    gap: 1rem;    width: 100%;    align-items: center;}.thumbnailSection {    flex-shrink: 0;    width: 100%;    padding-bottom: 0;}.thumbnailLink {    display: block;    position: relative;    width: 100%;    max-width: 30rem;    margin-left: auto;    margin-right: auto;    aspect-ratio: 16 / 9;    border-top-left-radius: 10px;    border-top-right-radius: 10px;    border-bottom-left-radius: 0;    border-bottom-right-radius: 0;    overflow: hidden;    border: 1px solid var(--border-subtle);    background: #1a1a2e;    transform: scale(0.95) translateY(10px);    opacity: 0;    animation: slideInModal 0.28s 0.08s ease-out forwards;    transition: box-shadow 0.2s, border-color 0.2s;}.thumbnailLink:hover {    box-shadow: 0 0 0 2px var(--mint);    border-color: var(--mint);}.thumbnailLink:focus,.thumbnailLink:focus-visible {    outline: 2px solid var(--mint);    outline-offset: 2px;}.thumbnailImage {    position: absolute;    inset: 0;    width: 100%;    height: 100%;    object-fit: cover;    display: block;}.thumbnailPlaceholder {    position: absolute;    inset: 0;    display: flex;    align-items: center;    justify-content: center;    font-size: 2.5rem;}.playBadge {    position: absolute;    bottom: 6px;    right: 8px;    background: rgba(0,0,0,0.55);    border-radius: 4px;    padding: 2px 6px;    font-size: 11px;    color: #fff;    pointer-events: none;}.detailsSection {    display: flex;    flex-direction: column;    align-items: center;    font-size: 0.95rem;    color: var(--text-secondary);    width: 100%;    gap: 0.1rem;}.detailsSection p { margin-bottom: 0.2rem; line-height: 1; }.detailsSection strong { color: var(--text-primary); font-weight: 600; }.detailRow {    display: flex;    gap: 0.2rem;    align-items: baseline;    flex-direction: row;    width: 100%;}.detailRow strong {    font-weight: bold;    color: var(--text-primary);    margin-top: 0;    display: block;}.repet {    font-weight: bold;    color: var(--text-primary);    display: flex;    padding-right: 3rem;    flex-direction: column;}.valueBox {    border: 1px solid var(--border-mid);    border-radius: 1rem;    padding: 0.5rem;    background: var(--surface-2);    font-size: 1rem;    color: var(--text-primary);    display: flex;    gap: 0.3rem;    align-items: center;    margin-bottom: 0.25rem;    width: 110%;    height: 1.8rem;    transition: border-color 0.2s;}.valueBox:hover { border-color: var(--mint); }.valueBox strong { font-weight: 600; color: var(--mint); }.valueBox span { font-weight: 300; font-size: 1rem; color: var(--text-secondary); }.editIcon {    position: relative;    width: 1rem;    height: 1rem;    margin-left: auto;    color: var(--mint);    cursor: pointer;    opacity: 0.7;    transition: opacity 0.15s;}.editIcon::after {    content: '';    position: absolute;    inset: -10px;}.editIcon:hover { opacity: 1; }.timedInfo {    margin-top: 0.25rem;    font-size: 0.75rem;    font-weight: 600;    background: rgba(240,165,0,0.15);    color: var(--amber);    border: 1px solid rgba(240,165,0,0.25);    padding: 0.25rem 0.5rem;    border-radius: 4px;    display: inline-block;}.watchVideoLink {    margin-top: 0.5rem;    color: var(--mint);    font-weight: 500;    display: inline-flex;    align-items: center;    text-decoration: none;    transition: color 0.2s, text-shadow 0.2s;}.watchVideoLink:hover {    color: var(--mint-dim);    text-decoration: underline;    text-shadow: 0 0 8px rgba(15,252,190,0.4);}.notesSection {    display: flex;    flex-direction: column;    margin-top: 0;    border-top: 1px solid var(--border-subtle);    font-size: 0.7rem;    color: var(--text-secondary);    line-height: 1.5;}.notesSection strong {    display: block;    margin-bottom: 0.5rem;    color: var(--text-primary);    font-weight: 600;}.notesSection p { margin-left: auto; margin-right: auto; }.userAnnotationsInput {    background: var(--surface-2);    border-radius: 0.5rem;    border: 1px solid var(--border-subtle);    width: 100%;    color: var(--text-primary);    transition: border-color 0.15s;}.collapsibleCard{border:1px solid var(--border-subtle);border-radius:10px;overflow:hidden;width:100%;}.collapsibleToggle{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0.6rem 0.75rem;background:var(--surface-2);border:none;cursor:pointer;text-align:left;}.collapsibleTitle{display:block;font-size:0.85rem;font-weight:700;color:var(--text-primary);}.collapsibleChevron{color:var(--text-muted);flex-shrink:0;transition:transform 0.15s;}.collapsibleChevronOpen{color:var(--text-muted);flex-shrink:0;transition:transform 0.15s;transform:rotate(180deg);}.collapsibleBody{padding:0.75rem;display:flex;flex-direction:column;gap:0.5rem;}.userAnnotationsInput:focus {    outline: none;    border-color: var(--mint);    box-shadow: 0 0 0 2px rgba(15,252,190,0.2);}.timerControls { margin-top: 0; display: flex; flex-direction: row; justify-content: center; gap: 0.75rem; }.videoPlayerContainer {    position: relative;    padding-bottom: 56.25%;    height: 0;    overflow: hidden;    border-radius: 10px;}.videoIframe {    position: absolute;    top: 0; left: 0;    width: 100%; height: 100%;    border: none;}.restTimerSection {    margin-top: 0.5rem;    padding-top: 0.5rem;    border-top: 1px solid var(--border-subtle);    font-size: 0.875rem;    display: flex;    width: 100%;    flex-direction: column;    align-items: center;}.timerDisplay {    display: flex;    flex-direction: column;    align-items: center;    gap: 0.15rem;    margin: 0.5rem 0 1rem;    padding: 0;    background: transparent;}.timerValue {    font-size: 2rem;    font-weight: 700;    font-variant-numeric: tabular-nums;    letter-spacing: 0.03em;    color: var(--mint);    line-height: 1;}.timerLabel {    font-size: 0.75rem;    font-weight: 600;    color: var(--text-secondary);}@keyframes slideInModal {    from { opacity: 0; transform: scale(0.95) translateY(20px); }    to   { opacity: 1; transform: scale(1) translateY(0); }}@media (max-width: 375px) {    .exerciseTitle { font-size: 1rem; }    .detailsSection { font-size: 0.8rem; }    .valueBox { width: 95%; }}.recommendedWeightChip {    margin-left: auto;    background: rgba(15,252,190,0.1);    border: 1px dashed var(--mint);    color: var(--mint);    border-radius: 1rem;    padding: 0.25rem 0.6rem;    font-size: 0.75rem;    font-weight: 600;    cursor: pointer;    white-space: nowrap;    transition: background 0.15s, transform 0.15s;}.recommendedWeightChip:hover {    background: rgba(15,252,190,0.2);    transform: translateY(-1px);}.annotationsStatus {    margin-top: 0.5rem;    margin-bottom: 0;    font-size: 0.8rem;    color: var(--mint); display: flex; align-items: center; gap: 6px;}.annotationsStatusError {    margin-top: 0.5rem;    margin-bottom: 0;    font-size: 0.8rem;    color: var(--coral); display: flex; align-items: center; gap: 6px;}.noRestNotice {    text-align: center;    color: var(--mint);    font-size: 0.85rem;    margin: 0.5rem 0;}
+
+/* ── Edição de prescrição pelo personal (séries e carga) ──
+   valueBoxBtn é o .valueBox como botão: mesma caixa, mas acessível por
+   teclado e com alvo de toque de verdade — o personal usa isso de pé na
+   academia, com o aluno esperando. */
+.valueBoxBtn {
+    border: 1px solid var(--border-mid);
+    border-radius: 1rem;
+    padding: 0.5rem;
+    background: var(--surface-2);
+    font-size: 1rem;
+    color: var(--text-primary);
+    display: flex;
+    gap: 0.3rem;
+    align-items: center;
+    margin-bottom: 0.25rem;
+    width: 110%;
+    min-height: 2.25rem;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+.valueBoxBtn:hover { border-color: var(--mint); }
+.valueBoxBtn:focus-visible {
+    outline: 2px solid var(--mint);
+    outline-offset: 2px;
+}
+.valueBoxBtn span {
+    font-weight: 300;
+    font-size: 1rem;
+    color: var(--text-secondary);
+}
+.seriesEditRow {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.25rem;
+}
+.seriesNumInput {
+    width: 3.25rem;
+    min-height: 2.25rem;
+    padding: 0.35rem 0.4rem;
+    border: 1px solid var(--border-mid);
+    border-radius: 0.5rem;
+    background: var(--surface-2);
+    color: var(--text-primary);
+    font-size: 1rem;
+    text-align: center;
+}
+.seriesFreeInput {
+    flex: 1 1 8rem;
+    min-width: 0;
+    min-height: 2.25rem;
+    padding: 0.35rem 0.5rem;
+    border: 1px solid var(--border-mid);
+    border-radius: 0.5rem;
+    background: var(--surface-2);
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+.seriesNumInput:focus,
+.seriesFreeInput:focus {
+    outline: none;
+    border-color: var(--mint);
+    box-shadow: 0 0 0 2px rgba(15, 252, 190, 0.2);
+}
+.seriesUnit {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+.seriesEditConfirm,
+.seriesEditCancel {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-mid);
+    background: var(--surface-2);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.seriesEditConfirm {
+    color: var(--mint);
+    border-color: var(--mint);
+}
+.seriesEditCancel { color: var(--text-muted); }
+.seriesEditConfirm:focus-visible,
+.seriesEditCancel:focus-visible {
+    outline: 2px solid var(--mint);
+    outline-offset: 2px;
+}
+@media (max-width: 375px) {
+    .valueBoxBtn { width: 95%; }
+}
+/* Com a edição aberta, as séries precisam da linha inteira: dois campos, a
+   unidade e dois botões não cabem ao lado da coluna de carga num celular.
+   (Regra depois de .detailRow de propósito — mesma especificidade, vence.) */
+.detailRow { flex-wrap: wrap; }
+.repetEditing {
+    padding-right: 0;
+    flex: 1 1 100%;
+}
+.prescriptionHint {
+    margin: 0.35rem 0 0;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}

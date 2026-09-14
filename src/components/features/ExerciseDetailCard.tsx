@@ -12,6 +12,7 @@ import {
     FiChevronRight,
     FiAlertCircle,
     FiLock,
+    FiX,
 } from 'react-icons/fi';
 import { ExerciseLog } from './types';
 import styles from './ExerciseDetailCard.module.css';
@@ -40,6 +41,16 @@ import {
     setCachedWeight,
 } from '@/libs/exerciseWeightService';
 import { LoadSuggestion } from '@/libs/loadSuggestion';
+import {
+    MAX_SERIES_VALUE,
+    MAX_SETS,
+    formatSeries,
+    fromSeriesDraft,
+    seriesSignature,
+    toSeriesDraft,
+    type SeriesPrescriptionDraft,
+    type SeriesPrescriptionPatch,
+} from '@/libs/seriesPrescription';
 import HelpTooltip from '@/components/atoms/HelpTooltip';
 import ExternalLink from '@/components/atoms/ExternalLink';
 import { getGlossaryTerm } from '@/libs/glossaryContent';
@@ -72,13 +83,22 @@ interface ExerciseDetailCardProps {
      * usuário logado), então salvá-las aqui gravaria dados do personal, não
      * do aluno. */
     readOnly?: boolean;
-    /** Presente só no preview do personal dentro do editor de treinos
-     * (cards do editor de mesociclo): permite editar a carga PRESCRITA (plannedWeight)
+    /** Presente só nas telas do personal (preview do editor de treinos e
+     * "ver treino do aluno"): permite editar a carga PRESCRITA (plannedWeight)
      * direto pelo card, em vez de precisar fechar o preview e procurar o
-     * campo "Carga" na prescrição do exercício. Grava no estado local do
-     * editor (onUpdateExercise), não em /me/exercise-weight — aquele
-     * endpoint é o registro do PRÓPRIO aluno, não a prescrição do personal. */
-    onPrescribeWeight?: (weightKg: number) => void;
+     * campo "Carga" na prescrição do exercício. Grava onde o chamador mandar
+     * (estado local do editor, ou a fase no servidor), nunca em
+     * /me/exercise-weight — aquele endpoint é o registro do PRÓPRIO aluno,
+     * não a prescrição do personal.
+     *
+     * Pode devolver Promise: o card mostra "salvando/salvo" e, se ela
+     * rejeitar, o erro no lugar de fingir que gravou. */
+    onPrescribeWeight?: (weightKg: number) => void | Promise<void>;
+    /** Mesma ideia de onPrescribeWeight para a prescrição de SÉRIES (séries ×
+     * repetições, séries × segundos, ou texto livre). Separado porque a carga
+     * é um número só e as séries mexem em três campos do exercício
+     * (series/series_label/timed) — ver libs/seriesPrescription.ts. */
+    onPrescribeSeries?: (patch: SeriesPrescriptionPatch) => void | Promise<void>;
 }
 
 const getEmbedUrl = (url: string): string | null => {
@@ -122,6 +142,7 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
     onEquipmentUnavailable,
     readOnly = false,
     onPrescribeWeight,
+    onPrescribeSeries,
 }) => {
     // --- Estados ---
     const [timerValue, setTimerValue] = useState<number>(
@@ -154,6 +175,17 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
     const [prescribedWeightValue, setPrescribedWeightValue] = useState<
         number | string
     >(exercise.plannedWeight ?? '');
+    // Edição da prescrição de SÉRIES pelo personal (ver onPrescribeSeries).
+    const [isSeriesEditing, setIsSeriesEditing] = useState<boolean>(false);
+    const [seriesDraft, setSeriesDraft] = useState<SeriesPrescriptionDraft>(() =>
+        toSeriesDraft(exercise),
+    );
+    // Estado de uma gravação de prescrição (carga ou séries). Diferente de
+    // weightSaveStatus, que é o registro de carga do próprio ALUNO.
+    const [prescriptionStatus, setPrescriptionStatus] = useState<
+        'idle' | 'saving' | 'saved' | 'error'
+    >('idle');
+    const [prescriptionError, setPrescriptionError] = useState('');
     // --- Efeitos ---
     Racional: useEffect(() => {
         // Lógica do cronômetro
@@ -181,6 +213,18 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
         setIsPrescribedWeightEditing(false);
         setPrescribedWeightValue(exercise.plannedWeight ?? '');
     }, [exercise.restTime, exercise.id, exercise.plannedWeight]);
+
+    // Sincroniza o formulário de séries com a prescrição vigente. A chave é a
+    // ASSINATURA do conteúdo, não a identidade do objeto: os chamadores
+    // remontam o ExerciseLog a cada render, e depender da identidade zeraria o
+    // que o personal está digitando. Assim o efeito só dispara quando a
+    // prescrição de fato mudou — inclusive quando ela volta salva do servidor.
+    const currentSeriesSignature = seriesSignature(exercise);
+    useEffect(() => {
+        setSeriesDraft(toSeriesDraft(exercise));
+        setIsSeriesEditing(false);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [exercise.id, currentSeriesSignature]);
 
     useEffect(() => {
         // Modo somente leitura (personal vendo o treino do aluno): as notas
@@ -482,6 +526,26 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
         }
     };
 
+    /** Executa uma gravação de prescrição mostrando o andamento no card. O
+     * callback pode ser síncrono (editor, que só mexe no estado local) ou
+     * devolver Promise (ver treino do aluno, que grava no servidor). */
+    const runPrescriptionSave = async (save: () => void | Promise<void>) => {
+        setPrescriptionStatus('saving');
+        setPrescriptionError('');
+        try {
+            await save();
+            setPrescriptionStatus('saved');
+            setTimeout(() => setPrescriptionStatus('idle'), 3000);
+        } catch (err) {
+            setPrescriptionStatus('error');
+            setPrescriptionError(
+                err instanceof Error && err.message
+                    ? err.message
+                    : 'Não foi possível salvar a prescrição. Tente novamente.',
+            );
+        }
+    };
+
     const handlePrescribedWeightEditStart = () => {
         if (!onPrescribeWeight) return;
         setIsPrescribedWeightEditing(true);
@@ -494,7 +558,10 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                 ? prescribedWeightValue
                 : parseFloat(prescribedWeightValue);
         if (Number.isFinite(numericWeight) && numericWeight >= 0) {
-            onPrescribeWeight?.(numericWeight);
+            // Campo intocado não vira requisição: abrir e fechar a carga por
+            // engano não pode reescrever a fase inteira do aluno.
+            if (numericWeight === exercise.plannedWeight) return;
+            void runPrescriptionSave(() => onPrescribeWeight?.(numericWeight));
         }
     };
 
@@ -504,6 +571,42 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
         if (event.key === 'Enter') {
             handlePrescribedWeightEditEnd();
         }
+    };
+
+    const handleSeriesEditStart = () => {
+        if (!onPrescribeSeries) return;
+        setSeriesDraft(toSeriesDraft(exercise));
+        setPrescriptionStatus('idle');
+        setIsSeriesEditing(true);
+    };
+
+    const handleSeriesEditCancel = () => {
+        setSeriesDraft(toSeriesDraft(exercise));
+        setIsSeriesEditing(false);
+    };
+
+    const handleSeriesSave = () => {
+        if (!onPrescribeSeries) return;
+        const patch = fromSeriesDraft(seriesDraft);
+        setIsSeriesEditing(false);
+        // Mesmo motivo da carga: sem mudança, sem PUT.
+        if (
+            seriesSignature({
+                series: patch.series,
+                series_label: patch.series_label,
+                timed: patch.timed,
+            }) === currentSeriesSignature
+        ) {
+            return;
+        }
+        void runPrescriptionSave(() => onPrescribeSeries(patch));
+    };
+
+    const handleSeriesKeyDown = (
+        event: React.KeyboardEvent<HTMLInputElement>,
+    ) => {
+        if (event.key === 'Enter') handleSeriesSave();
+        if (event.key === 'Escape') handleSeriesEditCancel();
     };
 
     return (
@@ -619,26 +722,172 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                 </p>
                             )}
                             <div className={styles.detailRow}>
-                                    <div className={styles.repet}>
+                                    <div
+                                        className={
+                                            isSeriesEditing
+                                                ? `${styles.repet} ${styles.repetEditing}`
+                                                : styles.repet
+                                        }
+                                    >
                                         <strong>Repetições:</strong>{' '}
                                         <HelpTooltip
                                             text={getGlossaryTerm('series-repeticoes').short}
                                             href="/ajuda#glossario-series-repeticoes"
                                             label="Ajuda sobre séries e repetições"
                                         />
-                                        <div className={styles.valueBox}>
-                                            <span>
-                                                {exercise.series_label
-                                                    ? exercise.series_label
-                                                    : exercise.timed
-                                                      ? exercise.series
-                                                            .map((s) => `${s}s`)
-                                                            .join(' - ')
-                                                      : exercise.series.join(
-                                                            ' - ',
-                                                        )}
-                                            </span>
-                                        </div>
+                                        {onPrescribeSeries &&
+                                        isSeriesEditing ? (
+                                            <div
+                                                className={styles.seriesEditRow}
+                                            >
+                                                {seriesDraft.mode === 'free' ? (
+                                                    <input
+                                                        type="text"
+                                                        autoFocus
+                                                        value={seriesDraft.free}
+                                                        onChange={(e) =>
+                                                            setSeriesDraft({
+                                                                ...seriesDraft,
+                                                                free: e.target
+                                                                    .value,
+                                                            })
+                                                        }
+                                                        onKeyDown={
+                                                            handleSeriesKeyDown
+                                                        }
+                                                        placeholder="Ex: 3-4 × 10-12"
+                                                        aria-label="Descrição livre das séries"
+                                                        className={
+                                                            styles.seriesFreeInput
+                                                        }
+                                                    />
+                                                ) : (
+                                                    <>
+                                                        <input
+                                                            type="number"
+                                                            autoFocus
+                                                            min="1"
+                                                            max={MAX_SETS}
+                                                            value={
+                                                                seriesDraft.sets
+                                                            }
+                                                            onChange={(e) =>
+                                                                setSeriesDraft({
+                                                                    ...seriesDraft,
+                                                                    sets: e
+                                                                        .target
+                                                                        .value,
+                                                                })
+                                                            }
+                                                            onKeyDown={
+                                                                handleSeriesKeyDown
+                                                            }
+                                                            aria-label="Quantidade de séries"
+                                                            className={
+                                                                styles.seriesNumInput
+                                                            }
+                                                        />
+                                                        <span aria-hidden>×</span>
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            max={
+                                                                MAX_SERIES_VALUE
+                                                            }
+                                                            value={
+                                                                seriesDraft.value
+                                                            }
+                                                            onChange={(e) =>
+                                                                setSeriesDraft({
+                                                                    ...seriesDraft,
+                                                                    value: e
+                                                                        .target
+                                                                        .value,
+                                                                })
+                                                            }
+                                                            onKeyDown={
+                                                                handleSeriesKeyDown
+                                                            }
+                                                            aria-label={
+                                                                seriesDraft.mode ===
+                                                                'time'
+                                                                    ? 'Segundos por série'
+                                                                    : 'Repetições por série'
+                                                            }
+                                                            className={
+                                                                styles.seriesNumInput
+                                                            }
+                                                        />
+                                                        <span
+                                                            className={
+                                                                styles.seriesUnit
+                                                            }
+                                                        >
+                                                            {seriesDraft.mode ===
+                                                            'time'
+                                                                ? 'seg'
+                                                                : 'reps'}
+                                                        </span>
+                                                    </>
+                                                )}
+                                                <button
+                                                    type="button"
+                                                    className={
+                                                        styles.seriesEditConfirm
+                                                    }
+                                                    onClick={handleSeriesSave}
+                                                    aria-label="Salvar séries"
+                                                    title="Salvar"
+                                                >
+                                                    <FiCheck />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className={
+                                                        styles.seriesEditCancel
+                                                    }
+                                                    onClick={
+                                                        handleSeriesEditCancel
+                                                    }
+                                                    aria-label="Cancelar edição das séries"
+                                                    title="Cancelar"
+                                                >
+                                                    <FiX />
+                                                </button>
+                                            </div>
+                                        ) : onPrescribeSeries ? (
+                                            <button
+                                                type="button"
+                                                className={styles.valueBoxBtn}
+                                                onClick={handleSeriesEditStart}
+                                                title="Alterar as séries prescritas"
+                                            >
+                                                <span>
+                                                    {formatSeries(exercise)}
+                                                </span>
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    viewBox="0 0 24 24"
+                                                    width="1em"
+                                                    height="1em"
+                                                    fill="currentColor"
+                                                    className={styles.editIcon}
+                                                    aria-hidden
+                                                >
+                                                    <path
+                                                        fillRule="evenodd"
+                                                        clipRule="evenodd"
+                                                        d="M15.023 6.27l1.707 1.707-8.486 8.485-1.707-1.707 8.486-8.485zM13.5 4a1.5 1.5 0 011.06.44l6 6a1.5 1.5 0 010 2.12l-6 6a1.5 1.5 0 01-2.12 0l-6-6a1.5 1.5 0 010-2.12l6-6A1.5 1.5 0 0113.5 4zm-1.06 2.44l-6 6a.5.5 0 00.707.707L13.5 7.14a.5.5 0 00-.707-.707z"
+                                                    />
+                                                </svg>
+                                            </button>
+                                        ) : (
+                                            <div className={styles.valueBox}>
+                                                <span>
+                                                    {formatSeries(exercise)}
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
                                     <div>
                                         <strong>Peso (KG):</strong>{' '}
@@ -675,11 +924,15 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                                     }
                                                 />
                                             ) : (
-                                                <span
-                                                    className={styles.valueBox}
+                                                <button
+                                                    type="button"
+                                                    className={
+                                                        styles.valueBoxBtn
+                                                    }
                                                     onClick={
                                                         handlePrescribedWeightEditStart
                                                     }
+                                                    title="Alterar a carga prescrita"
                                                 >
                                                     {prescribedWeightValue !== ''
                                                         ? `${prescribedWeightValue} kg (prescrito)`
@@ -698,7 +951,7 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                                             d="M15.023 6.27l1.707 1.707-8.486 8.485-1.707-1.707 8.486-8.485zM13.5 4a1.5 1.5 0 011.06.44l6 6a1.5 1.5 0 010 2.12l-6 6a1.5 1.5 0 01-2.12 0l-6-6a1.5 1.5 0 010-2.12l6-6A1.5 1.5 0 0113.5 4zm-1.06 2.44l-6 6a.5.5 0 00.707.707L13.5 7.14a.5.5 0 00-.707-.707z"
                                                         />
                                                     </svg>
-                                                </span>
+                                                </button>
                                             )
                                         ) : readOnly ? (
                                             <span className={styles.valueBox}>
@@ -796,6 +1049,56 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                         )}
                                     </div>
                                 </div>
+                                {/* Sem este aviso a edição fica invisível: os
+                                    dois campos parecem rótulos, e o lápis
+                                    sozinho não diz que o valor é do ALUNO. */}
+                                {(onPrescribeSeries || onPrescribeWeight) &&
+                                    prescriptionStatus === 'idle' &&
+                                    !isSeriesEditing &&
+                                    !isPrescribedWeightEditing && (
+                                        <p className={styles.prescriptionHint}>
+                                            Toque{' '}
+                                            {onPrescribeSeries
+                                                ? 'nas séries ou na carga'
+                                                : 'na carga'}{' '}
+                                            para ajustar a prescrição do aluno.
+                                        </p>
+                                    )}
+                                {/* Andamento da gravação da PRESCRIÇÃO (personal).
+                                    Fica fora das duas colunas porque vale para
+                                    séries e carga. */}
+                                {prescriptionStatus !== 'idle' && (
+                                    <p
+                                        role={
+                                            prescriptionStatus === 'error'
+                                                ? 'alert'
+                                                : 'status'
+                                        }
+                                        className={
+                                            prescriptionStatus === 'error'
+                                                ? styles.annotationsStatusError
+                                                : styles.annotationsStatus
+                                        }
+                                    >
+                                        {prescriptionStatus === 'saving' && (
+                                            <>
+                                                <FiSave /> Salvando prescrição...
+                                            </>
+                                        )}
+                                        {prescriptionStatus === 'saved' && (
+                                            <>
+                                                <FiCheck /> Prescrição atualizada
+                                                para o aluno.
+                                            </>
+                                        )}
+                                        {prescriptionStatus === 'error' && (
+                                            <>
+                                                <FiAlertCircle />{' '}
+                                                {prescriptionError}
+                                            </>
+                                        )}
+                                    </p>
+                                )}
                                 {onEquipmentUnavailable && (
                                     <button
                                         type="button"

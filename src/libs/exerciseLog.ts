@@ -10,6 +10,9 @@ export function toExerciseLog(ex: ExerciseResponse): ExerciseLog {
         name: ex.name,
         series: ex.series ?? [],
         series_label: ex.series_label,
+        // Sem isto o card mostra "30" onde a prescrição é de 30 SEGUNDOS, e o
+        // aviso "Controlado por tempo" nunca aparece.
+        timed: ex.timed ?? false,
         variations: ex.variations ?? '',
         video_url: ex.video_url ?? '',
         // Só usa video_thumb se for URL http (não caminho GCS privado)

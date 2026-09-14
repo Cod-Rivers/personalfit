@@ -1,30 +1,42 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import axios from 'axios';
 import { FiEdit3, FiCopy, FiTrash2, FiChevronRight, FiLink } from 'react-icons/fi';
-import type { MesocycleResponse } from '@/libs/planningService';
-import { formatDate, weekdayLabel } from '../lib/mesocycleTransforms';
+import type {
+    ExerciseRequest,
+    MesocycleRequest,
+    MesocycleResponse,
+} from '@/libs/planningService';
+import { formatDate, mesoToRequest, weekdayLabel } from '../lib/mesocycleTransforms';
 import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
 import ExerciseDetailCard from '@/components/features/ExerciseDetailCard';
 import type { ExerciseLog } from '@/components/features/types';
 import { toExerciseLog } from '@/libs/exerciseLog';
+import { formatSeries } from '@/libs/seriesPrescription';
 import {
     partitionExerciseGroups,
     comboGroupLabel,
 } from '@/libs/trainingTechniques';
 import s from '../builder.module.css';
 
-/** Exercício selecionado para o modal de detalhe, junto com os demais
- * exercícios do mesmo treino — necessário para achar o próximo do bloco de
- * bi-set/triset/superset (ver `nextInGroup` no ExerciseDetailCard). */
+/** Exercício aberto no modal de detalhe. Guarda só os IDs: o ExerciseLog em si
+ * é derivado do `meso` a cada render, então uma alteração de prescrição salva
+ * pelo próprio modal aparece nele sem precisar reabrir. */
 interface SelectedExercise {
+    trainingId: string;
+    exerciseId: string;
+}
+
+/** Exercício em foco + os demais do mesmo treino, necessários para achar o
+ * próximo do bloco de bi-set/triset/superset (ver `nextInGroup` no
+ * ExerciseDetailCard). */
+interface SelectedView {
     exercise: ExerciseLog;
     siblings: ExerciseLog[];
 }
 
-function nextInSameGroup(
-    selected: SelectedExercise | null,
-): ExerciseLog | null {
+function nextInSameGroup(selected: SelectedView | null): ExerciseLog | null {
     if (!selected) return null;
     const { exercise, siblings } = selected;
     const idx = siblings.findIndex((e) => e.id === exercise.id);
@@ -34,6 +46,19 @@ function nextInSameGroup(
         return next;
     }
     return null;
+}
+
+/** Mensagem de erro de uma gravação de prescrição. Sem rede é um caso
+ * diferente de erro do servidor, e aqui a distinção importa: o personal está
+ * na academia, e precisa saber se a alteração chegou ao aluno ou não. */
+function describeSaveError(err: unknown): string {
+    if (axios.isAxiosError(err) && !err.response) {
+        return 'Sem conexão — a alteração NÃO foi salva. Tente de novo quando a internet voltar.';
+    }
+    const message = axios.isAxiosError(err)
+        ? (err.response?.data as { message?: string } | undefined)?.message
+        : undefined;
+    return message || 'Não foi possível salvar a alteração. Tente novamente.';
 }
 
 interface Props {
@@ -46,6 +71,14 @@ interface Props {
     simpleMode?: boolean;
     /** "weekday" (padrão) ou "number" — só relevante quando simpleMode=true. */
     dayLabelStyle?: 'weekday' | 'number';
+    /** Grava esta fase com uma alteração pontual de prescrição feita direto no
+     * card do exercício (séries/carga), sem abrir o editor — é o que permite
+     * ao personal ajustar o treino enquanto acompanha o aluno.
+     *
+     * Ausente = a fase segue só de leitura, como antes. Deve devolver o
+     * macrociclo salvo para a tela (o chamador já faz isso), e REJEITAR em
+     * caso de erro: o card mostra o resultado ao personal. */
+    onPersistMeso?: (req: MesocycleRequest) => Promise<unknown>;
 }
 
 export default function MesocycleSection({
@@ -55,6 +88,7 @@ export default function MesocycleSection({
     onDuplicate,
     simpleMode,
     dayLabelStyle,
+    onPersistMeso,
 }: Props) {
     const isNumbered = simpleMode && dayLabelStyle === 'number';
     const [open, setOpen] = useState(false);
@@ -63,6 +97,51 @@ export default function MesocycleSection({
     // a página inteira para chegar na fase seguinte.
     const [openTraining, setOpenTraining] = useState<string | null>(null);
     const [selected, setSelected] = useState<SelectedExercise | null>(null);
+
+    /** Exercício aberto, sempre derivado do `meso` atual — inclusive depois de
+     * uma gravação, que devolve a fase inteira do servidor. */
+    const selectedView = useMemo<SelectedView | null>(() => {
+        if (!selected) return null;
+        const training = meso.trainings.find(
+            (t) => t.id === selected.trainingId,
+        );
+        if (!training) return null;
+        const siblings = training.exercises.map(toExerciseLog);
+        const exercise = siblings.find((e) => e.id === selected.exerciseId);
+        return exercise ? { exercise, siblings } : null;
+    }, [meso, selected]);
+
+    /**
+     * Grava uma alteração pontual de prescrição no exercício aberto.
+     *
+     * Reenvia a FASE inteira (não só o exercício) porque é esse o contrato do
+     * endpoint de salvamento por card do editor — `UpsertMesocycleHandler`
+     * substitui o mesociclo pelo payload. Daí o cuidado de partir de
+     * `mesoToRequest(meso)`: ele preserva os IDs de treino, exercício e
+     * microciclo, e perder qualquer um deles órfãaria o histórico de séries e
+     * as anotações que o aluno já tem.
+     */
+    const patchSelectedExercise = async (patch: Partial<ExerciseRequest>) => {
+        if (!onPersistMeso || !selected) return;
+        const req = mesoToRequest(meso);
+        const training = req.trainings.find((t) => t.id === selected.trainingId);
+        const target = training?.exercises.find(
+            (e) => e.id === selected.exerciseId,
+        );
+        if (!target) {
+            throw new Error(
+                'Este exercício não está mais nesta fase. Recarregue a página.',
+            );
+        }
+        Object.assign(target, patch);
+        try {
+            await onPersistMeso(req);
+        } catch (err) {
+            throw new Error(describeSaveError(err));
+        }
+    };
+
+    const canPrescribe = !!onPersistMeso;
 
     return (
         <div className={s.mesoSection}>
@@ -207,22 +286,9 @@ export default function MesocycleSection({
                                                     const items = group.map(
                                                         (ex) => {
                                                             const seriesText =
-                                                                ex.series_label
-                                                                    ? ex.series_label
-                                                                    : ex.timed
-                                                                      ? ex.series
-                                                                            .map(
-                                                                                (
-                                                                                    n,
-                                                                                ) =>
-                                                                                    `${n}s`,
-                                                                            )
-                                                                            .join(
-                                                                                ' / ',
-                                                                            )
-                                                                      : ex.series.join(
-                                                                            '/',
-                                                                        );
+                                                                formatSeries(
+                                                                    ex,
+                                                                );
                                                             return (
                                                                 <button
                                                                     key={
@@ -235,10 +301,10 @@ export default function MesocycleSection({
                                                                     onClick={() =>
                                                                         setSelected(
                                                                             {
-                                                                                exercise:
-                                                                                    ex,
-                                                                                siblings:
-                                                                                    exerciseLogs,
+                                                                                trainingId:
+                                                                                    t.id,
+                                                                                exerciseId:
+                                                                                    ex.id,
                                                                             },
                                                                         )
                                                                     }
@@ -356,15 +422,35 @@ export default function MesocycleSection({
                     )}
                 </div>
             )}
-            {selected && (
+            {selected && selectedView && (
                 <ExerciseDetailCard
-                    exercise={selected.exercise}
+                    exercise={selectedView.exercise}
                     onClose={() => setSelected(null)}
-                    nextInGroup={nextInSameGroup(selected)}
+                    nextInGroup={nextInSameGroup(selectedView)}
                     onSelectExercise={(exercise) =>
-                        setSelected({ exercise, siblings: selected.siblings })
+                        setSelected({
+                            trainingId: selected.trainingId,
+                            exerciseId: exercise.id,
+                        })
                     }
+                    // readOnly: anotações e o registro de carga que aparecem
+                    // aqui são "/me/..." — do usuário logado, ou seja, do
+                    // PERSONAL. O que ele edita por este card é a prescrição
+                    // do aluno, pelos dois callbacks abaixo.
                     readOnly
+                    onPrescribeSeries={
+                        canPrescribe
+                            ? (patch) => patchSelectedExercise(patch)
+                            : undefined
+                    }
+                    onPrescribeWeight={
+                        canPrescribe
+                            ? (weightKg) =>
+                                  patchSelectedExercise({
+                                      load_kg: weightKg > 0 ? weightKg : undefined,
+                                  })
+                            : undefined
+                    }
                 />
             )}
         </div>
