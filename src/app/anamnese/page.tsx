@@ -66,7 +66,7 @@ const ERROR_COPY: Record<string, string> = {
     consent_required:
         'Para continuar, marque a autorização de tratamento dos dados de saúde na etapa anterior.',
     anamnesis_managed_by_personal:
-        'Seu personal trainer monta seu treino diretamente — a anamnese automática não se aplica ao seu caso.',
+        'Seu personal trainer monta seu treino diretamente — a triagem automática não se aplica ao seu caso. Quando ele pedir, você responde à Anamnese do personal.',
     anamnesis_blocked:
         'Você já fez uma anamnese recentemente. É preciso esperar o intervalo mínimo antes de repetir.',
     no_waiver_pending:
@@ -228,14 +228,10 @@ const Questions: FC = () => {
         const stored = localStorage.getItem('user');
         if (stored) {
             const parsed = JSON.parse(stored);
-            // Aluno vinculado a um personal recebe o treino diretamente dele, não faz anamnese própria.
-            // CONHECIDO EM ABERTO: se o personal usar "Liberar para o aluno preencher"
-            // (POST /students/:id/anamnesis-access), este aluno passa a poder preencher a
-            // própria anamnese — mas /user/anamnesis/status (única checagem já feita aqui)
-            // não devolve esse flag, então não há como diferenciar os dois casos sem uma nova
-            // chamada. Por ora mantém o redirect incondicional (o caso comum, personal nunca
-            // libera); falta um ponto de entrada direto para /anamnese nesse cenário — ex. um
-            // link "Preencher minha anamnese" a partir de /meus-treinos.
+            // Aluno vinculado a um personal não faz a Triagem automática: o treino
+            // dele é montado pelo personal. O questionário que o personal pede é a
+            // Anamnese do personal, em /anamnese-do-personal (aviso em /meus-treinos
+            // + push) — por isso o redirect aqui é incondicional.
             if (parsed.has_personal) {
                 router.replace('/meus-treinos');
                 return;
@@ -266,9 +262,9 @@ const Questions: FC = () => {
                 {loading && <span className="text-center spinner-border" />}
                 {!loading && blockedInfo && (
                     <div className="text-center">
-                        <h2 className="h4 mb-3">Nova anamnese ainda não liberada</h2>
+                        <h2 className="h4 mb-3">Nova triagem automática ainda não liberada</h2>
                         <p>
-                            A anamnese gratuita fica disponível a cada 2 meses
+                            A triagem gratuita fica disponível a cada 2 meses
                             {blockedInfo.nextAvailableDate
                                 ? ` (próxima em ${new Date(blockedInfo.nextAvailableDate).toLocaleDateString('pt-BR')})`
                                 : ''}
@@ -527,12 +523,16 @@ const Questions: FC = () => {
                     <div className="w-100 d-flex flex-column text-center">
                         <h1>Respostas registradas</h1>
                         <p>
+                            {/* Quem chega aqui hoje é sempre aluno SEM personal
+                                (vinculado nem abre esta tela): o texto padrão
+                                falava de personal e o botão mandava para
+                                /meus-treinos, que é a casa de quem tem um. */}
                             {protocolSummary?.notes ??
-                                'Suas respostas foram registradas. Seu personal trainer já monta seu treino diretamente.'}
+                                'Suas respostas foram registradas. Em breve seu treino ficará disponível.'}
                         </p>
                         <button
                             className="btn btn-gold"
-                            onClick={() => router.push('/meus-treinos')}
+                            onClick={() => router.push(getStudentHomeRoute())}
                         >
                             Ver meus treinos
                         </button>

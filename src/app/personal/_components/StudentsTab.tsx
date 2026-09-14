@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
     FiActivity,
@@ -21,6 +21,10 @@ import TrainingPdfUploadModal from '@/components/features/TrainingPdfUploadModal
 import LogWindowSettings from '@/components/features/LogWindowSettings';
 import { usePersonalStudents } from '@/hooks/usePersonalStudents';
 import { formatCpfInput } from '@/libs/formatters';
+import {
+    getPersonalAnamnesisSummary,
+    type PersonalAnamnesisSummaryItem,
+} from '@/libs/personalAnamnesisService';
 import s from '../personal.module.css';
 
 type StudentsState = ReturnType<typeof usePersonalStudents>;
@@ -62,6 +66,24 @@ export default function StudentsTab({ state }: Props) {
         deactivate,
         toggleBusyId,
     } = state;
+
+    // Selo da Anamnese do personal em cada aluno: uma chamada só para a
+    // lista inteira (sem N+1). Falha só esconde o selo.
+    const [anamnesisSummary, setAnamnesisSummary] = useState<
+        Record<string, PersonalAnamnesisSummaryItem>
+    >({});
+    useEffect(() => {
+        if (students.length === 0) return;
+        let cancelled = false;
+        getPersonalAnamnesisSummary()
+            .then((summary) => {
+                if (!cancelled) setAnamnesisSummary(summary);
+            })
+            .catch(() => {});
+        return () => {
+            cancelled = true;
+        };
+    }, [students.length]);
 
     return (
         <>
@@ -290,7 +312,22 @@ export default function StudentsTab({ state }: Props) {
                                             color: '#e0a03c',
                                         }}
                                     >
-                                        <FiHeart /> Triagem/Anamnese
+                                        <FiHeart /> Anamnese
+                                        {anamnesisSummary[st.id] && (
+                                            <span
+                                                style={{
+                                                    marginLeft: 6,
+                                                    padding: '1px 6px',
+                                                    borderRadius: 999,
+                                                    fontSize: '0.7rem',
+                                                    background: 'rgba(224, 160, 60, 0.18)',
+                                                }}
+                                            >
+                                                {anamnesisSummary[st.id].status === 'requested'
+                                                    ? 'Pendente'
+                                                    : 'Respondida'}
+                                            </span>
+                                        )}
                                     </button>
                                     <button
                                         onClick={() =>

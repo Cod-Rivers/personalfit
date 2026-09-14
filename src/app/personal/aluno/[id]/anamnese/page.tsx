@@ -1,187 +1,186 @@
 'use client';
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import {
     FiHeart,
     FiArrowLeft,
-    FiUnlock,
+    FiSend,
     FiFileText,
     FiChevronRight,
+    FiRefreshCw,
+    FiX,
 } from 'react-icons/fi';
-import { Api } from '@/libs/api';
 import { formatCpfInput } from '@/libs/formatters';
 import Modal from '@/components/system/Modal';
-import QuestionsRenderer from '@/components/organism/QuestionsRenderer';
-import { IQuestionProps } from '@/components/organism/QuestionsRenderer/types';
 import { useToast } from '@/components/system/Toast';
+import PersonalAnamnesisForm from '@/components/features/PersonalAnamnesisForm';
+import PersonalAnamnesisAnswers, {
+    LegacyAnamnesisList,
+} from '@/components/features/PersonalAnamnesisAnswers';
+import {
+    cancelPersonalAnamnesisRequest,
+    fillPersonalAnamnesis,
+    formatAnamnesisDate,
+    friendlyPersonalAnamnesisError,
+    getPersonalAnamnesisQuestionnaire,
+    getStudentPersonalAnamnesis,
+    requestPersonalAnamnesis,
+    type PersonalAnamnesisAnswer,
+    type PersonalAnamnesisHistory,
+    type PersonalAnamnesisQuestionnaire,
+} from '@/libs/personalAnamnesisService';
 // Reaproveita o módulo de estilos já usado pelas telas irmãs deste aluno
 // (periodização, plano alimentar) — mesmo padrão de header/card/form em todo
 // `personal/aluno/[id]/*`.
 import s from '../periodizacao/periodizacao.module.css';
-
-const DOR_LABELS: Record<string, string> = {
-    tornozelo: 'Tornozelo',
-    lombar: 'Lombar',
-    joelho: 'Joelho',
-    quadril: 'Quadril',
-    ombro: 'Ombro',
-};
+import local from './anamnese.module.css';
 
 // Versão do texto de declaração de responsabilidade aceito pelo personal ao
-// preencher a anamnese em nome do aluno. Incremente ao mudar o texto do
-// checkbox abaixo.
-const DECLARATION_VERSION = '2026-08-01';
+// preencher em nome do aluno. Incremente ao mudar o texto do checkbox abaixo.
+const DECLARATION_VERSION = '2026-09-12';
 
-type ApiErrorResponse = { error?: string; code?: string };
-
-function friendlyError(error: unknown): string {
-    const response = (error as { response?: { data?: ApiErrorResponse } })
-        ?.response?.data;
-    return response?.error ?? 'Não foi possível concluir a ação. Tente novamente.';
-}
-
-const getQuestions = async (): Promise<IQuestionProps[]> => {
-    try {
-        const { data } = await Api.get('/questions');
-        return data.questions ?? [];
-    } catch {
-        return [];
-    }
-};
-
-const getDoresOptions = async (): Promise<string[]> => {
-    try {
-        const { data } = await Api.get('/exercicios-recomendados');
-        return (data ?? []).map((item: { dor: string }) => item.dor);
-    } catch {
-        return [];
-    }
-};
-
-type ModalStep = 'dores' | 'questions' | 'attest';
-
+/**
+ * Anamnese do personal: o personal pede ao aluno (que recebe aviso e
+ * responde pelo app) ou preenche em nome dele, e lê as respostas aqui para
+ * montar as séries. Separada da Triagem automática (/anamnese), que é do
+ * aluno sem personal e escolhe um treino pronto.
+ */
 export default function PersonalStudentAnamnesePage() {
     const router = useRouter();
     const params = useParams<{ id: string }>();
     const studentId = params.id;
     const { showSuccess, showError, ToastSlot } = useToast();
 
-    const [granting, setGranting] = useState(false);
+    const [history, setHistory] = useState<PersonalAnamnesisHistory | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState<string | null>(null);
+    const [busy, setBusy] = useState<'request' | 'cancel' | null>(null);
 
-    const [fillModalOpen, setFillModalOpen] = useState(false);
-    const [loadingQuestions, setLoadingQuestions] = useState(false);
-    const [questions, setQuestions] = useState<IQuestionProps[]>([]);
-    const [doresOptions, setDoresOptions] = useState<string[]>([]);
-    const [selectedDores, setSelectedDores] = useState<string[]>([]);
-    const [modalStep, setModalStep] = useState<ModalStep>('dores');
-    const [answers, setAnswers] = useState<{ [key: string]: string }>({});
+    const [fillOpen, setFillOpen] = useState(false);
+    const [fillFormKey, setFillFormKey] = useState(0);
+    const [questionnaire, setQuestionnaire] =
+        useState<PersonalAnamnesisQuestionnaire | null>(null);
+    const [questionnaireError, setQuestionnaireError] = useState<string | null>(null);
     const [personalName, setPersonalName] = useState('');
     const [personalCpf, setPersonalCpf] = useState('');
     const [declarationAccepted, setDeclarationAccepted] = useState(false);
     const [fillSubmitting, setFillSubmitting] = useState(false);
     const [fillError, setFillError] = useState<string | null>(null);
 
-    async function handleGrantAccess() {
-        if (granting) return;
-        setGranting(true);
+    const load = useCallback(async () => {
+        setLoading(true);
+        setLoadError(null);
         try {
-            await Api.post(`/students/${studentId}/anamnesis-access`);
-            showSuccess('Acesso à anamnese concedido ao aluno.');
+            setHistory(await getStudentPersonalAnamnesis(studentId));
         } catch (error) {
-            showError(friendlyError(error));
+            setLoadError(friendlyPersonalAnamnesisError(error));
         } finally {
-            setGranting(false);
+            setLoading(false);
         }
-    }
+    }, [studentId]);
 
-    async function loadQuestionsAndDores() {
-        setLoadingQuestions(true);
+    useEffect(() => {
+        void load();
+    }, [load]);
+
+    async function handleRequest() {
+        if (busy) return;
+        const isResend = !!history?.pending;
+        setBusy('request');
         try {
-            const [fetchedQuestions, fetchedDores] = await Promise.all([
-                getQuestions(),
-                getDoresOptions(),
-            ]);
-            setQuestions(fetchedQuestions);
-            setDoresOptions(fetchedDores);
+            const view = await requestPersonalAnamnesis(studentId);
+            setHistory((prev) => (prev ? { ...prev, pending: view } : prev));
+            showSuccess(
+                isResend
+                    ? 'Aviso reenviado ao aluno.'
+                    : 'Anamnese solicitada. O aluno foi avisado.',
+            );
+        } catch (error) {
+            showError(friendlyPersonalAnamnesisError(error));
         } finally {
-            setLoadingQuestions(false);
+            setBusy(null);
         }
     }
 
-    function openFillModal() {
-        setModalStep('dores');
-        setAnswers({});
-        setSelectedDores([]);
-        setPersonalName('');
-        setPersonalCpf('');
+    async function handleCancel() {
+        if (busy) return;
+        if (
+            !window.confirm(
+                'Cancelar a solicitação? O aluno não poderá mais responder a este pedido.',
+            )
+        ) {
+            return;
+        }
+        setBusy('cancel');
+        try {
+            await cancelPersonalAnamnesisRequest(studentId);
+            setHistory((prev) => (prev ? { ...prev, pending: null } : prev));
+            showSuccess('Solicitação cancelada.');
+        } catch (error) {
+            showError(friendlyPersonalAnamnesisError(error));
+        } finally {
+            setBusy(null);
+        }
+    }
+
+    async function openFill() {
+        setFillError(null);
         setDeclarationAccepted(false);
-        setFillError(null);
-        setFillModalOpen(true);
-        if (questions.length === 0) {
-            void loadQuestionsAndDores();
+        setFillFormKey((k) => k + 1);
+        setFillOpen(true);
+        if (questionnaire) return;
+        try {
+            setQuestionnaire(await getPersonalAnamnesisQuestionnaire());
+            setQuestionnaireError(null);
+        } catch (error) {
+            setQuestionnaireError(friendlyPersonalAnamnesisError(error));
         }
     }
 
-    function closeFillModal() {
+    function closeFill() {
         if (fillSubmitting) return;
-        setFillModalOpen(false);
-    }
-
-    function toggleDor(dor: string) {
-        setSelectedDores((prev) =>
-            prev.includes(dor)
-                ? prev.filter((d) => d !== dor)
-                : [...prev, dor],
-        );
-    }
-
-    function handleQuestionsAnswered(finalAnswers: { [key: string]: string }) {
-        setAnswers(finalAnswers);
-        setFillError(null);
-        setModalStep('attest');
+        setFillOpen(false);
     }
 
     const cpfDigits = personalCpf.replace(/\D/g, '');
-    const canSubmit =
-        personalName.trim().length > 1 &&
-        cpfDigits.length === 11 &&
-        declarationAccepted &&
-        !fillSubmitting;
+    const canSubmitFill =
+        personalName.trim().length > 1 && cpfDigits.length === 11 && declarationAccepted;
 
-    async function handleFillSubmit() {
+    async function handleFillSubmit(answers: PersonalAnamnesisAnswer[]) {
         setFillSubmitting(true);
         setFillError(null);
         try {
-            const answersPayload = Object.entries(answers).map(([key, value]) => ({
-                question_id: key,
-                answer_id: value,
-            }));
-            await Api.post(`/students/${studentId}/anamnesis-fill`, {
-                answers: answersPayload,
-                dores: selectedDores,
+            await fillPersonalAnamnesis(studentId, {
+                answers,
                 personal_name: personalName.trim(),
                 personal_cpf: cpfDigits,
                 declaration_accepted: declarationAccepted,
                 declaration_version: DECLARATION_VERSION,
             });
-            setFillModalOpen(false);
-            showSuccess('Anamnese registrada com sucesso.');
+            setFillOpen(false);
+            showSuccess('Anamnese registrada.');
+            await load();
         } catch (error) {
-            setFillError(friendlyError(error));
+            setFillError(friendlyPersonalAnamnesisError(error));
         } finally {
             setFillSubmitting(false);
         }
     }
+
+    const pending = history?.pending ?? null;
+    const latest = history?.submitted[0];
+    const older = history?.submitted.slice(1) ?? [];
 
     return (
         <div className={s.page}>
             <div className={s.container}>
                 <div className={s.header}>
                     <div>
-                        <h1 className={s.headerTitle}><FiHeart /> Triagem/Anamnese</h1>
+                        <h1 className={s.headerTitle}>
+                            <FiHeart /> Anamnese do personal
+                        </h1>
                         <p className={s.headerSub}>
-                            Gerencie a triagem de saúde (PAR-Q) e a anamnese
-                            deste aluno
+                            Respostas do aluno para orientar a montagem das séries
                         </p>
                     </div>
                     <button className={s.btnBack} onClick={() => router.back()}>
@@ -189,183 +188,231 @@ export default function PersonalStudentAnamnesePage() {
                     </button>
                 </div>
 
-                <div className={s.list}>
-                    <div
-                        className={s.card}
-                        onClick={handleGrantAccess}
-                        style={{ cursor: granting ? 'wait' : 'pointer' }}
-                    >
-                        <div className={s.cardInfo}>
-                            <p className={s.cardName}>
-                                <FiUnlock /> Liberar para o aluno preencher
-                            </p>
-                            <p className={s.cardMeta}>
-                                O aluno passa a poder preencher a própria
-                                triagem e anamnese pelo app dele (modo apenas
-                                registro — o treino continua sendo montado por
-                                você).
-                            </p>
-                        </div>
-                        <span className={s.btnAction}>
-                            {granting ? (
-                                'Concedendo...'
-                            ) : (
-                                <>
-                                    Liberar acesso <FiChevronRight />
-                                </>
-                            )}
-                        </span>
-                    </div>
+                {loading && <p className={s.loading}>Carregando…</p>}
 
-                    <div className={s.card} onClick={openFillModal}>
-                        <div className={s.cardInfo}>
-                            <p className={s.cardName}><FiFileText /> Preencher agora</p>
-                            <p className={s.cardMeta}>
-                                Você preenche a triagem e a anamnese em nome
-                                do aluno, com uma declaração de
-                                responsabilidade.
-                            </p>
-                        </div>
-                        <span className={s.btnAction}>
-                            Preencher <FiChevronRight />
-                        </span>
-                    </div>
-                </div>
-            </div>
-
-            <Modal
-                open={fillModalOpen}
-                onClose={closeFillModal}
-                title="Preencher anamnese em nome do aluno"
-                closeOnBackdrop={!fillSubmitting}
-            >
-                {loadingQuestions && (
-                    <p className={s.loading}>Carregando perguntas...</p>
-                )}
-
-                {!loadingQuestions && modalStep === 'dores' && (
-                    <div className="d-flex flex-column">
-                        <h2 className="h5">
-                            O aluno sente dor em alguma dessas regiões?
-                        </h2>
-                        <p className="text-muted">
-                            Selecione todas que se aplicam, segundo o relato
-                            do aluno. Se não houver dores, siga em frente.
-                        </p>
-                        <div className="d-flex flex-column gap-3 my-3 mb-4">
-                            {doresOptions.map((dor) => (
-                                <button
-                                    key={dor}
-                                    type="button"
-                                    className="p-3 rounded"
-                                    style={{
-                                        background: 'var(--surface-1)',
-                                        color: 'var(--text-primary)',
-                                        border: selectedDores.includes(dor)
-                                            ? '3px solid var(--color-gold)'
-                                            : '3px solid transparent',
-                                    }}
-                                    onClick={() => toggleDor(dor)}
-                                >
-                                    {DOR_LABELS[dor] ?? dor}
-                                </button>
-                            ))}
-                        </div>
-                        {fillError && (
-                            <div className={s.errorMsg}>{fillError}</div>
-                        )}
-                        <button
-                            className="btn btn-gold"
-                            disabled={questions.length === 0}
-                            onClick={() => setModalStep('questions')}
-                        >
-                            Continuar
+                {!loading && loadError && (
+                    <div className={s.errorMsg}>
+                        {loadError}{' '}
+                        <button type="button" className={s.btnSecondary} onClick={load}>
+                            Tentar de novo
                         </button>
                     </div>
                 )}
 
-                {!loadingQuestions &&
-                    modalStep === 'questions' &&
-                    questions.length > 0 && (
-                        <QuestionsRenderer
-                            questions={questions}
-                            submitQuestions={handleQuestionsAnswered}
-                            initialAnswers={answers}
-                            onBackBeforeFirst={() => setModalStep('dores')}
-                        />
-                    )}
+                {!loading && history && (
+                    <>
+                        <div className={s.list}>
+                            <div className={`${s.card} ${local.card}`}>
+                                <div className={s.cardInfo}>
+                                    {pending ? (
+                                        <>
+                                            <p className={s.cardName}>
+                                                <FiSend /> Aguardando o aluno responder
+                                            </p>
+                                            <p className={s.cardMeta}>
+                                                Solicitada em{' '}
+                                                {formatAnamnesisDate(pending.requested_at)}. O
+                                                aluno recebeu um aviso e vê o pedido na tela
+                                                inicial do app.
+                                            </p>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <p className={s.cardName}>
+                                                <FiSend /> Pedir para o aluno responder
+                                            </p>
+                                            <p className={s.cardMeta}>
+                                                O aluno recebe um aviso e responde pelo app
+                                                dele. As respostas aparecem aqui, e nada gera
+                                                treino automático.
+                                            </p>
+                                        </>
+                                    )}
+                                </div>
+                                <div className={local.cardActions}>
+                                    {pending ? (
+                                        <>
+                                            <button
+                                                type="button"
+                                                className={s.btnSecondary}
+                                                disabled={!!busy}
+                                                onClick={handleRequest}
+                                            >
+                                                <FiRefreshCw />{' '}
+                                                {busy === 'request' ? 'Reenviando…' : 'Reenviar aviso'}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className={s.btnDanger}
+                                                disabled={!!busy}
+                                                onClick={handleCancel}
+                                            >
+                                                <FiX />{' '}
+                                                {busy === 'cancel' ? 'Cancelando…' : 'Cancelar pedido'}
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            className={s.btnAdd}
+                                            disabled={!!busy}
+                                            onClick={handleRequest}
+                                        >
+                                            {busy === 'request' ? 'Solicitando…' : 'Solicitar ao aluno'}
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
 
-                {!loadingQuestions && modalStep === 'attest' && (
-                    <div className="d-flex flex-column">
-                        <h2 className="h5">Declaração de responsabilidade</h2>
-                        <p className="text-muted">
-                            Confirme seus dados antes de enviar. Estas
-                            informações identificam quem preencheu a anamnese
-                            em nome do aluno.
-                        </p>
-                        <div className={s.formGroup}>
-                            <label className={s.formLabel}>
-                                Seu nome completo
-                            </label>
-                            <input
-                                className={s.formInput}
-                                value={personalName}
-                                onChange={(e) => setPersonalName(e.target.value)}
-                                placeholder="Nome completo"
-                            />
+                            <div className={`${s.card} ${local.card}`}>
+                                <div className={s.cardInfo}>
+                                    <p className={s.cardName}>
+                                        <FiFileText /> Preencher agora
+                                    </p>
+                                    <p className={s.cardMeta}>
+                                        Você responde em nome do aluno (por exemplo, numa
+                                        avaliação presencial), com declaração de
+                                        responsabilidade.
+                                        {pending ? ' Isso encerra o pedido pendente.' : ''}
+                                    </p>
+                                </div>
+                                <div className={local.cardActions}>
+                                    <button
+                                        type="button"
+                                        className={s.btnSecondary}
+                                        onClick={openFill}
+                                    >
+                                        Preencher <FiChevronRight />
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                        <div className={s.formGroup}>
-                            <label className={s.formLabel}>Seu CPF</label>
-                            <input
-                                className={s.formInput}
-                                value={personalCpf}
-                                onChange={(e) =>
-                                    setPersonalCpf(formatCpfInput(e.target.value))
-                                }
-                                placeholder="000.000.000-00"
-                                inputMode="numeric"
-                                maxLength={14}
-                            />
-                        </div>
-                        <div className="form-check mb-3">
-                            <input
-                                className="form-check-input"
-                                type="checkbox"
-                                id="declaration-accept"
-                                checked={declarationAccepted}
-                                onChange={(e) =>
-                                    setDeclarationAccepted(e.target.checked)
-                                }
-                            />
-                            <label
-                                className="form-check-label"
-                                htmlFor="declaration-accept"
-                            >
-                                Declaro que preenchi este formulário em nome
-                                do aluno e assumo a responsabilidade pelas
-                                informações prestadas.
-                            </label>
-                        </div>
-                        {fillError && (
-                            <div className={s.errorMsg}>{fillError}</div>
+
+                        <h2 className={`${s.sectionTitle} ${local.heading}`}>Respostas</h2>
+                        {latest ? (
+                            <div className={local.panel}>
+                                <PersonalAnamnesisAnswers view={latest} />
+                            </div>
+                        ) : (
+                            <div className={s.empty}>
+                                <p className={s.emptyTitle}>Nenhuma resposta ainda</p>
+                                <p className={s.emptyText}>
+                                    {pending
+                                        ? 'Assim que o aluno responder, você recebe um aviso e as respostas aparecem aqui.'
+                                        : 'Solicite ao aluno ou preencha agora.'}
+                                </p>
+                            </div>
                         )}
-                        <div className="d-flex justify-content-between">
-                            <button
-                                className="btn btn-gold"
-                                disabled={fillSubmitting}
-                                onClick={() => setModalStep('questions')}
-                            >
-                                Voltar
-                            </button>
-                            <button
-                                className="btn btn-gold"
-                                disabled={!canSubmit}
-                                onClick={handleFillSubmit}
-                            >
-                                {fillSubmitting ? 'Enviando...' : 'Enviar'}
-                            </button>
-                        </div>
-                    </div>
+
+                        {older.length > 0 && (
+                            <>
+                                <h2 className={`${s.sectionTitle} ${local.heading}`}>
+                                    Respostas anteriores
+                                </h2>
+                                <div className={local.olderList}>
+                                    {older.map((view) => (
+                                        <details key={view.id} className={local.older}>
+                                            <summary className={local.olderSummary}>
+                                                Respondida em{' '}
+                                                {formatAnamnesisDate(view.submitted_at)}
+                                                {view.flagged ? ' · PAR-Q sinalizou risco' : ''}
+                                            </summary>
+                                            <div className={local.olderBody}>
+                                                <PersonalAnamnesisAnswers view={view} />
+                                            </div>
+                                        </details>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+
+                        {history.legacy.length > 0 && (
+                            <>
+                                <h2 className={`${s.sectionTitle} ${local.heading}`}>
+                                    Histórico (formato antigo)
+                                </h2>
+                                <p className={local.note}>
+                                    Questionários respondidos antes da Anamnese do
+                                    personal existir, incluindo a Triagem automática.
+                                    Só leitura.
+                                </p>
+                                <LegacyAnamnesisList items={history.legacy} />
+                            </>
+                        )}
+                    </>
+                )}
+            </div>
+
+            <Modal
+                open={fillOpen}
+                onClose={closeFill}
+                title="Preencher anamnese em nome do aluno"
+                closeOnBackdrop={!fillSubmitting}
+            >
+                {!questionnaire && !questionnaireError && (
+                    <p className={s.loading}>Carregando perguntas…</p>
+                )}
+                {questionnaireError && <div className={s.errorMsg}>{questionnaireError}</div>}
+                {questionnaire && (
+                    <PersonalAnamnesisForm
+                        key={fillFormKey}
+                        questionnaire={questionnaire}
+                        submitting={fillSubmitting}
+                        errorMessage={fillError}
+                        canSubmit={canSubmitFill}
+                        submitLabel="Registrar anamnese"
+                        onSubmit={handleFillSubmit}
+                        confirmSlot={
+                            <>
+                                <p className={local.note}>
+                                    Confirme seus dados. Eles identificam quem respondeu
+                                    em nome do aluno.
+                                </p>
+                                <div className={s.formGroup}>
+                                    <label className={s.formLabel} htmlFor="pa-personal-name">
+                                        Seu nome completo
+                                    </label>
+                                    <input
+                                        id="pa-personal-name"
+                                        className={s.formInput}
+                                        value={personalName}
+                                        onChange={(e) => setPersonalName(e.target.value)}
+                                        placeholder="Nome completo"
+                                        autoComplete="name"
+                                    />
+                                </div>
+                                <div className={s.formGroup}>
+                                    <label className={s.formLabel} htmlFor="pa-personal-cpf">
+                                        Seu CPF
+                                    </label>
+                                    <input
+                                        id="pa-personal-cpf"
+                                        className={s.formInput}
+                                        value={personalCpf}
+                                        onChange={(e) =>
+                                            setPersonalCpf(formatCpfInput(e.target.value))
+                                        }
+                                        placeholder="000.000.000-00"
+                                        inputMode="numeric"
+                                        maxLength={14}
+                                    />
+                                </div>
+                                <div className="form-check">
+                                    <input
+                                        className="form-check-input"
+                                        type="checkbox"
+                                        id="pa-declaration"
+                                        checked={declarationAccepted}
+                                        onChange={(e) => setDeclarationAccepted(e.target.checked)}
+                                    />
+                                    <label className="form-check-label" htmlFor="pa-declaration">
+                                        Declaro que as respostas refletem o relato do aluno e
+                                        assumo a responsabilidade pelas informações prestadas.
+                                    </label>
+                                </div>
+                            </>
+                        }
+                    />
                 )}
             </Modal>
             {ToastSlot}

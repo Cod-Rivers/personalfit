@@ -1,0 +1,49 @@
+.card {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+/* flex-wrap evita o padrão já corrigido de botões de ação estourando o card
+   no celular (flex-shrink:0 sem wrap). */
+.cardActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.heading {
+    margin-top: 1.75rem;
+}
+
+.panel {
+    padding: 1rem;
+    border-radius: 0.75rem;
+    border: 1px solid var(--surface-1);
+}
+
+.note {
+    margin: 0 0 0.75rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.olderList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.older {
+    padding: 0.625rem 0.75rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--surface-1);
+}
+
+.olderSummary {
+    cursor: pointer;
+    color: var(--text-primary);
+}
+
+.olderBody {
+    margin-top: 0.75rem;
+}

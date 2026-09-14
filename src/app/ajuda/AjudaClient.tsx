@@ -188,14 +188,29 @@ const studentSections: HelpSection[] = [
     },
     {
         id: 'anamnese',
-        title: 'Anamnese',
+        title: 'Triagem automática',
         body: (
             <p className="mb-0">
-                É o questionário inicial de saúde e dores (tornozelo, lombar,
-                joelho, quadril, ombro etc.) usado para entender suas
-                limitações antes de montar seus treinos. Se você já está
-                vinculado a um personal, essa etapa costuma ser dispensada,
-                pois ele monta o plano diretamente com você.
+                É o questionário de saúde e dores (tornozelo, lombar, joelho,
+                quadril, ombro etc.) que monta um treino pronto quando você
+                não tem personal. Ninguém lê essas respostas: elas só servem
+                para escolher o plano. Se você já tem personal, é ele quem
+                monta seu treino, e ele pode pedir a{' '}
+                <Link href="#anamnese-do-personal">Anamnese do personal</Link>.
+            </p>
+        ),
+    },
+    {
+        id: 'anamnese-do-personal',
+        title: 'Anamnese do personal',
+        body: (
+            <p className="mb-0">
+                Quando seu personal pede, aparece um aviso em{' '}
+                <strong>Meus treinos</strong>, junto com uma notificação. Você
+                responde perguntas de segurança, objetivos, disponibilidade,
+                local de treino, dores, lesões e preferências. As respostas
+                vão direto para o personal montar e ajustar seus treinos, e
+                nada é gerado automaticamente.
             </p>
         ),
     },
@@ -501,6 +516,32 @@ const personalSections: HelpSection[] = [
                 (satisfação e RPE), para calibrar os próximos ciclos com base
                 na experiência real dele.
             </p>
+        ),
+    },
+    {
+        id: 'anamnese-personal',
+        title: 'Anamnese do personal',
+        body: (
+            <>
+                <p className="mb-2">
+                    No cartão do aluno, em <strong>Anamnese</strong>, você pede
+                    que ele responda o questionário — ele recebe uma
+                    notificação e um aviso na tela inicial do app — ou
+                    preenche em nome dele, com declaração de
+                    responsabilidade. O selo no cartão mostra se está
+                    pendente ou respondida.
+                </p>
+                <p className="mb-0">
+                    As respostas ficam agrupadas por tema (objetivo,
+                    experiência, disponibilidade, local, dores e lesões,
+                    preferências), com a triagem de segurança (PAR-Q)
+                    destacada quando sinaliza risco. No editor de treinos, o
+                    botão <strong>Ver anamnese</strong> abre as respostas sem
+                    você sair da tela. Diferente da{' '}
+                    <GlossaryLink id="anamnese">triagem automática</GlossaryLink>,
+                    ela nunca gera treino sozinha.
+                </p>
+            </>
         ),
     },
     {

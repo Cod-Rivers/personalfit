@@ -46,6 +46,7 @@ import {
     getOfflineMacrocycle,
 } from '@/libs/offline/downloadManager';
 import SyncPendingBadge from '../../components/features/SyncPendingBadge';
+import PersonalAnamnesisPendingBanner from '@/components/features/PersonalAnamnesisPendingBanner';
 import ScrollHint from '@/components/atoms/ScrollHint';
 import GanttPlanning, {
     GanttPhase,
@@ -370,6 +371,9 @@ export default function MeusTreinosPage() {
                 className="p-6 text-center"
                 style={{ color: 'var(--text-secondary)' }}
             >
+                {/* Aluno recém-vinculado costuma cair aqui antes do primeiro
+                    treino — justamente quando o personal pede a anamnese. */}
+                <PersonalAnamnesisPendingBanner />
                 <p>Nenhum treino disponível para você no momento.</p>
                 <div
                     className="d-flex flex-column align-items-center gap-2 mt-2"
@@ -419,6 +423,7 @@ export default function MeusTreinosPage() {
                         : undefined
                 }
             >
+                <PersonalAnamnesisPendingBanner />
                 {isOfflineData && (
                     <div
                         className="alert alert-warning py-2 px-3 mb-3 d-flex align-items-center gap-2"

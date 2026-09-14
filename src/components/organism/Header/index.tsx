@@ -298,7 +298,7 @@ const Header: React.FC = () => {
                                     data-bs-toggle="dropdown"
                                     aria-expanded="false"
                                 >
-                                    Anaminese
+                                    Triagem automática
                                 </a>
                                 <ul className="dropdown-menu">
                                     <li>
@@ -306,14 +306,14 @@ const Header: React.FC = () => {
                                             className="dropdown-item"
                                             href="/anamnese"
                                         >
-                                            Refazer anaminese
+                                            Refazer triagem
                                         </Link>
                                     </li>
                                 </ul>
                                 <HelpTooltip
-                                    text="Questionário de saúde e dores que orienta a montagem dos seus treinos. Refaça quando algo mudar."
+                                    text="Questionário de saúde e dores que monta um treino pronto para quem não tem personal. Refaça quando algo mudar."
                                     href="/ajuda#glossario-anamnese"
-                                    label="Ajuda sobre a anamnese"
+                                    label="Ajuda sobre a triagem automática"
                                 />
                             </li>
                         )}

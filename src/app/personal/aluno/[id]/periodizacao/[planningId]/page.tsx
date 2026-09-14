@@ -34,6 +34,7 @@ import PlanningNextStep from '@/app/personal/_shared/periodizacao/components/Pla
 import HelpTooltip from '@/components/atoms/HelpTooltip';
 import { getGlossaryTerm } from '@/libs/glossaryContent';
 import { useToast } from '@/components/system/Toast';
+import PersonalAnamnesisQuickView from '@/components/features/PersonalAnamnesisQuickView';
 import s from '@/app/personal/_shared/periodizacao/builder.module.css';
 
 export default function PeriodizacaoDetalhePage() {
@@ -258,9 +259,13 @@ export default function PeriodizacaoDetalhePage() {
                         <h1 className={s.headerTitle}>{macro.name}</h1>
                         <p className={s.headerSub}>{macro.goal}</p>
                     </div>
-                    <button className={s.btnBack} onClick={() => router.back()}>
-                        <FiArrowLeft /> Voltar
-                    </button>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        {/* Respostas da Anamnese do personal à mão enquanto monta as séries */}
+                        <PersonalAnamnesisQuickView studentId={studentId} className={s.btnBack} />
+                        <button className={s.btnBack} onClick={() => router.back()}>
+                            <FiArrowLeft /> Voltar
+                        </button>
+                    </div>
                 </div>
 
                 {/* Resumo do plano numa linha de chips. Era um card com quatro

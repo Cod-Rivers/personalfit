@@ -211,13 +211,24 @@ const productTerms: GlossaryTerm[] = [
     },
     {
         id: 'anamnese',
-        term: 'Anamnese',
-        short: 'Questionário inicial de saúde e dores usado para montar o treino sem um personal.',
-        long: 'A anamnese é o questionário inicial de saúde e dores (tornozelo, lombar, joelho, quadril, ombro etc.) usado para gerar automaticamente um plano de treino quando o aluno não está vinculado a um personal. Quem já tem um personal costuma dispensar essa etapa, pois o plano é montado diretamente por ele.',
+        term: 'Triagem automática',
+        short: 'Questionário de saúde e dores que gera um treino pronto para quem não tem personal.',
+        long: 'A triagem automática (antes chamada só de “anamnese”) é o questionário de saúde e dores (tornozelo, lombar, joelho, quadril, ombro etc.) usado para gerar automaticamente um plano de treino quando o aluno não está vinculado a um personal. Ninguém lê essas respostas: elas só servem para escolher o plano. Quem tem personal responde à Anamnese do personal, quando ele pedir.',
         seeAlso: {
             id: 'anamnese',
-            label: 'Anamnese',
+            label: 'Triagem automática',
             audience: 'student',
+        },
+    },
+    {
+        id: 'anamnese-do-personal',
+        term: 'Anamnese do personal',
+        short: 'Questionário que o aluno com personal responde para orientar a montagem das séries.',
+        long: 'A anamnese do personal é o questionário que o personal pede ao aluno vinculado: segurança (PAR-Q), objetivos, experiência, disponibilidade, local de treino, dores, lesões e preferências. O aluno recebe um aviso e responde pelo app, ou o personal preenche em nome dele. As respostas vão para o personal, que as consulta ao montar os treinos. Diferente da Triagem automática, ela nunca gera treino sozinha.',
+        seeAlso: {
+            id: 'anamnese-personal',
+            label: 'Anamnese do personal',
+            audience: 'personal',
         },
     },
     {
