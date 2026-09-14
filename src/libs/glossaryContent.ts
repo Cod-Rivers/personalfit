@@ -388,51 +388,120 @@ const microcycleDerivedTerms: GlossaryTerm[] = microcycleHelpTopics.map((topic) 
 }));
 
 // Termos do "Desafio entre Alunos" — competição de constância entre alunos já
-// vinculados ao mesmo personal, ver StudentChallengeLeaderboard.tsx. Sem
-// `seeAlso` por enquanto: a seção dedicada na Central de Ajuda ainda não foi
-// escrita (fica para depois, não é bloqueante desta feature).
+// vinculados a um ou mais personais, ver StudentChallengeLeaderboard.tsx. Cada
+// verbete aponta por `seeAlso` para a seção que o desenvolve em /ajuda: os
+// conceitos que o ALUNO consulta vão para a central dele, e os de operação
+// (modalidades, captação) para a do personal.
 const studentChallengeTerms: GlossaryTerm[] = [
     {
         id: 'desafio-entre-alunos',
         term: 'Desafio entre Alunos',
         short: 'Competição de constância entre os alunos de um mesmo personal, por dias seguidos de treino com foto.',
         long: 'O Desafio entre Alunos é uma competição criada pelo personal entre os alunos já vinculados a ele. A pontuação é por streak: quem mantém mais dias civis seguidos completando o treino e anexando uma foto no check-in (a mesma foto opcional do registro de treino, reaproveitada automaticamente) sobe no mural. Participar exige aceitar um convite com consentimento explícito — ao aceitar, sua foto de check-in e sua sequência de dias ficam visíveis aos outros participantes do mesmo desafio. Você pode sair a qualquer momento, o que interrompe essa visibilidade na hora.',
+        seeAlso: {
+            id: 'desafios-entre-alunos',
+            label: 'Desafio entre alunos: o mural de constância',
+            audience: 'personal',
+        },
     },
     {
         id: 'streak-atual',
         term: 'Streak atual (desafio)',
         short: 'Quantos dias seguidos, até hoje, você mantém o check-in com foto dentro de um desafio entre alunos.',
         long: 'A streak atual é a sequência de dias civis seguidos, contando até hoje, em que você completou o treino e anexou uma foto no check-in dentro da janela de um desafio entre alunos. Ela tem folga para o dia de hoje ainda não ter check-in — não zera à meia-noite, só se um dia inteiro passar sem registro. É diferente da streak recorde, que não cai quando a sequência atual quebra.',
+        seeAlso: {
+            id: 'desafios',
+            label: 'Desafios',
+            audience: 'student',
+        },
     },
     {
         id: 'streak-recorde',
         term: 'Streak recorde (desafio)',
         short: 'A maior sequência de dias seguidos com foto que você já alcançou dentro do desafio — critério oficial do ranking.',
         long: 'A streak recorde (longest streak) é a maior sequência de dias civis seguidos com check-in e foto que você já alcançou desde o início do desafio, mesmo que a sequência tenha quebrado depois. É o critério oficial de desempate do mural: o ranking ordena primeiro pela streak recorde, depois pela streak atual, e só então pelo total de dias qualificados.',
+        seeAlso: {
+            id: 'desafios',
+            label: 'Desafios',
+            audience: 'student',
+        },
     },
     {
         id: 'desafio-multi-personal',
         term: 'Desafio multi-personal',
         short: 'Desafio que reúne alunos de mais de um personal, disputando entre si ou somando forças.',
         long: 'Um desafio multi-personal acontece quando o personal que organizou convida outros personais, e cada um inscreve os próprios alunos. O que se faz com essas carteiras depende da modalidade: no individual entre carteiras todo mundo entra num ranking só, aluno contra aluno; no modo de equipes cada personal vira uma equipe que disputa como bloco; no colaborativo ninguém disputa e todos somam para uma meta única. Em qualquer uma delas, isso muda quem enxerga os seus dados: além dos colegas da sua carteira e do seu personal, passam a ver sua foto de check-in, sua sequência, seu nome e seu avatar também os alunos das outras carteiras e os outros personais participantes. Por isso o app pede um consentimento novo, listando nominalmente quem participa — e, enquanto você não confirmar, você fica fora do mural: ninguém vê seus dados e você também não vê os dos outros. Sua sequência não é perdida nesse período, ela volta intacta assim que você confirmar. Nenhum desses personais tem acesso ao seu treino, à sua avaliação, ao seu telefone ou ao seu e-mail — só ao que aparece no mural.',
+        seeAlso: {
+            id: 'desafios-modalidades',
+            label: 'Modalidades e desafio multi-personal',
+            audience: 'personal',
+        },
     },
     {
         id: 'individual-entre-carteiras',
         term: 'Individual entre carteiras',
         short: 'Modalidade em que os alunos de todos os personais disputam num ranking único, sem quadro de equipes.',
         long: 'No individual entre carteiras o desafio reúne os alunos de dois ou mais personais num único mural, e quem disputa é o aluno: a classificação usa exatamente os mesmos critérios do desafio individual de sempre (streak recorde, depois streak atual, depois total de dias qualificados), sem nenhuma correção pelo tamanho da carteira. O personal de cada aluno aparece como etiqueta ao lado do nome, só para você saber de quem é cada um — a carteira não pontua e não existe quadro de equipes. É a diferença para o modo de equipes, onde quem disputa é a carteira e a pontuação precisa ser ajustada para que um personal com 3 alunos não leve vantagem sobre um com 30. Como reúne carteiras diferentes, vale o mesmo consentimento novo de qualquer desafio multi-personal.',
+        seeAlso: {
+            id: 'desafios-modalidades',
+            label: 'Modalidades e desafio multi-personal',
+            audience: 'personal',
+        },
     },
     {
         id: 'taxa-ajustada-equipe',
         term: 'Taxa ajustada (quadro de equipes)',
         short: 'Pontuação que classifica as equipes, corrigindo a vantagem de sorte que equipes pequenas teriam.',
         long: 'No modo de equipes, cada equipe (um personal e os alunos dele) recebe duas notas. A taxa bruta é a conta direta: o percentual de dias da janela em que um aluno típico daquela equipe registrou treino com foto. A taxa ajustada é a que classifica: ela mistura a taxa bruta da equipe com a média geral do desafio, dando mais peso ao número próprio quanto mais alunos a equipe tiver. Existe porque, na conta bruta, uma equipe de 3 alunos só precisa não ter nenhum faltoso para vencer uma de 30 — o ajuste tira essa vantagem de amostra pequena sem fingir que 3 alunos assíduos é um resultado ruim. As duas aparecem sempre lado a lado no quadro. Equipe com menos de 3 alunos ativos aparece no quadro, mas fora de classificação.',
+        seeAlso: {
+            id: 'desafios-modalidades',
+            label: 'Modalidades e desafio multi-personal',
+            audience: 'personal',
+        },
     },
     {
         id: 'meta-colaborativa',
         term: 'Meta colaborativa',
         short: 'Modalidade em que todos somam dias de treino rumo a um número único do grupo, sem disputa.',
         long: 'Na modalidade colaborativa não há ranking de equipes nem vencedor: o grupo inteiro soma os dias de treino com foto rumo a uma meta única, definida pelo personal organizador antes do desafio começar (e imutável depois disso). A barra do topo mostra quanto o grupo já somou, e abaixo dela aparece a contribuição de cada equipe — contribuição, não colocação. Ao bater a meta o desafio não encerra: ele segue até a data final e o excedente é mostrado como "dias além da meta". Se a meta não for alcançada, o app apenas registra o percentual que o grupo chegou; não existe marca negativa, notificação de fracasso nem penalidade em nenhum lugar do sistema.',
+        seeAlso: {
+            id: 'desafios-modalidades',
+            label: 'Modalidades e desafio multi-personal',
+            audience: 'personal',
+        },
+    },
+    {
+        id: 'dia-qualificante',
+        term: 'Dia qualificante (desafio)',
+        short: 'Dia do calendário em que o aluno concluiu um treino e anexou foto no check-in, dentro da janela do desafio.',
+        long: 'O dia qualificante é a unidade de pontuação do Desafio entre Alunos: um dia do calendário, dentro do período do desafio, em que o aluno concluiu um treino E anexou uma foto na tela de check-in. Treino pulado não conta, treino concluído sem foto não conta, e dois treinos no mesmo dia contam como um só — a métrica é constância, não volume. Vale o horário do aparelho do aluno no momento da conclusão, e não o do servidor: um treino feito sem sinal e sincronizado no dia seguinte conta no dia em que foi feito. Em desafios com conferência estrita, o dia passa a contar depois de o personal aceitar a foto (ou sozinho, após o prazo de folga que ele configurou); foto recusada nunca conta, em nenhuma política.',
+        seeAlso: {
+            id: 'desafios',
+            label: 'Desafios',
+            audience: 'student',
+        },
+    },
+    {
+        id: 'pose-do-dia',
+        term: 'Pose do dia',
+        short: 'Pose sorteada por dia, com um código próprio de cada aluno, que serve de prova de presença na foto do check-in.',
+        long: 'A pose do dia é a camada de antifraude do Desafio entre Alunos: como o envio de foto aceita qualquer imagem da galeria, o app sorteia uma pose por dia (a mesma para todo o desafio) e gera um código de quatro caracteres diferente para cada aluno, que deve aparecer na imagem. O app estampa código e data na foto no momento da captura. A pose de dias futuros nunca é revelada — é isso que impede fotografar a semana inteira de uma vez —, e o código por aluno é o que faz a foto de um não servir para o outro. Não é prova criptográfica: serve para o personal identificar em segundos uma foto reciclada, e a decisão final é sempre humana, na fila de conferência. Quem registra offline sobe a foto marcada como "sem pose", o que é um aviso para conferir, não uma acusação.',
+        seeAlso: {
+            id: 'desafios',
+            label: 'Desafios',
+            audience: 'student',
+        },
+    },
+    {
+        id: 'desafio-de-captacao',
+        term: 'Desafio de captação',
+        short: 'Campanha com link público em que quem ainda não é aluno se inscreve, para depois ser convertido em aluno.',
+        long: 'O desafio de captação é a outra metade da área de Desafios, separada do Desafio entre Alunos: o personal cria uma campanha com período e limite opcional de vagas, e divulga um link público. Quem se inscreve informa nome, e-mail e telefone e não precisa ter conta no Venafit — é um lead, não um aluno. O mesmo e-mail nunca entra duas vezes, as inscrições fecham sozinhas quando a data final passa ou as vagas acabam, e o personal recebe notificação a cada inscrição. Ao final, cada participante pode ser convertido em aluno com um toque, sem pré-cadastro novo. É gratuito e não se mistura com o mural de constância: aqui não há pontuação, ranking nem foto de check-in.',
+        seeAlso: {
+            id: 'desafios-captacao',
+            label: 'Desafio de captação (link público)',
+            audience: 'personal',
+        },
     },
 ];
 
