@@ -19,6 +19,11 @@ export interface ExerciseResponse {
     exercise_library_id?: string;
     load_percentage?: number;
     load_kg?: number;
+    /** ISO da última vez que load_kg mudou — carimbado pelo SERVIDOR, nunca
+     * enviado pelo client. O motor de sugestão de carga do aluno
+     * (loadSuggestion.ts) usa esta data para ignorar sessões executadas
+     * contra uma prescrição anterior, sem apagar o histórico em si. */
+    load_prescribed_at?: string;
     rest_seconds?: number;
     tempo_seconds?: number;
     rpe_target?: number;

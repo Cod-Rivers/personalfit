@@ -24,6 +24,7 @@ export function toExerciseLog(ex: ExerciseResponse): ExerciseLog {
         comments: ex.comments,
         restTime: ex.rest_seconds ?? 60,
         plannedWeight: ex.load_kg,
+        loadPrescribedAt: ex.load_prescribed_at,
         technique: ex.technique,
         technique_params: ex.technique_params,
         group_technique: ex.group_technique,

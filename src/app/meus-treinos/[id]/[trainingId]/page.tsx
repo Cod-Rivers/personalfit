@@ -490,6 +490,7 @@ export default function MeusTreinosExercisesPage({
         for (const exercise of exercises) {
             map[exercise.id] = computeLoadSuggestion({
                 prescribedKg: exercise.plannedWeight,
+                prescribedAt: exercise.loadPrescribedAt,
                 history: loadHistoryByExercise[exercise.id] ?? [],
                 targetRPE,
                 // Topo da faixa de reps prescrita (dupla progressão): só

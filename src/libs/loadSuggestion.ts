@@ -68,6 +68,13 @@ export interface ComputeLoadSuggestionInput {
     /** Histórico de séries executadas deste exercício pelo aluno, de
      * qualquer janela temporal — a função usa as sessões mais recentes. */
     history: LoadHistoryEntry[];
+    /** ISO da última vez que a carga prescrita mudou
+     * (ExerciseResponse.load_prescribed_at). Quando presente, sessões do
+     * histórico anteriores a esta data são ignoradas na base de progressão
+     * do aluno — evita diluir um ajuste recente do personal com sessões
+     * executadas contra a prescrição ANTERIOR. Não afeta o histórico em si,
+     * só a janela que esta sugestão enxerga. */
+    prescribedAt?: string | null;
     /** RPE alvo do microciclo (ou o ajustado pela zona do dia). */
     targetRPE: number;
     /** Topo da faixa de reps prescrita (dupla progressão): um aumento de
@@ -144,13 +151,28 @@ export function computeLoadSuggestion(
             ? input.prescribedKg
             : null;
 
-    const sortedHistory = [...input.history]
+    // Sessões anteriores ao último ajuste de carga do personal não contam
+    // para a base de progressão: reenxergar a comparação de dia inteiro (não
+    // hora) é uma imprecisão aceita — uma sessão registrada no MESMO dia do
+    // ajuste conta como "depois", mesmo que tenha sido antes na hora.
+    const prescribedAtKey = input.prescribedAt
+        ? dateKey(input.prescribedAt)
+        : null;
+    const allHistory = [...input.history]
         .filter((h) => h.loadKg > 0 && h.reps > 0)
         .sort((a, b) => {
             const ak = dateKey(a.date);
             const bk = dateKey(b.date);
             return ak < bk ? 1 : ak > bk ? -1 : 0;
         });
+    const sortedHistory = prescribedAtKey
+        ? allHistory.filter((h) => dateKey(h.date) >= prescribedAtKey)
+        : allHistory;
+    // Só sinaliza "resetado" quando o filtro de fato descartou algo — sem
+    // isso, todo exercício com load_prescribed_at (a maioria, depois desta
+    // mudança) ganharia a explicação mesmo sem nenhuma sessão represada.
+    const resetByPrescription =
+        prescribedAtKey != null && sortedHistory.length < allHistory.length;
     const lastSession = sortedHistory[0] ?? null;
 
     if (!prescribedKg && !lastSession) {
@@ -213,6 +235,10 @@ export function computeLoadSuggestion(
         if (!progressionGated) {
             alunoReason = `última série ${lastSession.loadKg}kg × ${lastSession.reps} @ RPE ${lastSession.rpe} → ${progressPct >= 0 ? '+' : ''}${progressPct}%`;
         }
+        if (resetByPrescription) {
+            alunoReason +=
+                ' (sessões anteriores ao ajuste de carga do personal foram desconsideradas)';
+        }
 
         alunoBaseKg = lastSession.loadKg * (1 + progressPct / 100);
 
@@ -259,10 +285,13 @@ export function computeLoadSuggestion(
         const nudgePct = policy.firstSuggestionNudgePct;
         baseKg = (prescribedKg as number) * (1 + nudgePct / 100);
         source = 'personal';
+        const semHistoricoMsg = resetByPrescription
+            ? 'carga recém-ajustada pelo personal — sessões anteriores ao ajuste não contam para a sugestão'
+            : 'sem histórico ainda';
         reason =
             nudgePct > 0
-                ? `carga prescrita pelo personal (${prescribedKg}kg) + progressão inicial padrão (+${nudgePct}%), sem histórico ainda`
-                : `carga prescrita pelo personal (${prescribedKg}kg), sem histórico ainda`;
+                ? `carga prescrita pelo personal (${prescribedKg}kg) + progressão inicial padrão (+${nudgePct}%), ${semHistoricoMsg}`
+                : `carga prescrita pelo personal (${prescribedKg}kg), ${semHistoricoMsg}`;
     }
 
     if (weeklyCapped) {

@@ -282,3 +282,78 @@ describe('computeLoadSuggestion', () => {
         expect(withDeload.suggestedKg).toBe(40);
     });
 });
+
+describe('prescribedAt (reset da janela ao personal mudar a carga)', () => {
+    it('ignores sessions executed before the load was last changed', () => {
+        const history = [
+            // Contra a prescrição ANTERIOR — não pode diluir o ajuste novo.
+            { date: '2026-08-01', loadKg: 30, reps: 10, rpe: 6 },
+            { date: '2026-08-03', loadKg: 30, reps: 10, rpe: 6 },
+        ];
+
+        const result = computeLoadSuggestion({
+            prescribedKg: 40,
+            prescribedAt: '2026-08-05',
+            history,
+            targetRPE: 8,
+            autoregulationAdjustPct: 0,
+            policy: {
+                ...DEFAULT_AUTOREGULATION_POLICY,
+                firstSuggestionNudgePct: 0,
+            },
+            referenceDate: '2026-08-06',
+        });
+
+        // Sem sessão sobrevivendo ao filtro, cai no mesmo caminho de "sem
+        // histórico": a prescrição nova vale inteira, sem mistura.
+        expect(result.source).toBe('personal');
+        expect(result.suggestedKg).toBe(40);
+        expect(result.reason).toContain('sessões anteriores ao ajuste');
+    });
+
+    it('keeps sessions executed on or after the prescription change', () => {
+        const history = [
+            { date: '2026-08-01', loadKg: 30, reps: 10, rpe: 6 }, // descartada
+            { date: '2026-08-05', loadKg: 40, reps: 10, rpe: 6 }, // no dia do ajuste, conta
+        ];
+
+        const result = computeLoadSuggestion({
+            prescribedKg: 40,
+            prescribedAt: '2026-08-05',
+            history,
+            targetRPE: 8,
+            autoregulationAdjustPct: 0,
+            policy: {
+                ...DEFAULT_AUTOREGULATION_POLICY,
+                minConsecutiveSessionsBeforeIncrease: 1,
+            },
+            referenceDate: '2026-08-06',
+        });
+
+        expect(result.source).toBe('ambos');
+        expect(result.reason).toContain('desconsideradas');
+    });
+
+    it('behaves exactly like no prescribedAt when nothing is filtered out', () => {
+        const history = [{ date: '2026-08-05', loadKg: 40, reps: 10, rpe: 6 }];
+        const base = {
+            prescribedKg: 40,
+            history,
+            targetRPE: 8,
+            autoregulationAdjustPct: 0,
+            referenceDate: '2026-08-06',
+        };
+
+        const withoutStamp = computeLoadSuggestion(base);
+        // A prescrição só mudou NO dia da sessão (ou antes dela) — nada é
+        // filtrado, então o resultado deve ser idêntico a não informar
+        // prescribedAt, e a explicação não deve mencionar reset nenhum.
+        const withStamp = computeLoadSuggestion({
+            ...base,
+            prescribedAt: '2026-08-01',
+        });
+
+        expect(withStamp.suggestedKg).toBe(withoutStamp.suggestedKg);
+        expect(withStamp.reason).not.toContain('desconsideradas');
+    });
+});

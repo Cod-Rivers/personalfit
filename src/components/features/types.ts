@@ -15,6 +15,10 @@ export interface ExerciseLog {
      * base para a sugestão de carga do painel de autorregulação do
      * microciclo. Ausente no fluxo legado (/app/treino). */
     plannedWeight?: number;
+    /** ISO da última vez que plannedWeight mudou (ExerciseResponse.
+     * load_prescribed_at) — ver libs/loadSuggestion.ts. Ausente no fluxo
+     * legado, igual a plannedWeight. */
+    loadPrescribedAt?: string;
     /** Técnica de treinamento avançada (dropset, isometria etc) — ver
      * TECHNIQUE_CATALOG em @/libs/trainingTechniques. */
     technique?: string;
