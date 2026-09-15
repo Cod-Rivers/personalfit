@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { getLocale } from 'next-intl/server';
+import { headers } from 'next/headers';
 import { NextIntlClientProvider } from 'next-intl';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { BrandingProvider } from '@/context/BrandingContext';
@@ -47,7 +48,15 @@ export default async function RootLayout({
 }: Readonly<{
     children: React.ReactNode;
 }>) {
-    const locale = await getLocale();
+    // O nonce vem do middleware (ver libs/csp.ts). Ler headers() aqui
+    // também é o que torna todas as rotas dinâmicas, requisito do nonce:
+    // HTML pré-renderizado no build não tem como carregar um nonce que
+    // muda a cada requisição.
+    const [locale, requestHeaders] = await Promise.all([
+        getLocale(),
+        headers(),
+    ]);
+    const nonce = requestHeaders.get('x-nonce') ?? undefined;
     return (
         <html
             lang={locale}
@@ -56,8 +65,13 @@ export default async function RootLayout({
             suppressHydrationWarning
         >
             <head>
-                {/* Previne flash do tema errado antes da hidratação */}
+                {/* Previne flash do tema errado antes da hidratação.
+                    suppressHydrationWarning nos <script> com nonce: depois de ler
+                    o atributo, o navegador o esvazia no DOM (getAttribute devolve
+                    ""), e o React acusaria diferença entre servidor e cliente. */}
                 <script
+                    nonce={nonce}
+                    suppressHydrationWarning
                     dangerouslySetInnerHTML={{
                         __html: `(function(){try{var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`,
                     }}
@@ -84,11 +98,15 @@ export default async function RootLayout({
                 </NextIntlClientProvider>
                 {/* eslint-disable-next-line @next/next/no-sync-scripts */}
                 <script
+                    nonce={nonce}
+                    suppressHydrationWarning
                     src="https://kit.fontawesome.com/e177edb816.js"
                     crossOrigin="anonymous"
                 ></script>
                 {/* eslint-disable-next-line @next/next/no-sync-scripts */}
                 <script
+                    nonce={nonce}
+                    suppressHydrationWarning
                     src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
                     integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
                     crossOrigin="anonymous"
