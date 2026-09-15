@@ -16,7 +16,7 @@ export default function PoliticaPrivacidadePage() {
         <div className="container py-5" style={{ maxWidth: 800 }}>
             <h1 className="mb-1 fw-bold">Política de Privacidade</h1>
             <p className="text-secondary mb-4">
-                Última atualização: 10 de setembro de 2026.
+                Última atualização: 15 de setembro de 2026.
             </p>
 
             <section className="mb-4">
@@ -227,8 +227,9 @@ export default function PoliticaPrivacidadePage() {
                         <strong>Eliminação:</strong> você pode excluir sua conta
                         a qualquer momento em{' '}
                         <Link href="/minha-conta">Minha Conta</Link>. Seus dados
-                        de identificação e de saúde são anonimizados
-                        imediatamente. Se você não consegue mais entrar na
+                        de identificação são anonimizados e seus dados de saúde,
+                        fotos e histórico de treino são apagados imediatamente.
+                        Se você não consegue mais entrar na
                         conta, peça a exclusão sem login em{' '}
                         <Link href="/excluir-conta">Excluir conta e dados</Link>
                         , onde também estão os prazos do que precisa ser
@@ -309,11 +310,15 @@ export default function PoliticaPrivacidadePage() {
             <section className="mb-4">
                 <h2 className="h5 fw-semibold">10. Retenção de dados</h2>
                 <p>
-                    Ao excluir sua conta, seus dados de identificação e de saúde
-                    são anonimizados imediatamente. Dados financeiros ligados à
-                    assinatura são mantidos por 5 anos, conforme obrigação
-                    fiscal (Lei 9.249/95). Registros de acesso são mantidos por
-                    6 meses, conforme o Art. 15 do Marco Civil da Internet.
+                    Ao excluir sua conta, seus dados de identificação são
+                    anonimizados e seus dados de saúde, fotos, avaliações
+                    físicas, planos e histórico de treino são apagados
+                    imediatamente. Dados financeiros ligados à assinatura são
+                    mantidos por 5 anos, conforme obrigação fiscal (Lei
+                    9.249/95). Registros de acesso são mantidos por 6 meses,
+                    conforme o Art. 15 do Marco Civil da Internet. A lista
+                    completa do que é retido, e por quê, está em{' '}
+                    <Link href="/excluir-conta">Excluir conta e dados</Link>.
                 </p>
             </section>
 

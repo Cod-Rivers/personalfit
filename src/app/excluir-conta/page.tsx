@@ -109,16 +109,27 @@ export default function ExcluirContaPage() {
                     </li>
                     <li>
                         <strong>Dados de saúde:</strong> respostas da anamnese,
-                        dores e restrições relatadas, liberações e avaliações
-                        físicas.
+                        dores e restrições relatadas, liberações, avaliações
+                        físicas (peso, medidas e percentual de gordura) e plano
+                        alimentar.
                     </li>
                     <li>
-                        <strong>Fotos:</strong> fotos de check-in de treino,
-                        inclusive as que apareciam no mural de um desafio.
+                        <strong>Fotos e arquivos:</strong> fotos de check-in de
+                        treino, inclusive as que apareciam no mural de um
+                        desafio, fotos das avaliações físicas e os PDFs de plano
+                        alimentar e de treino importado.
                     </li>
                     <li>
-                        <strong>Plano de treino:</strong> protocolo atribuído,
-                        progresso e observações do seu personal trainer.
+                        <strong>Treinos:</strong> planos de treino, protocolo
+                        atribuído, observações do seu personal trainer,
+                        histórico de treinos executados (séries, cargas, esforço
+                        e anotações), cargas salvas e as notas que você deu aos
+                        treinos.
+                    </li>
+                    <li>
+                        <strong>Inteligência artificial:</strong> as
+                        substituições de exercício sugeridas para você, com o
+                        nível e as restrições usados para escolhê-las.
                     </li>
                     <li>
                         <strong>Credenciais e acesso:</strong> senha e todas as
@@ -127,7 +138,8 @@ export default function ExcluirContaPage() {
                     </li>
                     <li>
                         <strong>Notificações:</strong> os identificadores usados
-                        para enviar notificações push ao seu aparelho.
+                        para enviar notificações push ao seu aparelho e as
+                        notificações recebidas.
                     </li>
                     <li>
                         <strong>Personal trainer:</strong> vitrine, marca,
@@ -177,16 +189,27 @@ export default function ExcluirContaPage() {
                             </tr>
                             <tr>
                                 <td>
-                                    Histórico de treinos executados (séries,
-                                    cargas, datas) e registros de uso dos
-                                    recursos de inteligência artificial
+                                    Agendamentos com o personal trainer (data,
+                                    horário e observações), faturas lançadas
+                                    por ele e o registro do vínculo entre vocês
                                 </td>
                                 <td>Sem prazo definido</td>
                                 <td>
-                                    Ficam guardados sem nenhum dado que
-                                    identifique você, ligados apenas a um código
-                                    interno que deixa de corresponder a uma
-                                    pessoa depois da exclusão.
+                                    Fazem parte da agenda e do controle
+                                    financeiro do personal trainer. Ficam
+                                    ligados a um cadastro que não tem mais nome,
+                                    e-mail, CPF nem telefone.
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    Quantidade de uso dos recursos de
+                                    inteligência artificial
+                                </td>
+                                <td>Sem prazo definido</td>
+                                <td>
+                                    Entra só na conta de custo da plataforma,
+                                    sem nenhuma ligação com o seu cadastro.
                                 </td>
                             </tr>
                             <tr>

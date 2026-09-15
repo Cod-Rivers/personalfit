@@ -306,8 +306,9 @@ export default function MinhaContaPage() {
                             className="text-secondary mb-3"
                             style={{ fontSize: '0.9rem' }}
                         >
-                            Ao excluir sua conta, todos os seus dados pessoais
-                            serão anonimizados permanentemente conforme a LGPD.
+                            Ao excluir sua conta, seus dados de identificação são
+                            anonimizados e seus dados de saúde e de treino são
+                            apagados permanentemente, conforme a LGPD.
                             Esta ação não pode ser desfeita. Veja o que é
                             apagado, o que é retido e por quanto tempo em{' '}
                             <Link href="/excluir-conta">
@@ -364,8 +365,8 @@ export default function MinhaContaPage() {
                     className="text-secondary"
                     style={{ fontSize: '0.875rem' }}
                 >
-                    Seus dados pessoais serão anonimizados
-                    conforme a LGPD.
+                    Seus dados de saúde e de treino serão apagados e os de
+                    identificação, anonimizados conforme a LGPD.
                 </p>
                 {error && (
                     <div className="alert alert-danger py-2">

@@ -2683,8 +2683,8 @@ const personalSections: HelpSection[] = [
                 <p className="mb-0">
                     Na mesma tela você baixa uma cópia de todos os seus dados
                     (perfil, alunos, histórico e assinatura) ou pede a
-                    exclusão definitiva da conta, que anonimiza seus dados de
-                    forma irreversível. Os detalhes estão na{' '}
+                    exclusão definitiva da conta, que apaga ou anonimiza seus
+                    dados de forma irreversível. Os detalhes estão na{' '}
                     <Link href="/politica-privacidade">
                         Política de Privacidade
                     </Link>

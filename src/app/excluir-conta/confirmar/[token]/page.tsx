@@ -55,9 +55,9 @@ export default function ConfirmarExclusaoPage() {
                     <div className="alert alert-success">
                         <p className="fw-semibold mb-1">Conta excluída.</p>
                         <p className="mb-0">
-                            Seus dados de identificação e de saúde foram
-                            anonimizados de forma permanente e todos os
-                            aparelhos foram desconectados.
+                            Seus dados de identificação foram anonimizados, seus
+                            dados de saúde e de treino foram apagados de forma
+                            permanente e todos os aparelhos foram desconectados.
                         </p>
                     </div>
                     <p className="text-secondary">
@@ -73,9 +73,10 @@ export default function ConfirmarExclusaoPage() {
                 <>
                     <p>
                         Este é o último passo. Ao confirmar, seus dados de
-                        identificação (nome, e-mail, CPF, telefone e foto) e
-                        seus dados de saúde (anamnese, restrições, avaliações e
-                        fotos) são anonimizados de forma{' '}
+                        identificação (nome, e-mail, CPF, telefone e foto) são
+                        anonimizados e seus dados de saúde e de treino
+                        (anamnese, restrições, avaliações, fotos, planos e
+                        histórico de treinos) são apagados de forma{' '}
                         <strong>permanente e irreversível</strong>.
                     </p>
                     <p className="text-secondary">
