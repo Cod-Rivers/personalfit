@@ -45,9 +45,16 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+# Roda como `node` (uid 1000), o usuário sem privilégio que a imagem oficial
+# já traz. Como root, uma execução remota de código no servidor Next teria o
+# container inteiro; como `node`, fica restrita ao que esse usuário escreve.
+# Os arquivos precisam ser dele porque o cache da otimização de imagem
+# (next/image) é gravado em .next/cache em tempo de execução.
+COPY --from=builder --chown=node:node /app/public ./public
+COPY --from=builder --chown=node:node /app/.next/standalone ./
+COPY --from=builder --chown=node:node /app/.next/static ./.next/static
+
+USER node
 
 EXPOSE 8080
 CMD ["node", "server.js"]
