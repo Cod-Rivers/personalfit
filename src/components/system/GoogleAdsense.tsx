@@ -1,13 +1,25 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Script from 'next/script';
 import { useBranding } from '@/context/BrandingContext';
-import { ADSENSE_CLIENT_ID, shouldShowAds } from '@/libs/adsense';
+import {
+    ADSENSE_CLIENT_ID,
+    isAdEnvironmentSafe,
+    shouldShowAds,
+} from '@/libs/adsense';
 
 export default function GoogleAdsense() {
     const { effectivePlanType } = useBranding();
+    // Decidido só depois da montagem: se é o app nativo, e com qual ponte, não
+    // dá para saber no servidor (ver isAdEnvironmentSafe).
+    const [environmentSafe, setEnvironmentSafe] = useState(false);
 
-    if (!shouldShowAds(effectivePlanType)) return null;
+    useEffect(() => {
+        setEnvironmentSafe(isAdEnvironmentSafe());
+    }, []);
+
+    if (!environmentSafe || !shouldShowAds(effectivePlanType)) return null;
 
     return (
         <Script

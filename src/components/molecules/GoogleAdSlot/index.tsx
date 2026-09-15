@@ -1,8 +1,13 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useBranding } from '@/context/BrandingContext';
-import { ADSENSE_CLIENT_ID, shouldShowAds } from '@/libs/adsense';
+import {
+    ADSENSE_CLIENT_ID,
+    ADSENSE_SLOT_ID,
+    isAdEnvironmentSafe,
+    shouldShowAds,
+} from '@/libs/adsense';
 
 declare global {
     interface Window {
@@ -10,14 +15,20 @@ declare global {
     }
 }
 
-// TODO: substituir pelo ID real da unidade de anúncio criada no painel do
-// AdSense (Anúncios > Por unidade de anúncio > Criar unidade de display).
-// Sem um data-ad-slot válido o bloco não é preenchido pelo Google.
-const AD_SLOT_ID = 'REPLACE_WITH_AD_SLOT_ID';
-
 const GoogleAdSlot: React.FC = () => {
     const { effectivePlanType } = useBranding();
-    const visible = shouldShowAds(effectivePlanType);
+    // Ver GoogleAdsense: o ambiente só é conhecido depois da montagem.
+    const [environmentSafe, setEnvironmentSafe] = useState(false);
+
+    useEffect(() => {
+        setEnvironmentSafe(isAdEnvironmentSafe());
+    }, []);
+
+    // Sem ID de unidade configurado não há bloco manual (ver ADSENSE_SLOT_ID).
+    const visible =
+        environmentSafe &&
+        ADSENSE_SLOT_ID !== '' &&
+        shouldShowAds(effectivePlanType);
 
     useEffect(() => {
         if (!visible) return;
@@ -35,7 +46,7 @@ const GoogleAdSlot: React.FC = () => {
             className="adsbygoogle"
             style={{ display: 'block' }}
             data-ad-client={ADSENSE_CLIENT_ID}
-            data-ad-slot={AD_SLOT_ID}
+            data-ad-slot={ADSENSE_SLOT_ID}
             data-ad-format="auto"
             data-full-width-responsive="true"
         />
