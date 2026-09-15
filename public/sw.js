@@ -31,7 +31,19 @@ function isSignedR2Request(url) {
 // qualquer coisa sob /api. Mesmo hoje a API vivendo em outra origem (portanto já
 // fora do cache same-origin), esta lista é defesa em profundidade caso a API
 // passe a ser servida no mesmo domínio via proxy reverso.
-const NO_CACHE_PATHS = ['/api', '/minha-conta', '/anamnese', '/admin'];
+const NO_CACHE_PATHS = [
+    '/api',
+    '/minha-conta',
+    '/anamnese',
+    '/admin',
+    // O próprio endereço destas páginas carrega um token de uso único
+    // (redefinição de senha, confirmação de exclusão de conta). Cachear a
+    // navegação grava o token no Cache Storage, com a URL como chave. E os
+    // dois fluxos rodam deslogado, então o clearSession() do logout, que
+    // limpa o Cache Storage, nunca passa para apagá-lo.
+    '/redefinir-senha',
+    '/excluir-conta/confirmar',
+];
 
 function isSensitivePath(pathname) {
     return NO_CACHE_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'));
@@ -41,8 +53,27 @@ self.addEventListener('install', () => {
     self.skipWaiting();
 });
 
+// Tira do cache de shell o que foi guardado antes de o caminho entrar em
+// NO_CACHE_PATHS. Sem isto, um aparelho que já abriu um link de redefinição
+// de senha continuaria com o token no Cache Storage indefinidamente.
+async function purgeSensitiveShellEntries() {
+    const cache = await caches.open(SHELL_CACHE);
+    const requests = await cache.keys();
+    await Promise.all(
+        requests
+            .filter((req) => isSensitivePath(new URL(req.url).pathname))
+            .map((req) => cache.delete(req)),
+    );
+}
+
 self.addEventListener('activate', (event) => {
-    event.waitUntil(self.clients.claim());
+    event.waitUntil(
+        Promise.all([
+            self.clients.claim(),
+            // Faxina é melhor-esforço: falhar aqui não pode travar a ativação.
+            purgeSensitiveShellEntries().catch(() => {}),
+        ]),
+    );
 });
 
 function isMediaRequest(request, url) {
