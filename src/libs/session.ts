@@ -12,6 +12,8 @@
  * espalhada por login, seleção de perfil, header e interceptores.
  */
 
+import { nativeAuthClear, nativeAuthSave } from '@/libs/nativeBridge';
+
 // Import de TIPO apenas (apagado na compilação) — não cria dependência de
 // runtime, então não fecha o ciclo session.ts -> syncQueue.ts ->
 // workoutLogService.ts -> api.ts -> session.ts. O acesso real às funções da
@@ -30,19 +32,6 @@ export interface SessionUser {
     // Vazio quando o personal pré-cadastrou o aluno sem informar CPF — a
     // tela de troca de senha do primeiro login exige completá-lo nesse caso.
     cpf?: string;
-}
-
-// Bridge nativa do app Android (window.VenafitAuth, injetada via
-// addJavascriptInterface — ver AuthBridge.kt) usada pelo widget de tela
-// inicial (calendário de constância) para chamar a API em background, sem
-// depender da WebView estar aberta. Ausente no navegador comum.
-declare global {
-    interface Window {
-        VenafitAuth?: {
-            save(token: string): void;
-            clear(): void;
-        };
-    }
 }
 
 const TOKEN_KEY = 'token';
@@ -114,7 +103,9 @@ export function saveSession(
     if (refreshToken) localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
     setCookie(AUTH_COOKIE, '1', SESSION_MAX_AGE_SECONDS);
     setCookie(ROLE_COOKIE, String(user.role ?? ''), SESSION_MAX_AGE_SECONDS);
-    window.VenafitAuth?.save(token);
+    // Token para o widget de calendário do app Android sincronizar em
+    // background (AuthBridge.kt). No navegador comum não faz nada.
+    nativeAuthSave(token);
 }
 
 export function getRefreshToken(): string | null {
@@ -131,7 +122,7 @@ export function getRefreshToken(): string | null {
 export function refreshNativeAuthToken(): void {
     if (typeof window === 'undefined') return;
     const token = getToken();
-    if (token) window.VenafitAuth?.save(token);
+    if (token) nativeAuthSave(token);
 }
 
 export function getToken(): string | null {
@@ -306,7 +297,7 @@ async function runClearSession(): Promise<void> {
     localStorage.removeItem(REFRESH_TOKEN_KEY);
     deleteCookie(AUTH_COOKIE);
     deleteCookie(ROLE_COOKIE);
-    window.VenafitAuth?.clear();
+    nativeAuthClear();
 
     // Anotações e carga de exercício cacheadas localmente (dado sensível de treino)
     for (let i = localStorage.length - 1; i >= 0; i--) {

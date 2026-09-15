@@ -1,9 +1,14 @@
+import {
+    hasNativeBilling,
+    nativeBillingAvailable,
+    nativeBillingPurchase,
+} from '@/libs/nativeBridge';
 import { Api } from '@/libs/api';
 
 /**
  * Serviço de pagamentos: catálogo de planos, assinatura Pro via Asaas
  * (PIX/cartão), compra de nova anamnese (PIX) e verificação de compras do
- * Google Play (fluxo nativo via bridge window.VenafitBilling).
+ * Google Play (fluxo nativo via ponte do app Android — ver libs/nativeBridge.ts).
  *
  * Os PREÇOS vêm sempre do backend (GET /plans) — o cliente nunca envia valor.
  */
@@ -181,26 +186,13 @@ export async function verifyGooglePlayPurchase(
     return res.data;
 }
 
-/** Interface exposta pelo wrapper Android via addJavascriptInterface. */
-interface VenafitBillingBridge {
-    isAvailable(): boolean;
-    /** Inicia o fluxo de compra nativo. accountId = ID do usuário (obfuscatedAccountId). */
-    purchase(productId: string, productType: 'subs' | 'inapp', accountId: string): void;
-}
-
-declare global {
-    interface Window {
-        VenafitBilling?: VenafitBillingBridge;
-    }
-}
-
-/** true quando rodando dentro do app Android com a bridge de billing ativa. */
-export function isGooglePlayBillingAvailable(): boolean {
-    try {
-        return typeof window !== 'undefined' && !!window.VenafitBilling?.isAvailable();
-    } catch {
-        return false;
-    }
+/**
+ * true quando rodando dentro do app Android com o Google Play Billing pronto.
+ * Assíncrono porque, no canal restrito por origem do app atual, a pergunta
+ * vira uma mensagem ao Android e a resposta chega depois.
+ */
+export function isGooglePlayBillingAvailable(): Promise<boolean> {
+    return nativeBillingAvailable();
 }
 
 export interface BillingBridgeEvent {
@@ -222,8 +214,7 @@ export function launchGooglePlayPurchase(
     timeoutMs = 5 * 60 * 1000,
 ): Promise<BillingBridgeEvent> {
     return new Promise((resolve, reject) => {
-        const bridge = window.VenafitBilling;
-        if (!bridge) {
+        if (!hasNativeBilling()) {
             reject(new Error('Google Play Billing indisponível neste dispositivo'));
             return;
         }
@@ -249,7 +240,7 @@ export function launchGooglePlayPurchase(
 
         window.addEventListener('venafit-billing', onEvent as EventListener);
         try {
-            bridge.purchase(productId, productType, accountId);
+            nativeBillingPurchase(productId, productType, accountId);
         } catch (err) {
             clearTimeout(timer);
             window.removeEventListener('venafit-billing', onEvent as EventListener);

@@ -5,6 +5,7 @@ import { getToken } from 'firebase/messaging';
 import { getFirebaseMessaging } from '@/libs/firebase';
 import { Api } from '@/libs/api';
 import { registerOfflineServiceWorker } from '@/libs/offline/registerServiceWorker';
+import { isInsideNativeApp } from '@/libs/androidApp';
 
 async function registerFCMToken(fcmToken: string) {
     const token = localStorage.getItem('token');
@@ -15,9 +16,11 @@ async function registerFCMToken(fcmToken: string) {
 function isInAndroidApp() {
     // Dentro do app Android (WebView) o push é nativo (Firebase Android SDK),
     // não via Web Notifications API — e o WebView não implementa o prompt de
-    // permissão dessa API, então pedir aqui nunca teria efeito. Presença da
-    // bridge nativa (injetada via addJavascriptInterface) indica o wrapper.
-    return typeof window !== 'undefined' && 'VenafitBilling' in window;
+    // permissão dessa API, então pedir aqui nunca teria efeito. A detecção é
+    // pelo User-Agent que o app marca: `'VenafitBilling' in window` deixou de
+    // servir, porque o app atual não injeta mais essa interface (ver
+    // libs/nativeBridge.ts).
+    return isInsideNativeApp();
 }
 
 async function fetchAndRegisterToken(vapidKey: string) {

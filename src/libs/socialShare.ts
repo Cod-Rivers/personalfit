@@ -13,8 +13,9 @@
  *     sabe repassar URL http para o navegador, então baixar um blob também
  *     não funciona. Sem uma ponte nativa, o compartilhamento simplesmente
  *     não acontece — silenciosamente, que é o pior jeito de falhar. Por isso
- *     existe `window.VenafitShare` (ShareBridge.kt), que recebe a imagem em
- *     base64 e dispara o Intent.ACTION_SEND nativo.
+ *     existe o ShareBridge.kt, que recebe a imagem em base64 e dispara o
+ *     Intent.ACTION_SEND nativo. O acesso a ele (canal restrito por origem ou
+ *     interface antiga) está em libs/nativeBridge.ts.
  *  3. Desktop — quase nunca tem `navigator.canShare({files})`. Cai no
  *     download do arquivo, e a tela explica que é para publicar pelo celular.
  *
@@ -26,23 +27,12 @@
  */
 
 import { isInsideNativeApp } from './androidApp';
-
-/** Ponte nativa do app Android (ShareBridge.kt), exposta como
- *  `window.VenafitShare`. Ausente no navegador e nas versões do app
- *  anteriores a esta feature — daí todo acesso ser defensivo. */
-interface VenafitShareBridge {
-    isAvailable?: () => boolean;
-    /** Recebe a imagem em base64 PURO (sem o prefixo `data:`). Devolve
-     *  `true` quando conseguiu abrir o seletor de apps do Android. */
-    shareImage?: (base64: string, mimeType: string, text: string) => boolean;
-    shareText?: (text: string) => boolean;
-}
-
-declare global {
-    interface Window {
-        VenafitShare?: VenafitShareBridge;
-    }
-}
+import {
+    canShareImageNatively,
+    canShareTextNatively,
+    nativeShareImage,
+    nativeShareText,
+} from './nativeBridge';
 
 export type ShareOutcome =
     /** Entregue ao sistema (folha de compartilhamento aberta). */
@@ -57,16 +47,6 @@ export type ShareOutcome =
     | 'unsupported'
     /** Falha inesperada. */
     | 'failed';
-
-function bridge(): VenafitShareBridge | null {
-    if (typeof window === 'undefined') return null;
-    const b = window.VenafitShare;
-    if (!b || typeof b.shareImage !== 'function') return null;
-    // `isAvailable` é opcional de propósito: uma ponte futura que não a
-    // implemente continua servindo, desde que saiba compartilhar.
-    if (typeof b.isAvailable === 'function' && !b.isAvailable()) return null;
-    return b;
-}
 
 /** true quando a folha de compartilhamento do sistema aceita ARQUIVO.
  *  `navigator.share` sem `canShare({files})` existe em alguns navegadores e
@@ -125,11 +105,10 @@ export async function shareImage(
     file: File,
     text: string,
 ): Promise<ShareOutcome> {
-    const native = bridge();
-    if (native?.shareImage) {
+    if (canShareImageNatively()) {
         try {
             const base64 = await fileToBase64(file);
-            return native.shareImage(base64, file.type, text)
+            return (await nativeShareImage(base64, file.type, text))
                 ? 'shared'
                 : 'failed';
         } catch {
@@ -164,10 +143,9 @@ export async function shareText(
     text: string,
     url?: string,
 ): Promise<ShareOutcome> {
-    const native = bridge();
-    if (native && typeof native.shareText === 'function') {
+    if (canShareTextNatively()) {
         const full = url ? `${text}\n${url}` : text;
-        return native.shareText(full) ? 'shared' : 'failed';
+        return (await nativeShareText(full)) ? 'shared' : 'failed';
     }
 
     if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {

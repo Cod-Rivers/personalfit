@@ -126,7 +126,8 @@ function PaymentPageInner() {
         getPlans()
             .then(setCatalog)
             .catch(() => setError('Não foi possível carregar os planos. Tente novamente.'));
-        setGoogleAvailable(isGooglePlayBillingAvailable());
+        // Assíncrono: no app atual a pergunta vira mensagem ao Android.
+        void isGooglePlayBillingAvailable().then(setGoogleAvailable);
         // Lista de parceiros é só um complemento do seletor de indicação — se
         // falhar, o checkout continua normalmente com apenas as opções fixas.
         getActiveReferralPartners()

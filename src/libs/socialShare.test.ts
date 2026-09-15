@@ -188,3 +188,53 @@ describe('buildCaption', () => {
         expect(caption).toContain(window.location.host);
     });
 });
+
+describe('shareImage — canal restrito por origem do app atual', () => {
+    afterEach(() => {
+        vi.unstubAllGlobals();
+        delete (window as unknown as Record<string, unknown>).VenafitNative;
+        delete (window as unknown as Record<string, unknown>).VenafitShare;
+    });
+
+    // O app atual não injeta mais `window.VenafitShare` (ver
+    // libs/nativeBridge.ts). Se a ordem se inverter, um app que ainda tenha
+    // as duas pontes usaria a exposta a iframes de terceiros.
+    it('prefere o canal restrito à interface antiga', async () => {
+        setUserAgent(APP_UA);
+        const legacySpy = vi.fn().mockReturnValue(true);
+        (window as unknown as Record<string, unknown>).VenafitShare = {
+            isAvailable: () => true,
+            shareImage: legacySpy,
+        };
+        const listeners: ((event: { data: unknown }) => void)[] = [];
+        const postMessage = vi.fn((raw: string) => {
+            const msg = JSON.parse(raw);
+            void Promise.resolve().then(() =>
+                listeners.forEach((l) =>
+                    l({
+                        data: JSON.stringify({ id: msg.id, ok: true, result: true }),
+                    }),
+                ),
+            );
+        });
+        (window as unknown as Record<string, unknown>).VenafitNative = {
+            postMessage,
+            addEventListener: (
+                _t: string,
+                l: (event: { data: unknown }) => void,
+            ) => listeners.push(l),
+        };
+
+        expect(await shareImage(fakeFile(), 'legenda')).toBe('shared');
+        expect(legacySpy).not.toHaveBeenCalled();
+        const msg = JSON.parse(postMessage.mock.calls[0][0]);
+        expect(msg).toMatchObject({
+            bridge: 'share',
+            action: 'shareImage',
+            mimeType: 'image/jpeg',
+            text: 'legenda',
+        });
+        // base64 puro, sem o prefixo `data:` — é o contrato do ShareBridge.
+        expect(String(msg.base64).startsWith('data:')).toBe(false);
+    });
+});
