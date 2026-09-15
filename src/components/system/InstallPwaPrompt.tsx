@@ -3,7 +3,13 @@
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { FiX, FiUpload } from 'react-icons/fi';
-import { isInsideNativeApp } from '@/libs/androidApp';
+import ExternalLink from '@/components/atoms/ExternalLink';
+import {
+    ANDROID_APP_LIVE,
+    ANDROID_PLAY_STORE_URL,
+    isAndroidBrowser,
+    isInsideNativeApp,
+} from '@/libs/androidApp';
 import s from './InstallPwaPrompt.module.css';
 
 const DISMISS_KEY = 'venafit_install_prompt_dismissed_at';
@@ -51,16 +57,22 @@ function wasRecentlyDismissed(): boolean {
 }
 
 /**
- * Banner que sugere instalar o Venafit como app (Add to Home Screen) para
- * quem está no navegador comum. iOS não expõe um prompt de instalação
- * programático (Apple não permite), então só dá pra mostrar instrução manual;
- * Android/Chrome expõem `beforeinstallprompt`, que dispara a UI nativa do
- * navegador. Nunca aparece dentro do WebView do app Android nativo — ele já
- * é o app.
+ * Banner que sugere instalar o Venafit para quem está no navegador comum.
+ * iOS não expõe um prompt de instalação programático (Apple não permite),
+ * então só dá pra mostrar instrução manual; Android/Chrome expõem
+ * `beforeinstallprompt`, que dispara a UI nativa do navegador. Nunca aparece
+ * dentro do WebView do app Android nativo — ele já é o app.
+ *
+ * Com o app nativo publicado (`ANDROID_APP_LIVE`), o Android deixa de receber
+ * o atalho da PWA e passa a receber o link da Play Store: instalar a PWA no
+ * lugar do app faria o aluno perder push nativo, compra pelo Google Play e o
+ * widget de calendário. Vale também para quem já instalou a PWA.
  */
 export default function InstallPwaPrompt() {
     const pathname = usePathname();
-    const [mode, setMode] = useState<'none' | 'ios' | 'installable'>('none');
+    const [mode, setMode] = useState<
+        'none' | 'ios' | 'installable' | 'play-store'
+    >('none');
     const [deferredPrompt, setDeferredPrompt] =
         useState<BeforeInstallPromptEvent | null>(null);
 
@@ -68,9 +80,18 @@ export default function InstallPwaPrompt() {
         if (
             isPublicPath(pathname) ||
             isInsideNativeApp() ||
-            isStandaloneDisplay() ||
             wasRecentlyDismissed()
         ) {
+            setMode('none');
+            return;
+        }
+
+        if (ANDROID_APP_LIVE && isAndroidBrowser()) {
+            setMode('play-store');
+            return;
+        }
+
+        if (isStandaloneDisplay()) {
             setMode('none');
             return;
         }
@@ -124,6 +145,20 @@ export default function InstallPwaPrompt() {
                     </span>{' '}
                     e depois em <strong>Adicionar à Tela de Início</strong>.
                 </p>
+            ) : mode === 'play-store' ? (
+                <div className={s.row}>
+                    <p className={s.text}>
+                        Baixe o app do Venafit para Android: notificações,
+                        treino offline e widget de calendário.
+                    </p>
+                    <ExternalLink
+                        href={ANDROID_PLAY_STORE_URL}
+                        className={s.installBtn}
+                        onClick={dismiss}
+                    >
+                        Play Store
+                    </ExternalLink>
+                </div>
             ) : (
                 <div className={s.row}>
                     <p className={s.text}>

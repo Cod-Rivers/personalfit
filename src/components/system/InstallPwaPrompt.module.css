@@ -62,4 +62,6 @@
     font-weight: 600;
     cursor: pointer;
     white-space: nowrap;
+    /* Também usado no link da Play Store (<a>). */
+    text-decoration: none;
 }
