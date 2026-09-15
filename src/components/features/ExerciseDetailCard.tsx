@@ -23,6 +23,7 @@ import {
     isInstagramUrl,
     isTikTokUrl,
     snapToStandardAspectRatio,
+    toEmbedUrl,
 } from '@/libs/exerciseVideoService';
 import {
     formatTechniqueSummary,
@@ -100,37 +101,6 @@ interface ExerciseDetailCardProps {
      * (series/series_label/timed) — ver libs/seriesPrescription.ts. */
     onPrescribeSeries?: (patch: SeriesPrescriptionPatch) => void | Promise<void>;
 }
-
-const getEmbedUrl = (url: string): string | null => {
-    if (!url) return null;
-
-    let videoId: string | undefined;
-    if (
-        url.includes('youtube.com/watch') ||
-        url.includes('youtu.be/') ||
-        url.includes('youtube.com/shorts/')
-    ) {
-        if (url.includes('youtube.com/shorts/')) {
-            videoId = url.split('/shorts/')[1]?.split('?')[0];
-        } else if (url.includes('v=')) {
-            videoId = url.split('v=')[1]?.split('&')[0];
-        } else if (url.includes('youtu.be/')) {
-            videoId = url.split('youtu.be/')[1]?.split('?')[0];
-        }
-        return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
-    }
-    if (url.includes('vimeo.com/')) {
-        videoId = url.split('vimeo.com/')[1]?.split('?')[0];
-        return videoId ? `https://player.vimeo.com/video/${videoId}` : url;
-    }
-    if (url.includes('tiktok.com/') && url.includes('/video/')) {
-        videoId = url.split('/video/')[1]?.split(/[?/]/)[0];
-        return videoId
-            ? `https://www.tiktok.com/embed/v2/${videoId}`
-            : null;
-    }
-    return null;
-};
 
 const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
     exercise,
@@ -496,7 +466,7 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
     // --- Lógica de Renderização ---
     if (!exercise) return null;
 
-    const embedUrl = getEmbedUrl(exercise.video_url || '');
+    const embedUrl = toEmbedUrl(exercise.video_url || '');
     // Instagram nunca é embutido; TikTok cai aqui quando o link é curto
     // (vm.tiktok.com) e não dá pra extrair o ID do vídeo para o embed.
     const isExternalRedirectOnly =

@@ -365,6 +365,63 @@ export function isSupportedExternalVideoUrl(videoUrl: string): boolean {
     return isEmbeddableUrl(videoUrl) || isInstagramUrl(videoUrl);
 }
 
+/**
+ * Converte link de YouTube/Vimeo/TikTok na URL de embed do player. Devolve o
+ * próprio link quando é YouTube/Vimeo mas o ID não pôde ser extraído, e null
+ * para qualquer outra coisa — o comportamento que o card de exercício sempre
+ * teve (ver ExerciseDetailCard).
+ */
+export function toEmbedUrl(url: string): string | null {
+    if (!url) return null;
+
+    let videoId: string | undefined;
+    if (
+        url.includes('youtube.com/watch') ||
+        url.includes('youtu.be/') ||
+        url.includes('youtube.com/shorts/')
+    ) {
+        if (url.includes('youtube.com/shorts/')) {
+            videoId = url.split('/shorts/')[1]?.split('?')[0];
+        } else if (url.includes('v=')) {
+            videoId = url.split('v=')[1]?.split('&')[0];
+        } else if (url.includes('youtu.be/')) {
+            videoId = url.split('youtu.be/')[1]?.split('?')[0];
+        }
+        return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+    }
+    if (url.includes('vimeo.com/')) {
+        videoId = url.split('vimeo.com/')[1]?.split('?')[0];
+        return videoId ? `https://player.vimeo.com/video/${videoId}` : url;
+    }
+    if (url.includes('tiktok.com/') && url.includes('/video/')) {
+        videoId = url.split('/video/')[1]?.split(/[?/]/)[0];
+        return videoId
+            ? `https://www.tiktok.com/embed/v2/${videoId}`
+            : null;
+    }
+    return null;
+}
+
+/** Prefixos das URLs de embed que toEmbedUrl gera. */
+const TRUSTED_EMBED_PREFIXES = [
+    'https://www.youtube.com/embed/',
+    'https://player.vimeo.com/video/',
+    'https://www.tiktok.com/embed/v2/',
+];
+
+/**
+ * Como toEmbedUrl, mas só devolve URL de embed de fato — nunca o link cru. Para
+ * quando o link vem de texto livre e vai direto para um iframe (anúncio): o
+ * fallback "devolve o próprio link" de toEmbedUrl aceitaria, por exemplo,
+ * `https://site-falso.example/youtube.com/watch`.
+ */
+export function toTrustedEmbedUrl(url: string): string | null {
+    const embed = toEmbedUrl(url);
+    return embed && TRUSTED_EMBED_PREFIXES.some((p) => embed.startsWith(p))
+        ? embed
+        : null;
+}
+
 /** Detecta se o caminho/URL representa um arquivo de vídeo (não imagem). Mantém
  * mov/avi no reconhecimento de exibição para não quebrar vídeos legados já
  * enviados antes da restrição de formatos de upload. */
