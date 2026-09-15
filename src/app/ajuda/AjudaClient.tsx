@@ -808,13 +808,25 @@ const personalSections: HelpSection[] = [
         id: 'financeiro-personal',
         title: 'Financeiro do aluno',
         body: (
-            <p className="mb-0">
-                Pelo cartão do aluno em <strong>Financeiro</strong> você
-                lança cobranças (mensalidade, pacote de sessões etc.), marca
-                como pagas, reabre ou exclui um lançamento — um controle
-                simples de cobrança por aluno, sem meio de pagamento
-                integrado.
-            </p>
+            <>
+                <p>
+                    Pelo cartão do aluno em <strong>Financeiro</strong> você
+                    lança cobranças (mensalidade, pacote de sessões etc.),
+                    marca como pagas, reabre ou exclui um lançamento — um
+                    controle simples de cobrança por aluno, sem meio de
+                    pagamento integrado.
+                </p>
+                <p className="mb-0">
+                    Na mesma tela dá para ligar o{' '}
+                    <strong>bloqueio de inadimplentes</strong>, que vale para
+                    todos os seus alunos. Quando uma cobrança passa do dia do
+                    vencimento sem ser marcada como paga, o aluno perde o
+                    acesso ao plano de treino, ao plano alimentar e à evolução
+                    até você registrar o pagamento. Ele continua entrando no
+                    app, recebendo notificações e registrando os treinos que já
+                    tinha baixado no aparelho.
+                </p>
+            </>
         ),
     },
     {

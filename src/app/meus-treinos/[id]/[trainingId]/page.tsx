@@ -59,7 +59,9 @@ import {
     partitionExerciseGroups,
     comboGroupLabel,
 } from '@/libs/trainingTechniques';
-import { toExerciseLog } from '@/libs/exerciseLog';
+import { applySubstitutability, toExerciseLog } from '@/libs/exerciseLog';
+import { isOverdueBlockError } from '@/libs/overdueBlock';
+import OverdueBlockNotice from '@/components/features/OverdueBlockNotice';
 
 interface TrainingPageParams {
     id: string; // macrocycle ID
@@ -122,6 +124,9 @@ export default function MeusTreinosExercisesPage({
     );
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    // Personal pausou o acesso por mensalidade vencida (403
+    // student_blocked_overdue): aviso próprio em vez do erro genérico.
+    const [overdueBlocked, setOverdueBlocked] = useState(false);
     const [sendStatus, setSendStatus] = useState<
         'idle' | 'success' | 'queued' | 'error'
     >('idle');
@@ -191,7 +196,15 @@ export default function MeusTreinosExercisesPage({
                 for (const t of meso.trainings ?? []) {
                     if (t.id !== trainingId) continue;
 
-                    const logs = (t.exercises ?? []).map(toExerciseLog);
+                    // A trava de substituição resolvida pelo backend para o
+                    // aluno (inclui a derivada da dor e o motivo) também vale
+                    // no plano salvo offline, que é a mesma resposta da API.
+                    const logs = (t.exercises ?? []).map((ex) =>
+                        applySubstitutability(
+                            toExerciseLog(ex),
+                            macro.substitutability?.[ex.id],
+                        ),
+                    );
                     const enriched = await enrichWithLibraryVideos(logs);
                     setExercises(enriched);
                     setTrainingRef(t.reference);
@@ -267,6 +280,8 @@ export default function MeusTreinosExercisesPage({
                             'Sem conexão com a API e nenhuma versão offline deste plano foi baixada. Verifique se o backend está ativo e acessível em http://localhost:8080.',
                         );
                     }
+                } else if (isOverdueBlockError(err)) {
+                    setOverdueBlocked(true);
                 } else {
                     setError('Não foi possível carregar os exercícios.');
                 }
@@ -546,6 +561,14 @@ export default function MeusTreinosExercisesPage({
 
     if (isLoading) {
         return <div className="p-6 text-center">Carregando exercícios...</div>;
+    }
+
+    if (overdueBlocked) {
+        return (
+            <div className="p-6">
+                <OverdueBlockNotice what="ao seu treino" />
+            </div>
+        );
     }
 
     if (error) {

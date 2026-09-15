@@ -15,6 +15,8 @@ import {
     type MealPlanResponse,
     type MealPlanVersion,
 } from '@/libs/mealPlanService';
+import { isOverdueBlockError } from '@/libs/overdueBlock';
+import OverdueBlockNotice from './OverdueBlockNotice';
 import s from './MealPlanEditor.module.css';
 
 interface Props {
@@ -48,6 +50,7 @@ export default function MealPlanEditor({ studentId }: Props) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [proBlocked, setProBlocked] = useState(false);
+    const [overdueBlocked, setOverdueBlocked] = useState(false);
 
     const [meals, setMeals] = useState<MealItem[]>([{ ...emptyMeal }]);
     const [notes, setNotes] = useState('');
@@ -61,13 +64,18 @@ export default function MealPlanEditor({ studentId }: Props) {
         setLoading(true);
         setError('');
         setProBlocked(false);
+        setOverdueBlocked(false);
         try {
             const data = await getCurrentMealPlan(studentId);
             setPlan(data);
         } catch (err) {
             const status = (err as { response?: { status?: number } })
                 ?.response?.status;
-            if (status === 403) {
+            // Antes do 403 genérico: senão o aluno bloqueado por mensalidade
+            // vencida recebia a oferta de assinar o Pro.
+            if (isOverdueBlockError(err)) {
+                setOverdueBlocked(true);
+            } else if (status === 403) {
                 setProBlocked(true);
             } else {
                 setError(
@@ -198,6 +206,10 @@ export default function MealPlanEditor({ studentId }: Props) {
             setError('Erro ao atualizar permissão do aluno.');
         }
     };
+
+    if (overdueBlocked) {
+        return <OverdueBlockNotice what="ao seu plano alimentar" />;
+    }
 
     if (proBlocked) {
         return (

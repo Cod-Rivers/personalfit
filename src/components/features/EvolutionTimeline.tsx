@@ -12,6 +12,8 @@ import {
     type BodyFatMethod,
 } from '@/libs/evolutionService';
 import Modal from '@/components/system/Modal';
+import { isOverdueBlockError } from '@/libs/overdueBlock';
+import OverdueBlockNotice from './OverdueBlockNotice';
 import s from './EvolutionTimeline.module.css';
 
 const EvolutionChart = dynamic(
@@ -73,6 +75,7 @@ export default function EvolutionTimeline({ studentId }: Props) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [proBlocked, setProBlocked] = useState(false);
+    const [overdueBlocked, setOverdueBlocked] = useState(false);
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [selectedEntry, setSelectedEntry] = useState<EvolutionEntry | null>(
         null,
@@ -158,13 +161,18 @@ export default function EvolutionTimeline({ studentId }: Props) {
         setLoading(true);
         setError('');
         setProBlocked(false);
+        setOverdueBlocked(false);
         try {
             const data = await listEvolutionEntries(studentId);
             setEntries(data);
         } catch (err) {
             const status = (err as { response?: { status?: number } })
                 ?.response?.status;
-            if (status === 403) {
+            // Antes do 403 genérico: senão o aluno bloqueado por mensalidade
+            // vencida recebia a oferta de assinar o Pro.
+            if (isOverdueBlockError(err)) {
+                setOverdueBlocked(true);
+            } else if (status === 403) {
                 setProBlocked(true);
             } else {
                 setError(extractErrorMessage(err, 'Erro ao carregar evolução.'));
@@ -289,6 +297,10 @@ export default function EvolutionTimeline({ studentId }: Props) {
             setDeletingId(null);
         }
     };
+
+    if (overdueBlocked) {
+        return <OverdueBlockNotice what="à sua evolução" />;
+    }
 
     if (proBlocked) {
         return (

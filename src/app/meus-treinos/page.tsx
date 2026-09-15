@@ -40,6 +40,8 @@ import {
     MacrocycleResponse,
 } from '@/libs/planningService';
 import DownloadOfflineButton from '../../components/features/DownloadOfflineButton';
+import OverdueBlockNotice from '@/components/features/OverdueBlockNotice';
+import { isOverdueBlockError } from '@/libs/overdueBlock';
 import GamificationBanner from '../../components/features/GamificationBanner';
 import {
     getAllOfflineMacrocycles,
@@ -163,6 +165,9 @@ export default function MeusTreinosPage() {
     );
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    // Personal pausou o acesso por mensalidade vencida (403
+    // student_blocked_overdue): tela própria em vez de "Erro: ...".
+    const [overdueBlocked, setOverdueBlocked] = useState(false);
     const [isOfflineData, setIsOfflineData] = useState(false);
     const [selectorOpen, setSelectorOpen] = useState(false);
     const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -245,6 +250,8 @@ export default function MeusTreinosPage() {
                     setError(
                         'Sem conexão e nenhum plano foi baixado para uso offline. Conecte-se à internet e use o botão de download para salvar seu treino no aparelho.',
                     );
+                } else if (isOverdueBlockError(e)) {
+                    setOverdueBlocked(true);
                 } else {
                     const err = e as Error;
                     setError(
@@ -289,6 +296,8 @@ export default function MeusTreinosPage() {
                 setError(
                     'Sem conexão e este plano não foi baixado para uso offline.',
                 );
+            } else if (isOverdueBlockError(e)) {
+                setOverdueBlocked(true);
             } else {
                 const err = e as Error;
                 setError(`Erro ao carregar macrociclo: ${err.message}`);
@@ -355,6 +364,14 @@ export default function MeusTreinosPage() {
                 style={{ color: 'var(--text-primary)' }}
             >
                 Carregando seus treinos...
+            </div>
+        );
+    }
+
+    if (overdueBlocked) {
+        return (
+            <div className="p-6">
+                <OverdueBlockNotice what="ao seu treino" />
             </div>
         );
     }

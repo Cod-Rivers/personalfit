@@ -67,6 +67,23 @@ export async function reopenInvoice(
     return data;
 }
 
+/** Bloqueio automático de alunos com cobrança vencida. Vale para TODOS os
+ * alunos do personal logado (GET/PUT /personal/overdue-block). */
+export async function getOverdueBlock(): Promise<boolean> {
+    const { data } = await Api.get<{ enabled: boolean }>(
+        '/personal/overdue-block',
+    );
+    return data.enabled;
+}
+
+export async function setOverdueBlock(enabled: boolean): Promise<boolean> {
+    const { data } = await Api.put<{ enabled: boolean }>(
+        '/personal/overdue-block',
+        { enabled },
+    );
+    return data.enabled;
+}
+
 export async function deleteInvoice(
     studentId: string,
     invoiceId: string,

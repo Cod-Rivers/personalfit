@@ -56,6 +56,42 @@
     font-size: 0.82rem;
 }
 
+.blockSetting {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: var(--surface-2);
+    border-radius: 10px;
+    padding: 12px 14px;
+}
+
+.blockToggle {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.blockToggle input {
+    margin-top: 3px;
+    flex-shrink: 0;
+}
+
+.blockHint {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.blockActive {
+    margin: 0;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--coral, #ff6b6b);
+}
+
 .tiles {
     display: grid;
     grid-template-columns: repeat(3, 1fr);

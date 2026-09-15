@@ -8,6 +8,8 @@ import {
     markInvoicePaid,
     reopenInvoice,
     deleteInvoice,
+    getOverdueBlock,
+    setOverdueBlock,
     type InvoiceList,
 } from '@/libs/studentInvoiceService';
 import s from './financeiro.module.css';
@@ -36,6 +38,27 @@ export default function StudentFinanceiroPage() {
     const [dueDate, setDueDate] = useState(todayISO());
     const [description, setDescription] = useState('');
     const [saving, setSaving] = useState(false);
+    // null = ainda não carregado (ou falhou): o interruptor não aparece em vez
+    // de mostrar um estado que talvez não seja o salvo.
+    const [blockEnabled, setBlockEnabled] = useState<boolean | null>(null);
+    const [blockSaving, setBlockSaving] = useState(false);
+
+    useEffect(() => {
+        getOverdueBlock()
+            .then(setBlockEnabled)
+            .catch(() => setBlockEnabled(null));
+    }, []);
+
+    async function toggleBlock(next: boolean) {
+        setBlockSaving(true);
+        try {
+            setBlockEnabled(await setOverdueBlock(next));
+        } catch {
+            alert('Não foi possível salvar o bloqueio. Tente de novo.');
+        } finally {
+            setBlockSaving(false);
+        }
+    }
 
     async function load() {
         try {
@@ -106,6 +129,33 @@ export default function StudentFinanceiroPage() {
                     recebe esses valores — você marca manualmente o que já foi
                     pago.
                 </div>
+
+                {blockEnabled !== null && (
+                    <div className={s.blockSetting}>
+                        <label className={s.blockToggle}>
+                            <input
+                                type="checkbox"
+                                checked={blockEnabled}
+                                disabled={blockSaving}
+                                onChange={(e) => toggleBlock(e.target.checked)}
+                            />
+                            Bloquear alunos com mensalidade vencida
+                        </label>
+                        <p className={s.blockHint}>
+                            Vale para todos os seus alunos. Passado o dia do
+                            vencimento sem o pagamento marcado, o aluno perde o
+                            acesso ao plano de treino, ao plano alimentar e à
+                            evolução até você marcar a cobrança como paga.
+                            Login, notificações e treinos já baixados continuam
+                            funcionando.
+                        </p>
+                        {blockEnabled && data?.summary.has_overdue && (
+                            <p className={s.blockActive}>
+                                Este aluno está sem acesso agora.
+                            </p>
+                        )}
+                    </div>
+                )}
 
                 {data && (
                     <div className={s.tiles}>
