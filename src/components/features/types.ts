@@ -45,6 +45,11 @@ export interface ExerciseLog {
      * null/ausente = sem restrição; true = nunca substituível; false = sempre
      * substituível. Alimenta o selo do card e o gate do modal de substituição. */
     non_substitutable?: boolean | null;
+    /** Origem da trava na tela do aluno (ver applySubstitutability em
+     * libs/exerciseLog.ts): "personal" marcou, ou "derivado" da dor relatada. */
+    non_substitutable_source?: 'personal' | 'derivado';
+    /** Motivo da trava derivada ("dor em joelho"). */
+    non_substitutable_reason?: string;
     // Adicione outros campos se existirem
 }
 

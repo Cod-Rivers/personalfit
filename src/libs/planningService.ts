@@ -132,6 +132,17 @@ export interface MacrocycleResponse {
     mesocycles: MesocycleResponse[];
     created_at: string;
     updated_at: string;
+    /** Exercícios que o PRÓPRIO aluno não pode substituir, por ID, com a
+     * origem da trava. Só vem nas rotas /my-planning (o backend resolve com as
+     * restrições do aluno); ausente nas telas do personal. */
+    substitutability?: Record<string, SubstitutabilityResponse>;
+}
+
+export interface SubstitutabilityResponse {
+    /** "personal": o personal marcou; "derivado": dor relatada pelo aluno. */
+    source: 'personal' | 'derivado';
+    /** Rótulo da restrição ("dor em joelho"), só quando source é "derivado". */
+    reason?: string;
 }
 
 /* ── Request types ── */

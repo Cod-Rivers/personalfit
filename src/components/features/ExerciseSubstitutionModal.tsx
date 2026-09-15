@@ -167,9 +167,12 @@ export default function ExerciseSubstitutionModal({
                     <div className={styles.centered}>
                         <FiAlertCircle className={styles.infoIcon} />
                         <p>
-                            Este exercício foi marcado como não-substituível.
-                            Fale com seu personal se achar que ele precisa de
-                            uma alternativa.
+                            {exercise.non_substitutable_source === 'derivado' &&
+                            exercise.non_substitutable_reason
+                                ? `Por causa da ${exercise.non_substitutable_reason} que você relatou, este exercício não recebe sugestão automática de substituto. Fale com seu personal se precisar de uma alternativa.`
+                                : exercise.non_substitutable_source === 'personal'
+                                  ? 'Seu personal marcou este exercício como não-substituível. Fale com ele se achar que precisa de uma alternativa.'
+                                  : 'Este exercício foi marcado como não-substituível. Fale com seu personal se achar que ele precisa de uma alternativa.'}
                         </p>
                         <Button variant="ghost" fullWidth onClick={onClose}>
                             Manter o exercício original

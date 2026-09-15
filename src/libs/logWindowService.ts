@@ -7,6 +7,9 @@ export interface LogWindowResponse {
      * do personal — ver dtos.LogWindowResponse.IsDefault (RN-02). */
     is_default: boolean;
     updated_at?: string;
+    /** Foto de check-in ligada no servidor (ADHERENCE_PHOTO_ENABLED). Só vem
+     * no GET /me/log-window; ausente em backend anterior ao campo. */
+    photo_enabled?: boolean;
 }
 
 /**
@@ -55,10 +58,22 @@ export async function updateStudentLogWindow(
 
 const MY_LOG_WINDOW_CACHE_KEY = 'venafit:my-log-window';
 
-interface CachedMyLogWindow {
+export interface CachedMyLogWindow {
     log_window: LogWindow;
     is_default: boolean;
+    /** Ver LogWindowResponse.photo_enabled. */
+    photo_enabled?: boolean;
     fetchedAt: string;
+}
+
+/** A foto de check-in só some quando o servidor disse EXPLICITAMENTE que ela
+ * está desligada. Sem cache (aparelho novo) ou com backend antigo, sem o
+ * campo, a opção continua aparecendo — o comportamento de sempre, e o envio
+ * da foto nunca bloqueia o registro do treino. */
+export function isCheckInPhotoEnabled(
+    cached: Pick<CachedMyLogWindow, 'photo_enabled'> | null,
+): boolean {
+    return cached?.photo_enabled !== false;
 }
 
 function cacheMyLogWindow(data: LogWindowResponse): void {
@@ -67,6 +82,7 @@ function cacheMyLogWindow(data: LogWindowResponse): void {
         const cached: CachedMyLogWindow = {
             log_window: data.log_window,
             is_default: data.is_default,
+            photo_enabled: data.photo_enabled,
             fetchedAt: new Date().toISOString(),
         };
         window.localStorage.setItem(

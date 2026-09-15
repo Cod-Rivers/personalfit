@@ -1,4 +1,7 @@
-import { ExerciseResponse } from '@/libs/planningService';
+import {
+    ExerciseResponse,
+    SubstitutabilityResponse,
+} from '@/libs/planningService';
 import { ExerciseLog } from '@/components/features/types';
 
 /** Converte o exercício prescrito (vindo da API) para o formato usado pelos
@@ -31,5 +34,23 @@ export function toExerciseLog(ex: ExerciseResponse): ExerciseLog {
         group_id: ex.group_id,
         muscle_group: ex.muscle_group,
         non_substitutable: ex.non_substitutable,
+    };
+}
+
+/** Aplica a trava de substituição que o backend resolveu para o PRÓPRIO
+ * aluno (MacrocycleResponse.substitutability, só nas rotas /my-planning).
+ * Cobre o que `non_substitutable` sozinho não diz: a trava derivada da dor
+ * que o aluno relatou, e o motivo de cada uma. Sem entrada no mapa, o
+ * exercício fica como veio. */
+export function applySubstitutability(
+    log: ExerciseLog,
+    info: SubstitutabilityResponse | undefined,
+): ExerciseLog {
+    if (!info) return log;
+    return {
+        ...log,
+        non_substitutable: true,
+        non_substitutable_source: info.source,
+        non_substitutable_reason: info.reason,
     };
 }

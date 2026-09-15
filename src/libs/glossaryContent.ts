@@ -364,8 +364,8 @@ const trainingFieldTerms: GlossaryTerm[] = [
     {
         id: 'nao-substituivel',
         term: 'Não-substituível',
-        short: 'Marcação do personal que impede trocar este exercício pela Substituição Inteligente por IA.',
-        long: 'Quando o personal marca um exercício como "Nunca substituível", o aluno não consegue abrir a Substituição Inteligente de Exercícios para ele — nem por equipamento indisponível, nem por qualquer outro motivo. É útil para exercícios centrais do programa que não têm um substituto equivalente aceitável. Marcar "Sempre substituível" faz o oposto: libera a troca mesmo quando a regra padrão de dor/restrição da anamnese bloquearia. Deixar sem marcação (padrão) segue a regra normal.',
+        short: 'Exercício que não pode ser trocado pela Substituição Inteligente por IA, porque o personal marcou ou por uma dor que o aluno relatou.',
+        long: 'Quando o personal marca um exercício como "Nunca substituível", o aluno não consegue abrir a Substituição Inteligente de Exercícios para ele — nem por equipamento indisponível, nem por qualquer outro motivo. É útil para exercícios centrais do programa que não têm um substituto equivalente aceitável. Sem marcação, vale a regra padrão: uma dor relatada pelo aluno trava a troca dos exercícios da região afetada, e o selo mostra o motivo (por exemplo, "dor em joelho"). Marcar "Sempre substituível" libera a troca mesmo nesse caso.',
     },
     {
         id: 'janela-de-registro',

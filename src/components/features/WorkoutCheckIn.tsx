@@ -14,7 +14,11 @@ import {
     formatLogWindowForDisplay,
     LOG_WINDOW_DEFAULT,
 } from '@/libs/logWindow';
-import { getCachedMyLogWindow, getMyLogWindow } from '@/libs/logWindowService';
+import {
+    getCachedMyLogWindow,
+    getMyLogWindow,
+    isCheckInPhotoEnabled,
+} from '@/libs/logWindowService';
 import { clientCompletedAtNow } from '@/libs/workoutLogService';
 import { usePoseOfDay } from '@/hooks/usePoseOfDay';
 import PoseCapture from './PoseCapture';
@@ -70,6 +74,13 @@ const WorkoutCheckIn: React.FC<WorkoutCheckInProps> = ({
     const { pose } = usePoseOfDay();
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [lateWarning, setLateWarning] = useState<string | null>(null);
+    // Com ADHERENCE_PHOTO_ENABLED desligado no servidor, a foto nunca chega:
+    // o envio falharia depois, em silêncio, na fila. Lido do mesmo cache
+    // offline da janela de registro, e atualizado quando a busca em segundo
+    // plano abaixo responder.
+    const [photoEnabled, setPhotoEnabled] = useState(() =>
+        isCheckInPhotoEnabled(getCachedMyLogWindow()),
+    );
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Aviso de tardio (RN-39): lido do cache LOCAL, nunca de uma chamada de
@@ -96,7 +107,9 @@ const WorkoutCheckIn: React.FC<WorkoutCheckInProps> = ({
         // já tínhamos localmente. Falha (offline agora mesmo) é silenciosa
         // de propósito: é exatamente o cenário que este aviso existe para
         // cobrir.
-        getMyLogWindow().catch(() => {});
+        getMyLogWindow()
+            .then((res) => setPhotoEnabled(isCheckInPhotoEnabled(res)))
+            .catch(() => {});
     }, [plannedDate]);
 
     useEffect(() => {
@@ -112,9 +125,9 @@ const WorkoutCheckIn: React.FC<WorkoutCheckInProps> = ({
     const handleConfirm = () => {
         onConfirm({
             confirmedAt: clientCompletedAtNow(),
-            photoFile,
-            poseChallengeId: pose?.challengeId,
-            poseId: pose?.pose.pose_id,
+            photoFile: photoEnabled ? photoFile : null,
+            poseChallengeId: photoEnabled ? pose?.challengeId : undefined,
+            poseId: photoEnabled ? pose?.pose.pose_id : undefined,
         });
     };
 
@@ -122,8 +135,9 @@ const WorkoutCheckIn: React.FC<WorkoutCheckInProps> = ({
         <div className={s.container}>
             <h3 className={s.title}>Confirmar treino concluído?</h3>
             <p className={s.subtitle}>
-                Isso registra o treino como feito. A foto é opcional — pular
-                não atrasa nem bloqueia o registro.
+                {photoEnabled
+                    ? 'Isso registra o treino como feito. A foto é opcional — pular não atrasa nem bloqueia o registro.'
+                    : 'Isso registra o treino como feito.'}
             </p>
 
             {error && (
@@ -138,7 +152,7 @@ const WorkoutCheckIn: React.FC<WorkoutCheckInProps> = ({
                 </div>
             )}
 
-            {pose && !previewUrl && (
+            {photoEnabled && pose && !previewUrl && (
                 <div className={s.poseBanner}>
                     <strong>Pose de hoje: {pose.pose.label}</strong>
                     <span>
@@ -149,7 +163,7 @@ const WorkoutCheckIn: React.FC<WorkoutCheckInProps> = ({
                 </div>
             )}
 
-            {capturing && pose ? (
+            {!photoEnabled ? null : capturing && pose ? (
                 <PoseCapture
                     pose={pose}
                     onCaptured={(file) => {

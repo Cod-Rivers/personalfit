@@ -680,7 +680,11 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                         gap: '0.3rem',
                                     }}
                                 >
-                                    <FiLock /> Não-substituível{' '}
+                                    <FiLock /> Não-substituível
+                                    {exercise.non_substitutable_source ===
+                                        'derivado' &&
+                                        exercise.non_substitutable_reason &&
+                                        ` · ${exercise.non_substitutable_reason}`}{' '}
                                     <HelpTooltip
                                         text={
                                             getGlossaryTerm('nao-substituivel')
