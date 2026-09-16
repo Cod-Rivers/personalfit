@@ -798,3 +798,83 @@ export async function getCelebrityTemplates(): Promise<MacrocycleResponse[]> {
     );
     return data ?? [];
 }
+
+/* ── Plano montado pelo PRÓPRIO aluno ──────────────────────────────────────
+ *
+ * O aluno sem personal que já treina por conta própria (ficha de academia,
+ * treino de outra fonte) monta aqui a própria série, puxando exercícios da
+ * biblioteca. É sempre o MODO SIMPLES — treinos por dia, sem fase nem
+ * periodização.
+ *
+ * São endpoints próprios, e não os `/students/:id/planning/...` do personal:
+ * aquele grupo exige RequireRole(personal) e autoriza por PersonalID, que num
+ * plano sem personal é zero. Aqui a posse é por StudentID + categoria. */
+
+export interface CreateSelfMadePlanRequest {
+    name: string;
+    goal?: string;
+    simple_day_label?: 'weekday' | 'number';
+    /** Aceite do termo de responsabilidade: o app não prescreve nem revisa o
+     * treino que o aluno monta. O backend recusa a criação sem isto. */
+    waiver_accepted: boolean;
+}
+
+/** POST /my-planning/self-made */
+export async function createMySelfMadePlan(
+    body: CreateSelfMadePlanRequest,
+): Promise<MacrocycleResponse> {
+    const { data } = await Api.post<MacrocycleResponse>(
+        '/my-planning/self-made',
+        body,
+    );
+    return data;
+}
+
+/** POST /my-planning/:planningId/mesocycle — grava a fase nova (salvamento por
+ * card, igual ao editor do personal). */
+export async function createMyMesocycle(
+    planningId: string,
+    body: MesocycleRequest,
+): Promise<MacrocycleResponse> {
+    const { data } = await Api.post<MacrocycleResponse>(
+        `/my-planning/${planningId}/mesocycle`,
+        body,
+    );
+    return data;
+}
+
+/** PUT /my-planning/:planningId/mesocycle/:mesocycleId */
+export async function updateMyMesocycle(
+    planningId: string,
+    mesocycleId: string,
+    body: MesocycleRequest,
+): Promise<MacrocycleResponse> {
+    const { data } = await Api.put<MacrocycleResponse>(
+        `/my-planning/${planningId}/mesocycle/${mesocycleId}`,
+        body,
+    );
+    return data;
+}
+
+/**
+ * POST /my-planning/resolve-video-link — valida o link de vídeo que o aluno
+ * colou e devolve a thumbnail derivada, sem persistir.
+ *
+ * Separado do `/my-exercises/resolve-video-link` (que é só do personal) porque
+ * a regra de plano é outra: no gratuito o aluno usa YouTube e Vimeo, enquanto
+ * Instagram e TikTok exigem Pro. Quem aplica a regra é o servidor — a tela só
+ * explica.
+ *
+ * O retorno é descrito aqui em vez de importar ResolvedVideoLink porque é
+ * estruturalmente o mesmo tipo, e serve direto como `resolveLink` do
+ * ExerciseVideoField.
+ */
+export async function resolveMyVideoLink(
+    videoUrl: string,
+): Promise<{ video_url: string; video_thumb: string }> {
+    const { data } = await Api.post<{
+        video_url: string;
+        video_thumb: string;
+    }>('/my-planning/resolve-video-link', { video_url: videoUrl });
+    return data;
+}

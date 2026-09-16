@@ -396,6 +396,14 @@ export default function MeusTreinosPage() {
                     className="d-flex flex-column align-items-center gap-2 mt-2"
                 >
                     <Link
+                        href="/meus-treinos/montar"
+                        className="fw-bold text-decoration-none d-inline-flex align-items-center gap-1"
+                        style={{ color: 'var(--mint-text, #2ecc71)' }}
+                    >
+                        <FiEdit2 size={14} />
+                        Montar meu próprio treino
+                    </Link>
+                    <Link
                         href="/meus-treinos/escolher-plano"
                         className="fw-bold text-decoration-none d-inline-flex align-items-center gap-1"
                         style={{ color: 'var(--amber)' }}
@@ -757,6 +765,34 @@ export default function MeusTreinosPage() {
                             }}
                         >
                             Ver histórico completo
+                        </span>
+                    </Link>
+                    <Link
+                        href="/meus-treinos/montar"
+                        className="d-flex align-items-center gap-2 text-decoration-none"
+                        style={{
+                            padding: '10px 0',
+                            borderBottom: '1px solid var(--border-subtle)',
+                        }}
+                    >
+                        <span
+                            aria-hidden="true"
+                            style={{
+                                width: 8,
+                                height: 8,
+                                borderRadius: 2,
+                                background: 'var(--mint)',
+                                flexShrink: 0,
+                            }}
+                        />
+                        <span
+                            style={{
+                                fontSize: '0.87rem',
+                                fontWeight: 600,
+                                color: 'var(--mint-text, #2ecc71)',
+                            }}
+                        >
+                            Montar meu próprio treino
                         </span>
                     </Link>
                     <Link

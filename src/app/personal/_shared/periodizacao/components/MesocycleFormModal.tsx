@@ -39,6 +39,7 @@ import Modal from '@/components/system/Modal';
 import ExerciseDetailCard from '@/components/features/ExerciseDetailCard';
 import type { ExerciseLog } from '@/components/features/types';
 import ExercisePicker from './ExercisePicker';
+import type { ResolvedVideoLink } from '@/libs/exerciseVideoService';
 import PhaseCard from './cards/PhaseCard';
 import TrainingsListCard from './cards/TrainingsListCard';
 import TrainingCard from './cards/TrainingCard';
@@ -114,6 +115,11 @@ interface Props {
     simpleMode?: boolean;
     /** "weekday" (padrão) ou "number" — só relevante quando simpleMode=true. */
     dayLabelStyle?: 'weekday' | 'number';
+    /** Repassados ao card do exercício e daí ao campo de vídeo. O aluno que
+     * monta o próprio treino usa endpoint e regra de plano próprios (ver
+     * resolveMyVideoLink); ausentes, valem os do personal. */
+    resolveVideoLink?: (videoUrl: string) => Promise<ResolvedVideoLink>;
+    videoPlanHint?: string;
 }
 
 /**
@@ -135,6 +141,8 @@ export default function MesocycleFormModal({
     onPersist,
     simpleMode,
     dayLabelStyle,
+    resolveVideoLink,
+    videoPlanHint,
 }: Props) {
     const isNumbered = simpleMode && dayLabelStyle === 'number';
 
@@ -901,6 +909,8 @@ export default function MesocycleFormModal({
                                 activeTraining.exercises,
                             )
                         }
+                        resolveVideoLink={resolveVideoLink}
+                        videoPlanHint={videoPlanHint}
                     />
                 );
 

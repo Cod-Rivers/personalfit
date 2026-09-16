@@ -8,6 +8,7 @@ import {
     externalVideoPlatform,
     isSupportedExternalVideoUrl,
     resolveExternalVideoLink,
+    type ResolvedVideoLink,
 } from '@/libs/exerciseVideoService';
 import ExternalLink from '@/components/atoms/ExternalLink';
 import s from '../builder.module.css';
@@ -24,7 +25,16 @@ interface Props {
      * sentido junto do link que a originou, e gravar um sem o outro deixaria o
      * exercício com a capa de um vídeo e o player de outro. */
     onChange: (videoUrl: string, videoThumb: string) => void;
+    /** Quem valida o link no servidor e devolve a thumbnail. O padrão é o
+     * endpoint do personal; a tela do aluno passa o dela, que aplica uma regra
+     * de plano própria (ver resolveMyVideoLink em planningService). */
+    resolveLink?: (videoUrl: string) => Promise<ResolvedVideoLink>;
+    /** Regra de plano exibida sob o campo. Só texto — quem aplica a regra é
+     * sempre o servidor. */
+    planHint?: string;
 }
+
+const DEFAULT_PLAN_HINT = 'Vídeos do TikTok requerem plano Pro.';
 
 const PLATFORMS_LABEL = SUPPORTED_VIDEO_PLATFORMS.join(', ').replace(
     /, ([^,]*)$/,
@@ -46,6 +56,8 @@ export default function ExerciseVideoField({
     videoThumb,
     libraryLinked,
     onChange,
+    resolveLink = resolveExternalVideoLink,
+    planHint = DEFAULT_PLAN_HINT,
 }: Props) {
     const [editing, setEditing] = useState(false);
     const [draft, setDraft] = useState('');
@@ -86,7 +98,7 @@ export default function ExerciseVideoField({
         setSaving(true);
         setError('');
         try {
-            const resolved = await resolveExternalVideoLink(url);
+            const resolved = await resolveLink(url);
             onChange(resolved.video_url, resolved.video_thumb);
             closeEditor();
         } catch (err) {
@@ -193,8 +205,7 @@ export default function ExerciseVideoField({
                         <p className={s.videoFieldError}>{error}</p>
                     ) : (
                         <p className={s.videoFieldHint}>
-                            Plataformas aceitas: {PLATFORMS_LABEL}. Vídeos do
-                            TikTok requerem plano Pro.
+                            Plataformas aceitas: {PLATFORMS_LABEL}. {planHint}
                         </p>
                     )}
                 </div>

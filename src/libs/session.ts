@@ -142,12 +142,16 @@ export function getUser(): SessionUser | null {
 }
 
 /**
- * Hub de treinos do aluno logado: `/meus-treinos` para quem tem personal
- * vinculado (sistema de macrociclo), `/app` para quem não tem (dashboard
- * legado de protocolo). Usado pelos botões "voltar" nas telas do aluno.
+ * Hub de treinos do aluno logado. Usado pelos botões "voltar" nas telas do
+ * aluno.
+ *
+ * Vale para TODO aluno desde que o registro de treino passou a existir também
+ * para quem não tem personal: antes, quem não tinha caía em `/app`, o
+ * dashboard legado de protocolo, onde não havia como registrar nada. Hoje
+ * `/app` só redireciona para cá (ver src/app/app/page.tsx).
  */
 export function getStudentHomeRoute(): string {
-    return getUser()?.has_personal ? '/meus-treinos' : '/app';
+    return '/meus-treinos';
 }
 
 /**
@@ -160,12 +164,13 @@ export function getStudentHomeRoute(): string {
  * consulta a API e, se o personal não estiver no plano Pro ou não tiver
  * publicado a página, redireciona na hora para o fluxo atual (Meus Treinos).
  * O cliente não conhece o plano do personal e não deveria conhecer. Aluno sem
- * personal nem passa por lá.
+ * personal nem passa por lá — entra direto em Meus Treinos, onde ele monta o
+ * próprio treino ou escolhe um plano.
  */
 export function landingRouteFor(user: SessionUser): string {
     if (user.role === 'admin' || user.role === 'content_editor') return '/admin';
     if (user.role === 'personal') return '/personal';
-    return user.has_personal ? '/vitrine' : '/app';
+    return user.has_personal ? '/vitrine' : '/meus-treinos';
 }
 
 /**

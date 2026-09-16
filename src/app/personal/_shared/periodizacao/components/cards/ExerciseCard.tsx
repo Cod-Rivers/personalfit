@@ -17,6 +17,7 @@ import {
     TECHNIQUE_FIELD_MAP,
 } from '../fields/PrescriptionFields';
 import ExerciseVideoField from '../ExerciseVideoField';
+import type { ResolvedVideoLink } from '@/libs/exerciseVideoService';
 import s from '../../builder.module.css';
 
 type UpdateField = keyof Omit<LocalExercise, '_id'>;
@@ -37,6 +38,8 @@ export default function ExerciseCard({
     onUpdate,
     onSetVideo,
     onPreview,
+    resolveVideoLink,
+    videoPlanHint,
 }: {
     exercise: LocalExercise;
     tab: ExerciseTab;
@@ -44,6 +47,10 @@ export default function ExerciseCard({
     onUpdate: (field: UpdateField, value: string | boolean) => void;
     onSetVideo: (videoUrl: string, videoThumb: string) => void;
     onPreview: () => void;
+    /** Repassados ao campo de vídeo — ver ExerciseVideoField. Ausentes, valem
+     * o endpoint e a regra de plano do personal. */
+    resolveVideoLink?: (videoUrl: string) => Promise<ResolvedVideoLink>;
+    videoPlanHint?: string;
 }) {
     const ex = exercise;
 
@@ -272,6 +279,8 @@ export default function ExerciseCard({
                         videoUrl={ex.video_url}
                         videoThumb={ex.video_thumb}
                         onChange={onSetVideo}
+                        resolveLink={resolveVideoLink}
+                        planHint={videoPlanHint}
                     />
 
                     <div className={s.prescriptionBody}>
