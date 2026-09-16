@@ -1,14 +1,20 @@
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
-import { MacrocycleResponse } from '@/libs/planningService';
+import { ExerciseRequest, MacrocycleResponse } from '@/libs/planningService';
 import { CompleteWorkoutLogRequest, WorkoutSessionRequest } from '@/libs/workoutLogService';
 
 const DB_NAME = 'venafit-offline';
 // v1 -> v2: acrescenta a store `pendingMedia` (Sprint 4 vai escrever nela;
 // aqui só o schema) e os campos novos de `pendingMutations` (idempotência,
-// backoff, corpo de sessão). Nenhuma store existente é recriada — o guard
+// backoff, corpo de sessão).
+// v2 -> v3: acrescenta `pendingPrescriptionPatches` — fila do PERSONAL (edição
+// de série/carga pelo card do exercício, ver prescriptionQueue.ts). Store
+// própria, não reaproveita `pendingMutations`: aquela fila é do ALUNO
+// (workoutLogId, conclusão/pular treino), esta é do personal (mesocycleId,
+// substituição de exercício) — payloads e endpoint diferentes.
+// Nenhuma store existente é recriada em nenhum dos dois bumps — o guard
 // `if (!db.objectStoreNames.contains(...))` por store já torna o bump
 // idempotente e preserva os dados de quem atualiza o app com a fila cheia.
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 export interface StoredMacrocycle {
     id: string;
@@ -113,6 +119,41 @@ export interface PendingMedia {
     clientMutationId?: string;
 }
 
+/**
+ * Edição de série/carga do PERSONAL (`ExerciseDetailCard` no editor de
+ * periodização) feita sem rede. Guarda a INTENÇÃO (qual exercício, qual
+ * patch), não um retrato do macrociclo — ao sincronizar, `prescriptionQueue.ts`
+ * busca a fase atual no servidor e aplica o patch em cima dela, em vez de
+ * reenviar um payload velho que poderia sobrescrever o que mudou nesse meio
+ * tempo (outro card salvo, ou o status do microciclo avançando por causa de
+ * treinos que o aluno concluiu enquanto o personal estava offline).
+ */
+export interface PendingPrescriptionPatch {
+    id?: number;
+    createdAt: string;
+    studentId: string;
+    /** ID do macrociclo (o path da API chama de "planningId"). */
+    planningId: string;
+    mesocycleId: string;
+    trainingId: string;
+    exerciseId: string;
+    /** Só para exibição no badge de pendências — não é reenviado. */
+    exerciseName: string;
+    /** `{ load_kg }` ou `{ series, series_label, timed }` — ver
+     * onPrescribeWeight/onPrescribeSeries em ExerciseDetailCard.tsx. */
+    patch: Partial<ExerciseRequest>;
+    status: 'pending' | 'syncing' | 'failed';
+    retryCount: number;
+    /** Mesmo backoff exponencial com jitter de pendingMutations (ver
+     * computeNextAttemptAt em syncQueue.ts, reaproveitado por
+     * prescriptionQueue.ts). */
+    nextAttemptAt?: string;
+    lastError?: string;
+    /** ISO da primeira vez que esta linha virou 'failed' — mesma política de
+     * expiração de 45 dias de pendingMutations (RN-40), reaproveitada. */
+    firstFailedAt?: string;
+}
+
 interface VenafitOfflineDB extends DBSchema {
     macrocycles: {
         key: string;
@@ -129,6 +170,10 @@ interface VenafitOfflineDB extends DBSchema {
     pendingMedia: {
         key: number;
         value: PendingMedia;
+    };
+    pendingPrescriptionPatches: {
+        key: number;
+        value: PendingPrescriptionPatch;
     };
     meta: {
         key: string;
@@ -182,6 +227,13 @@ export function getOfflineDB(): Promise<IDBPDatabase<VenafitOfflineDB>> {
                 // store nova ao abrir a v2; ninguém perde dado.
                 if (!db.objectStoreNames.contains('pendingMedia')) {
                     db.createObjectStore('pendingMedia', {
+                        keyPath: 'id',
+                        autoIncrement: true,
+                    });
+                }
+                // Nova em v3. Mesmo guard das demais.
+                if (!db.objectStoreNames.contains('pendingPrescriptionPatches')) {
+                    db.createObjectStore('pendingPrescriptionPatches', {
                         keyPath: 'id',
                         autoIncrement: true,
                     });

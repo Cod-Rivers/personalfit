@@ -15,6 +15,10 @@ import type { ExerciseLog } from '@/components/features/types';
 import { toExerciseLog } from '@/libs/exerciseLog';
 import { formatSeries } from '@/libs/seriesPrescription';
 import {
+    enqueuePrescriptionPatch,
+    PrescriptionQueuedOfflineError,
+} from '@/libs/offline/prescriptionQueue';
+import {
     partitionExerciseGroups,
     comboGroupLabel,
 } from '@/libs/trainingTechniques';
@@ -79,6 +83,12 @@ interface Props {
      * macrociclo salvo para a tela (o chamador já faz isso), e REJEITAR em
      * caso de erro: o card mostra o resultado ao personal. */
     onPersistMeso?: (req: MesocycleRequest) => Promise<unknown>;
+    /** ID do aluno e do macrociclo (o path da API chama de "planningId") —
+     * só usados para enfileirar a edição no IndexedDB quando não há rede
+     * (ver prescriptionQueue.ts). Obrigatórios juntos com onPersistMeso;
+     * ausentes nas telas de template, que não têm aluno. */
+    studentId?: string;
+    planningId?: string;
 }
 
 export default function MesocycleSection({
@@ -89,6 +99,8 @@ export default function MesocycleSection({
     simpleMode,
     dayLabelStyle,
     onPersistMeso,
+    studentId,
+    planningId,
 }: Props) {
     const isNumbered = simpleMode && dayLabelStyle === 'number';
     const [open, setOpen] = useState(false);
@@ -112,6 +124,36 @@ export default function MesocycleSection({
     }, [meso, selected]);
 
     /**
+     * Enfileira a edição no IndexedDB para sincronizar quando a rede voltar
+     * (ver prescriptionQueue.ts) e sinaliza isso ao card via
+     * PrescriptionQueuedOfflineError — NÃO é um erro de verdade, é o mesmo
+     * padrão do resto do app (SyncPendingBadge) para "salvo neste
+     * dispositivo, ainda não chegou ao servidor". Sem studentId/planningId
+     * (telas de template) não há como enfileirar — vira erro normal.
+     */
+    const queueOffline = async (
+        exerciseId: string,
+        exerciseName: string,
+        patch: Partial<ExerciseRequest>,
+    ): Promise<never> => {
+        if (!studentId || !planningId) {
+            throw new Error(
+                'Sem conexão — a alteração NÃO foi salva. Tente de novo quando a internet voltar.',
+            );
+        }
+        await enqueuePrescriptionPatch({
+            studentId,
+            planningId,
+            mesocycleId: meso.id,
+            trainingId: selected!.trainingId,
+            exerciseId,
+            exerciseName,
+            patch,
+        });
+        throw new PrescriptionQueuedOfflineError();
+    };
+
+    /**
      * Grava uma alteração pontual de prescrição no exercício aberto.
      *
      * Reenvia a FASE inteira (não só o exercício) porque é esse o contrato do
@@ -120,9 +162,25 @@ export default function MesocycleSection({
      * `mesoToRequest(meso)`: ele preserva os IDs de treino, exercício e
      * microciclo, e perder qualquer um deles órfãaria o histórico de séries e
      * as anotações que o aluno já tem.
+     *
+     * Sem rede — detectada de antemão ou pela falha da chamada — a edição
+     * não é descartada: vai para a fila offline (ver queueOffline acima) e
+     * sincroniza sozinha quando a conexão voltar.
      */
     const patchSelectedExercise = async (patch: Partial<ExerciseRequest>) => {
         if (!onPersistMeso || !selected) return;
+        const exerciseName =
+            meso.trainings
+                .find((t) => t.id === selected.trainingId)
+                ?.exercises.find((e) => e.id === selected.exerciseId)?.name ??
+            'Exercício';
+
+        // Sem rede detectada ANTES de tentar: evita esperar o timeout de uma
+        // requisição que já se sabe que vai falhar.
+        if (typeof navigator !== 'undefined' && !navigator.onLine) {
+            await queueOffline(selected.exerciseId, exerciseName, patch);
+        }
+
         const req = mesoToRequest(meso);
         const training = req.trainings.find((t) => t.id === selected.trainingId);
         const target = training?.exercises.find(
@@ -137,6 +195,11 @@ export default function MesocycleSection({
         try {
             await onPersistMeso(req);
         } catch (err) {
+            if (axios.isAxiosError(err) && !err.response) {
+                // Sem resposta do servidor = sem rede, mesmo que
+                // navigator.onLine ainda não tivesse percebido.
+                await queueOffline(selected.exerciseId, exerciseName, patch);
+            }
             throw new Error(describeSaveError(err));
         }
     };

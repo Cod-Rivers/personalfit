@@ -35,6 +35,7 @@ import HelpTooltip from '@/components/atoms/HelpTooltip';
 import { getGlossaryTerm } from '@/libs/glossaryContent';
 import { useToast } from '@/components/system/Toast';
 import PersonalAnamnesisQuickView from '@/components/features/PersonalAnamnesisQuickView';
+import PrescriptionSyncBadge from '@/components/features/PrescriptionSyncBadge';
 import s from '@/app/personal/_shared/periodizacao/builder.module.css';
 
 export default function PeriodizacaoDetalhePage() {
@@ -287,6 +288,11 @@ export default function PeriodizacaoDetalhePage() {
                     </span>
                 </div>
 
+                {/* Edições de série/carga feitas sem rede (ver
+                    ExerciseDetailCard) — some sozinho quando não há nada
+                    pendente. */}
+                <PrescriptionSyncBadge />
+
                 <PlanningNextStep
                     macro={macro}
                     isSimpleMode={isSimpleMode}
@@ -374,6 +380,8 @@ export default function PeriodizacaoDetalhePage() {
                             simpleMode
                             dayLabelStyle={dayLabelStyle}
                             onPersistMeso={onPersistMeso}
+                            studentId={studentId}
+                            planningId={planningId}
                         />
                     )
                 ) : (macro.mesocycles?.length ?? 0) === 0 ? (
@@ -394,6 +402,8 @@ export default function PeriodizacaoDetalhePage() {
                                 // exercício, sem abrir o editor de fase — é o
                                 // fluxo de quem está acompanhando o treino.
                                 onPersistMeso={onPersistMeso}
+                                studentId={studentId}
+                                planningId={planningId}
                             />
                         ))
                 )}

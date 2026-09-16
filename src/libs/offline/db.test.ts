@@ -40,6 +40,7 @@ describe('offline/db', () => {
                 'meta',
                 'pendingMedia',
                 'pendingMutations',
+                'pendingPrescriptionPatches',
                 'pendingWorkoutLogIds',
             ].sort(),
         );
@@ -166,6 +167,47 @@ describe('offline/db', () => {
         expect(db.objectStoreNames.contains('macrocycles')).toBe(true);
         expect(db.objectStoreNames.contains('pendingWorkoutLogIds')).toBe(true);
         expect(db.objectStoreNames.contains('pendingMutations')).toBe(true);
+        expect(db.objectStoreNames.contains('meta')).toBe(true);
+
+        db.close();
+    });
+
+    // Mesma garantia da migração v1->v2, agora para quem já está na v2 (com
+    // pendingMedia) e precisa ganhar só pendingPrescriptionPatches.
+    it('migra de v2 para v3 preservando as stores antigas e criando pendingPrescriptionPatches', async () => {
+        await new Promise<void>((resolve, reject) => {
+            const req = indexedDB.open(DB_NAME, 2);
+            req.onupgradeneeded = () => {
+                const rawDb = req.result;
+                rawDb.createObjectStore('macrocycles', { keyPath: 'id' });
+                rawDb.createObjectStore('pendingWorkoutLogIds', { keyPath: 'key' });
+                rawDb.createObjectStore('pendingMutations', {
+                    keyPath: 'id',
+                    autoIncrement: true,
+                });
+                rawDb.createObjectStore('pendingMedia', {
+                    keyPath: 'id',
+                    autoIncrement: true,
+                });
+                rawDb.createObjectStore('meta');
+            };
+            req.onsuccess = () => {
+                req.result.close();
+                resolve();
+            };
+            req.onerror = () => reject(req.error);
+        });
+
+        const { getOfflineDB } = await import('./db');
+        const db = await getOfflineDB();
+
+        expect(db.objectStoreNames.contains('pendingPrescriptionPatches')).toBe(
+            true,
+        );
+        expect(db.objectStoreNames.contains('macrocycles')).toBe(true);
+        expect(db.objectStoreNames.contains('pendingWorkoutLogIds')).toBe(true);
+        expect(db.objectStoreNames.contains('pendingMutations')).toBe(true);
+        expect(db.objectStoreNames.contains('pendingMedia')).toBe(true);
         expect(db.objectStoreNames.contains('meta')).toBe(true);
 
         db.close();

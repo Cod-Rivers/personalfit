@@ -258,23 +258,38 @@ async function runClearSession(): Promise<void> {
     // do bundle; import() só resolve em runtime, dentro desta função, então
     // o ciclo nunca precisa ser resolvido estaticamente.
     try {
-        const [{ getPendingMutations, processQueue }, { countPendingMedia }] = await Promise.all([
+        const [
+            { getPendingMutations, processQueue },
+            { countPendingMedia },
+            { getPendingPrescriptionPatches, processPrescriptionQueue },
+        ] = await Promise.all([
             import('@/libs/offline/syncQueue'),
             import('@/libs/offline/db'),
+            // Mesmo flush best-effort de antes do logout, agora também para
+            // a fila do PERSONAL (edições de série/carga sem rede — ver
+            // prescriptionQueue.ts). Sem isto, uma edição feita segundos
+            // antes de sair da conta ficaria só no IndexedDB, que o
+            // `indexedDB.deleteDatabase()` logo abaixo apaga de qualquer
+            // forma — aqui ainda há uma chance de sincronizar antes disso.
+            import('@/libs/offline/prescriptionQueue'),
         ]);
 
-        const [mutationsBefore, mediaBefore] = await Promise.all([
+        const [mutationsBefore, mediaBefore, prescriptionsBefore] = await Promise.all([
             getPendingMutations(),
             countPendingMedia(),
+            getPendingPrescriptionPatches(),
         ]);
 
-        if (mutationsBefore.length + mediaBefore > 0) {
+        if (
+            mutationsBefore.length + mediaBefore + prescriptionsBefore.length >
+            0
+        ) {
             if (navigator.onLine) {
                 // Timeout curto: não travar o logout esperando uma rede
                 // lenta ou uma tentativa que nunca resolve — é
                 // best-effort, não uma garantia.
                 await Promise.race([
-                    processQueue(),
+                    Promise.all([processQueue(), processPrescriptionQueue()]),
                     new Promise<void>((resolve) => setTimeout(resolve, 6000)),
                 ]);
             }

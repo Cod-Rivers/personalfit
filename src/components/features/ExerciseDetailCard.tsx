@@ -52,6 +52,7 @@ import {
     type SeriesPrescriptionDraft,
     type SeriesPrescriptionPatch,
 } from '@/libs/seriesPrescription';
+import { PrescriptionQueuedOfflineError } from '@/libs/offline/prescriptionQueue';
 import HelpTooltip from '@/components/atoms/HelpTooltip';
 import ExternalLink from '@/components/atoms/ExternalLink';
 import { getGlossaryTerm } from '@/libs/glossaryContent';
@@ -152,8 +153,11 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
     );
     // Estado de uma gravação de prescrição (carga ou séries). Diferente de
     // weightSaveStatus, que é o registro de carga do próprio ALUNO.
+    // 'saved-offline': sem rede, a edição foi gravada no IndexedDB do
+    // aparelho e sincroniza sozinha quando a conexão voltar — NÃO é um erro
+    // (ver PrescriptionQueuedOfflineError em libs/offline/prescriptionQueue.ts).
     const [prescriptionStatus, setPrescriptionStatus] = useState<
-        'idle' | 'saving' | 'saved' | 'error'
+        'idle' | 'saving' | 'saved' | 'saved-offline' | 'error'
     >('idle');
     const [prescriptionError, setPrescriptionError] = useState('');
     // --- Efeitos ---
@@ -507,6 +511,14 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
             setPrescriptionStatus('saved');
             setTimeout(() => setPrescriptionStatus('idle'), 3000);
         } catch (err) {
+            // Sem rede: a edição foi para a fila offline, não descartada —
+            // ver PrescriptionQueuedOfflineError. Mostra o mesmo padrão
+            // "salvo neste dispositivo" do resto do app, não um erro.
+            if (err instanceof PrescriptionQueuedOfflineError) {
+                setPrescriptionStatus('saved-offline');
+                setTimeout(() => setPrescriptionStatus('idle'), 5000);
+                return;
+            }
             setPrescriptionStatus('error');
             setPrescriptionError(
                 err instanceof Error && err.message
@@ -1118,6 +1130,14 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                             <>
                                                 <FiCheck /> Prescrição atualizada
                                                 para o aluno.
+                                            </>
+                                        )}
+                                        {prescriptionStatus === 'saved-offline' && (
+                                            <>
+                                                <FiSave /> Salvo neste
+                                                dispositivo — sem conexão para
+                                                enviar ao aluno agora. Será
+                                                sincronizado automaticamente.
                                             </>
                                         )}
                                         {prescriptionStatus === 'error' && (
