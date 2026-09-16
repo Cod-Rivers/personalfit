@@ -518,10 +518,18 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
 
     const handlePrescribedWeightEditStart = () => {
         if (!onPrescribeWeight) return;
+        setPrescribedWeightValue(exercise.plannedWeight ?? '');
+        setPrescriptionStatus('idle');
         setIsPrescribedWeightEditing(true);
     };
 
-    const handlePrescribedWeightEditEnd = () => {
+    /** Confirma e salva. Chamado tanto pelo botão ✓ quanto pelo Enter —
+     * o botão existe porque depender só de onBlur/Enter (como era antes)
+     * falha em qualquer interação que feche o card sem passar por um dos
+     * dois: tocar no X do modal ou no fundo dá blur (fecha o campo) mas não
+     * garante que o clique de confirmação chegue a acontecer antes do card
+     * desmontar, e no toque (a tela é usada na academia) não há "Enter". */
+    const handlePrescribedWeightConfirm = () => {
         setIsPrescribedWeightEditing(false);
         const numericWeight =
             typeof prescribedWeightValue === 'number'
@@ -535,12 +543,16 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
         }
     };
 
+    const handlePrescribedWeightCancel = () => {
+        setPrescribedWeightValue(exercise.plannedWeight ?? '');
+        setIsPrescribedWeightEditing(false);
+    };
+
     const handlePrescribedWeightKeyDown = (
         event: React.KeyboardEvent<HTMLInputElement>,
     ) => {
-        if (event.key === 'Enter') {
-            handlePrescribedWeightEditEnd();
-        }
+        if (event.key === 'Enter') handlePrescribedWeightConfirm();
+        if (event.key === 'Escape') handlePrescribedWeightCancel();
     };
 
     const handleSeriesEditStart = () => {
@@ -880,23 +892,66 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                         >
                                         {readOnly && onPrescribeWeight ? (
                                             isPrescribedWeightEditing ? (
-                                                <input
-                                                    type="number"
-                                                    className={styles.valueBox}
-                                                    value={prescribedWeightValue}
-                                                    autoFocus
-                                                    onChange={(e) =>
-                                                        setPrescribedWeightValue(
-                                                            e.target.value,
-                                                        )
+                                                <div
+                                                    className={
+                                                        styles.seriesEditRow
                                                     }
-                                                    onBlur={
-                                                        handlePrescribedWeightEditEnd
-                                                    }
-                                                    onKeyDown={
-                                                        handlePrescribedWeightKeyDown
-                                                    }
-                                                />
+                                                >
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        step="0.5"
+                                                        className={
+                                                            styles.seriesNumInput
+                                                        }
+                                                        value={
+                                                            prescribedWeightValue
+                                                        }
+                                                        autoFocus
+                                                        onChange={(e) =>
+                                                            setPrescribedWeightValue(
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        onKeyDown={
+                                                            handlePrescribedWeightKeyDown
+                                                        }
+                                                        aria-label="Carga prescrita em kg"
+                                                    />
+                                                    <span
+                                                        className={
+                                                            styles.seriesUnit
+                                                        }
+                                                    >
+                                                        kg
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        className={
+                                                            styles.seriesEditConfirm
+                                                        }
+                                                        onClick={
+                                                            handlePrescribedWeightConfirm
+                                                        }
+                                                        aria-label="Salvar carga prescrita"
+                                                        title="Salvar"
+                                                    >
+                                                        <FiCheck />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        className={
+                                                            styles.seriesEditCancel
+                                                        }
+                                                        onClick={
+                                                            handlePrescribedWeightCancel
+                                                        }
+                                                        aria-label="Cancelar edição da carga"
+                                                        title="Cancelar"
+                                                    >
+                                                        <FiX />
+                                                    </button>
+                                                </div>
                                             ) : (
                                                 <button
                                                     type="button"
