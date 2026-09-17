@@ -8,6 +8,7 @@ import {
     FiChevronRight,
     FiEdit3,
     FiTrash2,
+    FiWifiOff,
 } from 'react-icons/fi';
 import {
     getStudentPlannings,
@@ -20,6 +21,11 @@ import {
     type MacrocycleResponse,
 } from '@/libs/planningService';
 import Modal from '@/components/system/Modal';
+import {
+    cacheStudentPlannings,
+    getCachedStudentPlannings,
+    isOfflineError,
+} from '@/libs/offline/personalCache';
 import NewMacrocycleModal from '@/app/personal/_shared/periodizacao/components/NewMacrocycleModal';
 import s from './periodizacao.module.css';
 
@@ -55,6 +61,8 @@ export default function PeriodizacaoPage() {
     const [plannings, setPlannings] = useState<MacrocycleResponse[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    /** Lista servida do cache local por falta de rede (ver personalCache.ts). */
+    const [isOfflineData, setIsOfflineData] = useState(false);
     const [deleting, setDeleting] = useState<string | null>(null);
 
     // template states
@@ -82,12 +90,46 @@ export default function PeriodizacaoPage() {
     const [savingEdit, setSavingEdit] = useState(false);
     const [editError, setEditError] = useState('');
 
-    useEffect(() => {
-        getStudentPlannings(studentId)
-            .then(setPlannings)
-            .catch((e: Error) => setError(e.message))
-            .finally(() => setLoading(false));
+    /* Cada carga com rede também grava a lista no IndexedDB. É o elo que
+     * faltava entre "Meus Alunos" e o editor de periodização: sem ele, a
+     * navegação do personal offline parava aqui, e a fila de edição de
+     * prescrição (prescriptionQueue.ts) nunca era alcançada. */
+    const loadPlannings = useCallback(async () => {
+        try {
+            const data = await getStudentPlannings(studentId);
+            setPlannings(data);
+            setIsOfflineData(false);
+            setError('');
+            void cacheStudentPlannings(studentId, data);
+        } catch (e) {
+            if (isOfflineError(e)) {
+                const cached = await getCachedStudentPlannings(studentId);
+                if (cached && cached.length > 0) {
+                    setPlannings(cached);
+                    setIsOfflineData(true);
+                    setError('');
+                    return;
+                }
+                setError(
+                    'Sem conexão e os planos deste aluno ainda não foram abertos neste aparelho. Abra esta tela uma vez com internet para poder consultá-la offline.',
+                );
+                return;
+            }
+            setError((e as Error).message);
+        } finally {
+            setLoading(false);
+        }
     }, [studentId]);
+
+    useEffect(() => {
+        void loadPlannings();
+    }, [loadPlannings]);
+
+    useEffect(() => {
+        const onOnline = () => void loadPlannings();
+        window.addEventListener('online', onOnline);
+        return () => window.removeEventListener('online', onOnline);
+    }, [loadPlannings]);
 
     const handleDelete = useCallback(
         async (e: React.MouseEvent, id: string) => {
@@ -285,6 +327,15 @@ export default function PeriodizacaoPage() {
                                     Carregando...
                                 </span>
                             </div>
+                        </div>
+                    )}
+
+                    {isOfflineData && (
+                        <div className={s.offlineNotice}>
+                            <FiWifiOff /> Sem conexão — mostrando os planos
+                            salvos neste aparelho. Abrir um plano e ajustar
+                            série/carga continua funcionando; o envio acontece
+                            quando a internet voltar.
                         </div>
                     )}
 

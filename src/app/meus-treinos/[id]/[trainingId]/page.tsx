@@ -42,7 +42,10 @@ import {
     NewWorkoutLogResponse,
 } from '@/libs/workoutLogService';
 import { computeAutoregulationDecision } from '@/libs/microcycleAutoregulation';
-import { getOfflineMacrocycle } from '@/libs/offline/downloadManager';
+import {
+    cacheMacrocycleForOffline,
+    getOfflineMacrocycle,
+} from '@/libs/offline/downloadManager';
 import HelpTooltip from '@/components/atoms/HelpTooltip';
 import { getMicrocycleHelpTopic } from '@/libs/microcycleHelpContent';
 import { markWorkoutStartIfNeeded } from '@/libs/workoutSessionTimer';
@@ -262,6 +265,12 @@ export default function MeusTreinosExercisesPage({
 
             try {
                 const macro = await getMyMacrocycle(macrocycleId);
+                // Guarda o plano para a próxima abertura sem rede. A Central
+                // de Ajuda promete que registrar funciona "com ou sem plano
+                // baixado previamente" — sem isto, quem nunca tocou em
+                // "Baixar para offline" não conseguia nem ABRIR o treino sem
+                // sinal, e portanto não havia o que a fila local guardar.
+                void cacheMacrocycleForOffline(macro);
                 const found = await applyMacrocycle(macro, loggedStudentId);
                 if (!found) {
                     setError('Treino não encontrado neste macrociclo.');

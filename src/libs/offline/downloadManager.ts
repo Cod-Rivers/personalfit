@@ -194,6 +194,37 @@ function getLoggedStudentId(): string {
     }
 }
 
+/**
+ * Guarda os DADOS de um macrociclo que o aluno acabou de abrir com rede, sem
+ * baixar mídia nenhuma.
+ *
+ * Complementa `downloadActivePlanForOffline` (ação explícita, que também baixa
+ * os vídeos) em vez de substituí-la. Existe porque a Central de Ajuda promete
+ * que o registro funciona "com ou sem plano baixado previamente" — e isso não
+ * era verdade: sem o download explícito, a tela de treino não tinha o que
+ * mostrar offline, então o aluno nem chegava ao botão "Completar Treino" e não
+ * havia nada para a fila local guardar. Só os vídeos continuam dependendo do
+ * download explícito: são o caro, e o registro não precisa deles.
+ *
+ * Melhor-esforço: falha de cota ou armazenamento bloqueado nunca pode derrubar
+ * a tela que está apenas exibindo o treino.
+ */
+export async function cacheMacrocycleForOffline(
+    macro: MacrocycleResponse,
+): Promise<void> {
+    try {
+        const db = await getOfflineDB();
+        await db.put('macrocycles', {
+            id: macro.id,
+            data: macro,
+            serverUpdatedAt: macro.updated_at,
+            downloadedAt: new Date().toISOString(),
+        });
+    } catch (err) {
+        console.warn('[offline] Falha ao guardar o plano para uso offline:', err);
+    }
+}
+
 export async function getOfflineMacrocycle(id: string): Promise<StoredMacrocycle | undefined> {
     const db = await getOfflineDB();
     return db.get('macrocycles', id);

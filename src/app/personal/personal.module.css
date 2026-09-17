@@ -544,6 +544,25 @@
     margin-bottom: 16px;
 }
 
+/* Aviso de "dado servido do cache local" — âmbar, não vermelho: nada falhou
+   do ponto de vista do personal, a tela só está mostrando a última cópia. */
+.offlineNotice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 176, 32, 0.1);
+    border: 1px solid rgba(255, 176, 32, 0.25);
+    color: var(--text-secondary, #b0842a);
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    margin-bottom: 16px;
+}
+
+.offlineNotice svg {
+    flex-shrink: 0;
+}
+
 .loading {
     text-align: center;
     padding: 60px 20px;

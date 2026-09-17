@@ -1451,3 +1451,23 @@
     justify-content: center;
     gap: 10px;
 }
+
+/* Aviso de "plano servido do cache local" (ver libs/offline/personalCache.ts).
+   Âmbar e não vermelho: para o personal nada falhou — a tela está mostrando a
+   última cópia salva e as edições continuam sendo aceitas, via fila. */
+.offlineNotice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 176, 32, 0.1);
+    border: 1px solid rgba(255, 176, 32, 0.25);
+    color: var(--text-secondary, #b0842a);
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    margin-bottom: 16px;
+}
+
+.offlineNotice svg {
+    flex-shrink: 0;
+}

@@ -3,6 +3,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Api } from '@/libs/api';
 import { isValidCpfChecksum } from '@/libs/validation/authSchemas';
+import {
+    cachePersonalStudents,
+    getCachedPersonalStudents,
+    isOfflineError,
+} from '@/libs/offline/personalCache';
 
 export type LinkStatus = 'active' | 'pending' | 'inactive';
 
@@ -48,6 +53,14 @@ const emptyPreRegisterForm: PreRegisterFormData = {
 };
 
 function extractErrorMessage(err: unknown, fallback: string): string {
+    // Cadastrar/editar/desvincular aluno não tem fila offline (diferente da
+    // prescrição — ver prescriptionQueue.ts): são ações que dependem de
+    // validação do servidor (e-mail único, envio da senha temporária). Sem
+    // rede, o certo é dizer isso na cara em vez de devolver o
+    // "Erro ao cadastrar aluno." genérico, que sugere culpa do formulário.
+    if (isOfflineError(err)) {
+        return 'Sem conexão — esta ação precisa de internet. Nada foi alterado; tente de novo quando a rede voltar.';
+    }
     const data = (
         err as { response?: { data?: { error?: string; message?: string } } }
     )?.response?.data;
@@ -62,6 +75,11 @@ function extractErrorMessage(err: unknown, fallback: string): string {
 export function usePersonalStudents(enabled: boolean) {
     const [students, setStudents] = useState<Student[]>([]);
     const [loading, setLoading] = useState(true);
+    /** A lista exibida veio do cache local porque não houve rede. A tela usa
+     * isso para avisar "sem conexão, mostrando a última lista salva" em vez de
+     * mentir com "Nenhum aluno cadastrado" (que era o comportamento antigo:
+     * qualquer falha virava lista vazia). */
+    const [isOfflineData, setIsOfflineData] = useState(false);
 
     const [modal, setModal] = useState<StudentModalMode>(null);
     const [editForm, setEditForm] = useState<EditFormData>(emptyEditForm);
@@ -88,12 +106,38 @@ export function usePersonalStudents(enabled: boolean) {
                 headers: { Authorization: token },
             });
             setStudents(data ?? []);
-        } catch {
+            setIsOfflineData(false);
+            // Guarda para a próxima abertura sem rede. Fica no IndexedDB, que
+            // o logout apaga por inteiro (clearSession) — o CPF/telefone do
+            // aluno nunca sobrevive à troca de conta no aparelho.
+            void cachePersonalStudents(data ?? []);
+        } catch (err) {
+            // Sem rede: cai na última lista salva em vez de zerar a tela. Uma
+            // recusa do servidor (403/500) continua caindo em lista vazia —
+            // ali o dado velho esconderia a mudança real.
+            if (isOfflineError(err)) {
+                const cached = await getCachedPersonalStudents<Student>();
+                if (cached && cached.length > 0) {
+                    setStudents(cached);
+                    setIsOfflineData(true);
+                    return;
+                }
+            }
             setStudents([]);
+            setIsOfflineData(false);
         } finally {
             setLoading(false);
         }
     }, []);
+
+    // Refaz a busca assim que a conexão volta — sem isto, a tela ficava
+    // presa na cópia offline até o personal recarregar a página na mão.
+    useEffect(() => {
+        if (!enabled) return;
+        const onOnline = () => void fetchStudents();
+        window.addEventListener('online', onOnline);
+        return () => window.removeEventListener('online', onOnline);
+    }, [enabled, fetchStudents]);
 
     useEffect(() => {
         if (enabled) fetchStudents();
@@ -344,6 +388,7 @@ export function usePersonalStudents(enabled: boolean) {
     return {
         students,
         loading,
+        isOfflineData,
         modal,
         editForm,
         editId,

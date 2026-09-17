@@ -84,11 +84,14 @@ const studentSections: HelpSection[] = [
                     é problema seu.
                 </p>
                 <p className="mb-2">
-                    Toque em <strong>Baixar para offline</strong> para salvar
-                    seu plano de treino atual e os vídeos dos exercícios no
-                    aparelho. Assim você consegue treinar mesmo sem internet
-                    — e nem precisa ter baixado antes: o registro nunca se
-                    perde, com ou sem plano baixado previamente.
+                    Todo treino que você abre <em>com</em> internet já fica
+                    guardado no aparelho sozinho — então ele continua abrindo
+                    se a rede cair depois. O botão{' '}
+                    <strong>Baixar para offline</strong> vai além e salva
+                    também os <strong>vídeos</strong> dos exercícios, que são
+                    a parte pesada. Em qualquer um dos casos o registro nunca
+                    se perde: ele é gravado no aparelho antes de tentar a
+                    rede.
                 </p>
                 <p className="mb-2">
                     <strong>Passo a passo para registrar um treino:</strong>
@@ -657,6 +660,57 @@ const studentSections: HelpSection[] = [
  * Central do Personal (nova)
  * ──────────────────────────────────────────────────────────────────────── */
 const personalSections: HelpSection[] = [
+    {
+        id: 'offline-personal',
+        title: 'Usar o app na academia sem sinal',
+        body: (
+            <>
+                <p className="mb-2">
+                    <strong>Por que isso existe:</strong> você acompanha o
+                    treino no lugar onde o sinal costuma sumir — porão, sala de
+                    musculação, subsolo. O Venafit guarda no seu aparelho as
+                    telas que você já abriu com internet, para que o
+                    acompanhamento não pare quando a rede cai.
+                </p>
+                <p className="mb-2">
+                    <strong>O que funciona sem internet:</strong>
+                </p>
+                <ul className="mb-2 ps-3">
+                    <li>
+                        <strong>Sua lista de alunos</strong> — a última versão
+                        salva no aparelho. Um aviso no topo indica quando a
+                        lista veio dessa cópia.
+                    </li>
+                    <li>
+                        <strong>Os planos de treino que você já abriu</strong>{' '}
+                        naquele aparelho, com os exercícios de cada fase.
+                    </li>
+                    <li>
+                        <strong>Ajustar série e carga</strong> pelo card do
+                        exercício. A alteração é gravada no aparelho na hora
+                        (o card mostra &quot;salvo neste dispositivo&quot;) e
+                        enviada sozinha ao aluno quando a internet voltar —
+                        você pode fechar o app no meio.
+                    </li>
+                </ul>
+                <p className="mb-2">
+                    <strong>O que precisa de internet:</strong> cadastrar,
+                    editar ou desvincular aluno, criar e apagar fases,
+                    financeiro, agenda e qualquer tela que você ainda não tenha
+                    aberto naquele aparelho. Nessas, o app avisa que está sem
+                    conexão e <em>nada</em> é alterado pela metade.
+                </p>
+                <p className="mb-0 small text-muted">
+                    <strong>Para aproveitar melhor:</strong> abra uma vez, com
+                    internet, o plano dos alunos que você vai acompanhar no
+                    dia — é isso que deixa a tela disponível offline depois. Um
+                    selo no topo da periodização mostra quantos ajustes ainda
+                    estão esperando conexão; enquanto ele estiver lá, o aluno
+                    ainda não recebeu a alteração.
+                </p>
+            </>
+        ),
+    },
     {
         id: 'painel-personal',
         title: 'Área do Personal',

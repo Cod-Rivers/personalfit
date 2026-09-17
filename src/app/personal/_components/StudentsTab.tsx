@@ -14,6 +14,7 @@ import {
     FiMail,
     FiFileText,
     FiCheck,
+    FiWifiOff,
 } from 'react-icons/fi';
 import AvatarUpload from '@/components/molecules/AvatarUpload';
 import Modal from '@/components/system/Modal';
@@ -45,6 +46,7 @@ export default function StudentsTab({ state }: Props) {
     const {
         students,
         loading,
+        isOfflineData,
         modal,
         editForm,
         editId,
@@ -123,17 +125,44 @@ export default function StudentsTab({ state }: Props) {
                 <div className={s.errorMsg}>{error}</div>
             )}
 
+            {/* Lista servida do cache local (ver personalCache.ts). Sem este
+                aviso o personal não teria como saber que está olhando uma
+                cópia — nem por que cadastrar/editar aluno falha agora. */}
+            {isOfflineData && (
+                <div className={s.offlineNotice}>
+                    <FiWifiOff /> Sem conexão — mostrando a última lista de
+                    alunos salva neste aparelho. Ela se atualiza sozinha
+                    quando a internet voltar.
+                </div>
+            )}
+
             {loading ? (
                 <p className={s.loading}>Carregando...</p>
             ) : students.length === 0 ? (
                 <div className={s.empty}>
                     <div className={s.emptyIcon}><FiActivity /></div>
-                    <h3 className={s.emptyTitle}>Nenhum aluno cadastrado</h3>
-                    <p className={s.emptyText}>
-                        Clique em &quot;+ Adicionar Aluno&quot; para
-                        pré-cadastrar um aluno — ele recebe a senha de
-                        acesso por e-mail.
-                    </p>
+                    {typeof navigator !== 'undefined' && !navigator.onLine ? (
+                        <>
+                            <h3 className={s.emptyTitle}>Sem conexão</h3>
+                            <p className={s.emptyText}>
+                                Não foi possível carregar seus alunos e ainda
+                                não há uma cópia salva neste aparelho. Abra
+                                esta tela uma vez com internet para que ela
+                                fique disponível offline.
+                            </p>
+                        </>
+                    ) : (
+                        <>
+                            <h3 className={s.emptyTitle}>
+                                Nenhum aluno cadastrado
+                            </h3>
+                            <p className={s.emptyText}>
+                                Clique em &quot;+ Adicionar Aluno&quot; para
+                                pré-cadastrar um aluno — ele recebe a senha de
+                                acesso por e-mail.
+                            </p>
+                        </>
+                    )}
                 </div>
             ) : (
                 <div className={s.studentList}>

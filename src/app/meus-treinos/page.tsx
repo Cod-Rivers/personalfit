@@ -44,6 +44,7 @@ import OverdueBlockNotice from '@/components/features/OverdueBlockNotice';
 import { isOverdueBlockError } from '@/libs/overdueBlock';
 import GamificationBanner from '../../components/features/GamificationBanner';
 import {
+    cacheMacrocycleForOffline,
     getAllOfflineMacrocycles,
     getOfflineMacrocycle,
 } from '@/libs/offline/downloadManager';
@@ -222,6 +223,11 @@ export default function MeusTreinosPage() {
 
                 const first = macros[0];
                 const detail = await getMyMacrocycle(first.id);
+                // Guarda os dados do plano (sem mídia) a cada abertura com
+                // rede, para que a lista offline não dependa do aluno ter
+                // lembrado de tocar em "Baixar para offline" — ver
+                // cacheMacrocycleForOffline.
+                void cacheMacrocycleForOffline(detail);
                 setSelectedMacro(detail);
                 setStudentId(detail.student_id ?? '');
                 setMesoGroups(
@@ -271,6 +277,7 @@ export default function MeusTreinosPage() {
         setLoading(true);
         try {
             const detail = await getMyMacrocycle(macro.id);
+            void cacheMacrocycleForOffline(detail);
             setIsOfflineData(false);
             setSelectedMacro(detail);
             setStudentId(detail.student_id ?? '');

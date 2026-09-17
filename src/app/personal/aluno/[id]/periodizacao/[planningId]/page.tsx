@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
-import { FiArrowLeft } from 'react-icons/fi';
+import { FiArrowLeft, FiWifiOff } from 'react-icons/fi';
 import {
     getMacrocycle,
     updateMacrocycle,
@@ -14,6 +14,7 @@ import {
     type MesocycleRequest,
     type MesocycleResponse,
     type PeriodizedWorkoutLogResponse,
+    type ExerciseRequest,
 } from '@/libs/planningService';
 import { listStudentAppointments } from '@/libs/appointmentService';
 import GanttPlanning, {
@@ -36,6 +37,11 @@ import { getGlossaryTerm } from '@/libs/glossaryContent';
 import { useToast } from '@/components/system/Toast';
 import PersonalAnamnesisQuickView from '@/components/features/PersonalAnamnesisQuickView';
 import PrescriptionSyncBadge from '@/components/features/PrescriptionSyncBadge';
+import {
+    cachePersonalMacrocycle,
+    getCachedPersonalMacrocycle,
+    isOfflineError,
+} from '@/libs/offline/personalCache';
 import s from '@/app/personal/_shared/periodizacao/builder.module.css';
 
 export default function PeriodizacaoDetalhePage() {
@@ -48,6 +54,12 @@ export default function PeriodizacaoDetalhePage() {
     const [macro, setMacro] = useState<MacrocycleResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const [pageError, setPageError] = useState('');
+    /** O plano na tela veio do cache local por falta de rede (ver
+     * personalCache.ts). É o que permite ao personal abrir a periodização do
+     * aluno na academia sem sinal e ajustar série/carga: sem isto a tela
+     * morria no erro de rede e a fila offline de prescrição
+     * (prescriptionQueue.ts) nunca era alcançada. */
+    const [isOfflineData, setIsOfflineData] = useState(false);
     const [ganttEnabled, setGanttEnabled] = useGanttToggle(
         'venafit:gantt:periodizacao',
         false,
@@ -64,13 +76,52 @@ export default function PeriodizacaoDetalhePage() {
     );
     const [saving, setSaving] = useState(false);
 
-    /* ── Fetch ── */
-    useEffect(() => {
-        getMacrocycle(studentId, planningId)
-            .then(setMacro)
-            .catch((e: Error) => setPageError(e.message))
-            .finally(() => setLoading(false));
+    /* ── Fetch ──
+     * Cada carga bem-sucedida também grava o plano no IndexedDB, para que a
+     * próxima abertura sem rede caia na cópia local em vez de morrer num
+     * "Network Error". Uma recusa do servidor (403/404) NÃO usa o cache: ali
+     * o plano velho esconderia o motivo real. */
+    const loadMacrocycle = useCallback(async () => {
+        try {
+            const data = await getMacrocycle(studentId, planningId);
+            setMacro(data);
+            setIsOfflineData(false);
+            setPageError('');
+            void cachePersonalMacrocycle(studentId, data);
+        } catch (e) {
+            if (isOfflineError(e)) {
+                const cached = await getCachedPersonalMacrocycle(
+                    studentId,
+                    planningId,
+                );
+                if (cached) {
+                    setMacro(cached);
+                    setIsOfflineData(true);
+                    setPageError('');
+                    return;
+                }
+                setPageError(
+                    'Sem conexão e este plano ainda não foi aberto neste aparelho. Abra-o uma vez com internet para poder consultá-lo offline.',
+                );
+                return;
+            }
+            setPageError((e as Error).message);
+        } finally {
+            setLoading(false);
+        }
     }, [studentId, planningId]);
+
+    useEffect(() => {
+        void loadMacrocycle();
+    }, [loadMacrocycle]);
+
+    // Rede de volta: recarrega do servidor, para a tela sair da cópia local
+    // (e já refletir o que a fila de prescrição acabou de sincronizar).
+    useEffect(() => {
+        const onOnline = () => void loadMacrocycle();
+        window.addEventListener('online', onOnline);
+        return () => window.removeEventListener('online', onOnline);
+    }, [loadMacrocycle]);
 
     /* ── Confirmação de macrociclo recém-criado (vem da tela "Novo
      * Macrociclo") ── some da URL logo em seguida pra não reaparecer num
@@ -210,9 +261,59 @@ export default function PeriodizacaoDetalhePage() {
                 ? await updateMesocycle(studentId, planningId, req.id, req)
                 : await createMesocycle(studentId, planningId, req);
             setMacro(updated);
+            void cachePersonalMacrocycle(studentId, updated);
             return pickSavedMesocycle(updated, req.id);
         },
         [studentId, planningId],
+    );
+
+    /* ── Eco local de uma edição que foi para a fila offline ──
+     * Sem isto, a edição era gravada no IndexedDB (prescriptionQueue) e o card
+     * mostrava "salvo neste dispositivo" — mas o valor na tela voltava ao
+     * antigo assim que o selo sumia, porque o macrociclo em memória só é
+     * atualizado pela RESPOSTA do servidor, que offline nunca chega. Para o
+     * personal isso era indistinguível de "não salvou".
+     *
+     * Grava também no cache local, para o valor sobreviver a fechar e reabrir
+     * a tela enquanto a fila não sincroniza. */
+    const applyQueuedPrescription = useCallback(
+        (
+            mesocycleId: string,
+            trainingId: string,
+            exerciseId: string,
+            patch: Partial<ExerciseRequest>,
+        ) => {
+            setMacro((prev) => {
+                if (!prev) return prev;
+                const next: MacrocycleResponse = {
+                    ...prev,
+                    mesocycles: (prev.mesocycles ?? []).map((meso) =>
+                        meso.id !== mesocycleId
+                            ? meso
+                            : {
+                                  ...meso,
+                                  trainings: (meso.trainings ?? []).map((t) =>
+                                      t.id !== trainingId
+                                          ? t
+                                          : {
+                                                ...t,
+                                                exercises: (
+                                                    t.exercises ?? []
+                                                ).map((ex) =>
+                                                    ex.id !== exerciseId
+                                                        ? ex
+                                                        : { ...ex, ...patch },
+                                                ),
+                                            },
+                                  ),
+                              },
+                    ),
+                };
+                void cachePersonalMacrocycle(studentId, next);
+                return next;
+            });
+        },
+        [studentId],
     );
 
     /* ── Loading / error states ── */
@@ -287,6 +388,19 @@ export default function PeriodizacaoDetalhePage() {
                             : `mesociclo${(macro.mesocycles?.length ?? 0) === 1 ? '' : 's'}`}
                     </span>
                 </div>
+
+                {/* Plano servido do cache local. Fica acima do badge de
+                    pendências porque é o contexto dele: o personal precisa
+                    saber que está editando uma cópia e que as alterações
+                    vão numa fila. */}
+                {isOfflineData && (
+                    <div className={s.offlineNotice}>
+                        <FiWifiOff /> Sem conexão — mostrando a última versão
+                        deste plano salva no aparelho. Os ajustes de série e
+                        carga que você fizer agora ficam guardados aqui e são
+                        enviados ao aluno assim que a internet voltar.
+                    </div>
+                )}
 
                 {/* Edições de série/carga feitas sem rede (ver
                     ExerciseDetailCard) — some sozinho quando não há nada
@@ -380,6 +494,7 @@ export default function PeriodizacaoDetalhePage() {
                             simpleMode
                             dayLabelStyle={dayLabelStyle}
                             onPersistMeso={onPersistMeso}
+                            onPrescriptionQueued={applyQueuedPrescription}
                             studentId={studentId}
                             planningId={planningId}
                         />
@@ -402,6 +517,7 @@ export default function PeriodizacaoDetalhePage() {
                                 // exercício, sem abrir o editor de fase — é o
                                 // fluxo de quem está acompanhando o treino.
                                 onPersistMeso={onPersistMeso}
+                                onPrescriptionQueued={applyQueuedPrescription}
                                 studentId={studentId}
                                 planningId={planningId}
                             />

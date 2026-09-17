@@ -83,6 +83,18 @@ interface Props {
      * macrociclo salvo para a tela (o chamador já faz isso), e REJEITAR em
      * caso de erro: o card mostra o resultado ao personal. */
     onPersistMeso?: (req: MesocycleRequest) => Promise<unknown>;
+    /** Avisa a tela que uma edição foi para a fila offline em vez de ir ao
+     * servidor, para que ela aplique o mesmo patch no macrociclo em memória.
+     * Sem isso o card mostra "salvo neste dispositivo" e logo em seguida
+     * volta a exibir o valor antigo — o `meso` desta tela só muda com a
+     * RESPOSTA do servidor, que offline nunca chega. Ausente nas telas de
+     * template (que também não têm fila). */
+    onPrescriptionQueued?: (
+        mesocycleId: string,
+        trainingId: string,
+        exerciseId: string,
+        patch: Partial<ExerciseRequest>,
+    ) => void;
     /** ID do aluno e do macrociclo (o path da API chama de "planningId") —
      * só usados para enfileirar a edição no IndexedDB quando não há rede
      * (ver prescriptionQueue.ts). Obrigatórios juntos com onPersistMeso;
@@ -99,6 +111,7 @@ export default function MesocycleSection({
     simpleMode,
     dayLabelStyle,
     onPersistMeso,
+    onPrescriptionQueued,
     studentId,
     planningId,
 }: Props) {
@@ -150,6 +163,14 @@ export default function MesocycleSection({
             exerciseName,
             patch,
         });
+        // Só depois de a fila aceitar a edição: o valor novo aparece na tela
+        // porque ele já está guardado, não porque "deu certo".
+        onPrescriptionQueued?.(
+            meso.id,
+            selected!.trainingId,
+            exerciseId,
+            patch,
+        );
         throw new PrescriptionQueuedOfflineError();
     };
 

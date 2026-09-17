@@ -361,3 +361,21 @@
     color: var(--text-muted);
     font-size: 0.95rem;
 }
+
+/* Aviso de "lista servida do cache local" — ver libs/offline/personalCache.ts. */
+.offlineNotice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 176, 32, 0.1);
+    border: 1px solid rgba(255, 176, 32, 0.25);
+    color: var(--text-secondary, #b0842a);
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    margin-bottom: 16px;
+}
+
+.offlineNotice svg {
+    flex-shrink: 0;
+}

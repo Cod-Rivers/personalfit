@@ -76,6 +76,45 @@ self.addEventListener('activate', (event) => {
     );
 });
 
+// Página mínima para uma navegação offline que não tem cópia no cache.
+// Inline (sem buscar um /offline.html) porque este arquivo é estático e não
+// passa por precache: um fetch aqui falharia pelo mesmo motivo que trouxe a
+// requisição até este ponto.
+function offlineFallbackResponse() {
+    const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sem conexão — Venafit</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { margin:0; min-height:100dvh; display:flex; align-items:center;
+         justify-content:center; padding:24px; text-align:center;
+         font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+         background:#0f1115; color:#e8e8ea; }
+  h1 { font-size:1.25rem; margin:0 0 12px; }
+  p { margin:0 0 20px; font-size:0.95rem; line-height:1.5; opacity:.8; max-width:34ch; }
+  button { font:inherit; padding:12px 24px; border-radius:10px; border:0;
+           background:#e8722f; color:#fff; cursor:pointer; }
+</style>
+</head>
+<body>
+  <div>
+    <h1>Sem conexão</h1>
+    <p>Esta tela ainda não foi aberta neste aparelho, então não há uma cópia
+       salva para mostrar offline. O que você já registrou continua guardado e
+       será enviado sozinho quando a internet voltar.</p>
+    <button onclick="location.reload()">Tentar de novo</button>
+  </div>
+</body>
+</html>`;
+    return new Response(html, {
+        status: 200,
+        headers: { 'Content-Type': 'text/html; charset=utf-8' },
+    });
+}
+
 function isMediaRequest(request, url) {
     if (MEDIA_HOSTS.includes(url.hostname)) return true;
     return ['image', 'video'].includes(request.destination);
@@ -130,7 +169,20 @@ self.addEventListener('fetch', (event) => {
                     }
                     return response;
                 })
-                .catch(() => caches.match(request)),
+                .catch(async () => {
+                    const cached = await caches.match(request);
+                    if (cached) return cached;
+                    // Sem cópia no cache, `caches.match` devolve undefined —
+                    // e `respondWith(undefined)` vira um erro de rede. Numa
+                    // navegação isso dava tela branca no PWA e o diálogo
+                    // "Não foi possível carregar" no app Android (ver
+                    // onReceivedError em MainActivity.kt), sem dizer que o
+                    // problema era a falta de conexão.
+                    if (request.mode === 'navigate') {
+                        return offlineFallbackResponse();
+                    }
+                    return Response.error();
+                }),
         );
     }
 });
