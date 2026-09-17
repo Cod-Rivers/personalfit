@@ -20,7 +20,7 @@ export const ADSENSE_CLIENT_ID = 'ca-pub-9935304322065680';
  * (Auto ads) não dependem disto — basta o script carregado pelo
  * GoogleAdsense e a opção ligada no painel.
  */
-export const ADSENSE_SLOT_ID: string = '';
+export const ADSENSE_SLOT_ID: string = '7651283905';
 
 export function shouldShowAds(effectivePlanType: string | null): boolean {
     return effectivePlanType !== null && effectivePlanType !== 'pro';
