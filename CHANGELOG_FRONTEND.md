@@ -575,3 +575,13 @@
 ## 2026-09-17 18:10 — River (via Claude Code)
 **Resumo:** Auditei o fluxo offline inteiro. Você tinha razão nas duas queixas, e a causa é a mesma. ## O diagnóstico O service worker ([sw.js](personalfit/public/sw.js)) **nunca** cacheia chamada de dados (`request.destination === 'empty'` passa direto pela rede) e a API vive em outra origem. Resultado: **nenhuma tela do personal tinha dado offline**. O `catch` de [usePersonalStudents.ts:88](personalfit/src/hooks/usePersonalStudents.ts#L88) engolia o erro de rede e fazia `setStudents([])` — por isso "Nenhum aluno cadastrado" no modo avião. O efeito colateral era pior que o sintoma: a fila offline de pres…
 **Arquivos:** AjudaClient.tsx, MesocycleSection.tsx, StudentsTab.tsx, builder.module.css, downloadManager.ts, page.tsx, periodizacao.module.css, personal.module.css, personalCache.test.ts, personalCache.ts, sw.js, usePersonalStudents.ts
+
+## 2026-09-18 17:03 — River (via Claude Code)
+**Resumo:** Analisei as três telas e implementei o "Finalizar treino". Começo pelo achado que muda o diagnóstico: ## O "Ver como Aluno" nunca mostrou o aluno acompanhado Em [Header/index.tsx:86](personalfit/src/components/organism/Header/index.tsx#L86) o botão só aparece quando `linkStatus === 'active'` — o vínculo de aluno **do próprio personal**. E a área do aluno carrega `getMyMacrocycle()` ([page.tsx:20](personalfit/src/app/meus-treinos/[id]/[trainingId]/page.tsx#L20)), que resolve o aluno pelo token. Ou seja: o que aparece ali é o plano do personal como aluno dele mesmo, nunca a prescrição do aluno a…
+**Arquivos:** WorkoutCheckIn.tsx, WorkoutLogger.tsx, acompanhar, db.ts, syncQueue.test.ts, syncQueue.ts, workoutLogService.ts
+**Commits:** offline corrigido'
+
+## 2026-09-18 17:20 — River (via Claude Code)
+**Resumo:** Agora dá para escolher bi-set, tri-set, superset e os outros tipos de combinação no momento em que se marcam os exercícios. Fiz commit e push nos dois repositórios, e o deploy é automático. **Ainda não testei no navegador nem no app.** **Como funciona:** no rodapé do seletor, abaixo das caixas de seleção, há um campo **"Adicionar como"**: - **Exercícios separados** é o padrão. - Os tipos que já existem no app: bi-set, superset, tri-set, série gigante, pré-exaustão e pós-exaustão. - **Só aparecem liberados os tipos que cabem na quantidade marcada:** - bi-set: exatamente 2 exercícios; - tri-set:…
+**Arquivos:** CHANGELOG_FRONTEND.md
+**Commits:** Permite selecionar varios exercicios de uma vez ao montar o treino | Revisao do PDF: adiciona varios exercicios da biblioteca de uma vez | Escolhe bi-set, tri-set, superset etc. ja na selecao de exercicios
