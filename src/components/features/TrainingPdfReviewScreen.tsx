@@ -81,6 +81,9 @@ export default function TrainingPdfReviewScreen({
         () => structuredClone(data.extracted_trainings ?? []),
     );
     const [pickerFor, setPickerFor] = useState<{ t: number; e: number } | null>(null);
+    // Picker multi-seleção para acrescentar exercícios da biblioteca a um
+    // treino (índice do treino); o de cima troca o vínculo de UMA linha.
+    const [addPickerFor, setAddPickerFor] = useState<number | null>(null);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
     const [confirmDiscard, setConfirmDiscard] = useState(false);
@@ -96,7 +99,14 @@ export default function TrainingPdfReviewScreen({
         searchExercises()
             .then((items) => {
                 if (!active) return;
-                setLibraryById(new Map(items.map((item) => [item.id, item])));
+                // Mescla: não apaga o que addLibraryExercises já registrou.
+                setLibraryById(
+                    (prev) =>
+                        new Map([
+                            ...items.map((item) => [item.id, item] as const),
+                            ...prev,
+                        ]),
+                );
             })
             .catch(() => {
                 // Sem o catálogo a revisão continua funcionando: perde-se só o
@@ -162,6 +172,30 @@ export default function TrainingPdfReviewScreen({
         setTrainings((prev) => {
             const next = structuredClone(prev);
             next[ti].exercises.push({ raw_name: '', match_status: 'unmatched' });
+            return next;
+        });
+    }
+
+    function addLibraryExercises(ti: number, items: ExerciseLibraryItem[]) {
+        setTrainings((prev) => {
+            const next = structuredClone(prev);
+            next[ti].exercises.push(
+                ...items.map(
+                    (item): ExtractedExercise => ({
+                        raw_name: item.name,
+                        exercise_library_id: item.id,
+                        match_status: 'manual',
+                        match_score: 1,
+                    }),
+                ),
+            );
+            return next;
+        });
+        // O selo "Vinculado" mostra o nome pelo catálogo; um exercício próprio
+        // do personal não vem no searchExercises() global.
+        setLibraryById((prev) => {
+            const next = new Map(prev);
+            items.forEach((item) => next.set(item.id, item));
             return next;
         });
     }
@@ -249,7 +283,10 @@ export default function TrainingPdfReviewScreen({
                                     <button
                                         type="button"
                                         className={styles.badgeMatched}
-                                        onClick={() => setPickerFor({ t: ti, e: ei })}
+                                        onClick={() => {
+                                            setAddPickerFor(null);
+                                            setPickerFor({ t: ti, e: ei });
+                                        }}
                                         title="Trocar o exercício da biblioteca vinculado"
                                     >
                                         <FiCheckCircle />
@@ -260,7 +297,10 @@ export default function TrainingPdfReviewScreen({
                                     <button
                                         type="button"
                                         className={styles.badgeUnmatched}
-                                        onClick={() => setPickerFor({ t: ti, e: ei })}
+                                        onClick={() => {
+                                            setAddPickerFor(null);
+                                            setPickerFor({ t: ti, e: ei });
+                                        }}
                                         title="Buscar na biblioteca de exercícios"
                                     >
                                         <FiHelpCircle /> Sem correspondência — buscar
@@ -362,13 +402,35 @@ export default function TrainingPdfReviewScreen({
                         </div>
                     ))}
 
-                    <button
-                        type="button"
-                        onClick={() => addExercise(ti)}
-                        className={styles.btnAddExercise}
-                    >
-                        <FiPlus /> Adicionar exercício
-                    </button>
+                    {addPickerFor === ti ? (
+                        <ExercisePicker
+                            onPickMany={(items) => {
+                                addLibraryExercises(ti, items);
+                                setAddPickerFor(null);
+                            }}
+                            onClose={() => setAddPickerFor(null)}
+                        />
+                    ) : (
+                        <div className={styles.addExerciseActions}>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setPickerFor(null);
+                                    setAddPickerFor(ti);
+                                }}
+                                className={styles.btnAddExercise}
+                            >
+                                <FiPlus /> Adicionar da biblioteca
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => addExercise(ti)}
+                                className={styles.btnAddExercise}
+                            >
+                                <FiPlus /> Linha em branco
+                            </button>
+                        </div>
+                    )}
                 </div>
             ))}
 

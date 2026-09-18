@@ -152,6 +152,12 @@
     font-style: italic;
 }
 
+.addExerciseActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
 .btnAddExercise,
 .btnAddTraining {
     display: inline-flex;
