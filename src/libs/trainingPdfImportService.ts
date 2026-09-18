@@ -23,6 +23,10 @@ export interface ExtractedExercise {
     technique?: string;
     technique_params?: TechniqueParamsResponse;
     notes?: string;
+    /** Combinação (bi-set, tri-set…) marcada na revisão — mesma semântica de
+     * group_id/group_technique do exercício do plano. */
+    group_id?: string;
+    group_technique?: string;
     exercise_library_id?: string;
     match_score?: number;
     match_status: TrainingPdfMatchStatus;

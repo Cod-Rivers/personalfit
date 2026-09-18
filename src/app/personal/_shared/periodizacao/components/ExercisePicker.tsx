@@ -10,6 +10,10 @@ import {
     type ExerciseLibraryItem,
 } from '@/libs/planningService';
 import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
+import {
+    GROUP_TECHNIQUE_CATALOG,
+    isGroupTechniqueValidForSize,
+} from '@/libs/trainingTechniques';
 
 interface Props {
     onPick?: (item: ExerciseLibraryItem) => void;
@@ -18,8 +22,15 @@ interface Props {
      * caixa de seleção e um botão "Adicionar N" confirma o lote. A seleção
      * sobrevive a trocas de busca, grupo muscular e aba — dá para marcar
      * peito, trocar para tríceps e marcar mais, sem sair do picker.
+     *
+     * `groupTechnique` (valor de GROUP_TECHNIQUE_CATALOG) vem preenchido
+     * quando o usuário pediu para combinar os selecionados num bloco
+     * (bi-set, tri-set, superset…); undefined = exercícios avulsos.
      */
-    onPickMany?: (items: ExerciseLibraryItem[]) => void;
+    onPickMany?: (
+        items: ExerciseLibraryItem[],
+        groupTechnique?: string,
+    ) => void;
     onClose: () => void;
 }
 
@@ -39,8 +50,17 @@ export default function ExercisePicker({ onPick, onPickMany, onClose }: Props) {
     const [selected, setSelected] = useState<Map<string, ExerciseLibraryItem>>(
         () => new Map(),
     );
+    const [groupTechnique, setGroupTechnique] = useState('');
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const multi = !!onPickMany;
+    // A escolha fica guardada, mas só vale enquanto couber na seleção atual:
+    // marcar um 3º exercício com "Bi-set" escolhido desliga o agrupamento em
+    // vez de gerar um bi-set de três.
+    const effectiveGroup =
+        groupTechnique &&
+        isGroupTechniqueValidForSize(groupTechnique, selected.size)
+            ? groupTechnique
+            : '';
 
     const toggle = (item: ExerciseLibraryItem) =>
         setSelected((prev) => {
@@ -371,6 +391,57 @@ export default function ExercisePicker({ onPick, onPickMany, onClose }: Props) {
                         borderTop: '1px solid var(--border-subtle)',
                     }}
                 >
+                    <label
+                        style={{
+                            flex: '1 1 100%',
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            alignItems: 'center',
+                            gap: 8,
+                            fontSize: '0.78rem',
+                            color: 'var(--text-muted)',
+                        }}
+                    >
+                        Adicionar como
+                        <select
+                            value={effectiveGroup}
+                            onChange={(e) => setGroupTechnique(e.target.value)}
+                            disabled={selected.size < 2}
+                            className="form-control form-control-sm"
+                            style={{ flex: '1 1 180px', minWidth: 0 }}
+                            aria-label="Adicionar os exercícios como"
+                        >
+                            <option value="">Exercícios separados</option>
+                            {GROUP_TECHNIQUE_CATALOG.map((gt) => {
+                                const fits = isGroupTechniqueValidForSize(
+                                    gt.value,
+                                    selected.size,
+                                );
+                                return (
+                                    <option
+                                        key={gt.value}
+                                        value={gt.value}
+                                        disabled={!fits}
+                                    >
+                                        {gt.label}
+                                    </option>
+                                );
+                            })}
+                        </select>
+                    </label>
+                    {selected.size < 2 && (
+                        <span
+                            style={{
+                                flex: '1 1 100%',
+                                marginTop: -4,
+                                fontSize: '0.72rem',
+                                color: 'var(--text-muted)',
+                            }}
+                        >
+                            Marque 2 ou mais para combinar em bi-set, tri-set,
+                            superset…
+                        </span>
+                    )}
                     <span
                         style={{
                             flex: '1 1 auto',
@@ -404,7 +475,10 @@ export default function ExercisePicker({ onPick, onPickMany, onClose }: Props) {
                         type="button"
                         disabled={selected.size === 0}
                         onClick={() =>
-                            onPickMany?.(Array.from(selected.values()))
+                            onPickMany?.(
+                                Array.from(selected.values()),
+                                effectiveGroup || undefined,
+                            )
                         }
                         style={{
                             padding: '8px 16px',

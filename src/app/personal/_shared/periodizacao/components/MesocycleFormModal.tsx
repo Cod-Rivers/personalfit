@@ -918,9 +918,22 @@ export default function MesocycleFormModal({
                 if (!activeTraining) return null;
                 return (
                     <ExercisePicker
-                        onPickMany={(items: ExerciseLibraryItem[]) => {
+                        onPickMany={(
+                            items: ExerciseLibraryItem[],
+                            groupTechnique?: string,
+                        ) => {
+                            // Combinados na seleção: mesmo group_id novo para
+                            // todos — são consecutivos (entram no fim da lista),
+                            // que é o que partitionExerciseGroups exige.
+                            const group = groupTechnique
+                                ? {
+                                      group_id: genId(),
+                                      group_technique: groupTechnique,
+                                  }
+                                : {};
                             const exercises = items.map((item) =>
                                 blankExercise({
+                                    ...group,
                                     // Vem da biblioteca: já nasce vinculado, é
                                     // o que permite propagar mídia depois.
                                     exercise_library_id: item.id,

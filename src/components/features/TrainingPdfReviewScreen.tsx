@@ -1,7 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { FiCheckCircle, FiHelpCircle, FiPlus, FiTrash2, FiX } from 'react-icons/fi';
+import { Fragment, useEffect, useState } from 'react';
+import {
+    FiCheckCircle,
+    FiHelpCircle,
+    FiLink,
+    FiPlus,
+    FiTrash2,
+    FiX,
+} from 'react-icons/fi';
 import {
     type ExtractedExercise,
     type ExtractedTraining,
@@ -17,7 +24,11 @@ import {
     type TrainingRequest,
 } from '@/libs/planningService';
 import ExercisePicker from '@/app/personal/_shared/periodizacao/components/ExercisePicker';
-import { TECHNIQUE_CATALOG } from '@/libs/trainingTechniques';
+import {
+    TECHNIQUE_CATALOG,
+    comboGroupLabel,
+    isGroupTechniqueValidForSize,
+} from '@/libs/trainingTechniques';
 import styles from './TrainingPdfReviewScreen.module.css';
 
 interface Props {
@@ -49,6 +60,8 @@ function toMacrocycleRequest(trainings: ExtractedTraining[]) {
             rest_seconds: e.rest_seconds,
             technique: e.technique,
             technique_params: e.technique_params,
+            group_id: e.group_id,
+            group_technique: e.group_id ? e.group_technique : undefined,
         })),
     }));
 
@@ -68,6 +81,33 @@ function toMacrocycleRequest(trainings: ExtractedTraining[]) {
             },
         ],
     };
+}
+
+function newGroupId(): string {
+    return typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `g-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+/** Depois de remover um exercício: bloco que ficou com 1 membro deixa de ser
+ * bloco, e a variante que não cabe mais no tamanho (tri-set com 2) é limpa. */
+function normalizeGroups(exercises: ExtractedExercise[]): ExtractedExercise[] {
+    const sizes = new Map<string, number>();
+    exercises.forEach((e) => {
+        if (e.group_id) sizes.set(e.group_id, (sizes.get(e.group_id) ?? 0) + 1);
+    });
+    return exercises.map((e) => {
+        if (!e.group_id) return e;
+        const size = sizes.get(e.group_id) ?? 0;
+        if (size < 2) return { ...e, group_id: undefined, group_technique: undefined };
+        if (
+            e.group_technique &&
+            !isGroupTechniqueValidForSize(e.group_technique, size)
+        ) {
+            return { ...e, group_technique: undefined };
+        }
+        return e;
+    });
 }
 
 export default function TrainingPdfReviewScreen({
@@ -145,6 +185,19 @@ export default function TrainingPdfReviewScreen({
         setTrainings((prev) => {
             const next = structuredClone(prev);
             next[ti].exercises.splice(ei, 1);
+            next[ti].exercises = normalizeGroups(next[ti].exercises);
+            return next;
+        });
+    }
+
+    function ungroup(ti: number, groupId: string) {
+        setTrainings((prev) => {
+            const next = structuredClone(prev);
+            next[ti].exercises = next[ti].exercises.map((e) =>
+                e.group_id === groupId
+                    ? { ...e, group_id: undefined, group_technique: undefined }
+                    : e,
+            );
             return next;
         });
     }
@@ -176,12 +229,22 @@ export default function TrainingPdfReviewScreen({
         });
     }
 
-    function addLibraryExercises(ti: number, items: ExerciseLibraryItem[]) {
+    function addLibraryExercises(
+        ti: number,
+        items: ExerciseLibraryItem[],
+        groupTechnique?: string,
+    ) {
+        // Entram no fim da lista, logo ficam consecutivos: é o que forma um
+        // bloco (ver partitionExerciseGroups).
+        const group = groupTechnique
+            ? { group_id: newGroupId(), group_technique: groupTechnique }
+            : {};
         setTrainings((prev) => {
             const next = structuredClone(prev);
             next[ti].exercises.push(
                 ...items.map(
                     (item): ExtractedExercise => ({
+                        ...group,
                         raw_name: item.name,
                         exercise_library_id: item.id,
                         match_status: 'manual',
@@ -268,8 +331,37 @@ export default function TrainingPdfReviewScreen({
                         </button>
                     </div>
 
-                    {training.exercises.map((ex, ei) => (
-                        <div key={ei} className={styles.exerciseRow}>
+                    {training.exercises.map((ex, ei) => {
+                        const startsGroup =
+                            !!ex.group_id &&
+                            training.exercises[ei - 1]?.group_id !== ex.group_id;
+                        const groupSize = ex.group_id
+                            ? training.exercises.filter(
+                                  (e) => e.group_id === ex.group_id,
+                              ).length
+                            : 0;
+                        return (
+                        <Fragment key={ei}>
+                        {startsGroup && (
+                            <div className={styles.groupHead}>
+                                <span className={styles.groupChip}>
+                                    <FiLink />
+                                    {comboGroupLabel(groupSize, ex.group_technique)}
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={() => ungroup(ti, ex.group_id!)}
+                                    className={styles.groupUndo}
+                                >
+                                    Separar
+                                </button>
+                            </div>
+                        )}
+                        <div
+                            className={`${styles.exerciseRow} ${
+                                ex.group_id ? styles.exerciseRowGrouped : ''
+                            }`}
+                        >
                             <div className={styles.exerciseTop}>
                                 <input
                                     value={ex.raw_name}
@@ -400,12 +492,14 @@ export default function TrainingPdfReviewScreen({
                                 <p className={styles.exerciseNotes}>{ex.notes}</p>
                             )}
                         </div>
-                    ))}
+                        </Fragment>
+                        );
+                    })}
 
                     {addPickerFor === ti ? (
                         <ExercisePicker
-                            onPickMany={(items) => {
-                                addLibraryExercises(ti, items);
+                            onPickMany={(items, groupTechnique) => {
+                                addLibraryExercises(ti, items, groupTechnique);
                                 setAddPickerFor(null);
                             }}
                             onClose={() => setAddPickerFor(null)}

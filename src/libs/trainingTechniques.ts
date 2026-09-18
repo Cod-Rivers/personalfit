@@ -313,6 +313,23 @@ export const GROUP_TECHNIQUE_CATALOG: GroupTechniqueDefinition[] = [
     { value: 'post_exhaustion', label: 'Pós-exaustão (composto → isolado)' },
 ];
 
+/** Se a variante de agrupamento cabe num bloco de `size` exercícios: bi-set é
+ * par, tri-set é trio, série gigante começa em 4; superset e pré/pós-exaustão
+ * aceitam qualquer bloco de 2+. Usado para escolher o tipo já na seleção. */
+export function isGroupTechniqueValidForSize(value: string, size: number): boolean {
+    if (size < 2) return false;
+    switch (value) {
+        case 'biset':
+            return size === 2;
+        case 'triset':
+            return size === 3;
+        case 'giant_set':
+            return size >= 4;
+        default:
+            return true;
+    }
+}
+
 export function groupTechniqueLabel(value?: string): string | undefined {
     return GROUP_TECHNIQUE_CATALOG.find((g) => g.value === value)?.label;
 }

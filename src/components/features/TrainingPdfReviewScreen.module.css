@@ -66,6 +66,41 @@
     gap: 8px;
 }
 
+/* Exercícios combinados (bi-set, tri-set…): cabeçalho do bloco + borda
+   lateral nos membros, no mesmo espírito do colchete do editor. */
+.groupHead {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: -4px;
+}
+
+.groupChip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--mint-text, #2ecc71);
+}
+
+.groupUndo {
+    background: transparent;
+    border: none;
+    padding: 0;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.exerciseRowGrouped {
+    border-left: 3px solid var(--mint);
+    border-top-left-radius: 4px;
+    border-bottom-left-radius: 4px;
+}
+
 .exerciseTop {
     display: flex;
     align-items: center;
