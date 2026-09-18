@@ -918,23 +918,36 @@ export default function MesocycleFormModal({
                 if (!activeTraining) return null;
                 return (
                     <ExercisePicker
-                        onPick={(item: ExerciseLibraryItem) => {
-                            const exercise = blankExercise({
-                                // Vem da biblioteca: já nasce vinculado, é o
-                                // que permite propagar mídia depois.
-                                exercise_library_id: item.id,
-                                name: item.name,
-                                muscle_group: item.muscle_group ?? '',
-                                video_url: item.video_url ?? '',
-                                video_thumb: item.video_thumb ?? '',
-                            });
-                            addExercise(activeTraining._id, exercise);
-                            stack.replace({
-                                card: 'exercise',
-                                trainingId: activeTraining._id,
-                                exerciseId: exercise._id,
-                                tab: 'serie',
-                            });
+                        onPickMany={(items: ExerciseLibraryItem[]) => {
+                            const exercises = items.map((item) =>
+                                blankExercise({
+                                    // Vem da biblioteca: já nasce vinculado, é
+                                    // o que permite propagar mídia depois.
+                                    exercise_library_id: item.id,
+                                    name: item.name,
+                                    muscle_group: item.muscle_group ?? '',
+                                    video_url: item.video_url ?? '',
+                                    video_thumb: item.video_thumb ?? '',
+                                }),
+                            );
+                            // setState funcional: as chamadas se acumulam.
+                            exercises.forEach((ex) =>
+                                addExercise(activeTraining._id, ex),
+                            );
+                            if (exercises.length === 1) {
+                                // Um só: segue direto para a prescrição dele,
+                                // como era antes da multi-seleção.
+                                stack.replace({
+                                    card: 'exercise',
+                                    trainingId: activeTraining._id,
+                                    exerciseId: exercises[0]._id,
+                                    tab: 'serie',
+                                });
+                            } else {
+                                // Lote: volta para a lista do treino, onde a
+                                // "prescrição geral" preenche todos de uma vez.
+                                goBack();
+                            }
                         }}
                         onClose={goBack}
                     />
