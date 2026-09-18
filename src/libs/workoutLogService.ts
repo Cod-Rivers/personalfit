@@ -59,6 +59,9 @@ export interface NewWorkoutLogResponse {
     duration_minutes?: number;
     exercises: ExercisePerformanceResponse[];
     notes?: string;
+    /** Procedência do registro. Ausente quando o próprio aluno finalizou —
+     * o caso de todo o histórico anterior ao acompanhamento presencial. */
+    recorded_via?: 'personal_assisted';
     created_at: string;
     updated_at: string;
 }
@@ -169,6 +172,25 @@ export async function getNewWorkoutLogs(
 }
 
 /**
+ * Mesmos logs de um microciclo, mas pela rota do PERSONAL (/students/:id) —
+ * é o que o acompanhamento presencial usa para saber o que o aluno já fez na
+ * semana e com que carga. `getNewWorkoutLogs` acima não serve aqui: ela só
+ * existe na forma /me, que autenticada como personal devolveria os logs do
+ * próprio personal.
+ */
+export async function getStudentMicrocycleWorkoutLogs(
+    studentId: string,
+    planningId: string,
+    mesocycleId: string,
+    microcycleId: string,
+): Promise<NewWorkoutLogResponse[]> {
+    const { data } = await Api.get<NewWorkoutLogResponse[]>(
+        `/students/${studentId}/planning/${planningId}/mesocycle/${mesocycleId}/microcycle/${microcycleId}/workout-log`,
+    );
+    return data ?? [];
+}
+
+/**
  * Logs do aluno logado através de todos os macro/meso/microciclos, filtrados
  * por planned_date. Usado pelo calendário de constância (histórico web).
  */
@@ -254,9 +276,19 @@ export async function completeWorkoutSession(
     mesocycleId: string,
     microcycleId: string,
     body: WorkoutSessionRequest,
+    /** Acompanhamento presencial: quem está autenticado é o PERSONAL, não o
+     * aluno, então a chamada não pode ir por /me — ali o servidor resolveria
+     * o aluno como sendo o próprio personal e o registro cairia na conta
+     * errada. Pela rota /students/:id o middleware valida o vínculo ativo e
+     * o backend carimba `recorded_via: "personal_assisted"` sozinho, a
+     * partir do token (o cliente não declara procedência). */
+    asPersonal = false,
 ): Promise<NewWorkoutLogResponse> {
+    const base = asPersonal
+        ? `/students/${studentId}/planning/${planningId}`
+        : `/me/planning/${planningId}`;
     const { data } = await Api.post<NewWorkoutLogResponse>(
-        `/me/planning/${planningId}/mesocycle/${mesocycleId}/microcycle/${microcycleId}/workout-log/session`,
+        `${base}/mesocycle/${mesocycleId}/microcycle/${microcycleId}/workout-log/session`,
         body,
     );
     return data;

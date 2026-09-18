@@ -56,6 +56,14 @@ export interface PendingMutation {
      *  Análogo a `completeBody` acima, mas para o endpoint novo que
      *  cria-ou-conclui numa chamada só (sem depender de log pré-criado). */
     sessionBody?: WorkoutSessionRequest;
+    /** Esta linha foi enfileirada pelo PERSONAL concluindo o treino do aluno
+     *  no atendimento presencial, e não pelo aluno. Precisa ser persistido
+     *  junto da mutação (e não deduzido na hora de sincronizar) porque a fila
+     *  pode ser processada horas depois, com a sessão do personal já
+     *  renovada — e porque é isso que decide a ROTA do envio: /students/:id
+     *  em vez de /me. Ausente = registro do próprio aluno, que é todo o
+     *  histórico anterior a esta feature. */
+    asPersonal?: boolean;
     status: 'pending' | 'syncing' | 'failed';
     retryCount: number;
     /** ISO. A fila só tenta reenviar esta linha quando `Date.now()` já passou

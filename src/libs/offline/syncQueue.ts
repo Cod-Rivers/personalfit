@@ -291,6 +291,7 @@ export async function processQueue(): Promise<void> {
                         row.mesocycleId,
                         row.microcycleId,
                         row.sessionBody,
+                        row.asPersonal ?? false,
                     );
                     // mediaQueue.ts (S4.3): grava o logId real ANTES de
                     // apagar esta linha — é o único momento em que os dois

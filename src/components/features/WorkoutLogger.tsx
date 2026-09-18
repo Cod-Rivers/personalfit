@@ -98,6 +98,14 @@ interface WorkoutLoggerProps {
         share?: WorkoutShareData;
     }) => void;
     autoregulation?: AutoregulationHint;
+    /** Acompanhamento presencial: quem está com o app na mão é o PERSONAL,
+     * registrando o treino do aluno que está ali do lado. Muda o destino da
+     * mutação (rota /students/:id em vez de /me, marcada na fila offline) e
+     * tira do caminho tudo que é do aluno e só dele — foto de check-in, pose
+     * do antifraude e o card de compartilhamento nas redes. */
+    assisted?: boolean;
+    /** Nome do aluno, para os textos do modo assistido. */
+    studentName?: string;
 }
 
 /** O que a tela de compartilhamento precisa saber sobre o treino recém
@@ -144,6 +152,8 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
     onComplete,
     onQueued,
     autoregulation,
+    assisted = false,
+    studentName,
 }) => {
     const [logs, setLogs] = useState<ExerciseLog[]>(
         training.exercises.map((ex) => {
@@ -366,6 +376,11 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                     microcycleId: microcycle.id,
                     trainingRef: training.reference,
                     sessionBody,
+                    // Decide a ROTA na hora de sincronizar (/students/:id em
+                    // vez de /me). Vai gravado na linha da fila, e não
+                    // deduzido depois: a fila pode ser processada horas mais
+                    // tarde, e o /me daquele momento é sempre o personal.
+                    asPersonal: assisted || undefined,
                 });
 
                 // Foto é OPCIONAL e NUNCA bloqueia (RN-20/22, US-03
@@ -475,6 +490,7 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
             logs,
             checkInDraft,
             onQueued,
+            assisted,
         ],
     );
 
@@ -903,6 +919,11 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
             </div>
         ) : (
             <div className={s.actions}>
+                {/* "Pular" não existe no acompanhamento presencial: o
+                    endpoint de skip só tem forma /me (workoutLogService.ts),
+                    então aqui ele marcaria como pulado um treino do PRÓPRIO
+                    personal. Pular é decisão do aluno, no app dele. */}
+                {!assisted && (
                 <button
                     className={s.btnSkip}
                     onClick={handleSkip}
@@ -911,12 +932,14 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                     {loading ? <FiLoader className={s.spin} /> : <FiX />}{' '}
                     Pular Treino
                 </button>
+                )}
                 <button
                     className={s.btnComplete}
                     onClick={goToCheckIn}
                     disabled={loading}
                 >
-                    <FiCheck /> Completar Treino
+                    <FiCheck />{' '}
+                    {assisted ? 'Finalizar treino' : 'Completar Treino'}
                 </button>
             </div>
         );
@@ -936,7 +959,9 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
             )
         ) : (
             <>
-                Registrar Treino{' '}
+                {assisted && studentName
+                    ? `Treino de ${studentName} `
+                    : 'Registrar Treino '}
                 <span className={s.ref}>{training.reference}</span>
             </>
         );
@@ -959,6 +984,8 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                         error={error}
                         onConfirm={handleComplete}
                         onCancel={backToForm}
+                        assisted={assisted}
+                        studentName={studentName}
                     />
                 </div>
             ) : activeBlock ? (

@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
-import { FiArrowLeft, FiWifiOff } from 'react-icons/fi';
+import { FiActivity, FiArrowLeft, FiWifiOff } from 'react-icons/fi';
 import {
     getMacrocycle,
     updateMacrocycle,
@@ -364,6 +364,19 @@ export default function PeriodizacaoDetalhePage() {
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                         {/* Respostas da Anamnese do personal à mão enquanto monta as séries */}
                         <PersonalAnamnesisQuickView studentId={studentId} className={s.btnBack} />
+                        {/* Esta tela é a de MONTAR o plano. Quem está com o
+                            aluno na frente quer a semana corrente e o botão
+                            de finalizar — que vivem em /acompanhar. */}
+                        <button
+                            className={s.btnBack}
+                            onClick={() =>
+                                router.push(
+                                    `/personal/aluno/${studentId}/acompanhar?planningId=${planningId}`,
+                                )
+                            }
+                        >
+                            <FiActivity /> Acompanhar treino
+                        </button>
                         <button className={s.btnBack} onClick={() => router.back()}>
                             <FiArrowLeft /> Voltar
                         </button>

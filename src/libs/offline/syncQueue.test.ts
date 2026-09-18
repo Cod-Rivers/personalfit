@@ -369,6 +369,54 @@ describe('offline/syncQueue', () => {
         expect(completeNewWorkoutLog).not.toHaveBeenCalled();
     });
 
+    it('sessão do acompanhamento presencial sincroniza pela rota do personal, mesmo horas depois', async () => {
+        // O personal finalizou o treino do aluno sem rede. Quando a fila
+        // roda, quem está logado é o personal — se este flag não viajar com
+        // a linha, a mutação sai por /me e o treino do aluno é gravado no
+        // histórico do PERSONAL. É o erro que este teste existe para travar.
+        await syncQueue.enqueueSession({
+            ...baseIds(),
+            sessionBody: makeSessionBody({ training_ref: 'A' }),
+            trainingRef: 'A',
+            asPersonal: true,
+        });
+
+        vi.mocked(completeWorkoutSession).mockResolvedValueOnce(
+            fakeLogResponse({ recorded_via: 'personal_assisted' }),
+        );
+        setOnline(true);
+        await syncQueue.processQueue();
+
+        expect(completeWorkoutSession).toHaveBeenCalledWith(
+            'student-1',
+            'planning-1',
+            'meso-1',
+            'micro-1',
+            expect.anything(),
+            true,
+        );
+        expect(await syncQueue.getPendingMutations()).toHaveLength(0);
+    });
+
+    it('sessão do próprio aluno continua indo por /me (asPersonal ausente)', async () => {
+        await enqueueTestSession('A');
+
+        vi.mocked(completeWorkoutSession).mockResolvedValueOnce(
+            fakeLogResponse(),
+        );
+        setOnline(true);
+        await syncQueue.processQueue();
+
+        expect(completeWorkoutSession).toHaveBeenCalledWith(
+            'student-1',
+            'planning-1',
+            'meso-1',
+            'micro-1',
+            expect.anything(),
+            false,
+        );
+    });
+
     it('enqueueSession gera um clientMutationId (idempotência) e nunca o regenera num retry', async () => {
         await enqueueTestSession('A');
 

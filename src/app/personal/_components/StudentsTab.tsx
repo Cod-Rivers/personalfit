@@ -280,6 +280,23 @@ export default function StudentsTab({ state }: Props) {
                                     <FiEye /> Ver Treino
                                 </button>
 
+                                {/* Atendimento presencial: abre direto no
+                                    treino da semana com o botão de finalizar.
+                                    Fica ao lado de "Ver Treino" (que leva à
+                                    periodização, a tela de MONTAR) porque é o
+                                    que o personal abre na academia, não na
+                                    mesa. */}
+                                <button
+                                    onClick={() =>
+                                        router.push(
+                                            `/personal/aluno/${st.id}/acompanhar`,
+                                        )
+                                    }
+                                    className={s.ctaPrimary}
+                                >
+                                    <FiActivity /> Acompanhar Treino
+                                </button>
+
                                 <div className={s.actionsGrid}>
                                     <button
                                         onClick={() =>

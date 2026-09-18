@@ -1,0 +1,252 @@
+/* Acompanhamento presencial: o personal usa esta tela de pé, na academia,
+   com o celular numa mão só. Daí as escolhas — uma coluna, alvos grandes,
+   nada que dependa de hover. Tokens de app/css/constants.css. */
+
+.page {
+    min-height: 100%;
+    background: var(--mil-blue);
+    color: var(--text-primary);
+    padding: var(--space-7) var(--space-4) var(--space-8);
+    overflow-x: hidden;
+}
+
+.container {
+    max-width: 720px;
+    margin: 0 auto;
+}
+
+/* ── Header ── */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-4);
+}
+
+.headerTitle {
+    margin: 0;
+    font-size: var(--font-xl);
+    line-height: 1.2;
+}
+
+.headerSub {
+    margin: 4px 0 0;
+    color: var(--text-muted);
+    font-size: var(--font-sm);
+}
+
+.btnBack {
+    background: transparent;
+    border: 1px solid var(--border-mid);
+    color: var(--text-primary);
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-size: var(--font-sm);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    /* O pai tem flex-wrap — flex-shrink sem wrap é o par que já estourou
+       cards em quatro telas deste app. */
+    flex-shrink: 0;
+}
+
+.btnBack:active {
+    transform: translateY(1px);
+}
+
+/* ── Chips de contexto ── */
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+}
+
+.chip {
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
+    font-size: var(--font-xs);
+    color: var(--text-secondary);
+}
+
+.notice {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
+    font-size: var(--font-sm);
+    color: var(--text-secondary);
+    margin-bottom: var(--space-4);
+}
+
+.sectionTitle {
+    font-size: var(--font-md);
+    margin: 0 0 var(--space-3);
+}
+
+/* ── Seletor de treino (A/B/C) ── */
+.trainingGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: var(--space-3);
+    margin-bottom: var(--space-6);
+}
+
+.trainingCard {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: var(--space-3);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-subtle);
+    background: var(--surface-1);
+    color: var(--text-primary);
+    cursor: pointer;
+    text-align: left;
+    /* Alvo confortável para quem está de pé segurando o celular. */
+    min-height: 76px;
+}
+
+.trainingCardActive {
+    border-color: var(--mint-dim);
+    box-shadow: var(--shadow-mint);
+}
+
+.trainingRef {
+    font-size: var(--font-lg);
+    font-weight: 700;
+}
+
+.trainingMeta {
+    font-size: var(--font-xs);
+    color: var(--text-muted);
+}
+
+.doneTag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: var(--font-xs);
+    color: var(--mint-text);
+    font-weight: 600;
+}
+
+/* ── Lista de exercícios prescritos ── */
+.exerciseList {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    margin-bottom: var(--space-6);
+}
+
+.groupBlock {
+    border: 1px dashed var(--border-mid);
+    border-radius: var(--radius-lg);
+    padding: var(--space-2);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.groupLabel {
+    font-size: var(--font-xs);
+    color: var(--text-muted);
+    padding: 0 var(--space-2);
+}
+
+.exerciseRow {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-subtle);
+    background: var(--surface-1);
+}
+
+.exerciseInfo {
+    min-width: 0;
+    flex: 1;
+}
+
+.exerciseName {
+    font-size: var(--font-base);
+    font-weight: 600;
+    margin: 0 0 2px;
+    overflow-wrap: anywhere;
+}
+
+.prescription {
+    font-size: var(--font-xs);
+    color: var(--text-muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+}
+
+.lastLoad {
+    font-size: var(--font-xs);
+    color: var(--text-secondary);
+    text-align: right;
+    flex-shrink: 0;
+    max-width: 40%;
+}
+
+.lastLoadEmpty {
+    color: var(--text-muted);
+}
+
+/* ── Ação principal ── */
+.finishBar {
+    display: flex;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+}
+
+.btnFinish {
+    flex: 1 1 220px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: 14px var(--space-5);
+    border: none;
+    border-radius: var(--radius-md);
+    background: var(--grad-mint);
+    color: var(--btn-text);
+    font-size: var(--font-md);
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+}
+
+.btnFinish:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btnFinish:active:not(:disabled) {
+    transform: translateY(1px);
+}
+
+.empty {
+    color: var(--text-muted);
+    font-size: var(--font-sm);
+}
+
+.errorBox {
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--coral);
+    color: var(--coral-dim);
+    font-size: var(--font-sm);
+}

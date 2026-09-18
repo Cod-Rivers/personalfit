@@ -44,6 +44,21 @@ interface WorkoutCheckInProps {
         poseId?: string;
     }) => void;
     onCancel: () => void;
+    /** Acompanhamento presencial: quem está confirmando é o PERSONAL, com o
+     * aluno ao lado. Muda três coisas, todas pelo mesmo motivo — nada aqui
+     * pode falar de /me, porque /me agora é o personal:
+     *
+     * 1. Sem foto e sem pose. A prova do antifraude é o ALUNO fazendo a pose;
+     *    uma foto tirada no aparelho do personal, contra a pose sorteada para
+     *    o personal (`usePoseOfDay` é /me), seria prova de nada.
+     * 2. Sem aviso de tardio. A janela de registro lida do cache é a do
+     *    personal, não a do aluno — o servidor calcula a marcação de verdade
+     *    a partir da janela do aluno, então é melhor não afirmar nada aqui do
+     *    que afirmar pelo prazo errado.
+     * 3. O texto deixa explícito de quem é o registro. */
+    assisted?: boolean;
+    /** Nome do aluno, só para o texto do modo assistido. */
+    studentName?: string;
 }
 
 /**
@@ -65,6 +80,8 @@ const WorkoutCheckIn: React.FC<WorkoutCheckInProps> = ({
     error,
     onConfirm,
     onCancel,
+    assisted = false,
+    studentName,
 }) => {
     const [photoFile, setPhotoFile] = useState<File | null>(null);
     const [capturing, setCapturing] = useState(false);
@@ -79,7 +96,7 @@ const WorkoutCheckIn: React.FC<WorkoutCheckInProps> = ({
     // offline da janela de registro, e atualizado quando a busca em segundo
     // plano abaixo responder.
     const [photoEnabled, setPhotoEnabled] = useState(() =>
-        isCheckInPhotoEnabled(getCachedMyLogWindow()),
+        assisted ? false : isCheckInPhotoEnabled(getCachedMyLogWindow()),
     );
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -90,6 +107,16 @@ const WorkoutCheckIn: React.FC<WorkoutCheckInProps> = ({
     // avisar nada — é a mesma suposição que EffectiveLogWindow faz do lado
     // do servidor quando o campo está ausente.
     useEffect(() => {
+        // Modo assistido: a janela em cache é a do PERSONAL logado, então
+        // tanto o aviso de tardio quanto o flag de foto seriam sobre a pessoa
+        // errada. Nenhum dos dois é necessário aqui — o servidor faz a
+        // marcação de tardio com a janela do aluno de qualquer forma.
+        if (assisted) {
+            setLateWarning(null);
+            setPhotoEnabled(false);
+            return;
+        }
+
         const cached = getCachedMyLogWindow();
         const window = cached?.log_window ?? LOG_WINDOW_DEFAULT;
         const isDefault = cached?.is_default ?? true;
@@ -110,7 +137,7 @@ const WorkoutCheckIn: React.FC<WorkoutCheckInProps> = ({
         getMyLogWindow()
             .then((res) => setPhotoEnabled(isCheckInPhotoEnabled(res)))
             .catch(() => {});
-    }, [plannedDate]);
+    }, [plannedDate, assisted]);
 
     useEffect(() => {
         if (!photoFile) {
@@ -133,11 +160,17 @@ const WorkoutCheckIn: React.FC<WorkoutCheckInProps> = ({
 
     return (
         <div className={s.container}>
-            <h3 className={s.title}>Confirmar treino concluído?</h3>
+            <h3 className={s.title}>
+                {assisted
+                    ? 'Finalizar o treino do aluno?'
+                    : 'Confirmar treino concluído?'}
+            </h3>
             <p className={s.subtitle}>
-                {photoEnabled
-                    ? 'Isso registra o treino como feito. A foto é opcional — pular não atrasa nem bloqueia o registro.'
-                    : 'Isso registra o treino como feito.'}
+                {assisted
+                    ? `O treino entra no histórico ${studentName ? `de ${studentName}` : 'do aluno'} — conta na aderência, na evolução e no desafio — marcado como registrado por você no atendimento.`
+                    : photoEnabled
+                      ? 'Isso registra o treino como feito. A foto é opcional — pular não atrasa nem bloqueia o registro.'
+                      : 'Isso registra o treino como feito.'}
             </p>
 
             {error && (
