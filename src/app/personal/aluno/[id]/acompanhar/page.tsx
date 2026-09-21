@@ -80,6 +80,12 @@ import {
     applyExercisePatch,
     saveExercisePatch,
 } from '@/app/personal/_shared/periodizacao/lib/exercisePatch';
+import {
+    reorderById,
+    saveExerciseOrder,
+    saveTrainingOrder,
+} from '@/app/personal/_shared/periodizacao/lib/reorderPatch';
+import { SortableItem, SortableList } from '@/components/system/SortableList';
 import { useToast } from '@/components/system/Toast';
 import { markWorkoutStartIfNeeded } from '@/libs/workoutSessionTimer';
 import s from './acompanhar.module.css';
@@ -97,7 +103,9 @@ function pickCurrentCycle(macro: MacrocycleResponse): {
     meso: MesocycleResponse;
     micro: MicrocycleResponse;
 } | null {
-    const mesos = [...(macro.mesocycles ?? [])].sort((a, b) => a.order - b.order);
+    const mesos = [...(macro.mesocycles ?? [])].sort(
+        (a, b) => a.order - b.order,
+    );
     for (const meso of mesos) {
         const micro = pickActiveMicrocycle(meso.microcycles);
         if (micro) return { meso, micro };
@@ -109,6 +117,12 @@ function pickCurrentCycle(macro: MacrocycleResponse): {
     const micro = withTrainings?.microcycles?.[0];
     if (withTrainings && micro) return { meso: withTrainings, micro };
     return null;
+}
+
+/** Id do BLOCO para o arrastar e soltar: um bi-set anda inteiro, então quem
+ * manda é o group_id; exercício solto responde pelo próprio id. */
+function blockId(block: { id: string; group_id?: string }[]): string {
+    return block[0].group_id ?? block[0].id;
 }
 
 /** Próximo exercício do mesmo bi-set/tri-set, para o card navegar dentro do
@@ -129,7 +143,7 @@ export default function AcompanharTreinoPage() {
     const params = useParams<{ id: string }>();
     const searchParams = useSearchParams();
     const studentId = params.id;
-    const { showSuccess, ToastSlot } = useToast();
+    const { showSuccess, showError, ToastSlot } = useToast();
 
     const [studentName, setStudentName] = useState('');
     const [macro, setMacro] = useState<MacrocycleResponse | null>(null);
@@ -236,7 +250,10 @@ export default function AcompanharTreinoPage() {
         void loadPlan();
     }, [loadPlan]);
 
-    const cycle = useMemo(() => (macro ? pickCurrentCycle(macro) : null), [macro]);
+    const cycle = useMemo(
+        () => (macro ? pickCurrentCycle(macro) : null),
+        [macro],
+    );
 
     /* ── O que o aluno já registrou nesta semana ──
      * É daqui que sai tanto o "já feito" no seletor de treino quanto a última
@@ -272,10 +289,25 @@ export default function AcompanharTreinoPage() {
         return () => window.removeEventListener('online', onOnline);
     }, [loadPlan, loadLogs]);
 
-    const trainings = useMemo(
-        () => cycle?.meso.trainings ?? [],
-        [cycle],
-    );
+    /* ── Ordem (arrastar e soltar) ──
+     * Espelho local da ordem enquanto a gravação não volta: o plano desta tela
+     * só muda com a RESPOSTA do servidor, então sem isto o item que o personal
+     * acabou de arrastar pula de volta na frente do aluno. Falhou, o espelho
+     * cai e a lista volta ao que o servidor tem. */
+    const [trainingOrder, setTrainingOrder] = useState<string[] | null>(null);
+    const [exerciseOrder, setExerciseOrder] = useState<
+        Record<string, string[]>
+    >({});
+
+    useEffect(() => {
+        setTrainingOrder(null);
+        setExerciseOrder({});
+    }, [macro]);
+
+    const trainings = useMemo(() => {
+        const list = cycle?.meso.trainings ?? [];
+        return trainingOrder ? reorderById(list, trainingOrder) : list;
+    }, [cycle, trainingOrder]);
 
     /** Treino escolhido — por padrão o primeiro que ainda não foi concluído
      * nesta semana, que é quase sempre o de hoje. Sem isso o personal abria
@@ -367,12 +399,60 @@ export default function AcompanharTreinoPage() {
         [studentId],
     );
 
+    const reorderTrainings = async (ids: string[]) => {
+        if (!cycle) return;
+        setTrainingOrder(ids);
+        try {
+            await saveTrainingOrder(
+                { meso: cycle.meso, persist: onPersistMeso },
+                ids,
+            );
+        } catch (e) {
+            setTrainingOrder(null);
+            showError((e as Error).message);
+        }
+    };
+
+    const reorderExercises = async (trainingId: string, ids: string[]) => {
+        if (!cycle) return;
+        setExerciseOrder((prev) => ({ ...prev, [trainingId]: ids }));
+        try {
+            await saveExerciseOrder(
+                { meso: cycle.meso, persist: onPersistMeso },
+                trainingId,
+                ids,
+            );
+        } catch (e) {
+            setExerciseOrder((prev) => {
+                const next = { ...prev };
+                delete next[trainingId];
+                return next;
+            });
+            showError((e as Error).message);
+        }
+    };
+
+    /** Exercícios do treino aberto, já na ordem que a tela está mostrando. */
+    const selectedExercises = useMemo(() => {
+        const list = selectedTraining?.exercises ?? [];
+        const pending = selectedTraining
+            ? exerciseOrder[selectedTraining.id]
+            : undefined;
+        return pending ? reorderById(list, pending) : list;
+    }, [selectedTraining, exerciseOrder]);
+
+    /** Blocos (exercício solto ou bi-set inteiro) do treino aberto. */
+    const exerciseBlocks = useMemo(
+        () => partitionExerciseGroups(selectedExercises),
+        [selectedExercises],
+    );
+
     const openExerciseView = useMemo(() => {
         if (!openExerciseId || !selectedTraining) return null;
-        const siblings = (selectedTraining.exercises ?? []).map(toExerciseLog);
+        const siblings = selectedExercises.map(toExerciseLog);
         const exercise = siblings.find((e) => e.id === openExerciseId);
         return exercise ? { exercise, siblings } : null;
-    }, [openExerciseId, selectedTraining]);
+    }, [openExerciseId, selectedTraining, selectedExercises]);
 
     const patchOpenExercise = async (patch: Partial<ExerciseRequest>) => {
         if (!cycle || !selectedTraining || !openExerciseId || !macro) return;
@@ -420,7 +500,11 @@ export default function AcompanharTreinoPage() {
                     <button
                         className={s.btnBack}
                         style={{ marginTop: 'var(--space-4)' }}
-                        onClick={() => router.push(`/personal/aluno/${studentId}/periodizacao`)}
+                        onClick={() =>
+                            router.push(
+                                `/personal/aluno/${studentId}/periodizacao`,
+                            )
+                        }
                     >
                         <FiArrowLeft /> Ir para a periodização
                     </button>
@@ -490,8 +574,8 @@ export default function AcompanharTreinoPage() {
                         </>
                     )}
                     <span className={s.chip}>
-                        {completedRefs.size} de {trainings.length} treinos feitos
-                        nesta semana
+                        {completedRefs.size} de {trainings.length} treinos
+                        feitos nesta semana
                     </span>
                 </div>
 
@@ -499,8 +583,8 @@ export default function AcompanharTreinoPage() {
                     <div className={s.notice}>
                         <FiWifiOff /> Sem conexão — mostrando a última versão
                         deste plano salva no aparelho. Finalizar o treino
-                        continua funcionando: o registro fica guardado aqui e
-                        é enviado assim que a internet voltar.
+                        continua funcionando: o registro fica guardado aqui e é
+                        enviado assim que a internet voltar.
                     </div>
                 )}
 
@@ -512,39 +596,54 @@ export default function AcompanharTreinoPage() {
                 ) : (
                     <>
                         <h2 className={s.sectionTitle}>Treino de hoje</h2>
-                        <div className={s.trainingGrid}>
+                        <SortableList
+                            ids={trainings.map((t) => t.id)}
+                            onReorder={(ids) => void reorderTrainings(ids)}
+                            layout="grid"
+                            className={s.sortableSpacing}
+                        >
                             {trainings.map((t) => {
                                 const done = completedRefs.has(t.reference);
                                 const active = selectedTraining?.id === t.id;
                                 return (
-                                    <button
+                                    <SortableItem
                                         key={t.id}
-                                        type="button"
-                                        className={`${s.trainingCard}${active ? ` ${s.trainingCardActive}` : ''}`}
-                                        onClick={() =>
-                                            setSelectedTrainingId(t.id)
+                                        id={t.id}
+                                        label={`Treino ${t.reference}`}
+                                        disabled={
+                                            isOfflineData ||
+                                            trainings.length < 2
                                         }
-                                        aria-pressed={active}
                                     >
-                                        <span className={s.trainingRef}>
-                                            Treino {t.reference}
-                                        </span>
-                                        <span className={s.trainingMeta}>
-                                            {t.exercises?.length ?? 0}{' '}
-                                            {(t.exercises?.length ?? 0) === 1
-                                                ? 'exercício'
-                                                : 'exercícios'}
-                                        </span>
-                                        {done && (
-                                            <span className={s.doneTag}>
-                                                <FiCheckCircle /> Feito nesta
-                                                semana
+                                        <button
+                                            type="button"
+                                            className={`${s.trainingCard}${active ? ` ${s.trainingCardActive}` : ''}`}
+                                            onClick={() =>
+                                                setSelectedTrainingId(t.id)
+                                            }
+                                            aria-pressed={active}
+                                        >
+                                            <span className={s.trainingRef}>
+                                                Treino {t.reference}
                                             </span>
-                                        )}
-                                    </button>
+                                            <span className={s.trainingMeta}>
+                                                {t.exercises?.length ?? 0}{' '}
+                                                {(t.exercises?.length ?? 0) ===
+                                                1
+                                                    ? 'exercício'
+                                                    : 'exercícios'}
+                                            </span>
+                                            {done && (
+                                                <span className={s.doneTag}>
+                                                    <FiCheckCircle /> Feito
+                                                    nesta semana
+                                                </span>
+                                            )}
+                                        </button>
+                                    </SortableItem>
                                 );
                             })}
-                        </div>
+                        </SortableList>
 
                         {selectedTraining && (
                             <>
@@ -569,13 +668,30 @@ export default function AcompanharTreinoPage() {
                                 </div>
                                 <p className={s.hint}>
                                     Toque no exercício para ajustar séries e
-                                    carga na hora. O lápis abre tudo: trocar o
-                                    exercício, técnica, descanso, ordem e mais.
+                                    carga na hora, ou arraste pela alça ⠿ para
+                                    mudar a ordem. O lápis abre tudo: trocar o
+                                    exercício, técnica, descanso e mais.
                                 </p>
-                                <div className={s.exerciseList}>
-                                    {partitionExerciseGroups(
-                                        selectedTraining.exercises ?? [],
-                                    ).map((block, blockIdx) => {
+                                <SortableList
+                                    ids={exerciseBlocks.map(blockId)}
+                                    onReorder={(ids) => {
+                                        const byId = new Map(
+                                            exerciseBlocks.map(
+                                                (b) => [blockId(b), b] as const,
+                                            ),
+                                        );
+                                        void reorderExercises(
+                                            selectedTraining.id,
+                                            ids.flatMap((id) =>
+                                                (byId.get(id) ?? []).map(
+                                                    (e) => e.id,
+                                                ),
+                                            ),
+                                        );
+                                    }}
+                                    className={s.sortableSpacing}
+                                >
+                                    {exerciseBlocks.map((block) => {
                                         const rows = block.map((ex) => {
                                             const last =
                                                 lastLoadByExercise.get(ex.id) ??
@@ -599,72 +715,76 @@ export default function AcompanharTreinoPage() {
                                                         }
                                                         aria-label={`Abrir ${ex.name}`}
                                                     >
-                                                    <ExerciseThumbnail
-                                                        name={ex.name}
-                                                        videoThumb={
-                                                            ex.video_thumb
-                                                        }
-                                                        videoUrl={ex.video_url}
-                                                        width={52}
-                                                        height={52}
-                                                        lazyCapture
-                                                        captureFrame={false}
-                                                    />
-                                                    <div
-                                                        className={
-                                                            s.exerciseInfo
-                                                        }
-                                                    >
-                                                        <p
-                                                            className={
-                                                                s.exerciseName
+                                                        <ExerciseThumbnail
+                                                            name={ex.name}
+                                                            videoThumb={
+                                                                ex.video_thumb
                                                             }
-                                                        >
-                                                            {ex.name}
-                                                        </p>
+                                                            videoUrl={
+                                                                ex.video_url
+                                                            }
+                                                            width={52}
+                                                            height={52}
+                                                            lazyCapture
+                                                            captureFrame={false}
+                                                        />
                                                         <div
                                                             className={
-                                                                s.prescription
+                                                                s.exerciseInfo
                                                             }
                                                         >
-                                                            <span>
-                                                                {formatSeries(
-                                                                    ex,
-                                                                )}
-                                                            </span>
-                                                            {ex.load_kg ? (
+                                                            <p
+                                                                className={
+                                                                    s.exerciseName
+                                                                }
+                                                            >
+                                                                {ex.name}
+                                                            </p>
+                                                            <div
+                                                                className={
+                                                                    s.prescription
+                                                                }
+                                                            >
                                                                 <span>
-                                                                    {ex.load_kg}
-                                                                    kg
-                                                                    prescritos
+                                                                    {formatSeries(
+                                                                        ex,
+                                                                    )}
                                                                 </span>
-                                                            ) : null}
-                                                            {ex.rest_seconds ? (
-                                                                <span>
-                                                                    {
-                                                                        ex.rest_seconds
-                                                                    }
-                                                                    s de
-                                                                    descanso
-                                                                </span>
-                                                            ) : null}
-                                                            {ex.rpe_target ? (
-                                                                <span>
-                                                                    RPE{' '}
-                                                                    {
-                                                                        ex.rpe_target
-                                                                    }
-                                                                </span>
-                                                            ) : null}
+                                                                {ex.load_kg ? (
+                                                                    <span>
+                                                                        {
+                                                                            ex.load_kg
+                                                                        }
+                                                                        kg
+                                                                        prescritos
+                                                                    </span>
+                                                                ) : null}
+                                                                {ex.rest_seconds ? (
+                                                                    <span>
+                                                                        {
+                                                                            ex.rest_seconds
+                                                                        }
+                                                                        s de
+                                                                        descanso
+                                                                    </span>
+                                                                ) : null}
+                                                                {ex.rpe_target ? (
+                                                                    <span>
+                                                                        RPE{' '}
+                                                                        {
+                                                                            ex.rpe_target
+                                                                        }
+                                                                    </span>
+                                                                ) : null}
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                    <span
-                                                        className={`${s.lastLoad}${last ? '' : ` ${s.lastLoadEmpty}`}`}
-                                                    >
-                                                        {last
-                                                            ? `Última: ${last}kg`
-                                                            : 'Sem registro'}
-                                                    </span>
+                                                        <span
+                                                            className={`${s.lastLoad}${last ? '' : ` ${s.lastLoadEmpty}`}`}
+                                                        >
+                                                            {last
+                                                                ? `Última: ${last}kg`
+                                                                : 'Sem registro'}
+                                                        </span>
                                                     </button>
                                                     {!isOfflineData && (
                                                         <button
@@ -673,14 +793,12 @@ export default function AcompanharTreinoPage() {
                                                                 s.iconBtn
                                                             }
                                                             onClick={() =>
-                                                                setEditorFocus(
-                                                                    {
-                                                                        trainingId:
-                                                                            selectedTraining.id,
-                                                                        exerciseId:
-                                                                            ex.id,
-                                                                    },
-                                                                )
+                                                                setEditorFocus({
+                                                                    trainingId:
+                                                                        selectedTraining.id,
+                                                                    exerciseId:
+                                                                        ex.id,
+                                                                })
                                                             }
                                                             aria-label={`Editar ${ex.name}`}
                                                             title="Editar tudo neste exercício"
@@ -692,35 +810,56 @@ export default function AcompanharTreinoPage() {
                                             );
                                         });
 
-                                        if (block.length === 1) {
-                                            return rows[0];
-                                        }
                                         return (
-                                            <div
-                                                key={`block-${blockIdx}`}
-                                                className={s.groupBlock}
+                                            <SortableItem
+                                                key={blockId(block)}
+                                                id={blockId(block)}
+                                                label={
+                                                    block.length === 1
+                                                        ? block[0].name
+                                                        : comboGroupLabel(
+                                                              block.length,
+                                                              block[0]
+                                                                  .group_technique,
+                                                          )
+                                                }
+                                                disabled={
+                                                    isOfflineData ||
+                                                    exerciseBlocks.length < 2
+                                                }
                                             >
-                                                <span className={s.groupLabel}>
-                                                    {comboGroupLabel(
-                                                        block.length,
-                                                        block[0]
-                                                            .group_technique,
-                                                    )}{' '}
-                                                    — sem descanso entre os
-                                                    exercícios
-                                                </span>
-                                                {rows}
-                                            </div>
+                                                {block.length === 1 ? (
+                                                    rows[0]
+                                                ) : (
+                                                    <div
+                                                        className={s.groupBlock}
+                                                    >
+                                                        <span
+                                                            className={
+                                                                s.groupLabel
+                                                            }
+                                                        >
+                                                            {comboGroupLabel(
+                                                                block.length,
+                                                                block[0]
+                                                                    .group_technique,
+                                                            )}{' '}
+                                                            — sem descanso entre
+                                                            os exercícios
+                                                        </span>
+                                                        {rows}
+                                                    </div>
+                                                )}
+                                            </SortableItem>
                                         );
                                     })}
-                                    {(selectedTraining.exercises ?? []).length ===
-                                        0 && (
+                                    {selectedExercises.length === 0 && (
                                         <p className={s.empty}>
                                             Nenhum exercício prescrito neste
                                             treino.
                                         </p>
                                     )}
-                                </div>
+                                </SortableList>
 
                                 <div className={s.finishBar}>
                                     <button
@@ -728,8 +867,7 @@ export default function AcompanharTreinoPage() {
                                         className={s.btnFinish}
                                         onClick={() => setLoggerOpen(true)}
                                         disabled={
-                                            (selectedTraining.exercises ?? [])
-                                                .length === 0
+                                            selectedExercises.length === 0
                                         }
                                     >
                                         <FiCheck />{' '}

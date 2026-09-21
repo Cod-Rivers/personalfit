@@ -1,7 +1,13 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { FiEdit3, FiCopy, FiTrash2, FiChevronRight, FiLink } from 'react-icons/fi';
+import { useEffect, useMemo, useState } from 'react';
+import {
+    FiEdit3,
+    FiCopy,
+    FiTrash2,
+    FiChevronRight,
+    FiLink,
+} from 'react-icons/fi';
 import type {
     ExerciseRequest,
     MesocycleRequest,
@@ -9,6 +15,13 @@ import type {
 } from '@/libs/planningService';
 import { formatDate, weekdayLabel } from '../lib/mesocycleTransforms';
 import { saveExercisePatch } from '../lib/exercisePatch';
+import {
+    reorderById,
+    saveExerciseOrder,
+    saveTrainingOrder,
+} from '../lib/reorderPatch';
+import { SortableItem, SortableList } from '@/components/system/SortableList';
+import { useToast } from '@/components/system/Toast';
 import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
 import ExerciseDetailCard from '@/components/features/ExerciseDetailCard';
 import type { ExerciseLog } from '@/components/features/types';
@@ -119,6 +132,60 @@ export default function MesocycleSection({
         return exercise ? { exercise, siblings } : null;
     }, [meso, selected]);
 
+    const { showError, ToastSlot } = useToast();
+
+    /* ── Ordem (arrastar e soltar) ──
+     * A ordem nova aparece na hora e só depois vai ao servidor: o `meso` desta
+     * tela vem de fora e só muda com a RESPOSTA da gravação, então sem esse
+     * espelho local o item voltava para o lugar antigo durante o salvamento.
+     * Se a gravação falha, o espelho cai e a lista volta ao que o servidor
+     * tem — com o motivo no toast. */
+    const [trainingOrder, setTrainingOrder] = useState<string[] | null>(null);
+    const [exerciseOrder, setExerciseOrder] = useState<
+        Record<string, string[]>
+    >({});
+
+    // Resposta do servidor chegou (ou a fase mudou): o espelho perde a razão
+    // de existir.
+    useEffect(() => {
+        setTrainingOrder(null);
+        setExerciseOrder({});
+    }, [meso]);
+
+    const orderedTrainings = trainingOrder
+        ? reorderById(meso.trainings, trainingOrder)
+        : meso.trainings;
+
+    const reorderTrainings = async (ids: string[]) => {
+        if (!onPersistMeso) return;
+        setTrainingOrder(ids);
+        try {
+            await saveTrainingOrder({ meso, persist: onPersistMeso }, ids);
+        } catch (e) {
+            setTrainingOrder(null);
+            showError((e as Error).message);
+        }
+    };
+
+    const reorderExercises = async (trainingId: string, ids: string[]) => {
+        if (!onPersistMeso) return;
+        setExerciseOrder((prev) => ({ ...prev, [trainingId]: ids }));
+        try {
+            await saveExerciseOrder(
+                { meso, persist: onPersistMeso },
+                trainingId,
+                ids,
+            );
+        } catch (e) {
+            setExerciseOrder((prev) => {
+                const next = { ...prev };
+                delete next[trainingId];
+                return next;
+            });
+            showError((e as Error).message);
+        }
+    };
+
     /** Grava uma alteração pontual de prescrição no exercício aberto — ver
      * saveExercisePatch (fase inteira, IDs preservados, fila offline). */
     const patchSelectedExercise = async (patch: Partial<ExerciseRequest>) => {
@@ -138,9 +205,12 @@ export default function MesocycleSection({
     };
 
     const canPrescribe = !!onPersistMeso;
+    /** Sem gravação possível (telas de template) a ordem também não muda. */
+    const canReorder = !!onPersistMeso;
 
     return (
         <div className={s.mesoSection}>
+            {ToastSlot}
             <div
                 className={open ? s.mesoHeader : s.mesoHeaderCollapsed}
                 onClick={() => setOpen((v) => !v)}
@@ -152,8 +222,8 @@ export default function MesocycleSection({
                     {simpleMode ? (
                         <p className={s.mesoMeta}>
                             {meso.trainings.length} treino
-                            {meso.trainings.length !== 1 ? 's' : ''}{' '}
-                            configurado{meso.trainings.length !== 1 ? 's' : ''}
+                            {meso.trainings.length !== 1 ? 's' : ''} configurado
+                            {meso.trainings.length !== 1 ? 's' : ''}
                         </p>
                     ) : (
                         <p className={s.mesoMeta}>
@@ -222,199 +292,314 @@ export default function MesocycleSection({
                                 fontSize: '0.85rem',
                             }}
                         >
-                            Nenhum treino cadastrado. Clique em &quot;Editar&quot; para
-                            adicionar.
+                            Nenhum treino cadastrado. Clique em
+                            &quot;Editar&quot; para adicionar.
                         </p>
                     ) : (
-                        meso.trainings.map((t, index) => (
-                            <div key={t.id} className={s.trainingBlock}>
-                                <button
-                                    type="button"
-                                    className={s.trainingHeaderBtn}
-                                    aria-expanded={openTraining === t.id}
-                                    onClick={() =>
-                                        setOpenTraining((prev) =>
-                                            prev === t.id ? null : t.id,
-                                        )
-                                    }
-                                >
-                                    <p className={s.trainingLabel}>
-                                        {isNumbered
-                                            ? `Treino ${index + 1}`
-                                            : simpleMode
-                                              ? (weekdayLabel(t.weekday) ??
-                                                'Sem dia definido')
-                                              : `Treino ${t.reference}`}
-                                    </p>
-                                    <span
-                                        style={{
-                                            fontSize: '0.8rem',
-                                            color: 'var(--text-muted)',
-                                        }}
-                                    >
-                                        {t.exercises.length} exercício(s)
-                                    </span>
-                                    <span
-                                        aria-hidden
-                                        className={
-                                            openTraining === t.id
-                                                ? s.mesoToggleOpen
-                                                : s.mesoToggle
+                        <SortableList
+                            ids={orderedTrainings.map((t) => t.id)}
+                            onReorder={reorderTrainings}
+                        >
+                            {orderedTrainings.map((t, index) => {
+                                const trainingLabel = isNumbered
+                                    ? `Treino ${index + 1}`
+                                    : simpleMode
+                                      ? (weekdayLabel(t.weekday) ??
+                                        'Sem dia definido')
+                                      : `Treino ${t.reference}`;
+                                return (
+                                    <SortableItem
+                                        key={t.id}
+                                        id={t.id}
+                                        label={trainingLabel}
+                                        disabled={
+                                            !canReorder ||
+                                            orderedTrainings.length < 2
                                         }
                                     >
-                                        <FiChevronRight />
-                                    </span>
-                                </button>
-                                {openTraining === t.id &&
-                                    t.exercises.length > 0 &&
-                                    (() => {
-                                        const exerciseLogs =
-                                            t.exercises.map(toExerciseLog);
-                                        const groups =
-                                            partitionExerciseGroups(
-                                                exerciseLogs,
-                                            );
-                                        return (
-                                            <ul className={s.exerciseList}>
-                                                {groups.map((group) => {
-                                                    const isCombo =
-                                                        group.length > 1;
-                                                    const items = group.map(
-                                                        (ex) => {
-                                                            const seriesText =
-                                                                formatSeries(
-                                                                    ex,
-                                                                );
-                                                            return (
-                                                                <button
-                                                                    key={
-                                                                        ex.id
-                                                                    }
-                                                                    type="button"
-                                                                    className={
-                                                                        s.exerciseCard
-                                                                    }
-                                                                    onClick={() =>
-                                                                        setSelected(
-                                                                            {
-                                                                                trainingId:
-                                                                                    t.id,
-                                                                                exerciseId:
-                                                                                    ex.id,
-                                                                            },
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    <ExerciseThumbnail
-                                                                        name={
-                                                                            ex.name
-                                                                        }
-                                                                        videoThumb={
-                                                                            ex.video_thumb
-                                                                        }
-                                                                        videoUrl={
-                                                                            ex.video_url
-                                                                        }
-                                                                        captureFrame={
-                                                                            false
-                                                                        }
-                                                                        lazyCapture
-                                                                        className={
-                                                                            s.exerciseThumbnail
-                                                                        }
-                                                                    />
-                                                                    <div
-                                                                        className={
-                                                                            s.exerciseInfo
-                                                                        }
-                                                                    >
-                                                                        <p
-                                                                            className={
-                                                                                s.exerciseName
-                                                                            }
-                                                                        >
-                                                                            {
-                                                                                ex.name
-                                                                            }
-                                                                        </p>
-                                                                        <p
-                                                                            className={
-                                                                                s.exerciseMeta
-                                                                            }
-                                                                        >
-                                                                            {
-                                                                                seriesText
-                                                                            }
-                                                                            {ex.variations &&
-                                                                                ` · ${ex.variations}`}
-                                                                        </p>
-                                                                        {ex.comments && (
-                                                                            <p
-                                                                                className={
-                                                                                    s.exerciseComments
-                                                                                }
-                                                                            >
-                                                                                {
-                                                                                    ex.comments
-                                                                                }
-                                                                            </p>
-                                                                        )}
-                                                                    </div>
-                                                                    <FiChevronRight
-                                                                        className={
-                                                                            s.exerciseCardChevron
-                                                                        }
-                                                                        aria-hidden
-                                                                    />
-                                                                </button>
-                                                            );
-                                                        },
-                                                    );
-
-                                                    if (!isCombo) {
-                                                        return (
-                                                            <li key={group[0].id}>
-                                                                {items}
-                                                            </li>
-                                                        );
+                                        <div className={s.trainingBlock}>
+                                            <button
+                                                type="button"
+                                                className={s.trainingHeaderBtn}
+                                                aria-expanded={
+                                                    openTraining === t.id
+                                                }
+                                                onClick={() =>
+                                                    setOpenTraining((prev) =>
+                                                        prev === t.id
+                                                            ? null
+                                                            : t.id,
+                                                    )
+                                                }
+                                            >
+                                                <p className={s.trainingLabel}>
+                                                    {trainingLabel}
+                                                </p>
+                                                <span
+                                                    style={{
+                                                        fontSize: '0.8rem',
+                                                        color: 'var(--text-muted)',
+                                                    }}
+                                                >
+                                                    {t.exercises.length}{' '}
+                                                    exercício(s)
+                                                </span>
+                                                <span
+                                                    aria-hidden
+                                                    className={
+                                                        openTraining === t.id
+                                                            ? s.mesoToggleOpen
+                                                            : s.mesoToggle
                                                     }
+                                                >
+                                                    <FiChevronRight />
+                                                </span>
+                                            </button>
+                                            {openTraining === t.id &&
+                                                t.exercises.length > 0 &&
+                                                (() => {
+                                                    const pending =
+                                                        exerciseOrder[t.id];
+                                                    const exerciseLogs = pending
+                                                        ? reorderById(
+                                                              t.exercises.map(
+                                                                  toExerciseLog,
+                                                              ),
+                                                              pending,
+                                                          )
+                                                        : t.exercises.map(
+                                                              toExerciseLog,
+                                                          );
+                                                    const groups =
+                                                        partitionExerciseGroups(
+                                                            exerciseLogs,
+                                                        );
+                                                    /* Arrasta BLOCO: um bi-set
+                                                       anda inteiro, como no
+                                                       editor (TrainingCard). */
+                                                    const blockId = (
+                                                        group: (typeof groups)[number],
+                                                    ) =>
+                                                        group[0].group_id ??
+                                                        group[0].id;
                                                     return (
-                                                        <li
-                                                            key={group[0].id}
+                                                        <SortableList
+                                                            ids={groups.map(
+                                                                blockId,
+                                                            )}
+                                                            onReorder={(
+                                                                ids,
+                                                            ) => {
+                                                                const byId =
+                                                                    new Map(
+                                                                        groups.map(
+                                                                            (
+                                                                                g,
+                                                                            ) =>
+                                                                                [
+                                                                                    blockId(
+                                                                                        g,
+                                                                                    ),
+                                                                                    g,
+                                                                                ] as const,
+                                                                        ),
+                                                                    );
+                                                                void reorderExercises(
+                                                                    t.id,
+                                                                    ids.flatMap(
+                                                                        (id) =>
+                                                                            (
+                                                                                byId.get(
+                                                                                    id,
+                                                                                ) ??
+                                                                                []
+                                                                            ).map(
+                                                                                (
+                                                                                    e,
+                                                                                ) =>
+                                                                                    e.id,
+                                                                            ),
+                                                                    ),
+                                                                );
+                                                            }}
                                                             className={
-                                                                s.exerciseGroupBlock
+                                                                s.exerciseList
                                                             }
                                                         >
-                                                            <div
-                                                                className={
-                                                                    s.exerciseGroupBadge
-                                                                }
-                                                            >
-                                                                <FiLink />{' '}
-                                                                {comboGroupLabel(
-                                                                    group.length,
-                                                                    group[0]
-                                                                        .group_technique,
-                                                                )}{' '}
-                                                                — sem
-                                                                descanso entre
-                                                                os exercícios
-                                                            </div>
-                                                            <div
-                                                                className={
-                                                                    s.exerciseGroupItems
-                                                                }
-                                                            >
-                                                                {items}
-                                                            </div>
-                                                        </li>
+                                                            {groups.map(
+                                                                (group) => {
+                                                                    const isCombo =
+                                                                        group.length >
+                                                                        1;
+                                                                    const items =
+                                                                        group.map(
+                                                                            (
+                                                                                ex,
+                                                                            ) => {
+                                                                                const seriesText =
+                                                                                    formatSeries(
+                                                                                        ex,
+                                                                                    );
+                                                                                return (
+                                                                                    <button
+                                                                                        key={
+                                                                                            ex.id
+                                                                                        }
+                                                                                        type="button"
+                                                                                        className={
+                                                                                            s.exerciseCard
+                                                                                        }
+                                                                                        onClick={() =>
+                                                                                            setSelected(
+                                                                                                {
+                                                                                                    trainingId:
+                                                                                                        t.id,
+                                                                                                    exerciseId:
+                                                                                                        ex.id,
+                                                                                                },
+                                                                                            )
+                                                                                        }
+                                                                                    >
+                                                                                        <ExerciseThumbnail
+                                                                                            name={
+                                                                                                ex.name
+                                                                                            }
+                                                                                            videoThumb={
+                                                                                                ex.video_thumb
+                                                                                            }
+                                                                                            videoUrl={
+                                                                                                ex.video_url
+                                                                                            }
+                                                                                            captureFrame={
+                                                                                                false
+                                                                                            }
+                                                                                            lazyCapture
+                                                                                            className={
+                                                                                                s.exerciseThumbnail
+                                                                                            }
+                                                                                        />
+                                                                                        <div
+                                                                                            className={
+                                                                                                s.exerciseInfo
+                                                                                            }
+                                                                                        >
+                                                                                            <p
+                                                                                                className={
+                                                                                                    s.exerciseName
+                                                                                                }
+                                                                                            >
+                                                                                                {
+                                                                                                    ex.name
+                                                                                                }
+                                                                                            </p>
+                                                                                            <p
+                                                                                                className={
+                                                                                                    s.exerciseMeta
+                                                                                                }
+                                                                                            >
+                                                                                                {
+                                                                                                    seriesText
+                                                                                                }
+                                                                                                {ex.variations &&
+                                                                                                    ` · ${ex.variations}`}
+                                                                                            </p>
+                                                                                            {ex.comments && (
+                                                                                                <p
+                                                                                                    className={
+                                                                                                        s.exerciseComments
+                                                                                                    }
+                                                                                                >
+                                                                                                    {
+                                                                                                        ex.comments
+                                                                                                    }
+                                                                                                </p>
+                                                                                            )}
+                                                                                        </div>
+                                                                                        <FiChevronRight
+                                                                                            className={
+                                                                                                s.exerciseCardChevron
+                                                                                            }
+                                                                                            aria-hidden
+                                                                                        />
+                                                                                    </button>
+                                                                                );
+                                                                            },
+                                                                        );
+
+                                                                    return (
+                                                                        <SortableItem
+                                                                            key={blockId(
+                                                                                group,
+                                                                            )}
+                                                                            id={blockId(
+                                                                                group,
+                                                                            )}
+                                                                            label={
+                                                                                isCombo
+                                                                                    ? comboGroupLabel(
+                                                                                          group.length,
+                                                                                          group[0]
+                                                                                              .group_technique,
+                                                                                      )
+                                                                                    : group[0]
+                                                                                          .name
+                                                                            }
+                                                                            disabled={
+                                                                                !canReorder ||
+                                                                                groups.length <
+                                                                                    2
+                                                                            }
+                                                                            className={
+                                                                                isCombo
+                                                                                    ? s.exerciseGroupBlock
+                                                                                    : undefined
+                                                                            }
+                                                                        >
+                                                                            {!isCombo ? (
+                                                                                items
+                                                                            ) : (
+                                                                                <>
+                                                                                    <div
+                                                                                        className={
+                                                                                            s.exerciseGroupBadge
+                                                                                        }
+                                                                                    >
+                                                                                        <FiLink />{' '}
+                                                                                        {comboGroupLabel(
+                                                                                            group.length,
+                                                                                            group[0]
+                                                                                                .group_technique,
+                                                                                        )}{' '}
+                                                                                        —
+                                                                                        sem
+                                                                                        descanso
+                                                                                        entre
+                                                                                        os
+                                                                                        exercícios
+                                                                                    </div>
+                                                                                    <div
+                                                                                        className={
+                                                                                            s.exerciseGroupItems
+                                                                                        }
+                                                                                    >
+                                                                                        {
+                                                                                            items
+                                                                                        }
+                                                                                    </div>
+                                                                                </>
+                                                                            )}
+                                                                        </SortableItem>
+                                                                    );
+                                                                },
+                                                            )}
+                                                        </SortableList>
                                                     );
-                                                })}
-                                            </ul>
-                                        );
-                                    })()}
-                            </div>
-                        ))
+                                                })()}
+                                        </div>
+                                    </SortableItem>
+                                );
+                            })}
+                        </SortableList>
                     )}
                 </div>
             )}
@@ -443,7 +628,8 @@ export default function MesocycleSection({
                         canPrescribe
                             ? (weightKg) =>
                                   patchSelectedExercise({
-                                      load_kg: weightKg > 0 ? weightKg : undefined,
+                                      load_kg:
+                                          weightKg > 0 ? weightKg : undefined,
                                   })
                             : undefined
                     }

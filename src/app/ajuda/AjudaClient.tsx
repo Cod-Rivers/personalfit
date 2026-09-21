@@ -1070,6 +1070,13 @@ const personalSections: HelpSection[] = [
                     <strong>Plano completo</strong>.
                 </p>
                 <p className="mb-2">
+                    A ordem dos treinos e dos exercícios muda arrastando pela
+                    alça <strong>⠿</strong> à esquerda de cada linha — na tela
+                    do treino, na periodização e no editor. Um bi-set anda
+                    inteiro, como um bloco. A nova ordem vai para o aluno na
+                    hora; sem internet, ela não muda e o app avisa.
+                </p>
+                <p className="mb-2">
                     Pelo cartão do aluno em <strong>Periodização</strong>{' '}
                     você vê os macrociclos dele. Crie um do zero em{' '}
                     <strong>+ Novo Macrociclo</strong> ou parta de um modelo em{' '}

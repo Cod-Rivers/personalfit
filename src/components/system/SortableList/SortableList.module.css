@@ -1,0 +1,67 @@
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.item {
+    display: flex;
+    align-items: stretch;
+    gap: 6px;
+    min-width: 0;
+}
+
+.grid .item {
+    flex: 1 1 140px;
+    max-width: 100%;
+}
+
+/* Sombra enquanto arrasta, para o item "descolar" da lista. O opacity antigo
+   sumia com o card no tema claro. */
+.itemDragging {
+    box-shadow: var(--shadow-md, 0 6px 18px rgba(0, 0, 0, 0.35));
+    border-radius: 10px;
+}
+
+.body {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.handle {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* 32x44 é o mínimo que o dedo acerta sem encostar na linha ao lado. */
+    width: 32px;
+    min-height: 44px;
+    padding: 0;
+    border: 1px dashed var(--border-mid, rgba(255, 255, 255, 0.18));
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-muted, #9aa5b1);
+    font-size: 1rem;
+    line-height: 1;
+    cursor: grab;
+    user-select: none;
+    /* Sem isto o navegador trata o gesto como rolagem e o arrasto por toque
+       nunca começa. */
+    touch-action: none;
+}
+
+.handle:hover,
+.handle:focus-visible {
+    color: var(--mint, #3dffd0);
+    border-color: var(--mint, #3dffd0);
+}
+
+.handle:active {
+    cursor: grabbing;
+}

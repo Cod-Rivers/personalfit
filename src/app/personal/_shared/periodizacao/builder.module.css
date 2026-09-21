@@ -291,7 +291,10 @@
     box-shadow: var(--shadow-md);
     position: relative;
     overflow: hidden;
-    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+    transition:
+        transform 0.2s,
+        box-shadow 0.2s,
+        border-color 0.2s;
 }
 .exerciseCard::before {
     content: '';
@@ -1470,4 +1473,10 @@
 
 .offlineNotice svg {
     flex-shrink: 0;
+}
+
+/* Espaçamento de bloco das listas arrastáveis (SortableList), igual ao do
+   NavRowGroup que elas substituíram. */
+.sortableGroup {
+    margin-bottom: 14px;
 }

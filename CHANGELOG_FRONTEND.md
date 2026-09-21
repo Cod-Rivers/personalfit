@@ -606,3 +606,8 @@
 **Resumo:** Está pronto: "Ver Treino" e "Acompanhar Treino" viraram uma tela só, com todas as edições que o personal já tinha, mais "Trocar exercício". `tsc`, os 280 testes do front (4 novos) e o build de produção passam. Não testei com o app rodando. **Sobre o seu commit das 10:35 (`refeito a visão do aluno para o personal`):** ele pegou o trabalho pela metade. Entraram as duas correções do backend e a base do editor, e o push já disparou o deploy automático. Nada quebrado foi para produção, porque o `tsc` passava naquele ponto. A tela nova, os botões, a Ajuda e a atualização automática do lado do aluno …
 **Arquivos:** AjudaClient.tsx, RetentionTab.tsx, StudentsTab.tsx, acompanhar.module.css, exercisePatch.test.ts, page.tsx
 **Commits:**  refeito a visão do aluno para o personal
+
+## 2026-09-21 13:45 — River (via Claude Code)
+**Resumo:** Sim. Nada está commitado e à espera de push: os três repositórios estão alinhados com o remoto. O que existe são alterações locais que ainda não foram commitadas, em dois deles: **Personal-fit-Back (backend):** nada pendente. **VenafitApp (Android):** 2 arquivos - [app/build.gradle.kts](VenafitApp/app/build.gradle.kts): versão subiu de `versionCode 11 / 1.0.10` para `12 / 1.0.11`. - [CHANGELOG_ANDROID.md](VenafitApp/CHANGELOG_ANDROID.md): 3 entradas novas, de 09-18 e 09-19. **personalfit (frontend):** 7 arquivos modificados e 3 novos, cerca de 850 linhas adicionadas e 700 removidas. - **Acompa…
+**Arquivos:** MesocycleSection.tsx, SortableList, TrainingCard.tsx, TrainingsListCard.tsx, builder.module.css, reorderPatch.test.ts, reorderPatch.ts
+**Commits:**  refeito a visão do aluno para o personal
