@@ -1062,13 +1062,21 @@ const personalSections: HelpSection[] = [
                     ativo. Toque num exercício para abrir o mesmo cartão que
                     o aluno vê, com tudo dele num lugar só: séries e carga na
                     hora, <strong>+</strong> e <strong>×</strong> para
-                    acrescentar ou tirar uma série e, logo abaixo, descanso,
-                    RPE, técnica, vídeo e observações. Na lista,{' '}
-                    <strong>+ Exercício</strong> adiciona da biblioteca, o
-                    botão de troca substitui por outro mantendo séries e
-                    carga, e o <strong>×</strong> exclui (o app pede
-                    confirmação). <strong>Editar treino</strong> fica para o
-                    que é do treino inteiro, como agrupar em bi-set. Só quem
+                    acrescentar ou tirar uma série,{' '}
+                    <strong>Trocar exercício</strong> para escolher outro da
+                    biblioteca mantendo séries e carga e, recolhido em{' '}
+                    <strong>Editar tudo neste exercício</strong>, descanso,
+                    RPE, técnica, vídeo e observações. Tudo salva sozinho. Na
+                    lista, <strong>+ Exercício</strong> adiciona da
+                    biblioteca (dá para marcar vários e montar um bi-set) e o{' '}
+                    <strong>×</strong> exclui. Em{' '}
+                    <strong>Treinos da semana</strong>,{' '}
+                    <strong>+ Treino</strong> cria um novo e o{' '}
+                    <strong>×</strong> no canto do cartão exclui. Toda
+                    exclusão pede confirmação. Ao arrastar ou excluir um
+                    treino, as letras acompanham a posição (o primeiro é
+                    sempre A) e o histórico do aluno vai junto com cada
+                    treino. Só quem
                     montou a série edita: o personal vinculado, ou o próprio
                     aluno quando ele mesmo montou o treino. No fim da sessão,{' '}
                     <strong>Finalizar treino</strong> registra no histórico

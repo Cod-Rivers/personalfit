@@ -5,10 +5,12 @@ import type {
     MesocycleRequest,
     MesocycleResponse,
 } from '@/libs/planningService';
-import { mesoToRequest } from './mesocycleTransforms';
+import { mesoToRequest, relabelByPosition } from './mesocycleTransforms';
 import {
     addExercisesToTraining,
+    addTrainingToMeso,
     removeExerciseFromTraining,
+    removeTrainingFromMeso,
     replaceExerciseInTraining,
     saveTrainingEdit,
 } from './trainingEditPatch';
@@ -193,5 +195,97 @@ describe('saveTrainingEdit', () => {
             saveTrainingEdit({ meso: meso([ex('ex-1')]), persist }, () => {}),
         ).rejects.toThrow(/NÃO foi alterado/);
         expect(persist).not.toHaveBeenCalled();
+    });
+});
+
+describe('addTrainingToMeso / removeTrainingFromMeso', () => {
+    function twoTrainings(): MesocycleRequest {
+        const m = meso([ex('ex-1')]);
+        m.trainings.push({ id: 't-b', reference: 'B', exercises: [ex('ex-2')] });
+        return mesoToRequest(m);
+    }
+
+    it('cria o próximo rótulo livre, vazio e sem id', () => {
+        const req = twoTrainings();
+        const pos = addTrainingToMeso(req, { autoWeekday: false });
+        expect(pos).toBe(2);
+        expect(req.trainings[2]).toMatchObject({
+            reference: 'C',
+            exercises: [],
+        });
+        expect(req.trainings[2].id).toBeUndefined();
+        expect(req.trainings[2].weekday).toBeUndefined();
+    });
+
+    it('no modo por dia da semana, nasce num dia livre', () => {
+        const req = mesoToRequest(meso([]));
+        req.trainings[0].weekday = 1;
+        addTrainingToMeso(req, { autoWeekday: true });
+        expect(req.trainings[1].weekday).toBeDefined();
+        expect(req.trainings[1].weekday).not.toBe(1);
+    });
+
+    it('exclui o treino e preserva o id dos outros', () => {
+        const req = twoTrainings();
+        removeTrainingFromMeso(req, 't-a');
+        expect(req.trainings.map((t) => t.id)).toEqual(['t-b']);
+        expect(req.trainings[0].exercises[0].id).toBe('ex-2');
+    });
+
+    it('não deixa a fase sem nenhum treino', () => {
+        const req = mesoToRequest(meso([ex('ex-1')]));
+        expect(() => removeTrainingFromMeso(req, 't-a')).toThrow(
+            /pelo menos um treino/,
+        );
+    });
+});
+
+
+describe('a letra acompanha a posição', () => {
+    const refs = (list: { reference: string }[]) =>
+        list.map((t) => t.reference);
+
+    it('depois de arrastar, o primeiro volta a ser A', () => {
+        const out = relabelByPosition([
+            { id: 'b', reference: 'B' },
+            { id: 'a', reference: 'A' },
+            { id: 'c', reference: 'C' },
+        ]);
+        expect(refs(out)).toEqual(['A', 'B', 'C']);
+        // O treino é o mesmo, só a letra mudou.
+        expect(out.map((t) => t.id)).toEqual(['b', 'a', 'c']);
+    });
+
+    it('nunca sobrescreve um nome digitado pelo personal', () => {
+        const list = [
+            { reference: 'Peito' },
+            { reference: 'A' },
+        ];
+        expect(relabelByPosition(list)).toBe(list);
+    });
+
+    it('excluir o B com relabel faz o C virar B', () => {
+        const m = meso([ex('ex-1')]);
+        m.trainings.push(
+            { id: 't-b', reference: 'B', exercises: [] },
+            { id: 't-c', reference: 'C', exercises: [] },
+        );
+        const req = mesoToRequest(m);
+        removeTrainingFromMeso(req, 't-b', { relabel: true });
+        expect(req.trainings.map((t) => [t.id, t.reference])).toEqual([
+            ['t-a', 'A'],
+            ['t-c', 'B'],
+        ]);
+    });
+
+    it('sem relabel (modo por dia da semana), as letras ficam', () => {
+        const m = meso([ex('ex-1')]);
+        m.trainings.push(
+            { id: 't-b', reference: 'B', exercises: [] },
+            { id: 't-c', reference: 'C', exercises: [] },
+        );
+        const req = mesoToRequest(m);
+        removeTrainingFromMeso(req, 't-b');
+        expect(refs(req.trainings)).toEqual(['A', 'C']);
     });
 });

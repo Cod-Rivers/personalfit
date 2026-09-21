@@ -13,6 +13,7 @@ import {
     FiAlertCircle,
     FiLock,
     FiPlus,
+    FiRepeat,
     FiX,
 } from 'react-icons/fi';
 import { ExerciseLog } from './types';
@@ -106,6 +107,10 @@ interface ExerciseDetailCardProps {
      * treino do aluno, pelo personal). O card não sabe gravar a fase — quem
      * passa o editor é que sabe; ver ExerciseInlineEditor. */
     editor?: React.ReactNode;
+    /** Trocar por outro exercício da biblioteca (personal, tela do treino do
+     * aluno). Fica visível no topo, e não dentro do editor recolhido: é a
+     * ação mais comum depois de séries e carga. */
+    onReplace?: () => void;
 }
 
 const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
@@ -120,6 +125,7 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
     onPrescribeWeight,
     onPrescribeSeries,
     editor,
+    onReplace,
 }) => {
     // --- Estados ---
     const [timerValue, setTimerValue] = useState<number>(
@@ -168,6 +174,10 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
     const [prescriptionError, setPrescriptionError] = useState('');
     // Tirar uma série pede confirmação (ver handleRemoveSetConfirmed).
     const [confirmRemoveSet, setConfirmRemoveSet] = useState(false);
+    // Editor completo (prop `editor`): nasce recolhido — o uso de todo dia é
+    // ajustar série e carga, e o formulário inteiro empurraria o resto do
+    // card para baixo.
+    const [editorOpen, setEditorOpen] = useState(false);
     // --- Efeitos ---
     Racional: useEffect(() => {
         // Lógica do cronômetro
@@ -736,6 +746,16 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                             <h3 className={styles.exerciseTitle}>
                                 {exercise.name}
                             </h3>
+                            {onReplace && (
+                                <button
+                                    type="button"
+                                    className={styles.replaceBtn}
+                                    onClick={onReplace}
+                                    title="Trocar por outro exercício da biblioteca, mantendo séries, carga e posição"
+                                >
+                                    <FiRepeat /> Trocar exercício
+                                </button>
+                            )}
                             {exercise.non_substitutable === true && (
                                 <p
                                     className={styles.timedInfo}
@@ -1390,11 +1410,42 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                     </div>
                                 )}
                                 {editor && (
-                                    <div className={styles.editorSection}>
-                                        <p className={styles.editorTitle}>
-                                            Editar tudo neste exercício
-                                        </p>
-                                        {editor}
+                                    <div className={styles.collapsibleCard}>
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setEditorOpen((v) => !v)
+                                            }
+                                            aria-expanded={editorOpen}
+                                            className={styles.collapsibleToggle}
+                                        >
+                                            <span
+                                                className={
+                                                    styles.collapsibleTitle
+                                                }
+                                            >
+                                                Editar tudo neste exercício
+                                            </span>
+                                            <span
+                                                aria-hidden
+                                                className={
+                                                    editorOpen
+                                                        ? styles.collapsibleChevronOpen
+                                                        : styles.collapsibleChevron
+                                                }
+                                            >
+                                                ▾
+                                            </span>
+                                        </button>
+                                        {/* Sempre montado, só escondido: recolher
+                                            não pode jogar fora o que o personal
+                                            ainda não salvou. */}
+                                        <div
+                                            hidden={!editorOpen}
+                                            className={styles.editorSection}
+                                        >
+                                            {editor}
+                                        </div>
                                     </div>
                                 )}
                                 {/* Campo de Anotações do Usuário — omitido em modo somente

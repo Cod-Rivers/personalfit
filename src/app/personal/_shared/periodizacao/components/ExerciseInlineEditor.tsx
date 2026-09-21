@@ -13,81 +13,80 @@ import {
 } from '../lib/mesocycleTransforms';
 import s from '../builder.module.css';
 
-/** O que muda de fato no exercício — `id` e o `_id` local ficam de fora, um
- * não muda aqui e o outro é gerado a cada conversão. */
-function signature(ex: LocalExercise): string {
-    return JSON.stringify({ ...localExerciseToRequest(ex), id: undefined });
+/** Espera depois da última alteração antes de gravar: digitar "120" no
+ * descanso não pode virar três gravações (1, 12, 120) da fase inteira. */
+const AUTOSAVE_DELAY_MS = 800;
+
+/**
+ * Só os campos que ESTE editor mostra. Séries e carga ficam de fora de
+ * propósito: são editadas no topo do card (ver ExerciseDetailCard), e mandar a
+ * cópia do rascunho junto desfaria um ajuste de série feito lá enquanto uma
+ * gravação daqui estava na fila. `id` também fica fora — não muda aqui.
+ */
+const NOT_OWNED = ['id', 'series', 'series_label', 'timed', 'load_kg'] as const;
+
+function ownedFields(ex: LocalExercise): Partial<ExerciseRequest> {
+    const fields: Partial<ExerciseRequest> = localExerciseToRequest(ex);
+    for (const key of NOT_OWNED) delete fields[key];
+    return fields;
 }
 
 /**
  * Edição COMPLETA de um exercício, embutida no card que o aluno vê
- * (ExerciseDetailCard) na tela do treino do aluno.
+ * (ExerciseDetailCard) na tela do treino do aluno: descanso, RPE, técnica,
+ * mídia e observações, nas mesmas abas do editor da fase (ExerciseCard).
  *
- * Antes o card só ajustava séries e carga; o resto (descanso, RPE, técnica,
- * mídia, observações) exigia fechar o card, abrir "Editar treino", achar o
- * exercício e só então chegar às abas. Aqui as mesmas abas do editor da fase
- * (ExerciseCard) ficam dentro do card — um toque no exercício e está tudo lá.
- *
- * Grava por botão, e não a cada tecla: cada gravação reenvia a fase inteira
- * do aluno. O rascunho acompanha o exercício enquanto não houver edição
- * pendente — um ajuste rápido de séries ou carga feito no topo do card
- * aparece aqui na hora, em vez de ser desfeito pelo próximo "Salvar".
+ * Salva sozinho, como o resto do card — uma regra só para aprender: mexeu,
+ * está salvo. A gravação sai um instante depois da última alteração e, se o
+ * card fechar antes disso, sai na hora (não há "alterações não salvas" para
+ * perguntar).
  */
 export default function ExerciseInlineEditor({
     exercise,
     onSave,
-    onReplace,
-    onDirtyChange,
 }: {
     exercise: ExerciseResponse;
-    /** Grava o exercício inteiro. Rejeita em erro; rejeitar com
+    /** Grava os campos do exercício. Rejeita em erro; rejeitar com
      * PrescriptionQueuedOfflineError = guardado na fila offline. */
-    onSave: (patch: ExerciseRequest) => Promise<void>;
-    /** Abre a biblioteca para trocar este exercício por outro. */
-    onReplace?: () => void;
-    /** Avisa o dono do card, que pergunta antes de fechar com edição pendente. */
-    onDirtyChange?: (dirty: boolean) => void;
+    onSave: (patch: Partial<ExerciseRequest>) => Promise<void>;
 }) {
     const source = useMemo(() => exerciseToLocal(exercise), [exercise]);
-    const sourceSig = useMemo(() => signature(source), [source]);
+    const sourceSig = JSON.stringify(ownedFields(source));
 
     const [draft, setDraft] = useState<LocalExercise>(source);
-    const [tab, setTab] = useState<ExerciseTab>('serie');
+    const [tab, setTab] = useState<ExerciseTab>('prescricao');
     const [status, setStatus] = useState<
         'idle' | 'saving' | 'saved' | 'saved-offline' | 'error'
     >('idle');
     const [error, setError] = useState('');
 
-    const draftSig = signature(draft);
-    const dirty = draftSig !== sourceSig;
+    const draftSig = JSON.stringify(ownedFields(draft));
+    /** Última assinatura enviada: evita regravar o que já foi mandado quando
+     * a resposta do servidor volta e o rascunho é realinhado. */
+    const sentSig = useRef(sourceSig);
 
-    /* O exercício mudou por fora (ajuste rápido, resposta do servidor). Se o
-     * rascunho estava igual à versão anterior, ele acompanha; se havia edição
-     * em andamento, ela é mantida — sobrescrever apagaria o que o personal
-     * está digitando. */
+    /* O exercício mudou por fora (resposta do servidor, ajuste no topo do
+     * card). Sem gravação pendente, o rascunho acompanha. */
     const lastSourceSig = useRef(sourceSig);
     useEffect(() => {
         if (lastSourceSig.current === sourceSig) return;
         setDraft((prev) =>
-            signature(prev) === lastSourceSig.current ? source : prev,
+            JSON.stringify(ownedFields(prev)) === sentSig.current ||
+            JSON.stringify(ownedFields(prev)) === lastSourceSig.current
+                ? source
+                : prev,
         );
         lastSourceSig.current = sourceSig;
+        sentSig.current = sourceSig;
     }, [source, sourceSig]);
 
-    useEffect(() => {
-        onDirtyChange?.(dirty);
-    }, [dirty, onDirtyChange]);
-
-    const update = (field: keyof Omit<LocalExercise, '_id'>, value: string | boolean) => {
-        setStatus('idle');
-        setDraft((prev) => ({ ...prev, [field]: value }));
-    };
-
-    const save = async () => {
+    const save = async (next: LocalExercise) => {
+        const patch = ownedFields(next);
+        sentSig.current = JSON.stringify(patch);
         setStatus('saving');
         setError('');
         try {
-            await onSave(localExerciseToRequest(draft));
+            await onSave(patch);
             setStatus('saved');
         } catch (err) {
             if (err instanceof PrescriptionQueuedOfflineError) {
@@ -103,6 +102,36 @@ export default function ExerciseInlineEditor({
         }
     };
 
+    /* Gravação automática, um instante depois da última alteração. */
+    const pending = draftSig !== sentSig.current;
+    useEffect(() => {
+        if (!pending) return;
+        const timer = setTimeout(() => void save(draft), AUTOSAVE_DELAY_MS);
+        return () => clearTimeout(timer);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [draftSig, pending]);
+
+    /* Card fechado (ou trocado de exercício) antes do tempo: grava na hora.
+     * Refs porque o cleanup de desmontagem enxerga só o primeiro render. */
+    const latest = useRef({ draft, pending, onSave });
+    latest.current = { draft, pending, onSave };
+    useEffect(
+        () => () => {
+            const { draft: last, pending: hasPending, onSave: saveFn } =
+                latest.current;
+            // A tela mostra o resultado (toast); aqui o editor já sumiu.
+            if (hasPending) void saveFn(ownedFields(last)).catch(() => {});
+        },
+        [],
+    );
+
+    const update = (
+        field: keyof Omit<LocalExercise, '_id'>,
+        value: string | boolean,
+    ) => {
+        setDraft((prev) => ({ ...prev, [field]: value }));
+    };
+
     return (
         <section aria-label="Editar exercício">
             <ExerciseCard
@@ -110,75 +139,42 @@ export default function ExerciseInlineEditor({
                 tab={tab}
                 onTabChange={setTab}
                 onUpdate={update}
-                onSetVideo={(url, thumb) => {
-                    setStatus('idle');
+                onSetVideo={(url, thumb) =>
                     setDraft((prev) => ({
                         ...prev,
                         video_url: url,
                         video_thumb: thumb,
-                    }));
-                }}
-                onReplace={onReplace}
+                    }))
+                }
+                withoutQuickFields
             />
 
-            <div
-                style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 'var(--space-2)',
-                    flexWrap: 'wrap',
-                    marginTop: 'var(--space-3)',
-                }}
+            <p
+                role="status"
+                style={{ margin: 'var(--space-3) 0 0', minHeight: '1.25rem' }}
             >
-                <button
-                    type="button"
-                    className={s.btnEdit}
-                    onClick={() => void save()}
-                    disabled={!dirty || status === 'saving'}
-                >
-                    Salvar alterações
-                </button>
-                {dirty && status !== 'saving' && (
-                    <button
-                        type="button"
-                        className={s.btnSmall}
-                        onClick={() => {
-                            setDraft(source);
-                            setStatus('idle');
-                        }}
-                    >
-                        Descartar
-                    </button>
+                {(pending || status === 'saving') && (
+                    <span className={s.saveStatus}>
+                        <FiLoader /> Salvando…
+                    </span>
                 )}
-                <span role="status">
-                    {status === 'saving' && (
-                        <span className={s.saveStatus}>
-                            <FiLoader /> Salvando…
-                        </span>
-                    )}
-                    {status === 'saved' && !dirty && (
-                        <span className={s.saveStatusOk}>
-                            <FiCheck /> Salvo para o aluno
-                        </span>
-                    )}
-                    {status === 'saved-offline' && (
-                        <span className={s.saveStatus}>
-                            Salvo neste aparelho — será enviado quando a
-                            internet voltar
-                        </span>
-                    )}
-                    {status === 'idle' && dirty && (
-                        <span className={s.saveStatus}>
-                            Alterações ainda não salvas
-                        </span>
-                    )}
-                </span>
-                {status === 'error' && (
+                {!pending && status === 'saved' && (
+                    <span className={s.saveStatusOk}>
+                        <FiCheck /> Salvo para o aluno
+                    </span>
+                )}
+                {!pending && status === 'saved-offline' && (
+                    <span className={s.saveStatus}>
+                        Salvo neste aparelho — será enviado quando a internet
+                        voltar
+                    </span>
+                )}
+                {!pending && status === 'error' && (
                     <span className={s.saveStatusError} role="alert">
                         <FiAlertCircle /> {error}
                     </span>
                 )}
-            </div>
+            </p>
         </section>
     );
 }

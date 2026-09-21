@@ -3,7 +3,7 @@ import type {
     MesocycleRequest,
     MesocycleResponse,
 } from '@/libs/planningService';
-import { mesoToRequest } from './mesocycleTransforms';
+import { mesoToRequest, relabelByPosition } from './mesocycleTransforms';
 import { describeSaveError } from './exercisePatch';
 
 /**
@@ -25,6 +25,9 @@ interface OrderTarget {
     meso: MesocycleResponse;
     /** Grava a fase e REJEITA em erro — a tela mostra o resultado. */
     persist: (req: MesocycleRequest) => Promise<unknown>;
+    /** A letra acompanha a posição (ver relabelByPosition). Desligado no
+     * modo por dia da semana, onde o rótulo que o aluno vê é o dia. */
+    relabel?: boolean;
 }
 
 const OFFLINE_NOT_SAVED =
@@ -80,6 +83,7 @@ export async function saveTrainingOrder(
             ...ordered,
             ...req.trainings.filter((t) => !seen.has(t.id ?? '')),
         ];
+        if (target.relabel) req.trainings = relabelByPosition(req.trainings);
     });
 }
 

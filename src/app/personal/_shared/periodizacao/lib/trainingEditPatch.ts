@@ -6,7 +6,13 @@ import type {
     MesocycleResponse,
     TrainingRequest,
 } from '@/libs/planningService';
-import { genId, mesoToRequest } from './mesocycleTransforms';
+import {
+    NEXT_REF,
+    genId,
+    mesoToRequest,
+    nextFreeWeekday,
+    relabelByPosition,
+} from './mesocycleTransforms';
 import { describeSaveError } from './exercisePatch';
 
 /**
@@ -170,4 +176,48 @@ export function replaceExerciseInTraining(
         video_thumb: item.video_thumb ?? '',
     };
     return idx;
+}
+
+/** Treino novo e vazio no fim da fase, com o próximo rótulo livre (A, B, C…)
+ * — a mesma regra do editor da fase. No modo por dia da semana o rótulo é o
+ * dia: nasce no próximo dia ainda livre. Devolve a posição, que é como o
+ * chamador acha o treino novo na resposta (ele nasce sem id).
+ *
+ * Reaproveitar a letra de um treino excluído é seguro: o servidor marca o
+ * histórico dele como "(excluído)" (ver training-ref-renames.go). */
+export function addTrainingToMeso(
+    req: MesocycleRequest,
+    opts: { autoWeekday: boolean },
+): number {
+    const usedRefs = req.trainings.map((t) => t.reference);
+    const reference =
+        NEXT_REF.find((r) => !usedRefs.includes(r)) ??
+        String(req.trainings.length + 1);
+    req.trainings = [
+        ...req.trainings,
+        {
+            reference,
+            weekday: opts.autoWeekday
+                ? nextFreeWeekday(req.trainings.map((t) => t.weekday))
+                : undefined,
+            exercises: [],
+        },
+    ];
+    return req.trainings.length - 1;
+}
+
+/** Remove o treino inteiro. A fase não pode ficar sem nenhum: a tela do
+ * aluno não teria de onde abrir um treino nem onde adicionar outro. */
+export function removeTrainingFromMeso(
+    req: MesocycleRequest,
+    trainingId: string,
+    opts: { relabel?: boolean } = {},
+): void {
+    findTraining(req, trainingId);
+    if (req.trainings.length <= 1) {
+        throw new Error('A fase precisa ter pelo menos um treino.');
+    }
+    req.trainings = req.trainings.filter((t) => t.id !== trainingId);
+    // Excluir o B deixa A, C: com letras, o C vira B (ver relabelByPosition).
+    if (opts.relabel) req.trainings = relabelByPosition(req.trainings);
 }

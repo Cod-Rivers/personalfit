@@ -14,8 +14,10 @@
  * - Na lista: + adiciona exercícios da biblioteca, o botão de troca abre a
  *   biblioteca para substituir, × exclui (com confirmação), e a alça ⠿
  *   reordena.
- * - "Editar treino" continua para o que é do treino, não de um exercício:
- *   agrupar em bi-set, prescrição geral, nome/dia do treino.
+ * - Nos cartões de treino: + cria um treino novo e × exclui (com
+ *   confirmação). O antigo "Editar treino" (editor da fase) saiu daqui;
+ *   bi-set se monta pelo "+ Exercício" (multi-seleção → "Adicionar como"),
+ *   e o resto da fase segue em "Plano completo".
  * - Fases e semanas continuam na periodização ("Plano completo").
  *
  * Por que não bastavam as telas antigas:
@@ -40,9 +42,7 @@ import {
     FiArrowLeft,
     FiCheck,
     FiCheckCircle,
-    FiEdit2,
     FiPlus,
-    FiRepeat,
     FiWifiOff,
     FiX,
 } from 'react-icons/fi';
@@ -83,7 +83,6 @@ import ExerciseDetailCard from '@/components/features/ExerciseDetailCard';
 import type { ExerciseLog } from '@/components/features/types';
 import PersonalAnamnesisQuickView from '@/components/features/PersonalAnamnesisQuickView';
 import { toExerciseLog } from '@/libs/exerciseLog';
-import MesocycleFormModal from '@/app/personal/_shared/periodizacao/components/MesocycleFormModal';
 import { pickSavedMesocycle } from '@/app/personal/_shared/periodizacao/lib/mesocycleTransforms';
 import {
     applyExercisePatch,
@@ -96,7 +95,9 @@ import {
 } from '@/app/personal/_shared/periodizacao/lib/reorderPatch';
 import {
     addExercisesToTraining,
+    addTrainingToMeso,
     removeExerciseFromTraining,
+    removeTrainingFromMeso,
     replaceExerciseInTraining,
     saveTrainingEdit,
 } from '@/app/personal/_shared/periodizacao/lib/trainingEditPatch';
@@ -176,24 +177,18 @@ export default function AcompanharTreinoPage() {
     /** Exercício aberto no card do aluno (ajuste rápido). Só o ID: o card é
      * derivado do macrociclo atual, então uma gravação aparece nele na hora. */
     const [openExerciseId, setOpenExerciseId] = useState<string | null>(null);
-    /** Editor da fase aberto num treino — agrupar, prescrição geral, nome. */
-    const [editorFocus, setEditorFocus] = useState<{
-        trainingId: string;
-    } | null>(null);
     /** Biblioteca aberta: para acrescentar exercícios ao treino, ou para
      * trocar um deles. */
     const [picker, setPicker] = useState<
         { mode: 'add' } | { mode: 'replace'; exerciseId: string } | null
     >(null);
-    /** Exercício esperando a confirmação de exclusão. */
-    const [pendingDelete, setPendingDelete] = useState<{
-        id: string;
-        name: string;
-    } | null>(null);
+    /** Exercício ou treino esperando a confirmação de exclusão. */
+    const [pendingDelete, setPendingDelete] = useState<
+        | { kind: 'exercise'; id: string; name: string }
+        | { kind: 'training'; id: string; name: string }
+        | null
+    >(null);
     const [busy, setBusy] = useState(false);
-    /** Edição pendente no editor embutido no card: fechar o card, ou pular
-     * para outro exercício, sem salvar pede confirmação. */
-    const editorDirtyRef = useRef(false);
 
     /* ── Nome do aluno ──
      * Best-effort e nunca bloqueia: sem ele a tela continua inteira, só com
@@ -389,6 +384,13 @@ export default function AcompanharTreinoPage() {
         [logs],
     );
 
+    /** Modo por dia da semana: o rótulo que o aluno vê é o dia. Aí o treino
+     * novo nasce no próximo dia livre e a letra NÃO acompanha a posição (ver
+     * relabelByPosition). */
+    const autoWeekday =
+        macro?.planning_mode === 'simple' &&
+        macro.simple_day_label !== 'number';
+
     /* ── Gravação ──
      * Mesmo contrato da periodização: a fase inteira vai ao servidor e a
      * resposta substitui o macrociclo desta tela (e o cache offline). */
@@ -398,11 +400,41 @@ export default function AcompanharTreinoPage() {
             const updated = req.id
                 ? await updateMesocycle(studentId, macro.id, req.id, req)
                 : await createMesocycle(studentId, macro.id, req);
+            // Síncrono, antes do re-render: a próxima gravação da fila
+            // (ver `serialized`) roda logo em seguida e precisa partir disto.
+            macroRef.current = updated;
             setMacro(updated);
             void cachePersonalMacrocycle(studentId, updated);
             return pickSavedMesocycle(updated, req.id);
         },
         [studentId, macro],
+    );
+
+    /* ── Fila de gravações ──
+     * Toda gravação desta tela reenvia a FASE inteira. Duas em voo ao mesmo
+     * tempo partiriam da mesma cópia, e a que chegasse por último apagaria a
+     * outra — ex.: adicionar um exercício e arrastar outro logo depois fazia
+     * o exercício novo sumir. Aqui elas saem uma de cada vez, e cada uma lê a
+     * fase como ficou depois da anterior (macroRef), não a do momento do
+     * toque. */
+    const macroRef = useRef(macro);
+    macroRef.current = macro;
+    const saveChainRef = useRef<Promise<unknown>>(Promise.resolve());
+    const serialized = useCallback(
+        <T,>(job: (meso: MesocycleResponse) => Promise<T>): Promise<T> => {
+            const run = saveChainRef.current.then(() => {
+                const current = macroRef.current
+                    ? pickCurrentCycle(macroRef.current)
+                    : null;
+                if (!current) {
+                    throw new Error('Plano não carregado. Recarregue a página.');
+                }
+                return job(current.meso);
+            });
+            saveChainRef.current = run.catch(() => undefined);
+            return run;
+        },
+        [],
     );
 
     /** Edição que foi para a fila offline: aplica o patch em memória e no
@@ -424,6 +456,7 @@ export default function AcompanharTreinoPage() {
                     patch,
                 );
                 void cachePersonalMacrocycle(studentId, next);
+                macroRef.current = next;
                 return next;
             });
         },
@@ -434,9 +467,11 @@ export default function AcompanharTreinoPage() {
         if (!cycle) return;
         setTrainingOrder(ids);
         try {
-            await saveTrainingOrder(
-                { meso: cycle.meso, persist: onPersistMeso },
-                ids,
+            await serialized((meso) =>
+                saveTrainingOrder(
+                    { meso, persist: onPersistMeso, relabel: !autoWeekday },
+                    ids,
+                ),
             );
         } catch (e) {
             setTrainingOrder(null);
@@ -448,10 +483,12 @@ export default function AcompanharTreinoPage() {
         if (!cycle) return;
         setExerciseOrder((prev) => ({ ...prev, [trainingId]: ids }));
         try {
-            await saveExerciseOrder(
-                { meso: cycle.meso, persist: onPersistMeso },
-                trainingId,
-                ids,
+            await serialized((meso) =>
+                saveExerciseOrder(
+                    { meso, persist: onPersistMeso },
+                    trainingId,
+                    ids,
+                ),
             );
         } catch (e) {
             setExerciseOrder((prev) => {
@@ -486,25 +523,6 @@ export default function AcompanharTreinoPage() {
         return exercise && raw ? { exercise, siblings, raw } : null;
     }, [openExerciseId, selectedTraining, selectedExercises]);
 
-    /** Troca o exercício aberto no card (ou fecha, com `null`), perguntando
-     * antes se o editor embutido tem alteração não salva. */
-    const switchOpenExercise = (id: string | null) => {
-        if (
-            editorDirtyRef.current &&
-            !confirm(
-                'Há alterações neste exercício que ainda não foram salvas. Sair sem salvar?',
-            )
-        ) {
-            return;
-        }
-        editorDirtyRef.current = false;
-        setOpenExerciseId(id);
-    };
-
-    const onEditorDirtyChange = useCallback((dirty: boolean) => {
-        editorDirtyRef.current = dirty;
-    }, []);
-
     /** Adicionar, excluir e trocar exercício: a fase inteira vai ao servidor
      * e a resposta substitui o plano da tela (ver trainingEditPatch.ts). */
     const editTraining = async (
@@ -513,9 +531,8 @@ export default function AcompanharTreinoPage() {
         if (!cycle) return null;
         setBusy(true);
         try {
-            return await saveTrainingEdit(
-                { meso: cycle.meso, persist: onPersistMeso },
-                mutate,
+            return await serialized((meso) =>
+                saveTrainingEdit({ meso, persist: onPersistMeso }, mutate),
             );
         } finally {
             setBusy(false);
@@ -547,16 +564,51 @@ export default function AcompanharTreinoPage() {
         }
     };
 
+    const addTraining = async () => {
+        // No modo por dia da semana o treino novo já nasce no próximo dia
+        // livre — mesma regra do editor da fase.
+        let position = -1;
+        try {
+            const saved = await editTraining((req) => {
+                position = addTrainingToMeso(req, { autoWeekday });
+            });
+            const created = saved?.trainings[position];
+            if (created) setSelectedTrainingId(created.id);
+            showSuccess(
+                created
+                    ? `Treino ${created.reference} criado. Adicione os exercícios.`
+                    : 'Treino criado.',
+            );
+        } catch (e) {
+            showError((e as Error).message);
+        }
+    };
+
     const confirmDelete = async () => {
-        if (!selectedTraining || !pendingDelete) return;
+        if (!pendingDelete) return;
         const target = pendingDelete;
         setPendingDelete(null);
         try {
+            if (target.kind === 'training') {
+                await editTraining((req) =>
+                    removeTrainingFromMeso(req, target.id, {
+                        relabel: !autoWeekday,
+                    }),
+                );
+                // O treino escolhido (ou o exercício aberto dele) deixou de
+                // existir: volta ao padrão em vez de apontar para o nada.
+                if (selectedTraining?.id === target.id) {
+                    setSelectedTrainingId(null);
+                    setOpenExerciseId(null);
+                }
+                showSuccess(`${target.name} excluído.`);
+                return;
+            }
+            if (!selectedTraining) return;
             await editTraining((req) =>
                 removeExerciseFromTraining(req, selectedTraining.id, target.id),
             );
             if (openExerciseId === target.id) {
-                editorDirtyRef.current = false;
                 setOpenExerciseId(null);
             }
             showSuccess(`${target.name} excluído do treino.`);
@@ -588,7 +640,6 @@ export default function AcompanharTreinoPage() {
                 .find((t) => t.id === selectedTraining.id)
                 ?.exercises[position]?.id;
             if (openExerciseId === exerciseId) {
-                editorDirtyRef.current = false;
                 setOpenExerciseId(newId ?? null);
             }
             showSuccess(`Trocado por ${item.name}.`);
@@ -597,25 +648,32 @@ export default function AcompanharTreinoPage() {
         }
     };
 
-    /** Gravação do editor embutido no card: o exercício inteiro, pelo mesmo
-     * caminho do ajuste rápido — inclusive a fila offline. */
-    const saveOpenExercise = async (patch: ExerciseRequest) => {
-        await patchOpenExercise(patch);
-    };
-
-    const patchOpenExercise = async (patch: Partial<ExerciseRequest>) => {
-        if (!cycle || !selectedTraining || !openExerciseId || !macro) return;
-        await saveExercisePatch(
-            {
-                meso: cycle.meso,
-                trainingId: selectedTraining.id,
-                exerciseId: openExerciseId,
-                persist: onPersistMeso,
-                studentId,
-                planningId: macro.id,
-                onQueued: onPrescriptionQueued,
-            },
-            patch,
+    /** Grava campos de UM exercício do treino aberto, pelo caminho do ajuste
+     * rápido — inclusive a fila offline. O id vem de quem chama, e não do
+     * card aberto: o editor embutido grava ao FECHAR o card, quando o card
+     * aberto já é outro (ou nenhum). */
+    const patchExercise = async (
+        exerciseId: string,
+        patch: Partial<ExerciseRequest>,
+    ) => {
+        if (!cycle || !selectedTraining || !macro) return;
+        // Capturados no toque: quando a vez desta gravação chegar, a tela já
+        // pode estar em outro treino.
+        const trainingId = selectedTraining.id;
+        const planningId = macro.id;
+        await serialized((meso) =>
+            saveExercisePatch(
+                {
+                    meso,
+                    trainingId,
+                    exerciseId,
+                    persist: onPersistMeso,
+                    studentId,
+                    planningId,
+                    onQueued: onPrescriptionQueued,
+                },
+                patch,
+            ),
         );
     };
 
@@ -744,7 +802,23 @@ export default function AcompanharTreinoPage() {
                     </p>
                 ) : (
                     <>
-                        <h2 className={s.sectionTitle}>Treino de hoje</h2>
+                        <div className={s.sectionHeader}>
+                            <h2 className={s.sectionTitle}>
+                                Treinos da semana
+                            </h2>
+                            {!isOfflineData && (
+                                <button
+                                    type="button"
+                                    className={s.btnAdd}
+                                    onClick={() => void addTraining()}
+                                    disabled={busy}
+                                    aria-label="Adicionar treino"
+                                    title="Criar um treino novo nesta fase"
+                                >
+                                    <FiPlus /> Treino
+                                </button>
+                            )}
+                        </div>
                         <SortableList
                             ids={trainings.map((t) => t.id)}
                             onReorder={(ids) => void reorderTrainings(ids)}
@@ -764,31 +838,58 @@ export default function AcompanharTreinoPage() {
                                             trainings.length < 2
                                         }
                                     >
-                                        <button
-                                            type="button"
-                                            className={`${s.trainingCard}${active ? ` ${s.trainingCardActive}` : ''}`}
-                                            onClick={() =>
-                                                setSelectedTrainingId(t.id)
-                                            }
-                                            aria-pressed={active}
-                                        >
-                                            <span className={s.trainingRef}>
-                                                Treino {t.reference}
-                                            </span>
-                                            <span className={s.trainingMeta}>
-                                                {t.exercises?.length ?? 0}{' '}
-                                                {(t.exercises?.length ?? 0) ===
-                                                1
-                                                    ? 'exercício'
-                                                    : 'exercícios'}
-                                            </span>
-                                            {done && (
-                                                <span className={s.doneTag}>
-                                                    <FiCheckCircle /> Feito
-                                                    nesta semana
+                                        <div className={s.trainingCardWrap}>
+                                            <button
+                                                type="button"
+                                                className={`${s.trainingCard}${active ? ` ${s.trainingCardActive}` : ''}`}
+                                                onClick={() =>
+                                                    setSelectedTrainingId(t.id)
+                                                }
+                                                aria-pressed={active}
+                                            >
+                                                <span className={s.trainingRef}>
+                                                    Treino {t.reference}
                                                 </span>
-                                            )}
-                                        </button>
+                                                <span
+                                                    className={s.trainingMeta}
+                                                >
+                                                    {t.exercises?.length ?? 0}{' '}
+                                                    {(t.exercises?.length ??
+                                                        0) === 1
+                                                        ? 'exercício'
+                                                        : 'exercícios'}
+                                                </span>
+                                                {done && (
+                                                    <span className={s.doneTag}>
+                                                        <FiCheckCircle /> Feito
+                                                        nesta semana
+                                                    </span>
+                                                )}
+                                            </button>
+                                            {/* Fora do botão do card, para não
+                                                aninhar botões. */}
+                                            {!isOfflineData &&
+                                                trainings.length > 1 && (
+                                                    <button
+                                                        type="button"
+                                                        className={
+                                                            s.trainingCardClose
+                                                        }
+                                                        onClick={() =>
+                                                            setPendingDelete({
+                                                                kind: 'training',
+                                                                id: t.id,
+                                                                name: `Treino ${t.reference}`,
+                                                            })
+                                                        }
+                                                        disabled={busy}
+                                                        aria-label={`Excluir treino ${t.reference}`}
+                                                        title="Excluir este treino"
+                                                    >
+                                                        <FiX />
+                                                    </button>
+                                                )}
+                                        </div>
                                     </SortableItem>
                                 );
                             })}
@@ -798,7 +899,8 @@ export default function AcompanharTreinoPage() {
                             <>
                                 <div className={s.sectionHeader}>
                                     <h2 className={s.sectionTitle}>
-                                        Série prescrita
+                                        Exercícios do Treino{' '}
+                                        {selectedTraining.reference}
                                     </h2>
                                     {!isOfflineData && (
                                         <div className={s.headerActions}>
@@ -814,27 +916,12 @@ export default function AcompanharTreinoPage() {
                                             >
                                                 <FiPlus /> Exercício
                                             </button>
-                                            <button
-                                                type="button"
-                                                className={s.btnBack}
-                                                onClick={() =>
-                                                    setEditorFocus({
-                                                        trainingId:
-                                                            selectedTraining.id,
-                                                    })
-                                                }
-                                                title="Agrupar em bi-set, prescrição geral, nome e dia do treino"
-                                            >
-                                                <FiEdit2 /> Editar treino
-                                            </button>
                                         </div>
                                     )}
                                 </div>
                                 <p className={s.hint}>
-                                    Toque no exercício para ver e editar tudo
-                                    nele. <FiRepeat aria-hidden /> troca pelo
-                                    da biblioteca, <FiX aria-hidden /> exclui, e
-                                    a alça ⠿ muda a ordem.
+                                    Toque no exercício para ver e editar. A
+                                    alça ⠿ muda a ordem.
                                 </p>
                                 <SortableList
                                     ids={exerciseBlocks.map(blockId)}
@@ -873,7 +960,7 @@ export default function AcompanharTreinoPage() {
                                                             s.exerciseOpen
                                                         }
                                                         onClick={() =>
-                                                            switchOpenExercise(
+                                                            setOpenExerciseId(
                                                                 ex.id,
                                                             )
                                                         }
@@ -958,28 +1045,11 @@ export default function AcompanharTreinoPage() {
                                                         >
                                                             <button
                                                                 type="button"
-                                                                className={
-                                                                    s.iconBtn
-                                                                }
-                                                                onClick={() =>
-                                                                    setPicker({
-                                                                        mode: 'replace',
-                                                                        exerciseId:
-                                                                            ex.id,
-                                                                    })
-                                                                }
-                                                                disabled={busy}
-                                                                aria-label={`Trocar ${ex.name}`}
-                                                                title="Trocar por outro exercício da biblioteca, mantendo séries, carga e posição"
-                                                            >
-                                                                <FiRepeat />
-                                                            </button>
-                                                            <button
-                                                                type="button"
                                                                 className={`${s.iconBtn} ${s.iconBtnDanger}`}
                                                                 onClick={() =>
                                                                     setPendingDelete(
                                                                         {
+                                                                            kind: 'exercise',
                                                                             id: ex.id,
                                                                             name: ex.name,
                                                                         },
@@ -1084,21 +1154,23 @@ export default function AcompanharTreinoPage() {
             {openExerciseView && (
                 <ExerciseDetailCard
                     exercise={openExerciseView.exercise}
-                    onClose={() => switchOpenExercise(null)}
+                    onClose={() => setOpenExerciseId(null)}
                     nextInGroup={nextInSameGroup(
                         openExerciseView.exercise,
                         openExerciseView.siblings,
                     )}
                     onSelectExercise={(exercise) =>
-                        switchOpenExercise(exercise.id)
+                        setOpenExerciseId(exercise.id)
                     }
                     // readOnly: anotações e registro de carga do card são
                     // "/me/..." — do usuário logado, o personal. A prescrição
                     // do aluno sai pelos callbacks e pelo editor abaixo.
                     readOnly
-                    onPrescribeSeries={(patch) => patchOpenExercise(patch)}
+                    onPrescribeSeries={(patch) =>
+                        patchExercise(openExerciseView.raw.id, patch)
+                    }
                     onPrescribeWeight={(weightKg) =>
-                        patchOpenExercise({
+                        patchExercise(openExerciseView.raw.id, {
                             load_kg: weightKg > 0 ? weightKg : undefined,
                         })
                     }
@@ -1108,21 +1180,21 @@ export default function AcompanharTreinoPage() {
                             // bi-set não pode levar o rascunho do anterior.
                             key={openExerciseView.raw.id}
                             exercise={openExerciseView.raw}
-                            onSave={saveOpenExercise}
-                            onDirtyChange={onEditorDirtyChange}
-                            // Trocar grava na hora e não entra na fila
-                            // offline (ver trainingEditPatch.ts).
-                            onReplace={
-                                isOfflineData
-                                    ? undefined
-                                    : () =>
-                                          setPicker({
-                                              mode: 'replace',
-                                              exerciseId:
-                                                  openExerciseView.raw.id,
-                                          })
+                            onSave={(patch) =>
+                                patchExercise(openExerciseView.raw.id, patch)
                             }
                         />
+                    }
+                    // Trocar grava na hora e não entra na fila offline (ver
+                    // trainingEditPatch.ts): sem rede, sem o botão.
+                    onReplace={
+                        isOfflineData
+                            ? undefined
+                            : () =>
+                                  setPicker({
+                                      mode: 'replace',
+                                      exerciseId: openExerciseView.raw.id,
+                                  })
                     }
                 />
             )}
@@ -1159,7 +1231,11 @@ export default function AcompanharTreinoPage() {
                 <Modal
                     open
                     onClose={() => setPendingDelete(null)}
-                    title="Excluir exercício?"
+                    title={
+                        pendingDelete.kind === 'training'
+                            ? 'Excluir treino?'
+                            : 'Excluir exercício?'
+                    }
                     footer={
                         <div className={s.confirmActions}>
                             <button
@@ -1180,29 +1256,24 @@ export default function AcompanharTreinoPage() {
                     }
                 >
                     <p className={s.confirmText}>
-                        <strong>{pendingDelete.name}</strong> sai do treino{' '}
-                        {selectedTraining?.reference} do aluno. As cargas que
-                        ele já registrou continuam no histórico, mas o
-                        exercício deixa de aparecer no treino.
+                        {pendingDelete.kind === 'training' ? (
+                            <>
+                                <strong>{pendingDelete.name}</strong> e todos
+                                os exercícios dele saem do plano do aluno. O
+                                que ele já registrou continua no histórico,
+                                mas o treino deixa de aparecer para ele.
+                            </>
+                        ) : (
+                            <>
+                                <strong>{pendingDelete.name}</strong> sai do
+                                treino {selectedTraining?.reference} do aluno.
+                                As cargas que ele já registrou continuam no
+                                histórico, mas o exercício deixa de aparecer no
+                                treino.
+                            </>
+                        )}
                     </p>
                 </Modal>
-            )}
-
-            {editorFocus && cycle && (
-                <MesocycleFormModal
-                    mode="edit"
-                    meso={cycle.meso}
-                    order={cycle.meso.order}
-                    focus={editorFocus}
-                    onClose={() => setEditorFocus(null)}
-                    onPersist={onPersistMeso}
-                    simpleMode={macro.planning_mode === 'simple'}
-                    dayLabelStyle={
-                        macro.simple_day_label === 'number'
-                            ? 'number'
-                            : 'weekday'
-                    }
-                />
             )}
 
             {loggerOpen && cycle && selectedTraining && (

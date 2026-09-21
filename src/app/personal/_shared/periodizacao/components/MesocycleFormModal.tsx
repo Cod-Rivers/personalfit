@@ -18,6 +18,7 @@ import {
     localExerciseToLog,
     makeDefaultMicrocycles,
     nextFreeWeekday,
+    relabelByPosition,
     responseMicroToLocal,
     responseToLocal,
     syncMicrocyclesByDuration,
@@ -428,10 +429,15 @@ export default function MesocycleFormModal({
 
     const removeTraining = useCallback(
         (tid: string) => {
-            setLocalTrainings((prev) => prev.filter((t) => t._id !== tid));
+            setLocalTrainings((prev) => {
+                const rest = prev.filter((t) => t._id !== tid);
+                // Por dia da semana o rótulo que vale é o dia (ver
+                // relabelByPosition).
+                return autoWeekday ? rest : relabelByPosition(rest);
+            });
             requestSave();
         },
-        [requestSave],
+        [autoWeekday, requestSave],
     );
 
     const duplicateTraining = useCallback(
@@ -661,13 +667,14 @@ export default function MesocycleFormModal({
         (order: string[]) => {
             setLocalTrainings((prev) => {
                 const byId = new Map(prev.map((t) => [t._id, t]));
-                return order
+                const ordered = order
                     .map((id) => byId.get(id))
                     .filter((t): t is LocalTraining => Boolean(t));
+                return autoWeekday ? ordered : relabelByPosition(ordered);
             });
             requestSave();
         },
-        [requestSave],
+        [autoWeekday, requestSave],
     );
 
     const reorderExercises = useCallback(

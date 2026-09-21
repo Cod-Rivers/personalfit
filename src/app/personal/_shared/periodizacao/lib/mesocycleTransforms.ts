@@ -46,6 +46,27 @@ export const METHODOLOGIES = [
 ];
 export const NEXT_REF = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 
+/**
+ * A letra acompanha a POSIÇÃO: depois de arrastar ou excluir, o primeiro
+ * treino volta a ser A, o segundo B… — sem o personal renomear um a um.
+ *
+ * Só quando TODOS os treinos usam letras (A–H): um rótulo digitado à mão
+ * ("Peito", "Superiores") é escolha do personal e não pode ser sobrescrito.
+ * O histórico do aluno, que se liga ao treino pela letra, é renomeado junto
+ * pelo servidor (ver training-ref-renames.go).
+ */
+export function relabelByPosition<T extends { reference: string }>(
+    trainings: T[],
+): T[] {
+    if (!trainings.every((t) => NEXT_REF.includes(t.reference))) {
+        return trainings;
+    }
+    return trainings.map((t, i) => {
+        const reference = NEXT_REF[i] ?? String(i + 1);
+        return reference === t.reference ? t : { ...t, reference };
+    });
+}
+
 // Dia da semana: mesma convenção usada em AppointmentRecurrence (0=domingo..6=sábado).
 // Ordem de exibição começa na segunda, como é comum no Brasil.
 export const WEEKDAYS = [

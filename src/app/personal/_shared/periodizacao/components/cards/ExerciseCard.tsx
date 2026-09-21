@@ -41,6 +41,7 @@ export default function ExerciseCard({
     onReplace,
     resolveVideoLink,
     videoPlanHint,
+    withoutQuickFields,
 }: {
     exercise: LocalExercise;
     tab: ExerciseTab;
@@ -57,8 +58,47 @@ export default function ExerciseCard({
      * o endpoint e a regra de plano do personal. */
     resolveVideoLink?: (videoUrl: string) => Promise<ResolvedVideoLink>;
     videoPlanHint?: string;
+    /** Sem séries e carga: quem usa já mostra os dois fora daqui (o card do
+     * aluno no /acompanhar, que edita os dois no topo). A aba Série some e o
+     * descanso, que morava nela, passa para Prescrição — o mesmo campo em
+     * dois lugares era o que confundia. */
+    withoutQuickFields?: boolean;
 }) {
     const ex = exercise;
+    const tabs = withoutQuickFields
+        ? EXERCISE_TABS.filter((t) => t.id !== 'serie')
+        : EXERCISE_TABS;
+
+    const restField = (
+        <div className={s.formGroup}>
+            <label className={s.formLabel}>
+                Descanso entre séries{' '}
+                <HelpTooltip
+                    text={getGlossaryTerm('descanso').short}
+                    href="/ajuda#glossario-descanso"
+                    label="Ajuda sobre descanso entre séries"
+                />
+            </label>
+            <div className={s.seriesSubfieldRow}>
+                <input
+                    type="number"
+                    min="0"
+                    step="5"
+                    value={ex.rest_seconds}
+                    onChange={(e) =>
+                        onUpdate('rest_seconds', e.target.value)
+                    }
+                    placeholder="90"
+                    className={s.smallNumInput}
+                    aria-label="Descanso em segundos"
+                />
+                <span className={s.seriesUnitLabel}>segundos</span>
+            </div>
+            <small className={s.fieldHint}>
+                Alimenta o cronômetro de descanso do aluno.
+            </small>
+        </div>
+    );
 
     return (
         <>
@@ -106,7 +146,7 @@ export default function ExerciseCard({
             </div>
 
             <div className={s.cardTabs} role="tablist">
-                {EXERCISE_TABS.map((t) => (
+                {tabs.map((t) => (
                     <button
                         key={t.id}
                         type="button"
@@ -200,48 +240,24 @@ export default function ExerciseCard({
                         )}
                     </div>
 
-                    <div className={s.formGroup}>
-                        <label className={s.formLabel}>
-                            Descanso entre séries{' '}
-                            <HelpTooltip
-                                text={getGlossaryTerm('descanso').short}
-                                href="/ajuda#glossario-descanso"
-                                label="Ajuda sobre descanso entre séries"
-                            />
-                        </label>
-                        <div className={s.seriesSubfieldRow}>
-                            <input
-                                type="number"
-                                min="0"
-                                step="5"
-                                value={ex.rest_seconds}
-                                onChange={(e) =>
-                                    onUpdate('rest_seconds', e.target.value)
-                                }
-                                placeholder="90"
-                                className={s.smallNumInput}
-                                aria-label="Descanso em segundos"
-                            />
-                            <span className={s.seriesUnitLabel}>segundos</span>
-                        </div>
-                        <small className={s.fieldHint}>
-                            Alimenta o cronômetro de descanso do aluno.
-                        </small>
-                    </div>
+                    {restField}
                 </>
             )}
 
+            {tab === 'prescricao' && withoutQuickFields && restField}
             {tab === 'prescricao' && (
                 <div className={s.prescriptionBody}>
-                    <PrescriptionNumber
-                        label="Carga"
-                        unit="kg"
-                        min="0"
-                        step="0.5"
-                        value={ex.load_kg}
-                        onChange={(v) => onUpdate('load_kg', v)}
-                        helpId="carga"
-                    />
+                    {!withoutQuickFields && (
+                        <PrescriptionNumber
+                            label="Carga"
+                            unit="kg"
+                            min="0"
+                            step="0.5"
+                            value={ex.load_kg}
+                            onChange={(v) => onUpdate('load_kg', v)}
+                            helpId="carga"
+                        />
+                    )}
                     <PrescriptionNumber
                         label="% de 1RM"
                         unit="%"

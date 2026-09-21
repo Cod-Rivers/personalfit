@@ -623,3 +623,8 @@
 ## 2026-09-21 15:06 — River (via Claude Code)
 **Resumo:** Por último, atualizo a memória deste trabalho:
 **Arquivos:** AjudaClient.tsx, ExerciseCard.tsx, ExerciseDetailCard.module.css, ExerciseDetailCard.tsx, ExerciseInlineEditor.tsx, acompanhar.module.css, mesocycleTransforms.ts, page.tsx, trainingEditPatch.test.ts, trainingEditPatch.ts
+
+## 2026-09-21 15:36 — River (via Claude Code)
+**Resumo:** Fiz as três propostas e a troca automática de letra ao arrastar. Os dois repositórios compilam e os testes passam (47 no front, incluindo 4 novos, e os novos do backend), mas ainda não testei na tela de verdade e nada foi commitado. **Letra acompanhando a posição** Hoje arrastar só muda a ordem e a letra fica com o treino: se o B vai para cima, a lista fica "B, A, C". Os registros do aluno se ligam ao treino **pela letra**, e o backend não guarda o ID do treino neles. Se o frontend trocasse só a letra, o "Treino A feito ontem" passaria a apontar para o treino que acabou de virar A. Por isso a …
+**Arquivos:** ExerciseInlineEditor.tsx, MesocycleFormModal.tsx, MesocycleSection.tsx, reorderPatch.ts, trainingEditPatch.test.ts, trainingEditPatch.ts
+**Commits:** Unifica a edicao do exercicio no card do /acompanhar e adiciona +/x

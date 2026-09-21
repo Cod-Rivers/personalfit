@@ -357,3 +357,41 @@
     color: var(--btn-text);
     font-weight: 700;
 }
+
+/* ── Card de treino com o × de excluir ──
+   O × fica FORA do botão do card (não se aninham botões) e sobre o canto. O
+   alvo é de 44px, mas o card reserva espaço à direita para o texto não
+   passar por baixo dele. */
+.trainingCardWrap {
+    position: relative;
+    width: 100%;
+}
+
+.trainingCardWrap .trainingCard {
+    padding-right: 3.25rem;
+}
+
+.trainingCardClose {
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    background: transparent;
+    border: 0;
+    border-radius: var(--radius-lg);
+    color: var(--coral);
+    cursor: pointer;
+}
+
+.trainingCardClose:active {
+    transform: scale(0.94);
+}
+
+.trainingCardClose:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

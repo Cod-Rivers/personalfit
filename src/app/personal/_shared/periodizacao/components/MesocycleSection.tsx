@@ -160,7 +160,15 @@ export default function MesocycleSection({
         if (!onPersistMeso) return;
         setTrainingOrder(ids);
         try {
-            await saveTrainingOrder({ meso, persist: onPersistMeso }, ids);
+            await saveTrainingOrder(
+                {
+                    meso,
+                    persist: onPersistMeso,
+                    // Por dia da semana o aluno vê o dia, não a letra.
+                    relabel: !(simpleMode && dayLabelStyle !== 'number'),
+                },
+                ids,
+            );
         } catch (e) {
             setTrainingOrder(null);
             showError((e as Error).message);
