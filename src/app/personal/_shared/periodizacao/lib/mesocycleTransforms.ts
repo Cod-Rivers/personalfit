@@ -423,6 +423,27 @@ export function exerciseToLocal(ex: ExerciseResponse): LocalExercise {
     };
 }
 
+/** Ajuste de séries feito no topo do card do aluno (ExerciseDetailCard) →
+ * os campos de série do formulário. Reaproveita a mesma leitura de
+ * exerciseToLocal, para o card e o editor interpretarem igual. */
+export function seriesPatchToLocal(patch: {
+    series: number[];
+    series_label?: string;
+    timed: boolean;
+}): Pick<
+    LocalExercise,
+    'series_mode' | 'series_sets' | 'series_value' | 'series_free' | 'timed'
+> {
+    const l = exerciseToLocal({ name: '', ...patch } as ExerciseResponse);
+    return {
+        series_mode: l.series_mode,
+        series_sets: l.series_sets,
+        series_value: l.series_value,
+        series_free: l.series_free,
+        timed: l.timed,
+    };
+}
+
 export function responseToLocal(trainings: TrainingResponse[]): LocalTraining[] {
     return trainings.map((t) => ({
         _id: genId(),

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     FiEdit3,
     FiCopy,
@@ -9,12 +9,20 @@ import {
     FiLink,
 } from 'react-icons/fi';
 import type {
+    ExerciseLibraryItem,
     ExerciseRequest,
     MesocycleRequest,
     MesocycleResponse,
 } from '@/libs/planningService';
 import { formatDate, weekdayLabel } from '../lib/mesocycleTransforms';
 import { saveExercisePatch } from '../lib/exercisePatch';
+import {
+    replaceExerciseInTraining,
+    saveTrainingEdit,
+} from '../lib/trainingEditPatch';
+import ExerciseInlineEditor from './ExerciseInlineEditor';
+import ExercisePicker from './ExercisePicker';
+import Modal from '@/components/system/Modal';
 import {
     reorderById,
     saveExerciseOrder,
@@ -132,7 +140,56 @@ export default function MesocycleSection({
         return exercise ? { exercise, siblings } : null;
     }, [meso, selected]);
 
-    const { showError, ToastSlot } = useToast();
+    /** O exercício aberto como veio da API — é o que o editor embutido
+     * (ExerciseInlineEditor) edita. */
+    const selectedRaw = useMemo(
+        () =>
+            selected
+                ? meso.trainings
+                      .find((t) => t.id === selected.trainingId)
+                      ?.exercises.find((e) => e.id === selected.exerciseId)
+                : undefined,
+        [meso, selected],
+    );
+
+    const { showError, showSuccess, ToastSlot } = useToast();
+
+    /* ── Gravações em fila ──
+     * Toda gravação reenvia a FASE inteira. Com o editor embutido salvando
+     * sozinho e as séries/carga no topo do card, duas gravações podem sair
+     * quase juntas; partindo do mesmo `meso`, a segunda desfaria a primeira.
+     * Aqui uma espera a outra e parte da fase como o servidor devolveu a
+     * anterior (mesoRef) — o `meso` da prop só muda no próximo render. */
+    const mesoRef = useRef(meso);
+    useEffect(() => {
+        mesoRef.current = meso;
+    }, [meso]);
+    const saveChainRef = useRef<Promise<unknown>>(Promise.resolve());
+    const serialized = useCallback(
+        <T,>(
+            job: (
+                current: MesocycleResponse,
+                persist: (req: MesocycleRequest) => Promise<unknown>,
+            ) => Promise<T>,
+        ): Promise<T> => {
+            const run = saveChainRef.current.then(() => {
+                if (!onPersistMeso) {
+                    throw new Error('Esta fase não pode ser alterada aqui.');
+                }
+                const persist = async (req: MesocycleRequest) => {
+                    const saved = await onPersistMeso(req);
+                    if (saved && typeof saved === 'object' && 'trainings' in saved) {
+                        mesoRef.current = saved as MesocycleResponse;
+                    }
+                    return saved;
+                };
+                return job(mesoRef.current, persist);
+            });
+            saveChainRef.current = run.catch(() => undefined);
+            return run;
+        },
+        [onPersistMeso],
+    );
 
     /* ── Ordem (arrastar e soltar) ──
      * A ordem nova aparece na hora e só depois vai ao servidor: o `meso` desta
@@ -160,14 +217,16 @@ export default function MesocycleSection({
         if (!onPersistMeso) return;
         setTrainingOrder(ids);
         try {
-            await saveTrainingOrder(
-                {
-                    meso,
-                    persist: onPersistMeso,
-                    // Por dia da semana o aluno vê o dia, não a letra.
-                    relabel: !(simpleMode && dayLabelStyle !== 'number'),
-                },
-                ids,
+            await serialized((current, persist) =>
+                saveTrainingOrder(
+                    {
+                        meso: current,
+                        persist,
+                        // Por dia da semana o aluno vê o dia, não a letra.
+                        relabel: !(simpleMode && dayLabelStyle !== 'number'),
+                    },
+                    ids,
+                ),
             );
         } catch (e) {
             setTrainingOrder(null);
@@ -179,10 +238,8 @@ export default function MesocycleSection({
         if (!onPersistMeso) return;
         setExerciseOrder((prev) => ({ ...prev, [trainingId]: ids }));
         try {
-            await saveExerciseOrder(
-                { meso, persist: onPersistMeso },
-                trainingId,
-                ids,
+            await serialized((current, persist) =>
+                saveExerciseOrder({ meso: current, persist }, trainingId, ids),
             );
         } catch (e) {
             setExerciseOrder((prev) => {
@@ -194,22 +251,67 @@ export default function MesocycleSection({
         }
     };
 
-    /** Grava uma alteração pontual de prescrição no exercício aberto — ver
-     * saveExercisePatch (fase inteira, IDs preservados, fila offline). */
-    const patchSelectedExercise = async (patch: Partial<ExerciseRequest>) => {
-        if (!onPersistMeso || !selected) return;
-        await saveExercisePatch(
-            {
-                meso,
-                trainingId: selected.trainingId,
-                exerciseId: selected.exerciseId,
-                persist: onPersistMeso,
-                studentId,
-                planningId,
-                onQueued: onPrescriptionQueued,
-            },
-            patch,
+    /** Grava uma alteração pontual de prescrição num exercício — ver
+     * saveExercisePatch (fase inteira, IDs preservados, fila offline). O id
+     * vem de quem chama, e não do card aberto: o editor embutido grava ao
+     * FECHAR o card, quando o aberto já é outro (ou nenhum). */
+    const patchExercise = async (
+        trainingId: string,
+        exerciseId: string,
+        patch: Partial<ExerciseRequest>,
+    ) => {
+        if (!onPersistMeso) return;
+        await serialized((current, persist) =>
+            saveExercisePatch(
+                {
+                    meso: current,
+                    trainingId,
+                    exerciseId,
+                    persist,
+                    studentId,
+                    planningId,
+                    onQueued: onPrescriptionQueued,
+                },
+                patch,
+            ),
         );
+    };
+
+    /** Troca o exercício aberto por outro da biblioteca, mantendo posição,
+     * bloco e prescrição — mesma regra do /acompanhar e do editor da fase. */
+    const [replacing, setReplacing] = useState<SelectedExercise | null>(null);
+    const replaceExercise = async (
+        target: SelectedExercise,
+        item: ExerciseLibraryItem,
+    ) => {
+        setReplacing(null);
+        let position = -1;
+        try {
+            const saved = await serialized((current, persist) =>
+                saveTrainingEdit({ meso: current, persist }, (req) => {
+                    position = replaceExerciseInTraining(
+                        req,
+                        target.trainingId,
+                        target.exerciseId,
+                        item,
+                    );
+                }),
+            );
+            // O exercício trocado nasce com id novo: o card segue para ele,
+            // achado pela posição, em vez de sumir.
+            const newId =
+                saved && typeof saved === 'object' && 'trainings' in saved
+                    ? (saved as MesocycleResponse).trainings.find(
+                          (t) => t.id === target.trainingId,
+                      )?.exercises[position]?.id
+                    : undefined;
+            setSelected(
+                newId ? { trainingId: target.trainingId, exerciseId: newId } : null,
+            );
+            showSuccess(`Trocado por ${item.name}.`);
+        } catch (e) {
+            showError((e as Error).message);
+        }
     };
 
     const canPrescribe = !!onPersistMeso;
@@ -629,19 +731,68 @@ export default function MesocycleSection({
                     readOnly
                     onPrescribeSeries={
                         canPrescribe
-                            ? (patch) => patchSelectedExercise(patch)
+                            ? (patch) =>
+                                  patchExercise(
+                                      selected.trainingId,
+                                      selected.exerciseId,
+                                      patch,
+                                  )
                             : undefined
                     }
                     onPrescribeWeight={
                         canPrescribe
                             ? (weightKg) =>
-                                  patchSelectedExercise({
-                                      load_kg:
-                                          weightKg > 0 ? weightKg : undefined,
-                                  })
+                                  patchExercise(
+                                      selected.trainingId,
+                                      selected.exerciseId,
+                                      {
+                                          load_kg:
+                                              weightKg > 0
+                                                  ? weightKg
+                                                  : undefined,
+                                      },
+                                  )
+                            : undefined
+                    }
+                    // As mesmas abas do card do /acompanhar e do editor da
+                    // fase: toda edição do exercício passa pelo mesmo card.
+                    editor={
+                        canPrescribe && selectedRaw ? (
+                            <ExerciseInlineEditor
+                                // Um editor por exercício: navegar dentro do
+                                // bi-set não pode levar o rascunho do anterior.
+                                key={selectedRaw.id}
+                                exercise={selectedRaw}
+                                onSave={(patch) =>
+                                    patchExercise(
+                                        selected.trainingId,
+                                        selectedRaw.id,
+                                        patch,
+                                    )
+                                }
+                            />
+                        ) : undefined
+                    }
+                    // Trocar grava na hora e não entra na fila offline (ver
+                    // trainingEditPatch.ts).
+                    onReplace={
+                        canPrescribe
+                            ? () => setReplacing(selected)
                             : undefined
                     }
                 />
+            )}
+            {replacing && (
+                <Modal
+                    open
+                    onClose={() => setReplacing(null)}
+                    title="Trocar exercício"
+                >
+                    <ExercisePicker
+                        onPick={(item) => void replaceExercise(replacing, item)}
+                        onClose={() => setReplacing(null)}
+                    />
+                </Modal>
             )}
         </div>
     );

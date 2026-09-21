@@ -632,3 +632,13 @@
 ## 2026-09-21 18:11 — River (via Claude Code)
 **Resumo:** Pronto, o botão de troca (⟳) voltou para a lista. Ele fica em cada linha de exercício, ao lado do ×, em [page.tsx](personalfit/src/app/personal/aluno/[id]/acompanhar/page.tsx#L1046). **Por que tinha sumido:** na rodada anterior, quando o "Trocar" foi colocado no topo do card do exercício, ele saiu da lista e ficou só dentro do card. Agora está nos dois lugares. **Como funciona:** - O toque abre a biblioteca no modo de troca. - O exercício novo entra na mesma posição e no mesmo bi-set, e fica com a mesma prescrição. - O histórico do exercício antigo não passa para o novo. - O botão fica desativ…
 **Commits:**  arrastar e soltar muda letra automaticamente
+
+## 2026-09-21 18:33 — River (via Claude Code)
+**Resumo:** O editor de treino agora mostra as etapas e diz o que fazer em seguida, tanto para o personal quanto para o aluno que monta o próprio treino. O tsc e o lint passam, e os 325 testes também (os novos cobrem a lógica do guia). Não testei no app rodando e não fiz commit. **No topo do editor (personal e aluno)** - **Indicador de etapas:** Fase → Treinos → Exercícios → Séries e carga. O aluno não tem a etapa Fase. A etapa atual fica destacada e as concluídas ganham ✓. "Séries e carga" nunca aparece como concluída, porque todo exercício já nasce com 3×10 e não dá para saber se alguém prescreveu de fa…
+**Arquivos:** AjudaClient.tsx, ExercisePicker.tsx, FlowGuide.tsx, MesocycleFormModal.tsx, PlanningNextStep.tsx, TrainingCard.tsx, TrainingsListCard.tsx, builder.module.css, flowGuide.test.ts, flowGuide.ts, page.tsx, planningNextStep.test.ts
+**Commits:** Restaura o botao Trocar exercicio na lista do /acompanhar | fix(periodizacao): confirmar exercícios marcados e não adicionados ao concluir
+
+## 2026-09-21 18:49 — River (via Claude Code)
+**Resumo:** Corrigi. Agora, no editor de treino, tocar no card do exercício mostra as mesmas abas que aparecem quando você vê o treino do aluno como personal. Ainda não testei no navegador. **Causa:** os dois lugares abrem o mesmo card de exercício. No /acompanhar a tela entrega a ele o editor com abas (Prescrição, Técnica, Mídia) e os botões de + e × de série. No editor de treino o card era aberto sem nada disso, então só mostrava o vídeo e a carga. **O que mudou** em [MesocycleFormModal.tsx](personalfit/src/app/personal/_shared/periodizacao/components/MesocycleFormModal.tsx): - **"Editar tudo neste exer…
+**Arquivos:** CHANGELOG_FRONTEND.md, mesocycleTransforms.ts
+**Commits:** feat(periodizacao): guia de etapas e dicas no fluxo de montar treino

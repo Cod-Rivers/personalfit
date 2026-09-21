@@ -21,6 +21,7 @@ import {
     relabelByPosition,
     responseMicroToLocal,
     responseToLocal,
+    seriesPatchToLocal,
     syncMicrocyclesByDuration,
     localToMesoRequest,
     type LocalExercise,
@@ -228,6 +229,9 @@ export default function MesocycleFormModal({
         siblings: ExerciseLog[];
         localId: string;
     } | null>(null);
+    /** Aba do editor completo embutido no preview (ver o ExerciseCard
+     * passado como `editor` ao ExerciseDetailCard). */
+    const [previewTab, setPreviewTab] = useState<ExerciseTab>('prescricao');
 
     const {
         register,
@@ -819,6 +823,12 @@ export default function MesocycleFormModal({
         [],
     );
 
+    /** O exercício do preview lido do estado ao vivo, não da foto tirada ao
+     * abrir: o que se muda pelas abas embutidas aparece no card na hora. */
+    const previewLocal = preview
+        ? activeTraining?.exercises.find((e) => e._id === preview.localId)
+        : undefined;
+
     const previewNextInGroup = (): ExerciseLog | null => {
         if (!preview) return null;
         const { exercise, siblings } = preview;
@@ -1319,9 +1329,9 @@ export default function MesocycleFormModal({
                 readOnly: anotações e o registro de carga do próprio aluno não
                 aparecem aqui (essas telas são "/me/..."). A carga PRESCRITA
                 continua editável direto pelo preview. */}
-            {preview && activeTraining && (
+            {preview && activeTraining && previewLocal && (
                 <ExerciseDetailCard
-                    exercise={preview.exercise}
+                    exercise={localExerciseToLog(previewLocal)}
                     onClose={() => setPreview(null)}
                     nextInGroup={previewNextInGroup()}
                     onSelectExercise={(exercise) =>
@@ -1338,14 +1348,71 @@ export default function MesocycleFormModal({
                         })
                     }
                     readOnly
+                    onPrescribeSeries={(patch) => {
+                        const fields = seriesPatchToLocal(patch);
+                        (
+                            Object.keys(fields) as (keyof typeof fields)[]
+                        ).forEach((field) =>
+                            updateExercise(
+                                activeTraining._id,
+                                preview.localId,
+                                field,
+                                fields[field],
+                            ),
+                        );
+                    }}
                     onPrescribeWeight={(weightKg) =>
                         updateExercise(
                             activeTraining._id,
                             preview.localId,
                             'load_kg',
-                            String(weightKg),
+                            weightKg > 0 ? String(weightKg) : '',
                         )
                     }
+                    // As mesmas abas do card do aluno no /acompanhar. Aqui
+                    // mexem só no estado local: a gravação segue a do
+                    // editor, ao concluir o bloco.
+                    editor={
+                        <ExerciseCard
+                            key={preview.localId}
+                            exercise={previewLocal}
+                            tab={previewTab}
+                            onTabChange={setPreviewTab}
+                            onUpdate={(field, value) =>
+                                updateExercise(
+                                    activeTraining._id,
+                                    preview.localId,
+                                    field,
+                                    value,
+                                )
+                            }
+                            onSetVideo={(url, thumb) => {
+                                updateExercise(
+                                    activeTraining._id,
+                                    preview.localId,
+                                    'video_url',
+                                    url,
+                                );
+                                updateExercise(
+                                    activeTraining._id,
+                                    preview.localId,
+                                    'video_thumb',
+                                    thumb,
+                                );
+                            }}
+                            resolveVideoLink={resolveVideoLink}
+                            videoPlanHint={videoPlanHint}
+                            withoutQuickFields
+                        />
+                    }
+                    onReplace={() => {
+                        setPreview(null);
+                        stack.push({
+                            card: 'picker',
+                            trainingId: activeTraining._id,
+                            replaceExerciseId: preview.localId,
+                        });
+                    }}
                 />
             )}
         </>
