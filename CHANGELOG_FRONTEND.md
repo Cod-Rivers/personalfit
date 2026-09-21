@@ -611,3 +611,15 @@
 **Resumo:** Sim. Nada está commitado e à espera de push: os três repositórios estão alinhados com o remoto. O que existe são alterações locais que ainda não foram commitadas, em dois deles: **Personal-fit-Back (backend):** nada pendente. **VenafitApp (Android):** 2 arquivos - [app/build.gradle.kts](VenafitApp/app/build.gradle.kts): versão subiu de `versionCode 11 / 1.0.10` para `12 / 1.0.11`. - [CHANGELOG_ANDROID.md](VenafitApp/CHANGELOG_ANDROID.md): 3 entradas novas, de 09-18 e 09-19. **personalfit (frontend):** 7 arquivos modificados e 3 novos, cerca de 850 linhas adicionadas e 700 removidas. - **Acompa…
 **Arquivos:** MesocycleSection.tsx, SortableList, TrainingCard.tsx, TrainingsListCard.tsx, builder.module.css, reorderPatch.test.ts, reorderPatch.ts
 **Commits:**  refeito a visão do aluno para o personal
+
+## 2026-09-21 13:47 — River (via Claude Code)
+**Resumo:** Um hook acabou de escrever uma entrada no changelog do backend. Vou commitar isso também, seguindo o padrão dos outros repositórios.
+**Commits:** Reordena treinos e exercicios arrastando na periodizacao e no /acompanhar
+
+## 2026-09-21 14:45 — River (via Claude Code)
+**Resumo:** Conversas do Claude Code ficam salvas só no seu computador, então não existe um link web para elas. A última conversa antes desta é a sessão `2ea52041-62b1-42f5-a5d9-f4cafbdc599f`. Ela começou hoje às 09:19 com "verifique os caminhos usados para produção de treinos e series" e depois tratou da tela do aluno vista pelo personal. Ela terminou às 14:44. Para reabrir: - **No VS Code:** abra o painel do Claude Code, clique no ícone de histórico (relógio) no topo e escolha essa conversa. - **No terminal:** ``` claude --resume 2ea52041-62b1-42f5-a5d9-f4cafbdc599f ``` Rode isso na pasta `H:\programaca…
+**Arquivos:** CHANGELOG_FRONTEND.md
+
+## 2026-09-21 15:06 — River (via Claude Code)
+**Resumo:** Por último, atualizo a memória deste trabalho:
+**Arquivos:** AjudaClient.tsx, ExerciseCard.tsx, ExerciseDetailCard.module.css, ExerciseDetailCard.tsx, ExerciseInlineEditor.tsx, acompanhar.module.css, mesocycleTransforms.ts, page.tsx, trainingEditPatch.test.ts, trainingEditPatch.ts

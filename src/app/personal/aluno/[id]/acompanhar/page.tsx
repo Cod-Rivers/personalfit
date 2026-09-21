@@ -6,11 +6,16 @@
  * viraram esta). Serve na mesa e na academia, com o aluno do lado:
  *
  * - Tocar num exercício abre o MESMO card que o aluno vê
- *   (ExerciseDetailCard), com séries e carga editáveis na hora.
- * - O lápis do exercício, ou "Editar treino", abre o editor completo já
- *   posicionado nele (MesocycleFormModal com `focus`): trocar, adicionar e
- *   remover exercício, reordenar, agrupar em bi-set, prescrição, técnica e
- *   mídia. É o mesmo editor da periodização — uma regra de gravação só.
+ *   (ExerciseDetailCard), e é nele que está TUDO do exercício: séries e carga
+ *   editáveis na hora, + e × de série, e logo abaixo as abas do editor da
+ *   fase (ExerciseInlineEditor — descanso, RPE, técnica, mídia, observações).
+ *   Antes, qualquer coisa além de séries e carga exigia "Editar treino" →
+ *   achar o exercício → abas.
+ * - Na lista: + adiciona exercícios da biblioteca, o botão de troca abre a
+ *   biblioteca para substituir, × exclui (com confirmação), e a alça ⠿
+ *   reordena.
+ * - "Editar treino" continua para o que é do treino, não de um exercício:
+ *   agrupar em bi-set, prescrição geral, nome/dia do treino.
  * - Fases e semanas continuam na periodização ("Plano completo").
  *
  * Por que não bastavam as telas antigas:
@@ -29,14 +34,17 @@
  * workout-session-controller.go.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import {
     FiArrowLeft,
     FiCheck,
     FiCheckCircle,
     FiEdit2,
+    FiPlus,
+    FiRepeat,
     FiWifiOff,
+    FiX,
 } from 'react-icons/fi';
 import {
     createMesocycle,
@@ -44,6 +52,7 @@ import {
     getStudentPlannings,
     pickActiveMicrocycle,
     updateMesocycle,
+    type ExerciseLibraryItem,
     type ExerciseRequest,
     type MacrocycleResponse,
     type MesocycleRequest,
@@ -85,6 +94,15 @@ import {
     saveExerciseOrder,
     saveTrainingOrder,
 } from '@/app/personal/_shared/periodizacao/lib/reorderPatch';
+import {
+    addExercisesToTraining,
+    removeExerciseFromTraining,
+    replaceExerciseInTraining,
+    saveTrainingEdit,
+} from '@/app/personal/_shared/periodizacao/lib/trainingEditPatch';
+import ExercisePicker from '@/app/personal/_shared/periodizacao/components/ExercisePicker';
+import ExerciseInlineEditor from '@/app/personal/_shared/periodizacao/components/ExerciseInlineEditor';
+import Modal from '@/components/system/Modal';
 import { SortableItem, SortableList } from '@/components/system/SortableList';
 import { useToast } from '@/components/system/Toast';
 import { markWorkoutStartIfNeeded } from '@/libs/workoutSessionTimer';
@@ -158,11 +176,24 @@ export default function AcompanharTreinoPage() {
     /** Exercício aberto no card do aluno (ajuste rápido). Só o ID: o card é
      * derivado do macrociclo atual, então uma gravação aparece nele na hora. */
     const [openExerciseId, setOpenExerciseId] = useState<string | null>(null);
-    /** Editor completo aberto num treino (e talvez num exercício dele). */
+    /** Editor da fase aberto num treino — agrupar, prescrição geral, nome. */
     const [editorFocus, setEditorFocus] = useState<{
         trainingId: string;
-        exerciseId?: string;
     } | null>(null);
+    /** Biblioteca aberta: para acrescentar exercícios ao treino, ou para
+     * trocar um deles. */
+    const [picker, setPicker] = useState<
+        { mode: 'add' } | { mode: 'replace'; exerciseId: string } | null
+    >(null);
+    /** Exercício esperando a confirmação de exclusão. */
+    const [pendingDelete, setPendingDelete] = useState<{
+        id: string;
+        name: string;
+    } | null>(null);
+    const [busy, setBusy] = useState(false);
+    /** Edição pendente no editor embutido no card: fechar o card, ou pular
+     * para outro exercício, sem salvar pede confirmação. */
+    const editorDirtyRef = useRef(false);
 
     /* ── Nome do aluno ──
      * Best-effort e nunca bloqueia: sem ele a tela continua inteira, só com
@@ -451,8 +482,126 @@ export default function AcompanharTreinoPage() {
         if (!openExerciseId || !selectedTraining) return null;
         const siblings = selectedExercises.map(toExerciseLog);
         const exercise = siblings.find((e) => e.id === openExerciseId);
-        return exercise ? { exercise, siblings } : null;
+        const raw = selectedExercises.find((e) => e.id === openExerciseId);
+        return exercise && raw ? { exercise, siblings, raw } : null;
     }, [openExerciseId, selectedTraining, selectedExercises]);
+
+    /** Troca o exercício aberto no card (ou fecha, com `null`), perguntando
+     * antes se o editor embutido tem alteração não salva. */
+    const switchOpenExercise = (id: string | null) => {
+        if (
+            editorDirtyRef.current &&
+            !confirm(
+                'Há alterações neste exercício que ainda não foram salvas. Sair sem salvar?',
+            )
+        ) {
+            return;
+        }
+        editorDirtyRef.current = false;
+        setOpenExerciseId(id);
+    };
+
+    const onEditorDirtyChange = useCallback((dirty: boolean) => {
+        editorDirtyRef.current = dirty;
+    }, []);
+
+    /** Adicionar, excluir e trocar exercício: a fase inteira vai ao servidor
+     * e a resposta substitui o plano da tela (ver trainingEditPatch.ts). */
+    const editTraining = async (
+        mutate: Parameters<typeof saveTrainingEdit>[1],
+    ): Promise<MesocycleResponse | null> => {
+        if (!cycle) return null;
+        setBusy(true);
+        try {
+            return await saveTrainingEdit(
+                { meso: cycle.meso, persist: onPersistMeso },
+                mutate,
+            );
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const addExercises = async (
+        items: ExerciseLibraryItem[],
+        groupTechnique?: string,
+    ) => {
+        if (!selectedTraining) return;
+        setPicker(null);
+        try {
+            await editTraining((req) =>
+                addExercisesToTraining(
+                    req,
+                    selectedTraining.id,
+                    items,
+                    groupTechnique,
+                ),
+            );
+            showSuccess(
+                items.length === 1
+                    ? `${items[0].name} adicionado ao treino.`
+                    : `${items.length} exercícios adicionados ao treino.`,
+            );
+        } catch (e) {
+            showError((e as Error).message);
+        }
+    };
+
+    const confirmDelete = async () => {
+        if (!selectedTraining || !pendingDelete) return;
+        const target = pendingDelete;
+        setPendingDelete(null);
+        try {
+            await editTraining((req) =>
+                removeExerciseFromTraining(req, selectedTraining.id, target.id),
+            );
+            if (openExerciseId === target.id) {
+                editorDirtyRef.current = false;
+                setOpenExerciseId(null);
+            }
+            showSuccess(`${target.name} excluído do treino.`);
+        } catch (e) {
+            showError((e as Error).message);
+        }
+    };
+
+    const replaceExercise = async (
+        exerciseId: string,
+        item: ExerciseLibraryItem,
+    ) => {
+        if (!selectedTraining) return;
+        setPicker(null);
+        let position = -1;
+        try {
+            const saved = await editTraining((req) => {
+                position = replaceExerciseInTraining(
+                    req,
+                    selectedTraining.id,
+                    exerciseId,
+                    item,
+                );
+            });
+            // O exercício trocado nasce com id novo (ver
+            // replaceExerciseInTraining): o card aberto nele segue para o
+            // novo, achado pela posição, em vez de sumir.
+            const newId = saved?.trainings
+                .find((t) => t.id === selectedTraining.id)
+                ?.exercises[position]?.id;
+            if (openExerciseId === exerciseId) {
+                editorDirtyRef.current = false;
+                setOpenExerciseId(newId ?? null);
+            }
+            showSuccess(`Trocado por ${item.name}.`);
+        } catch (e) {
+            showError((e as Error).message);
+        }
+    };
+
+    /** Gravação do editor embutido no card: o exercício inteiro, pelo mesmo
+     * caminho do ajuste rápido — inclusive a fila offline. */
+    const saveOpenExercise = async (patch: ExerciseRequest) => {
+        await patchOpenExercise(patch);
+    };
 
     const patchOpenExercise = async (patch: Partial<ExerciseRequest>) => {
         if (!cycle || !selectedTraining || !openExerciseId || !macro) return;
@@ -652,25 +801,40 @@ export default function AcompanharTreinoPage() {
                                         Série prescrita
                                     </h2>
                                     {!isOfflineData && (
-                                        <button
-                                            type="button"
-                                            className={s.btnBack}
-                                            onClick={() =>
-                                                setEditorFocus({
-                                                    trainingId:
-                                                        selectedTraining.id,
-                                                })
-                                            }
-                                        >
-                                            <FiEdit2 /> Editar treino
-                                        </button>
+                                        <div className={s.headerActions}>
+                                            <button
+                                                type="button"
+                                                className={s.btnAdd}
+                                                onClick={() =>
+                                                    setPicker({ mode: 'add' })
+                                                }
+                                                disabled={busy}
+                                                aria-label="Adicionar exercício"
+                                                title="Adicionar exercício da biblioteca"
+                                            >
+                                                <FiPlus /> Exercício
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className={s.btnBack}
+                                                onClick={() =>
+                                                    setEditorFocus({
+                                                        trainingId:
+                                                            selectedTraining.id,
+                                                    })
+                                                }
+                                                title="Agrupar em bi-set, prescrição geral, nome e dia do treino"
+                                            >
+                                                <FiEdit2 /> Editar treino
+                                            </button>
+                                        </div>
                                     )}
                                 </div>
                                 <p className={s.hint}>
-                                    Toque no exercício para ajustar séries e
-                                    carga na hora, ou arraste pela alça ⠿ para
-                                    mudar a ordem. O lápis abre tudo: trocar o
-                                    exercício, técnica, descanso e mais.
+                                    Toque no exercício para ver e editar tudo
+                                    nele. <FiRepeat aria-hidden /> troca pelo
+                                    da biblioteca, <FiX aria-hidden /> exclui, e
+                                    a alça ⠿ muda a ordem.
                                 </p>
                                 <SortableList
                                     ids={exerciseBlocks.map(blockId)}
@@ -709,7 +873,7 @@ export default function AcompanharTreinoPage() {
                                                             s.exerciseOpen
                                                         }
                                                         onClick={() =>
-                                                            setOpenExerciseId(
+                                                            switchOpenExercise(
                                                                 ex.id,
                                                             )
                                                         }
@@ -787,24 +951,47 @@ export default function AcompanharTreinoPage() {
                                                         </span>
                                                     </button>
                                                     {!isOfflineData && (
-                                                        <button
-                                                            type="button"
+                                                        <div
                                                             className={
-                                                                s.iconBtn
+                                                                s.rowActions
                                                             }
-                                                            onClick={() =>
-                                                                setEditorFocus({
-                                                                    trainingId:
-                                                                        selectedTraining.id,
-                                                                    exerciseId:
-                                                                        ex.id,
-                                                                })
-                                                            }
-                                                            aria-label={`Editar ${ex.name}`}
-                                                            title="Editar tudo neste exercício"
                                                         >
-                                                            <FiEdit2 />
-                                                        </button>
+                                                            <button
+                                                                type="button"
+                                                                className={
+                                                                    s.iconBtn
+                                                                }
+                                                                onClick={() =>
+                                                                    setPicker({
+                                                                        mode: 'replace',
+                                                                        exerciseId:
+                                                                            ex.id,
+                                                                    })
+                                                                }
+                                                                disabled={busy}
+                                                                aria-label={`Trocar ${ex.name}`}
+                                                                title="Trocar por outro exercício da biblioteca, mantendo séries, carga e posição"
+                                                            >
+                                                                <FiRepeat />
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                className={`${s.iconBtn} ${s.iconBtnDanger}`}
+                                                                onClick={() =>
+                                                                    setPendingDelete(
+                                                                        {
+                                                                            id: ex.id,
+                                                                            name: ex.name,
+                                                                        },
+                                                                    )
+                                                                }
+                                                                disabled={busy}
+                                                                aria-label={`Excluir ${ex.name}`}
+                                                                title="Excluir do treino"
+                                                            >
+                                                                <FiX />
+                                                            </button>
+                                                        </div>
                                                     )}
                                                 </div>
                                             );
@@ -897,17 +1084,17 @@ export default function AcompanharTreinoPage() {
             {openExerciseView && (
                 <ExerciseDetailCard
                     exercise={openExerciseView.exercise}
-                    onClose={() => setOpenExerciseId(null)}
+                    onClose={() => switchOpenExercise(null)}
                     nextInGroup={nextInSameGroup(
                         openExerciseView.exercise,
                         openExerciseView.siblings,
                     )}
                     onSelectExercise={(exercise) =>
-                        setOpenExerciseId(exercise.id)
+                        switchOpenExercise(exercise.id)
                     }
                     // readOnly: anotações e registro de carga do card são
                     // "/me/..." — do usuário logado, o personal. A prescrição
-                    // do aluno sai pelos dois callbacks abaixo.
+                    // do aluno sai pelos callbacks e pelo editor abaixo.
                     readOnly
                     onPrescribeSeries={(patch) => patchOpenExercise(patch)}
                     onPrescribeWeight={(weightKg) =>
@@ -915,7 +1102,90 @@ export default function AcompanharTreinoPage() {
                             load_kg: weightKg > 0 ? weightKg : undefined,
                         })
                     }
+                    editor={
+                        <ExerciseInlineEditor
+                            // Um editor por exercício: navegar dentro do
+                            // bi-set não pode levar o rascunho do anterior.
+                            key={openExerciseView.raw.id}
+                            exercise={openExerciseView.raw}
+                            onSave={saveOpenExercise}
+                            onDirtyChange={onEditorDirtyChange}
+                            // Trocar grava na hora e não entra na fila
+                            // offline (ver trainingEditPatch.ts).
+                            onReplace={
+                                isOfflineData
+                                    ? undefined
+                                    : () =>
+                                          setPicker({
+                                              mode: 'replace',
+                                              exerciseId:
+                                                  openExerciseView.raw.id,
+                                          })
+                            }
+                        />
+                    }
                 />
+            )}
+
+            {picker && (
+                <Modal
+                    open
+                    onClose={() => setPicker(null)}
+                    title={
+                        picker.mode === 'add'
+                            ? `Adicionar ao treino ${selectedTraining?.reference ?? ''}`
+                            : 'Trocar exercício'
+                    }
+                >
+                    {picker.mode === 'add' ? (
+                        <ExercisePicker
+                            onPickMany={(items, groupTechnique) =>
+                                void addExercises(items, groupTechnique)
+                            }
+                            onClose={() => setPicker(null)}
+                        />
+                    ) : (
+                        <ExercisePicker
+                            onPick={(item) =>
+                                void replaceExercise(picker.exerciseId, item)
+                            }
+                            onClose={() => setPicker(null)}
+                        />
+                    )}
+                </Modal>
+            )}
+
+            {pendingDelete && (
+                <Modal
+                    open
+                    onClose={() => setPendingDelete(null)}
+                    title="Excluir exercício?"
+                    footer={
+                        <div className={s.confirmActions}>
+                            <button
+                                type="button"
+                                className={s.btnBack}
+                                onClick={() => setPendingDelete(null)}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="button"
+                                className={s.btnDanger}
+                                onClick={() => void confirmDelete()}
+                            >
+                                <FiX /> Excluir
+                            </button>
+                        </div>
+                    }
+                >
+                    <p className={s.confirmText}>
+                        <strong>{pendingDelete.name}</strong> sai do treino{' '}
+                        {selectedTraining?.reference} do aluno. As cargas que
+                        ele já registrou continuam no histórico, mas o
+                        exercício deixa de aparecer no treino.
+                    </p>
+                </Modal>
             )}
 
             {editorFocus && cycle && (

@@ -1,4 +1,6 @@
 import type {
+    ExerciseRequest,
+    ExerciseResponse,
     MacrocycleResponse,
     MesocycleResponse,
     MesocycleRequest,
@@ -332,82 +334,81 @@ export function responseMicroToLocal(
     return syncMicrocyclesByDuration(mapped, durationWeeks);
 }
 
+/** Um exercício da API → estado do formulário. É a metade de responseToLocal
+ * que a tela do treino do aluno (/acompanhar) usa sozinha, para editar UM
+ * exercício sem montar a fase inteira no editor. */
+export function exerciseToLocal(ex: ExerciseResponse): LocalExercise {
+    const timed = ex.timed ?? false;
+    const seriesLabel = ex.series_label;
+    // Planos importados de PDF antes da correção no backend têm
+    // `series: null` gravado no banco.
+    const series = ex.series ?? [];
+    let mode: SeriesMode = 'reps';
+    let sets = String(series.length || 3);
+    let value = String(series[0] ?? 10);
+    let free = '';
+
+    if (seriesLabel) {
+        mode = 'free';
+        free = seriesLabel;
+    } else if (timed) {
+        mode = 'time';
+        sets = String(series.length || 3);
+        value = String(series[0] ?? 30);
+    } else {
+        mode = 'reps';
+        // se as séries forem não-uniformes, usa texto livre
+        const uniform = series.every((v) => v === series[0]);
+        if (!uniform && series.length > 0) {
+            mode = 'free';
+            free = series.join(' × ');
+        } else {
+            sets = String(series.length || 3);
+            value = String(series[0] ?? 10);
+        }
+    }
+
+    return {
+        _id: genId(),
+        id: ex.id,
+        exercise_library_id: ex.exercise_library_id,
+        name: ex.name,
+        series_mode: mode,
+        series_sets: sets,
+        series_value: value,
+        series_free: free,
+        observations: ex.comments ?? '',
+        variations: ex.variations ?? '',
+        rest_seconds: numToField(ex.rest_seconds),
+        load_kg: numToField(ex.load_kg),
+        load_percentage: numToField(ex.load_percentage),
+        tempo_seconds: numToField(ex.tempo_seconds),
+        rpe_target: numToField(ex.rpe_target),
+        muscle_group: ex.muscle_group ?? '',
+        timed,
+        video_url: ex.video_url ?? '',
+        video_thumb: ex.video_thumb ?? '',
+        group_id: ex.group_id,
+        group_technique: ex.group_technique,
+        technique: ex.technique ?? '',
+        technique_rounds: numToField(ex.technique_params?.rounds),
+        technique_reduction_pct: numToField(
+            ex.technique_params?.round_reduction_pct,
+        ),
+        technique_pause_seconds: numToField(ex.technique_params?.pause_seconds),
+        technique_extra_reps: numToField(ex.technique_params?.extra_reps),
+        technique_hold_seconds: numToField(ex.technique_params?.hold_seconds),
+        non_substitutable: triBoolToField(ex.non_substitutable),
+    };
+}
+
 export function responseToLocal(trainings: TrainingResponse[]): LocalTraining[] {
     return trainings.map((t) => ({
         _id: genId(),
         id: t.id,
         reference: t.reference,
         weekday: t.weekday,
-        exercises: t.exercises.map((ex) => {
-            const timed = ex.timed ?? false;
-            const seriesLabel = ex.series_label;
-            // Planos importados de PDF antes da correção no backend têm
-            // `series: null` gravado no banco.
-            const series = ex.series ?? [];
-            let mode: SeriesMode = 'reps';
-            let sets = String(series.length || 3);
-            let value = String(series[0] ?? 10);
-            let free = '';
-
-            if (seriesLabel) {
-                mode = 'free';
-                free = seriesLabel;
-            } else if (timed) {
-                mode = 'time';
-                sets = String(series.length || 3);
-                value = String(series[0] ?? 30);
-            } else {
-                mode = 'reps';
-                // se as séries forem não-uniformes, usa texto livre
-                const uniform = series.every((v) => v === series[0]);
-                if (!uniform && series.length > 0) {
-                    mode = 'free';
-                    free = series.join(' × ');
-                } else {
-                    sets = String(series.length || 3);
-                    value = String(series[0] ?? 10);
-                }
-            }
-
-            return {
-                _id: genId(),
-                id: ex.id,
-                exercise_library_id: ex.exercise_library_id,
-                name: ex.name,
-                series_mode: mode,
-                series_sets: sets,
-                series_value: value,
-                series_free: free,
-                observations: ex.comments ?? '',
-                variations: ex.variations ?? '',
-                rest_seconds: numToField(ex.rest_seconds),
-                load_kg: numToField(ex.load_kg),
-                load_percentage: numToField(ex.load_percentage),
-                tempo_seconds: numToField(ex.tempo_seconds),
-                rpe_target: numToField(ex.rpe_target),
-                muscle_group: ex.muscle_group ?? '',
-                timed,
-                video_url: ex.video_url ?? '',
-                video_thumb: ex.video_thumb ?? '',
-                group_id: ex.group_id,
-                group_technique: ex.group_technique,
-                technique: ex.technique ?? '',
-                technique_rounds: numToField(ex.technique_params?.rounds),
-                technique_reduction_pct: numToField(
-                    ex.technique_params?.round_reduction_pct,
-                ),
-                technique_pause_seconds: numToField(
-                    ex.technique_params?.pause_seconds,
-                ),
-                technique_extra_reps: numToField(
-                    ex.technique_params?.extra_reps,
-                ),
-                technique_hold_seconds: numToField(
-                    ex.technique_params?.hold_seconds,
-                ),
-                non_substitutable: triBoolToField(ex.non_substitutable),
-            };
-        }),
+        exercises: t.exercises.map(exerciseToLocal),
     }));
 }
 
@@ -462,89 +463,78 @@ export function localToMesoRequest(
             id: t.id,
             reference: t.reference,
             weekday: t.weekday,
-            exercises: t.exercises.map((ex) => {
-                const sets = Math.max(1, parseInt(ex.series_sets, 10) || 1);
-                const val = Math.max(0, parseInt(ex.series_value, 10) || 0);
-                let series: number[] = [];
-                let timed = false;
-                let seriesLabel: string | undefined = undefined;
-
-                if (ex.series_mode === 'reps') {
-                    series = Array(sets).fill(val);
-                    timed = false;
-                } else if (ex.series_mode === 'time') {
-                    series = Array(sets).fill(val);
-                    timed = true;
-                } else {
-                    // free mode: envia séries vazias e guarda no series_label
-                    series = [];
-                    timed = false;
-                    seriesLabel = ex.series_free || undefined;
-                }
-
-                return {
-                    id: ex.id,
-                    exercise_library_id: ex.exercise_library_id,
-                    name: ex.name,
-                    series,
-                    variations: ex.variations,
-                    comments: ex.observations,
-                    series_label: seriesLabel,
-                    video_url: ex.video_url,
-                    video_thumb: ex.video_thumb,
-                    timed,
-                    // Limites espelham os tipos do domínio Go (uint16/uint8/float64)
-                    // — ver training.Exercise em protocol.go.
-                    rest_seconds: fieldToNum(ex.rest_seconds, {
-                        min: 0,
-                        max: 65535,
-                    }),
-                    load_kg: fieldToNum(ex.load_kg, {
-                        min: 0,
-                        max: 999,
-                        decimal: true,
-                    }),
-                    load_percentage: fieldToNum(ex.load_percentage, {
-                        min: 0,
-                        max: 100,
-                    }),
-                    tempo_seconds: fieldToNum(ex.tempo_seconds, {
-                        min: 0,
-                        max: 65535,
-                    }),
-                    rpe_target: fieldToNum(ex.rpe_target, { min: 1, max: 10 }),
-                    muscle_group: ex.muscle_group || undefined,
-                    group_id: ex.group_id,
-                    group_technique: ex.group_technique,
-                    technique: ex.technique || undefined,
-                    technique_params: ex.technique
-                        ? {
-                              rounds: fieldToNum(ex.technique_rounds, {
-                                  min: 0,
-                                  max: 255,
-                              }),
-                              round_reduction_pct: fieldToNum(
-                                  ex.technique_reduction_pct,
-                                  { min: 0, max: 100 },
-                              ),
-                              pause_seconds: fieldToNum(
-                                  ex.technique_pause_seconds,
-                                  { min: 0, max: 65535 },
-                              ),
-                              extra_reps: fieldToNum(ex.technique_extra_reps, {
-                                  min: 0,
-                                  max: 255,
-                              }),
-                              hold_seconds: fieldToNum(
-                                  ex.technique_hold_seconds,
-                                  { min: 0, max: 65535 },
-                              ),
-                          }
-                        : undefined,
-                    non_substitutable: fieldToTriBool(ex.non_substitutable),
-                };
-            }),
+            exercises: t.exercises.map(localExerciseToRequest),
         })),
+    };
+}
+
+/** Estado do formulário → exercício do request. A outra metade de
+ * exerciseToLocal; localToMesoRequest usa esta mesma função, então o que o
+ * /acompanhar grava é o que o editor da fase gravaria. */
+export function localExerciseToRequest(ex: LocalExercise): ExerciseRequest {
+    const sets = Math.max(1, parseInt(ex.series_sets, 10) || 1);
+    const val = Math.max(0, parseInt(ex.series_value, 10) || 0);
+    let series: number[] = [];
+    let timed = false;
+    let seriesLabel: string | undefined = undefined;
+
+    if (ex.series_mode === 'reps') {
+        series = Array(sets).fill(val);
+        timed = false;
+    } else if (ex.series_mode === 'time') {
+        series = Array(sets).fill(val);
+        timed = true;
+    } else {
+        // free mode: envia séries vazias e guarda no series_label
+        series = [];
+        timed = false;
+        seriesLabel = ex.series_free || undefined;
+    }
+
+    return {
+        id: ex.id,
+        exercise_library_id: ex.exercise_library_id,
+        name: ex.name,
+        series,
+        variations: ex.variations,
+        comments: ex.observations,
+        series_label: seriesLabel,
+        video_url: ex.video_url,
+        video_thumb: ex.video_thumb,
+        timed,
+        // Limites espelham os tipos do domínio Go (uint16/uint8/float64)
+        // — ver training.Exercise em protocol.go.
+        rest_seconds: fieldToNum(ex.rest_seconds, { min: 0, max: 65535 }),
+        load_kg: fieldToNum(ex.load_kg, { min: 0, max: 999, decimal: true }),
+        load_percentage: fieldToNum(ex.load_percentage, { min: 0, max: 100 }),
+        tempo_seconds: fieldToNum(ex.tempo_seconds, { min: 0, max: 65535 }),
+        rpe_target: fieldToNum(ex.rpe_target, { min: 1, max: 10 }),
+        muscle_group: ex.muscle_group || undefined,
+        group_id: ex.group_id,
+        group_technique: ex.group_technique,
+        technique: ex.technique || undefined,
+        technique_params: ex.technique
+            ? {
+                  rounds: fieldToNum(ex.technique_rounds, { min: 0, max: 255 }),
+                  round_reduction_pct: fieldToNum(ex.technique_reduction_pct, {
+                      min: 0,
+                      max: 100,
+                  }),
+                  pause_seconds: fieldToNum(ex.technique_pause_seconds, {
+                      min: 0,
+                      max: 65535,
+                  }),
+                  extra_reps: fieldToNum(ex.technique_extra_reps, {
+                      min: 0,
+                      max: 255,
+                  }),
+                  hold_seconds: fieldToNum(ex.technique_hold_seconds, {
+                      min: 0,
+                      max: 65535,
+                  }),
+              }
+            : undefined,
+        non_substitutable: fieldToTriBool(ex.non_substitutable),
     };
 }
 

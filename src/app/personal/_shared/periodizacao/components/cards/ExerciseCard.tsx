@@ -47,7 +47,9 @@ export default function ExerciseCard({
     onTabChange: (tab: ExerciseTab) => void;
     onUpdate: (field: UpdateField, value: string | boolean) => void;
     onSetVideo: (videoUrl: string, videoThumb: string) => void;
-    onPreview: () => void;
+    /** Ausente = sem a miniatura clicável (ex.: o editor embutido no próprio
+     * card do aluno, que já está mostrando o vídeo logo acima). */
+    onPreview?: () => void;
     /** Troca por outro exercício da biblioteca mantendo posição e prescrição.
      * Ausente = sem botão (ex.: telas que não têm o picker). */
     onReplace?: () => void;
@@ -61,27 +63,29 @@ export default function ExerciseCard({
     return (
         <>
             <div className={s.exerciseCardHeader}>
-                <button
-                    type="button"
-                    className={s.exerciseRowThumbBtn}
-                    title={`Ver vídeo e detalhes de ${ex.name || 'exercício'}`}
-                    aria-label={`Ver vídeo e detalhes de ${ex.name || 'exercício'}`}
-                    onClick={onPreview}
-                >
-                    <ExerciseThumbnail
-                        name={ex.name || 'Exercício'}
-                        videoThumb={ex.video_thumb}
-                        videoUrl={ex.video_url}
-                        width={56}
-                        height={56}
-                        borderRadius={10}
-                        captureFrame={false}
-                        lazyCapture
-                    />
-                    <span className={s.exerciseRowThumbPlay} aria-hidden>
-                        <FiPlay />
-                    </span>
-                </button>
+                {onPreview && (
+                    <button
+                        type="button"
+                        className={s.exerciseRowThumbBtn}
+                        title={`Ver vídeo e detalhes de ${ex.name || 'exercício'}`}
+                        aria-label={`Ver vídeo e detalhes de ${ex.name || 'exercício'}`}
+                        onClick={onPreview}
+                    >
+                        <ExerciseThumbnail
+                            name={ex.name || 'Exercício'}
+                            videoThumb={ex.video_thumb}
+                            videoUrl={ex.video_url}
+                            width={56}
+                            height={56}
+                            borderRadius={10}
+                            captureFrame={false}
+                            lazyCapture
+                        />
+                        <span className={s.exerciseRowThumbPlay} aria-hidden>
+                            <FiPlay />
+                        </span>
+                    </button>
+                )}
                 <input
                     value={ex.name}
                     onChange={(e) => onUpdate('name', e.target.value)}

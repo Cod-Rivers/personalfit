@@ -110,3 +110,89 @@
     font-size: 0.75rem;
     color: var(--text-muted);
 }
+
+/* ── + / × de série (personal) ──
+   Alvo de 44px: é tocado de pé, na academia. */
+.setStepRow {
+    display: flex;
+    gap: 0.4rem;
+    margin-bottom: 0.25rem;
+}
+.setStepBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--mint);
+    background: var(--surface-2);
+    color: var(--mint);
+    font-size: 1.1rem;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.setStepBtnRemove {
+    border-color: var(--border-mid);
+    color: var(--coral);
+}
+.setStepBtn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+.setStepBtn:focus-visible,
+.setStepDanger:focus-visible,
+.setStepCancel:focus-visible {
+    outline: 2px solid var(--mint);
+    outline-offset: 2px;
+}
+.setStepConfirm {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 0.25rem;
+    font-size: 0.85rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+}
+.setStepDanger,
+.setStepCancel {
+    min-height: 2.75rem;
+    padding: 0 0.9rem;
+    border-radius: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+.setStepDanger {
+    border: 1px solid var(--coral);
+    background: var(--coral);
+    color: var(--btn-text);
+}
+.setStepCancel {
+    border: 1px solid var(--border-mid);
+    background: var(--surface-2);
+    color: var(--text-primary);
+}
+
+/* ── Editor completo embutido (personal) ──
+   .detailsSection centraliza e aperta a linha dos <p>; o formulário precisa
+   do contrário: largura inteira, texto à esquerda, entrelinha normal. */
+.editorSection {
+    align-self: stretch;
+    width: 100%;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-subtle);
+    text-align: left;
+}
+.editorSection p {
+    line-height: 1.4;
+}
+.editorTitle {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 0.5rem;
+}

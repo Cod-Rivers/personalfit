@@ -1060,11 +1060,17 @@ const personalSections: HelpSection[] = [
                     abre uma tela só, com o treino da semana corrente do{' '}
                     <GlossaryLink id="macrociclo">macrociclo</GlossaryLink>{' '}
                     ativo. Toque num exercício para abrir o mesmo cartão que
-                    o aluno vê e mudar séries e carga na hora. O lápis (ou{' '}
-                    <strong>Editar treino</strong>) abre a edição completa já
-                    naquele ponto: trocar o exercício por outro da
-                    biblioteca, adicionar, remover, reordenar, agrupar em
-                    bi-set, descanso, técnica e vídeo. No fim da sessão,{' '}
+                    o aluno vê, com tudo dele num lugar só: séries e carga na
+                    hora, <strong>+</strong> e <strong>×</strong> para
+                    acrescentar ou tirar uma série e, logo abaixo, descanso,
+                    RPE, técnica, vídeo e observações. Na lista,{' '}
+                    <strong>+ Exercício</strong> adiciona da biblioteca, o
+                    botão de troca substitui por outro mantendo séries e
+                    carga, e o <strong>×</strong> exclui (o app pede
+                    confirmação). <strong>Editar treino</strong> fica para o
+                    que é do treino inteiro, como agrupar em bi-set. Só quem
+                    montou a série edita: o personal vinculado, ou o próprio
+                    aluno quando ele mesmo montou o treino. No fim da sessão,{' '}
                     <strong>Finalizar treino</strong> registra no histórico
                     do aluno. Fases e semanas ficam em{' '}
                     <strong>Plano completo</strong>.

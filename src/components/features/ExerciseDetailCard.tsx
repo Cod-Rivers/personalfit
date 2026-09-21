@@ -12,6 +12,7 @@ import {
     FiChevronRight,
     FiAlertCircle,
     FiLock,
+    FiPlus,
     FiX,
 } from 'react-icons/fi';
 import { ExerciseLog } from './types';
@@ -101,6 +102,10 @@ interface ExerciseDetailCardProps {
      * é um número só e as séries mexem em três campos do exercício
      * (series/series_label/timed) — ver libs/seriesPrescription.ts. */
     onPrescribeSeries?: (patch: SeriesPrescriptionPatch) => void | Promise<void>;
+    /** Edição completa do exercício, renderizada dentro do card (só na tela do
+     * treino do aluno, pelo personal). O card não sabe gravar a fase — quem
+     * passa o editor é que sabe; ver ExerciseInlineEditor. */
+    editor?: React.ReactNode;
 }
 
 const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
@@ -114,6 +119,7 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
     readOnly = false,
     onPrescribeWeight,
     onPrescribeSeries,
+    editor,
 }) => {
     // --- Estados ---
     const [timerValue, setTimerValue] = useState<number>(
@@ -160,6 +166,8 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
         'idle' | 'saving' | 'saved' | 'saved-offline' | 'error'
     >('idle');
     const [prescriptionError, setPrescriptionError] = useState('');
+    // Tirar uma série pede confirmação (ver handleRemoveSetConfirmed).
+    const [confirmRemoveSet, setConfirmRemoveSet] = useState(false);
     // --- Efeitos ---
     Racional: useEffect(() => {
         // Lógica do cronômetro
@@ -197,6 +205,7 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
     useEffect(() => {
         setSeriesDraft(toSeriesDraft(exercise));
         setIsSeriesEditing(false);
+        setConfirmRemoveSet(false);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [exercise.id, currentSeriesSignature]);
 
@@ -603,6 +612,41 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
         if (event.key === 'Escape') handleSeriesEditCancel();
     };
 
+    /* ── + / × de série ──
+     * Só para prescrição em séries (N × reps ou N × segundos): texto livre
+     * não tem "uma série" para acrescentar ou tirar. A série nova repete a
+     * última — em 12/10/8, a quarta é 8, que é o que o personal faria à mão. */
+    const currentSeries = exercise.series ?? [];
+    const canStepSets =
+        !!onPrescribeSeries &&
+        !exercise.series_label &&
+        currentSeries.length > 0;
+
+    const handleAddSet = () => {
+        if (!onPrescribeSeries || currentSeries.length >= MAX_SETS) return;
+        setConfirmRemoveSet(false);
+        const last = currentSeries[currentSeries.length - 1];
+        void runPrescriptionSave(() =>
+            onPrescribeSeries({
+                series: [...currentSeries, last],
+                timed: !!exercise.timed,
+                series_label: undefined,
+            }),
+        );
+    };
+
+    const handleRemoveSetConfirmed = () => {
+        setConfirmRemoveSet(false);
+        if (!onPrescribeSeries || currentSeries.length <= 1) return;
+        void runPrescriptionSave(() =>
+            onPrescribeSeries({
+                series: currentSeries.slice(0, -1),
+                timed: !!exercise.timed,
+                series_label: undefined,
+            }),
+        );
+    };
+
     return (
         <>
             {/* Modal Principal do Exercício */}
@@ -854,6 +898,7 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                                 </button>
                                             </div>
                                         ) : onPrescribeSeries ? (
+                                            <>
                                             <button
                                                 type="button"
                                                 className={styles.valueBoxBtn}
@@ -879,6 +924,91 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                                     />
                                                 </svg>
                                             </button>
+                                            {canStepSets &&
+                                                (confirmRemoveSet ? (
+                                                    <div
+                                                        className={
+                                                            styles.setStepConfirm
+                                                        }
+                                                        role="alertdialog"
+                                                        aria-label="Confirmar remoção de série"
+                                                    >
+                                                        <span>
+                                                            Remover a última
+                                                            série?
+                                                        </span>
+                                                        <button
+                                                            type="button"
+                                                            className={
+                                                                styles.setStepDanger
+                                                            }
+                                                            onClick={
+                                                                handleRemoveSetConfirmed
+                                                            }
+                                                        >
+                                                            Remover
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            className={
+                                                                styles.setStepCancel
+                                                            }
+                                                            onClick={() =>
+                                                                setConfirmRemoveSet(
+                                                                    false,
+                                                                )
+                                                            }
+                                                        >
+                                                            Cancelar
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <div
+                                                        className={
+                                                            styles.setStepRow
+                                                        }
+                                                    >
+                                                        <button
+                                                            type="button"
+                                                            className={
+                                                                styles.setStepBtn
+                                                            }
+                                                            onClick={
+                                                                handleAddSet
+                                                            }
+                                                            disabled={
+                                                                currentSeries.length >=
+                                                                    MAX_SETS ||
+                                                                prescriptionStatus ===
+                                                                    'saving'
+                                                            }
+                                                            aria-label="Adicionar uma série"
+                                                            title="Adicionar uma série"
+                                                        >
+                                                            <FiPlus />
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            className={`${styles.setStepBtn} ${styles.setStepBtnRemove}`}
+                                                            onClick={() =>
+                                                                setConfirmRemoveSet(
+                                                                    true,
+                                                                )
+                                                            }
+                                                            disabled={
+                                                                currentSeries.length <=
+                                                                    1 ||
+                                                                prescriptionStatus ===
+                                                                    'saving'
+                                                            }
+                                                            aria-label="Remover uma série"
+                                                            title="Remover uma série"
+                                                        >
+                                                            <FiX />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </>
                                         ) : (
                                             <div className={styles.valueBox}>
                                                 <span>
@@ -1257,6 +1387,14 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                             </strong>
                                         </p>
                                         <p>{exercise.comments}</p>
+                                    </div>
+                                )}
+                                {editor && (
+                                    <div className={styles.editorSection}>
+                                        <p className={styles.editorTitle}>
+                                            Editar tudo neste exercício
+                                        </p>
+                                        {editor}
                                     </div>
                                 )}
                                 {/* Campo de Anotações do Usuário — omitido em modo somente

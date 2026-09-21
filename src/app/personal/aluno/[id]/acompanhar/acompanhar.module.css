@@ -308,3 +308,52 @@
 .sortableSpacing {
     margin-bottom: var(--space-6);
 }
+
+/* ── Adicionar / trocar / excluir exercício direto da lista ── */
+.btnAdd {
+    composes: btnBack;
+    border-color: var(--mint);
+    color: var(--mint);
+    font-weight: 600;
+}
+
+.btnAdd:disabled,
+.iconBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Trocar e excluir, lado a lado. O .exerciseOpen ao lado tem min-width: 0 e
+   é ele que cede espaço num celular estreito — os alvos de 44px não. */
+.rowActions {
+    display: flex;
+    gap: var(--space-1);
+    flex-shrink: 0;
+}
+
+.iconBtnDanger {
+    color: var(--coral);
+}
+
+.confirmText {
+    font-size: var(--font-sm);
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin: 0;
+}
+
+.confirmActions {
+    display: flex;
+    gap: var(--space-2);
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.btnDanger {
+    composes: btnBack;
+    background: var(--coral);
+    border-color: var(--coral);
+    color: var(--btn-text);
+    font-weight: 700;
+}
