@@ -269,23 +269,11 @@ export default function StudentsTab({ state }: Props) {
                             </div>
 
                             <div className={s.studentCardBody}>
-                                <button
-                                    onClick={() =>
-                                        router.push(
-                                            `/personal/aluno/${st.id}/treino`,
-                                        )
-                                    }
-                                    className={s.ctaPrimary}
-                                >
-                                    <FiEye /> Ver Treino
-                                </button>
-
-                                {/* Atendimento presencial: abre direto no
-                                    treino da semana com o botão de finalizar.
-                                    Fica ao lado de "Ver Treino" (que leva à
-                                    periodização, a tela de MONTAR) porque é o
-                                    que o personal abre na academia, não na
-                                    mesa. */}
+                                {/* Uma tela só para o treino do aluno: ver,
+                                    ajustar qualquer exercício e finalizar a
+                                    sessão. "Ver Treino" e "Acompanhar Treino"
+                                    eram duas telas com metade das ações
+                                    cada. */}
                                 <button
                                     onClick={() =>
                                         router.push(
@@ -294,7 +282,7 @@ export default function StudentsTab({ state }: Props) {
                                     }
                                     className={s.ctaPrimary}
                                 >
-                                    <FiActivity /> Acompanhar Treino
+                                    <FiEye /> Treino do aluno
                                 </button>
 
                                 <div className={s.actionsGrid}>

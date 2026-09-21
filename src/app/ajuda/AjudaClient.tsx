@@ -769,9 +769,9 @@ const personalSections: HelpSection[] = [
                     <strong>Aguardando confirmação</strong> (o aluno ainda
                     precisa aceitar a reativação) ou <strong>Inativo</strong>.
                     Nos cartões você acessa{' '}
-                    <strong>Ver Treino</strong>, que leva direto para o
-                    treino ativo do aluno (com todo o CRUD de mesociclos e
-                    treinos), além de{' '}
+                    <strong>Treino do aluno</strong>, que abre o treino da
+                    semana dele já pronto para ajustar e finalizar, além
+                    de{' '}
                     <Link href="#periodizacao-aluno">Periodização</Link>,{' '}
                     <Link href="#plano-alimentar-personal">
                         Plano Alimentar
@@ -1056,13 +1056,18 @@ const personalSections: HelpSection[] = [
         body: (
             <>
                 <p className="mb-2">
-                    O botão <strong>Ver Treino</strong> no cartão do aluno é
-                    um atalho: ele pula direto para o{' '}
+                    O botão <strong>Treino do aluno</strong> no cartão dele
+                    abre uma tela só, com o treino da semana corrente do{' '}
                     <GlossaryLink id="macrociclo">macrociclo</GlossaryLink>{' '}
-                    ativo do aluno (ou o mais recente, se nenhum estiver
-                    ativo) já na tela de edição de mesociclos e treinos. Se o
-                    aluno ainda não tiver nenhum macrociclo, você cai na lista
-                    abaixo para criar o primeiro.
+                    ativo. Toque num exercício para abrir o mesmo cartão que
+                    o aluno vê e mudar séries e carga na hora. O lápis (ou{' '}
+                    <strong>Editar treino</strong>) abre a edição completa já
+                    naquele ponto: trocar o exercício por outro da
+                    biblioteca, adicionar, remover, reordenar, agrupar em
+                    bi-set, descanso, técnica e vídeo. No fim da sessão,{' '}
+                    <strong>Finalizar treino</strong> registra no histórico
+                    do aluno. Fases e semanas ficam em{' '}
+                    <strong>Plano completo</strong>.
                 </p>
                 <p className="mb-2">
                     Pelo cartão do aluno em <strong>Periodização</strong>{' '}

@@ -145,11 +145,11 @@ export default function RetentionTab() {
                                     className={s.btn}
                                     onClick={() =>
                                         router.push(
-                                            `/personal/aluno/${st.id}/treino`,
+                                            `/personal/aluno/${st.id}/acompanhar`,
                                         )
                                     }
                                 >
-                                    Ver treino
+                                    Treino do aluno
                                 </button>
                             </div>
                         </div>

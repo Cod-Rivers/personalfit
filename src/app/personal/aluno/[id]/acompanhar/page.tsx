@@ -1,9 +1,19 @@
 'use client';
 
 /**
- * Acompanhamento presencial — a tela que o personal abre com o aluno ao lado.
+ * Treino do aluno — a ÚNICA tela que o personal abre para ver e ajustar o
+ * treino de um aluno ("Ver Treino" e "Acompanhar Treino" eram duas telas e
+ * viraram esta). Serve na mesa e na academia, com o aluno do lado:
  *
- * Existe porque nenhuma das telas que ele usava antes servia para isso:
+ * - Tocar num exercício abre o MESMO card que o aluno vê
+ *   (ExerciseDetailCard), com séries e carga editáveis na hora.
+ * - O lápis do exercício, ou "Editar treino", abre o editor completo já
+ *   posicionado nele (MesocycleFormModal com `focus`): trocar, adicionar e
+ *   remover exercício, reordenar, agrupar em bi-set, prescrição, técnica e
+ *   mídia. É o mesmo editor da periodização — uma regra de gravação só.
+ * - Fases e semanas continuam na periodização ("Plano completo").
+ *
+ * Por que não bastavam as telas antigas:
  *
  * - "Ver como Aluno" (Header) troca para a área do aluno mas carrega o
  *   vínculo de aluno DO PRÓPRIO personal (getMyMacrocycle) — nunca o do aluno
@@ -21,12 +31,22 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { FiArrowLeft, FiCheck, FiCheckCircle, FiWifiOff } from 'react-icons/fi';
 import {
+    FiArrowLeft,
+    FiCheck,
+    FiCheckCircle,
+    FiEdit2,
+    FiWifiOff,
+} from 'react-icons/fi';
+import {
+    createMesocycle,
     getMacrocycle,
     getStudentPlannings,
     pickActiveMicrocycle,
+    updateMesocycle,
+    type ExerciseRequest,
     type MacrocycleResponse,
+    type MesocycleRequest,
     type MesocycleResponse,
     type MicrocycleResponse,
     type TrainingResponse,
@@ -36,6 +56,7 @@ import {
     type NewWorkoutLogResponse,
 } from '@/libs/workoutLogService';
 import {
+    cachePersonalMacrocycle,
     getCachedPersonalMacrocycle,
     getCachedPersonalStudents,
     getCachedStudentPlannings,
@@ -49,6 +70,16 @@ import {
 } from '@/libs/trainingTechniques';
 import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
 import WorkoutLogger from '@/components/features/WorkoutLogger';
+import ExerciseDetailCard from '@/components/features/ExerciseDetailCard';
+import type { ExerciseLog } from '@/components/features/types';
+import PersonalAnamnesisQuickView from '@/components/features/PersonalAnamnesisQuickView';
+import { toExerciseLog } from '@/libs/exerciseLog';
+import MesocycleFormModal from '@/app/personal/_shared/periodizacao/components/MesocycleFormModal';
+import { pickSavedMesocycle } from '@/app/personal/_shared/periodizacao/lib/mesocycleTransforms';
+import {
+    applyExercisePatch,
+    saveExercisePatch,
+} from '@/app/personal/_shared/periodizacao/lib/exercisePatch';
 import { useToast } from '@/components/system/Toast';
 import { markWorkoutStartIfNeeded } from '@/libs/workoutSessionTimer';
 import s from './acompanhar.module.css';
@@ -80,6 +111,19 @@ function pickCurrentCycle(macro: MacrocycleResponse): {
     return null;
 }
 
+/** Próximo exercício do mesmo bi-set/tri-set, para o card navegar dentro do
+ * bloco — mesma regra da MesocycleSection. */
+function nextInSameGroup(
+    exercise: ExerciseLog,
+    siblings: ExerciseLog[],
+): ExerciseLog | null {
+    const idx = siblings.findIndex((e) => e.id === exercise.id);
+    const next = idx === -1 ? undefined : siblings[idx + 1];
+    return next && exercise.group_id && next.group_id === exercise.group_id
+        ? next
+        : null;
+}
+
 export default function AcompanharTreinoPage() {
     const router = useRouter();
     const params = useParams<{ id: string }>();
@@ -97,6 +141,14 @@ export default function AcompanharTreinoPage() {
     const [pageError, setPageError] = useState('');
     const [isOfflineData, setIsOfflineData] = useState(false);
     const [loggerOpen, setLoggerOpen] = useState(false);
+    /** Exercício aberto no card do aluno (ajuste rápido). Só o ID: o card é
+     * derivado do macrociclo atual, então uma gravação aparece nele na hora. */
+    const [openExerciseId, setOpenExerciseId] = useState<string | null>(null);
+    /** Editor completo aberto num treino (e talvez num exercício dele). */
+    const [editorFocus, setEditorFocus] = useState<{
+        trainingId: string;
+        exerciseId?: string;
+    } | null>(null);
 
     /* ── Nome do aluno ──
      * Best-effort e nunca bloqueia: sem ele a tela continua inteira, só com
@@ -274,6 +326,70 @@ export default function AcompanharTreinoPage() {
         [logs],
     );
 
+    /* ── Gravação ──
+     * Mesmo contrato da periodização: a fase inteira vai ao servidor e a
+     * resposta substitui o macrociclo desta tela (e o cache offline). */
+    const onPersistMeso = useCallback(
+        async (req: MesocycleRequest) => {
+            if (!macro) return null;
+            const updated = req.id
+                ? await updateMesocycle(studentId, macro.id, req.id, req)
+                : await createMesocycle(studentId, macro.id, req);
+            setMacro(updated);
+            void cachePersonalMacrocycle(studentId, updated);
+            return pickSavedMesocycle(updated, req.id);
+        },
+        [studentId, macro],
+    );
+
+    /** Edição que foi para a fila offline: aplica o patch em memória e no
+     * cache, senão o card voltaria a mostrar o valor antigo. */
+    const onPrescriptionQueued = useCallback(
+        (
+            mesocycleId: string,
+            trainingId: string,
+            exerciseId: string,
+            patch: Partial<ExerciseRequest>,
+        ) => {
+            setMacro((prev) => {
+                if (!prev) return prev;
+                const next = applyExercisePatch(
+                    prev,
+                    mesocycleId,
+                    trainingId,
+                    exerciseId,
+                    patch,
+                );
+                void cachePersonalMacrocycle(studentId, next);
+                return next;
+            });
+        },
+        [studentId],
+    );
+
+    const openExerciseView = useMemo(() => {
+        if (!openExerciseId || !selectedTraining) return null;
+        const siblings = (selectedTraining.exercises ?? []).map(toExerciseLog);
+        const exercise = siblings.find((e) => e.id === openExerciseId);
+        return exercise ? { exercise, siblings } : null;
+    }, [openExerciseId, selectedTraining]);
+
+    const patchOpenExercise = async (patch: Partial<ExerciseRequest>) => {
+        if (!cycle || !selectedTraining || !openExerciseId || !macro) return;
+        await saveExercisePatch(
+            {
+                meso: cycle.meso,
+                trainingId: selectedTraining.id,
+                exerciseId: openExerciseId,
+                persist: onPersistMeso,
+                studentId,
+                planningId: macro.id,
+                onQueued: onPrescriptionQueued,
+            },
+            patch,
+        );
+    };
+
     /* ── Cronômetro da sessão ──
      * Sem isto o registro saía sempre sem duração: WorkoutLogger lê o início
      * de `workoutSessionTimer`, que o aluno carimba ao abrir um exercício no
@@ -327,21 +443,35 @@ export default function AcompanharTreinoPage() {
                     <div>
                         <h1 className={s.headerTitle}>
                             {studentName
-                                ? `Acompanhando ${studentName}`
-                                : 'Acompanhar treino'}
+                                ? `Treino de ${studentName}`
+                                : 'Treino do aluno'}
                         </h1>
                         <p className={s.headerSub}>{macro.name}</p>
                     </div>
-                    <button
-                        className={s.btnBack}
-                        onClick={() =>
-                            router.push(
-                                `/personal/aluno/${studentId}/periodizacao/${macro.id}`,
-                            )
-                        }
-                    >
-                        <FiArrowLeft /> Editar plano
-                    </button>
+                    <div className={s.headerActions}>
+                        <PersonalAnamnesisQuickView
+                            studentId={studentId}
+                            className={s.btnBack}
+                        />
+                        {/* Fases, semanas e o plano inteiro — o que não é
+                            ajuste de um treino — seguem na periodização. */}
+                        <button
+                            className={s.btnBack}
+                            onClick={() =>
+                                router.push(
+                                    `/personal/aluno/${studentId}/periodizacao/${macro.id}`,
+                                )
+                            }
+                        >
+                            Plano completo
+                        </button>
+                        <button
+                            className={s.btnBack}
+                            onClick={() => router.push('/personal')}
+                        >
+                            <FiArrowLeft /> Voltar
+                        </button>
+                    </div>
                 </div>
 
                 <div className={s.chips}>
@@ -418,9 +548,30 @@ export default function AcompanharTreinoPage() {
 
                         {selectedTraining && (
                             <>
-                                <h2 className={s.sectionTitle}>
-                                    Série prescrita
-                                </h2>
+                                <div className={s.sectionHeader}>
+                                    <h2 className={s.sectionTitle}>
+                                        Série prescrita
+                                    </h2>
+                                    {!isOfflineData && (
+                                        <button
+                                            type="button"
+                                            className={s.btnBack}
+                                            onClick={() =>
+                                                setEditorFocus({
+                                                    trainingId:
+                                                        selectedTraining.id,
+                                                })
+                                            }
+                                        >
+                                            <FiEdit2 /> Editar treino
+                                        </button>
+                                    )}
+                                </div>
+                                <p className={s.hint}>
+                                    Toque no exercício para ajustar séries e
+                                    carga na hora. O lápis abre tudo: trocar o
+                                    exercício, técnica, descanso, ordem e mais.
+                                </p>
                                 <div className={s.exerciseList}>
                                     {partitionExerciseGroups(
                                         selectedTraining.exercises ?? [],
@@ -436,6 +587,18 @@ export default function AcompanharTreinoPage() {
                                                     key={ex.id}
                                                     className={s.exerciseRow}
                                                 >
+                                                    <button
+                                                        type="button"
+                                                        className={
+                                                            s.exerciseOpen
+                                                        }
+                                                        onClick={() =>
+                                                            setOpenExerciseId(
+                                                                ex.id,
+                                                            )
+                                                        }
+                                                        aria-label={`Abrir ${ex.name}`}
+                                                    >
                                                     <ExerciseThumbnail
                                                         name={ex.name}
                                                         videoThumb={
@@ -502,6 +665,29 @@ export default function AcompanharTreinoPage() {
                                                             ? `Última: ${last}kg`
                                                             : 'Sem registro'}
                                                     </span>
+                                                    </button>
+                                                    {!isOfflineData && (
+                                                        <button
+                                                            type="button"
+                                                            className={
+                                                                s.iconBtn
+                                                            }
+                                                            onClick={() =>
+                                                                setEditorFocus(
+                                                                    {
+                                                                        trainingId:
+                                                                            selectedTraining.id,
+                                                                        exerciseId:
+                                                                            ex.id,
+                                                                    },
+                                                                )
+                                                            }
+                                                            aria-label={`Editar ${ex.name}`}
+                                                            title="Editar tudo neste exercício"
+                                                        >
+                                                            <FiEdit2 />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             );
                                         });
@@ -569,6 +755,47 @@ export default function AcompanharTreinoPage() {
                     </>
                 )}
             </div>
+
+            {openExerciseView && (
+                <ExerciseDetailCard
+                    exercise={openExerciseView.exercise}
+                    onClose={() => setOpenExerciseId(null)}
+                    nextInGroup={nextInSameGroup(
+                        openExerciseView.exercise,
+                        openExerciseView.siblings,
+                    )}
+                    onSelectExercise={(exercise) =>
+                        setOpenExerciseId(exercise.id)
+                    }
+                    // readOnly: anotações e registro de carga do card são
+                    // "/me/..." — do usuário logado, o personal. A prescrição
+                    // do aluno sai pelos dois callbacks abaixo.
+                    readOnly
+                    onPrescribeSeries={(patch) => patchOpenExercise(patch)}
+                    onPrescribeWeight={(weightKg) =>
+                        patchOpenExercise({
+                            load_kg: weightKg > 0 ? weightKg : undefined,
+                        })
+                    }
+                />
+            )}
+
+            {editorFocus && cycle && (
+                <MesocycleFormModal
+                    mode="edit"
+                    meso={cycle.meso}
+                    order={cycle.meso.order}
+                    focus={editorFocus}
+                    onClose={() => setEditorFocus(null)}
+                    onPersist={onPersistMeso}
+                    simpleMode={macro.planning_mode === 'simple'}
+                    dayLabelStyle={
+                        macro.simple_day_label === 'number'
+                            ? 'number'
+                            : 'weekday'
+                    }
+                />
+            )}
 
             {loggerOpen && cycle && selectedTraining && (
                 <WorkoutLogger

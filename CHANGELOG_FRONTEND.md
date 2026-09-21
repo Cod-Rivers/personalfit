@@ -601,3 +601,8 @@
 ## 2026-09-21 09:28 — River (via Claude Code)
 **Resumo:** Na tela "Ver Treino" o card só edita **séries e carga**. Falta checar a outra ponta: se o aluno vê a alteração na hora ou só ao recarregar.
 **Arquivos:** CHANGELOG_FRONTEND.md, WorkoutLogger.tsx, mesocycleTransforms.ts, protocolService.ts
+
+## 2026-09-21 10:56 — River (via Claude Code)
+**Resumo:** Está pronto: "Ver Treino" e "Acompanhar Treino" viraram uma tela só, com todas as edições que o personal já tinha, mais "Trocar exercício". `tsc`, os 280 testes do front (4 novos) e o build de produção passam. Não testei com o app rodando. **Sobre o seu commit das 10:35 (`refeito a visão do aluno para o personal`):** ele pegou o trabalho pela metade. Entraram as duas correções do backend e a base do editor, e o push já disparou o deploy automático. Nada quebrado foi para produção, porque o `tsc` passava naquele ponto. A tela nova, os botões, a Ajuda e a atualização automática do lado do aluno …
+**Arquivos:** AjudaClient.tsx, RetentionTab.tsx, StudentsTab.tsx, acompanhar.module.css, exercisePatch.test.ts, page.tsx
+**Commits:**  refeito a visão do aluno para o personal

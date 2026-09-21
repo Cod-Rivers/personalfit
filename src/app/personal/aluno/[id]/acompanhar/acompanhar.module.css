@@ -250,3 +250,65 @@
     color: var(--coral-dim);
     font-size: var(--font-sm);
 }
+
+/* ── Tela única de treino do aluno (ajuste rápido + editor) ── */
+.headerActions {
+    display: flex;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+.sectionHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-1);
+}
+
+.sectionHeader .sectionTitle {
+    margin: 0;
+}
+
+.hint {
+    font-size: var(--font-sm);
+    color: var(--text-muted);
+    margin: 0 0 var(--space-3);
+}
+
+/* A linha inteira abre o card do aluno; o lápis fica fora do botão para não
+   aninhar botões. */
+.exerciseOpen {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+    font: inherit;
+}
+
+.iconBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    /* Alvo de toque de 44px — usado na academia, com uma mão. */
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-mid);
+    background: transparent;
+    color: var(--text-primary);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.iconBtn:active {
+    transform: scale(0.96);
+}

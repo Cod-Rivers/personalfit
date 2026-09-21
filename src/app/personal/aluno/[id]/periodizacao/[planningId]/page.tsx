@@ -364,9 +364,10 @@ export default function PeriodizacaoDetalhePage() {
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                         {/* Respostas da Anamnese do personal à mão enquanto monta as séries */}
                         <PersonalAnamnesisQuickView studentId={studentId} className={s.btnBack} />
-                        {/* Esta tela é a de MONTAR o plano. Quem está com o
-                            aluno na frente quer a semana corrente e o botão
-                            de finalizar — que vivem em /acompanhar. */}
+                        {/* Esta tela é a de MONTAR o plano (fases, semanas).
+                            O treino da semana, com ajuste de qualquer
+                            exercício e o botão de finalizar, vive em
+                            /acompanhar. */}
                         <button
                             className={s.btnBack}
                             onClick={() =>
@@ -375,7 +376,7 @@ export default function PeriodizacaoDetalhePage() {
                                 )
                             }
                         >
-                            <FiActivity /> Acompanhar treino
+                            <FiActivity /> Treino do aluno
                         </button>
                         <button className={s.btnBack} onClick={() => router.back()}>
                             <FiArrowLeft /> Voltar

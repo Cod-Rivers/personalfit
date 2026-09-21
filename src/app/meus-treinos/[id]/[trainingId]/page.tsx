@@ -300,6 +300,75 @@ export default function MeusTreinosExercisesPage({
         })();
     }, [macrocycleId, trainingId]);
 
+    /* ── Prescrição sempre atual ──
+     * O personal ajusta o treino pela tela dele enquanto o aluno está com
+     * este aberto (na academia, lado a lado). Sem isto, o aluno só via a
+     * mudança ao sair e voltar. Busca o plano de novo ao voltar ao app e a
+     * cada 30s com a tela visível, e troca SÓ a prescrição: a carga que o
+     * aluno está registrando mora no próprio card, não neste estado.
+     *
+     * Exceção: se o aluno trocou um exercício nesta sessão (substituição por
+     * IA, que não é persistida), a atualização é pulada — reaplicar o plano
+     * desfaria a troca no meio do treino. */
+    const exercisesRef = React.useRef(exercises);
+    exercisesRef.current = exercises;
+    useEffect(() => {
+        if (!macrocycleId || !trainingId || isLoading || isOffline) return;
+        let cancelled = false;
+
+        const refresh = async () => {
+            if (document.visibilityState !== 'visible' || !navigator.onLine)
+                return;
+            if (exercisesRef.current.some((e) => e.substitutedFrom)) return;
+            try {
+                const macro = await getMyMacrocycle(macrocycleId);
+                if (cancelled) return;
+                for (const meso of macro.mesocycles ?? []) {
+                    const t = (meso.trainings ?? []).find(
+                        (tr) => tr.id === trainingId,
+                    );
+                    if (!t) continue;
+                    const logs = (t.exercises ?? []).map((ex) =>
+                        applySubstitutability(
+                            toExerciseLog(ex),
+                            macro.substitutability?.[ex.id],
+                        ),
+                    );
+                    const enriched = await enrichWithLibraryVideos(logs);
+                    if (
+                        cancelled ||
+                        exercisesRef.current.some((e) => e.substitutedFrom)
+                    )
+                        return;
+                    setExercises(enriched);
+                    setCurrentTraining(t);
+                    setCurrentMeso(meso);
+                    // Card aberto: passa a mostrar a prescrição nova.
+                    setSelectedExercise((prev) =>
+                        prev
+                            ? (enriched.find((e) => e.id === prev.id) ?? prev)
+                            : prev,
+                    );
+                    void cacheMacrocycleForOffline(macro);
+                    return;
+                }
+            } catch {
+                // Falha silenciosa: a tela segue com o que já mostrava.
+            }
+        };
+
+        const onVisible = () => {
+            if (document.visibilityState === 'visible') void refresh();
+        };
+        document.addEventListener('visibilitychange', onVisible);
+        const timer = window.setInterval(() => void refresh(), 30_000);
+        return () => {
+            cancelled = true;
+            document.removeEventListener('visibilitychange', onVisible);
+            window.clearInterval(timer);
+        };
+    }, [macrocycleId, trainingId, isLoading, isOffline]);
+
     // Parâmetros de autorregulação do personal (quando definidos) + histórico
     // de cargas executadas nos últimos 90 dias, usados pelo motor de
     // sugestão de carga (libs/loadSuggestion.ts). Independente do carregamento
