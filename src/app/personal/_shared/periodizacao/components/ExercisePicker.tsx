@@ -10,6 +10,7 @@ import {
     type ExerciseLibraryItem,
 } from '@/libs/planningService';
 import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
+import HelpTooltip from '@/components/atoms/HelpTooltip';
 import {
     GROUP_TECHNIQUE_CATALOG,
     isGroupTechniqueValidForSize,
@@ -412,7 +413,7 @@ export default function ExercisePicker({
                         borderTop: '1px solid var(--border-subtle)',
                     }}
                 >
-                    <label
+                    <div
                         style={{
                             flex: '1 1 100%',
                             display: 'flex',
@@ -424,6 +425,11 @@ export default function ExercisePicker({
                         }}
                     >
                         Adicionar como
+                        <HelpTooltip
+                            text="Separados: cada exercício com o seu descanso. Bi-set, tri-set e parecidos: os marcados são feitos em sequência, sem descanso entre eles, só ao fim do bloco."
+                            href="/ajuda#glossario-combinacao"
+                            label="Ajuda sobre adicionar exercícios combinados"
+                        />
                         <select
                             value={effectiveGroup}
                             onChange={(e) => setGroupTechnique(e.target.value)}
@@ -449,7 +455,7 @@ export default function ExercisePicker({
                                 );
                             })}
                         </select>
-                    </label>
+                    </div>
                     {selected.size < 2 && (
                         <span
                             style={{

@@ -49,6 +49,7 @@ export default function TrainingCard({
     onUngroupExercises,
     onRemoveLastFromGroup,
     onPreviewExercise,
+    helpHref = '/ajuda#montar-treino',
 }: {
     training: LocalTraining;
     index: number;
@@ -71,6 +72,8 @@ export default function TrainingCard({
     onUngroupExercises?: (groupId: string) => void;
     onRemoveLastFromGroup?: (exerciseId: string) => void;
     onPreviewExercise: (exercise: LocalExercise) => void;
+    /** Seção da Central de Ajuda sobre montar treino, conforme o público. */
+    helpHref?: string;
 }) {
     // partitionExerciseGroups reagrupa por bissérie/trissérie e recebe um array
     // novo a cada edição — memoizado para não gerar identidades novas que
@@ -351,6 +354,11 @@ export default function TrainingCard({
                 >
                     + Manual
                 </button>
+                <HelpTooltip
+                    text="Da biblioteca, o exercício já vem com vídeo e grupo muscular. Manual é para o que não está nela: você digita o nome e, se quiser, cola um link de vídeo."
+                    href={helpHref}
+                    label="Diferença entre exercício da biblioteca e manual"
+                />
             </div>
 
             {training.exercises.length > 0 && (

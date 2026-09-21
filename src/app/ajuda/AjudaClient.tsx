@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { FiBookOpen } from 'react-icons/fi';
 import { microcycleHelpTopics } from '@/libs/microcycleHelpContent';
@@ -40,6 +40,61 @@ const studentSections: HelpSection[] = [
                     </Link>
                     , que ajusta a carga do treino de acordo com sua
                     recuperação.
+                </p>
+            </>
+        ),
+    },
+    {
+        id: 'montar-meu-treino',
+        title: 'Montar meu próprio treino',
+        body: (
+            <>
+                <p className="mb-2">
+                    Já tem uma ficha da academia ou de outra fonte? Em{' '}
+                    <Link href="/meus-treinos">Meus Treinos</Link>, toque em{' '}
+                    <strong>Montar meu próprio treino</strong> e passe a ficha
+                    para o app. São quatro etapas, e a barra no topo da tela
+                    mostra em qual você está:
+                </p>
+                <ol className="mb-2">
+                    <li>
+                        <strong>Criar:</strong> dê um nome ao treino, escolha
+                        se os dias são identificados por dia da semana ou por
+                        número e aceite o termo de responsabilidade.
+                    </li>
+                    <li>
+                        <strong>Treinos:</strong> em{' '}
+                        <strong>+ Adicionar treino</strong>, crie um treino
+                        para cada dia da sua ficha.
+                    </li>
+                    <li>
+                        <strong>Exercícios:</strong> dentro do treino,{' '}
+                        <strong>+ Exercício da biblioteca</strong> traz os
+                        exercícios já com vídeo. Dá para marcar vários de uma
+                        vez e, se quiser, juntá-los num bi-set. O que não
+                        estiver na biblioteca entra por{' '}
+                        <strong>+ Manual</strong>.
+                    </li>
+                    <li>
+                        <strong>Séries e carga:</strong> toque em cada
+                        exercício e copie da ficha as séries × repetições e o
+                        descanso. Se forem iguais para todos,{' '}
+                        <strong>Prescrição geral</strong> preenche de uma vez.
+                    </li>
+                </ol>
+                <p className="mb-2">
+                    Tudo é salvo a cada etapa concluída. Com os treinos
+                    prontos, toque em <strong>Começar a treinar</strong>: o
+                    treino aparece em Meus Treinos para você executar e{' '}
+                    <Link href="#registro-de-treino">registrar</Link>. As
+                    dicas no topo do editor somem no <strong>×</strong> e
+                    voltam pelo botão <strong>Dicas</strong>.
+                </p>
+                <p className="mb-0">
+                    No link de vídeo de um exercício, YouTube e Vimeo valem no
+                    plano gratuito; Instagram e TikTok exigem o PRO. O treino
+                    é de sua responsabilidade: o Venafit não o prescreve nem
+                    revisa.
                 </p>
             </>
         ),
@@ -1048,6 +1103,59 @@ const personalSections: HelpSection[] = [
                 ou objetivo e <strong>Aplicar</strong> um deles direto a um
                 aluno seu — um bom atalho para começar rápido e depois ajustar.
             </p>
+        ),
+    },
+    {
+        id: 'montar-treino',
+        title: 'Montar um treino passo a passo',
+        body: (
+            <>
+                <p className="mb-2">
+                    O editor de treino é o mesmo na periodização do aluno, nos
+                    modelos de{' '}
+                    <Link href="#periodizacao-biblioteca">
+                        Minha Periodização
+                    </Link>{' '}
+                    e no modo simples. Ele anda por etapas, mostradas no topo,
+                    com uma dica do que fazer em seguida:
+                </p>
+                <ol className="mb-2">
+                    <li>
+                        <strong>Fase</strong> (só na periodização): nome, fase,
+                        duração e metodologia do{' '}
+                        <GlossaryLink id="mesociclo">mesociclo</GlossaryLink>.
+                        Sem esses quatro campos a fase não é salva. No modo
+                        simples essa etapa não existe.
+                    </li>
+                    <li>
+                        <strong>Treinos:</strong>{' '}
+                        <strong>+ Adicionar treino</strong> cria um dia de
+                        academia. O ícone de copiar duplica um treino, e a
+                        alça <strong>⠿</strong> muda a ordem.
+                    </li>
+                    <li>
+                        <strong>Exercícios:</strong>{' '}
+                        <strong>+ Exercício da biblioteca</strong> permite
+                        marcar vários e adicioná-los separados ou como{' '}
+                        <GlossaryLink id="combinacao">bi-set, tri-set</GlossaryLink>{' '}
+                        e parecidos. <strong>+ Manual</strong> é para o que
+                        não está na biblioteca.
+                    </li>
+                    <li>
+                        <strong>Séries e carga:</strong> toque no exercício. A
+                        aba Série tem o essencial; Prescrição, Técnica e Mídia
+                        são ajuste fino. <strong>Prescrição geral</strong>{' '}
+                        preenche todos os exercícios do treino de uma vez.
+                    </li>
+                </ol>
+                <p className="mb-0">
+                    O editor salva a cada card concluído e mostra o estado no
+                    rodapé. As dicas somem no <strong>×</strong> e voltam pelo
+                    botão <strong>Dicas</strong>. Para ajustar um treino que o
+                    aluno já está fazendo, use{' '}
+                    <Link href="#periodizacao-aluno">Treino do aluno</Link>.
+                </p>
+            </>
         ),
     },
     {
@@ -2853,6 +2961,18 @@ const personalSections: HelpSection[] = [
 
 /* ──────────────────────────────────────────────────────────────────────── */
 
+/** Central que contém a seção, quando ela existe em só uma das duas. As que
+ * existem nas duas (ex.: "conta") e o glossário não decidem nada. */
+function audienceOfSection(id: string): Audience | null {
+    if (!id) return null;
+    const inStudent =
+        id === 'autorregulacao' || studentSections.some((s) => s.id === id);
+    const inPersonal = personalSections.some((s) => s.id === id);
+    if (inStudent && !inPersonal) return 'student';
+    if (inPersonal && !inStudent) return 'personal';
+    return null;
+}
+
 function ProBadge() {
     return (
         <span className="badge bg-warning text-dark ms-2 align-middle">
@@ -2864,18 +2984,52 @@ function ProBadge() {
 export default function AjudaClient() {
     const [audience, setAudience] = useState<Audience>('student');
 
-    // Define a central inicial pelo papel salvo, mas qualquer um pode alternar.
+    /** Âncora do link que precisa de rolagem depois que a central certa
+     * renderizar: o navegador já tentou rolar ANTES, quando a seção ainda não
+     * existia no DOM. */
+    const pendingScroll = useRef<string | null>(null);
+
+    // Define a central inicial pela âncora do link (ex.: o "?" do editor do
+    // aluno aponta para uma seção que só existe na central do aluno, e um
+    // personal testando a tela cairia na dele) e, sem âncora conhecida, pelo
+    // papel salvo. Qualquer um pode alternar depois.
     useEffect(() => {
-        try {
-            const stored = localStorage.getItem('user');
-            if (stored) {
-                const role = JSON.parse(stored)?.role;
-                if (role === 'personal') setAudience('personal');
+        const fromHash = () => {
+            const id = decodeURIComponent(window.location.hash.slice(1));
+            const owner = audienceOfSection(id);
+            if (owner) {
+                // Só quando a central muda: na mesma, a seção já está no DOM
+                // e o próprio navegador rola até ela.
+                setAudience((prev) => {
+                    if (prev !== owner) pendingScroll.current = id;
+                    return owner;
+                });
             }
-        } catch {
-            /* sem papel salvo — mantém a central do aluno */
+            return owner;
+        };
+
+        if (!fromHash()) {
+            try {
+                const stored = localStorage.getItem('user');
+                if (stored) {
+                    const role = JSON.parse(stored)?.role;
+                    if (role === 'personal') setAudience('personal');
+                }
+            } catch {
+                /* sem papel salvo — mantém a central do aluno */
+            }
         }
+
+        window.addEventListener('hashchange', fromHash);
+        return () => window.removeEventListener('hashchange', fromHash);
     }, []);
+
+    useEffect(() => {
+        const id = pendingScroll.current;
+        if (!id) return;
+        pendingScroll.current = null;
+        document.getElementById(id)?.scrollIntoView();
+    }, [audience]);
 
     const isPersonal = audience === 'personal';
     const sections = isPersonal ? personalSections : studentSections;

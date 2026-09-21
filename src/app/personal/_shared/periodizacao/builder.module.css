@@ -1236,6 +1236,7 @@
 }
 
 .cardActionsRow {
+    align-items: center;
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
@@ -1479,4 +1480,137 @@
    NavRowGroup que elas substituíram. */
 .sortableGroup {
     margin-bottom: 14px;
+}
+
+/* ── Guia do fluxo de montar treino (FlowGuide) ──────────────────────────
+   Etapas + dica da próxima ação no topo do editor e da tela do aluno. */
+.flowGuide {
+    margin-bottom: 14px;
+}
+
+.flowGuideTop {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.flowSteps {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.flowStep,
+.flowStepDone,
+.flowStepCurrent {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+/* Traço entre as etapas. */
+.flowSteps > li + li::before {
+    content: '';
+    width: 10px;
+    height: 1px;
+    margin-right: 1px;
+    background: var(--border-subtle);
+}
+
+.flowStepDot {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    border: 1px solid var(--border-subtle);
+    font-size: 0.66rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.flowStepDone {
+    color: var(--mint-text, var(--mint));
+}
+
+.flowStepDone .flowStepDot {
+    border-color: var(--mint);
+    background: var(--mint-glow);
+}
+
+.flowStepCurrent {
+    color: var(--text-primary);
+    font-weight: 700;
+}
+
+.flowStepCurrent .flowStepDot {
+    border-color: var(--mint);
+    background: var(--mint);
+    color: #000;
+}
+
+.flowGuideShow {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    padding: 4px 8px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 14px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    cursor: pointer;
+}
+
+.flowHint {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 10px 8px 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--mint);
+    background: var(--mint-glow);
+}
+
+.flowHintIcon {
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: var(--mint-text, var(--mint));
+}
+
+.flowHintText {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    color: var(--text-primary);
+}
+
+.flowHintClose {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    margin-top: -4px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
 }

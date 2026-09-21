@@ -38,15 +38,15 @@ export default function TrainingsListCard({
             <div className={s.sectionHeaderRow}>
                 <p>
                     {trainings.length} treino
-                    {trainings.length === 1 ? '' : 's'} nesta fase
+                    {trainings.length === 1 ? '' : 's'}{' '}
+                    {simpleMode ? 'na semana' : 'nesta fase'}
                 </p>
             </div>
 
+            {/* A orientação de "o que fazer agora" fica no guia de etapas do
+                editor, que sabe se quem monta é o aluno ou o personal. */}
             {trainings.length === 0 ? (
-                <p className={s.emptyHint}>
-                    Nenhum treino ainda. Use &quot;+ Adicionar treino&quot; para
-                    começar — cada treino é um dia de academia do aluno.
-                </p>
+                <p className={s.emptyHint}>Nenhum treino ainda.</p>
             ) : (
                 <SortableList
                     ids={trainings.map((t) => t._id)}

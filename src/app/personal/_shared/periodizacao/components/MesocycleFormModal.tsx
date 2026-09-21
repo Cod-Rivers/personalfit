@@ -42,6 +42,15 @@ import ExerciseDetailCard from '@/components/features/ExerciseDetailCard';
 import type { ExerciseLog } from '@/components/features/types';
 import ExercisePicker from './ExercisePicker';
 import type { ResolvedVideoLink } from '@/libs/exerciseVideoService';
+import FlowGuide from './FlowGuide';
+import {
+    completedSteps,
+    editorHint,
+    editorStepOf,
+    editorSteps,
+    guideHelpHref,
+    type GuideAudience,
+} from '../lib/flowGuide';
 import PhaseCard from './cards/PhaseCard';
 import TrainingsListCard from './cards/TrainingsListCard';
 import TrainingCard from './cards/TrainingCard';
@@ -127,6 +136,9 @@ interface Props {
      * sem passar pelos cards da fase. É o que a tela de treino do aluno usa
      * para ajustes pontuais com o aluno do lado. */
     focus?: { trainingId: string; exerciseId?: string };
+    /** Público das dicas do guia de etapas: o aluno que monta o próprio
+     * treino lê "sua ficha", o personal lê "o aluno". Padrão: personal. */
+    guideAudience?: GuideAudience;
 }
 
 /**
@@ -151,6 +163,7 @@ export default function MesocycleFormModal({
     resolveVideoLink,
     videoPlanHint,
     focus,
+    guideAudience = 'personal',
 }: Props) {
     const isNumbered = simpleMode && dayLabelStyle === 'number';
 
@@ -237,6 +250,11 @@ export default function MesocycleFormModal({
               : { name: '', phase: '', duration_weeks: 4, methodology: '' },
     });
     const durationWeeksWatch = watch('duration_weeks');
+    const [nameWatch, phaseWatch, methodologyWatch] = watch([
+        'name',
+        'phase',
+        'methodology',
+    ]);
 
     useEffect(() => {
         setLocalMicrocycles((prev) =>
@@ -950,6 +968,7 @@ export default function MesocycleFormModal({
                         onPreviewExercise={(ex) =>
                             openPreview(ex, activeTraining.exercises)
                         }
+                        helpHref={guideHelpHref(guideAudience)}
                     />
                 );
 
@@ -1140,6 +1159,39 @@ export default function MesocycleFormModal({
         goBack();
     };
 
+    /* ── Guia de etapas ──
+     * Fora do modo `focus`: ali o editor abre direto num treino para um
+     * ajuste pontual, e as etapas de montagem seriam só ruído. */
+    const guideTrainings = localTrainings.map((t, i) => ({
+        label: trainingFullLabel(t, i, simpleMode, isNumbered),
+        exerciseCount: t.exercises.length,
+    }));
+    const phaseValid =
+        !!simpleMode ||
+        mesoSchema.safeParse({
+            name: nameWatch,
+            phase: phaseWatch,
+            duration_weeks: durationWeeksWatch,
+            methodology: methodologyWatch,
+        }).success;
+    const guide = focus ? null : (
+        <FlowGuide
+            steps={editorSteps(simpleMode)}
+            current={editorStepOf(current.card)}
+            done={completedSteps(guideTrainings, phaseValid)}
+            hint={editorHint({
+                card: current.card,
+                audience: guideAudience,
+                trainings: guideTrainings,
+                activeExerciseCount: activeTraining?.exercises.length ?? 0,
+                replacing:
+                    current.card === 'picker' && !!current.replaceExerciseId,
+                phaseValid,
+            })}
+            helpHref={guideHelpHref(guideAudience)}
+        />
+    );
+
     const saveIndicator = () => {
         if (blockedField)
             return (
@@ -1205,6 +1257,7 @@ export default function MesocycleFormModal({
                     </>
                 }
             >
+                {guide}
                 {cardBody()}
             </Modal>
 

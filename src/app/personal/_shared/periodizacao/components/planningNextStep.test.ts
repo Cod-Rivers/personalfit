@@ -50,6 +50,39 @@ describe('nextPlanningStep', () => {
         expect(step.message).toContain('treino B');
     });
 
+    it('no modo simples o treino vazio não fala em fase nem em letra', () => {
+        const step = nextPlanningStep(
+            macro([
+                {
+                    name: 'Treinos da semana',
+                    trainings: [{ reference: 'B', exercises: [] }],
+                },
+            ]),
+            true,
+        );
+        expect(step.done).toBe(false);
+        expect(step.message).not.toMatch(/fase|treino B/i);
+    });
+
+    it('no modo simples o plano pronto conta treinos, não fases', () => {
+        const step = nextPlanningStep(
+            macro([
+                {
+                    name: 'Treinos da semana',
+                    trainings: [
+                        { reference: 'A', exercises: [{}] },
+                        { reference: 'B', exercises: [{}, {}] },
+                    ],
+                },
+            ]),
+            true,
+        );
+        expect(step.done).toBe(true);
+        expect(step.message).toContain('2 treinos');
+        expect(step.message).toContain('3 exercícios');
+        expect(step.message).not.toMatch(/fase/i);
+    });
+
     it('plano completo vira confirmação, com a contagem de exercícios', () => {
         const step = nextPlanningStep(
             macro([

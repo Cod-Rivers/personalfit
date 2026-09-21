@@ -17,7 +17,15 @@ import {
 } from '@/libs/planningService';
 import MesocycleSection from '@/app/personal/_shared/periodizacao/components/MesocycleSection';
 import MesocycleFormModal from '@/app/personal/_shared/periodizacao/components/MesocycleFormModal';
+import PlanningNextStep from '@/app/personal/_shared/periodizacao/components/PlanningNextStep';
+import { FlowSteps } from '@/app/personal/_shared/periodizacao/components/FlowGuide';
 import { pickSavedMesocycle } from '@/app/personal/_shared/periodizacao/lib/mesocycleTransforms';
+import {
+    SELF_MADE_STEPS,
+    guideHelpHref,
+    selfMadeStep,
+} from '@/app/personal/_shared/periodizacao/lib/flowGuide';
+import HelpTooltip from '@/components/atoms/HelpTooltip';
 import GoogleAdSlot from '@/components/molecules/GoogleAdSlot';
 import { useToast } from '@/components/system/Toast';
 import s from '@/app/personal/_shared/periodizacao/builder.module.css';
@@ -180,6 +188,14 @@ export default function MontarTreinoPage() {
     const simpleMeso = (macro?.mesocycles ?? [])[0];
     const macroDayLabel: DayLabelStyle =
         macro?.simple_day_label === 'number' ? 'number' : 'weekday';
+    const flow = selfMadeStep(
+        !!macro,
+        (simpleMeso?.trainings ?? []).map((t) => ({
+            label: t.reference,
+            exerciseCount: t.exercises?.length ?? 0,
+        })),
+    );
+    const helpHref = guideHelpHref('student');
 
     return (
         <div className={s.page}>
@@ -205,13 +221,32 @@ export default function MontarTreinoPage() {
                     <div className="alert alert-danger">{pageError}</div>
                 )}
 
+                <div className={s.flowGuide}>
+                    <FlowSteps
+                        steps={SELF_MADE_STEPS}
+                        current={flow.current}
+                        done={flow.done}
+                    />
+                </div>
+
                 {!macro ? (
                     <>
                         <div className={s.formGroup}>
-                            <label className={s.formLabel}>
-                                Nome do treino *
+                            {/* htmlFor explícito: sem ele o "?" dentro do
+                                rótulo viraria o controle rotulado. */}
+                            <label
+                                className={s.formLabel}
+                                htmlFor="montar-nome"
+                            >
+                                Nome do treino *{' '}
+                                <HelpTooltip
+                                    text="Só para você reconhecer o treino no app. Ex.: Treino da academia, Ficha de hipertrofia."
+                                    href={helpHref}
+                                    label="Ajuda sobre o nome do treino"
+                                />
                             </label>
                             <input
+                                id="montar-nome"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 className={s.formInput}
@@ -220,8 +255,14 @@ export default function MontarTreinoPage() {
                         </div>
 
                         <div className={s.formGroup}>
-                            <label className={s.formLabel}>Objetivo</label>
+                            <label
+                                className={s.formLabel}
+                                htmlFor="montar-objetivo"
+                            >
+                                Objetivo
+                            </label>
                             <input
+                                id="montar-objetivo"
                                 value={goal}
                                 onChange={(e) => setGoal(e.target.value)}
                                 className={s.formInput}
@@ -230,7 +271,12 @@ export default function MontarTreinoPage() {
                         </div>
 
                         <p className={s.cardIntro} style={{ marginTop: 18 }}>
-                            Como identificar os dias?
+                            Como identificar os dias?{' '}
+                            <HelpTooltip
+                                text="Dias da semana: cada treino fica num dia fixo (Segunda, Quarta…). Números: Treino 1, 2, 3 em sequência, para quem não treina em dias fixos. Dá para mudar o dia de cada treino depois."
+                                href={helpHref}
+                                label="Ajuda sobre como identificar os dias"
+                            />
                         </p>
                         <div className={s.choiceGrid}>
                             {DAY_LABEL_OPTIONS.map((opt) => (
@@ -301,19 +347,22 @@ export default function MontarTreinoPage() {
                     </>
                 ) : (
                     <>
-                        {!simpleMeso ? (
-                            <>
-                                <p style={{ color: 'var(--text-muted)' }}>
-                                    Nenhum treino configurado ainda.
-                                </p>
-                                <button
+                        {/* Diz o que falta (treinos, exercícios) ou, com tudo
+                            montado, leva para onde o treino é executado. */}
+                        <PlanningNextStep
+                            macro={macro}
+                            isSimpleMode
+                            onAction={() => setEditorOpen(true)}
+                            doneAction={
+                                <Link
+                                    href="/meus-treinos"
                                     className={s.btnEdit}
-                                    onClick={() => setEditorOpen(true)}
                                 >
-                                    + Adicionar treinos
-                                </button>
-                            </>
-                        ) : (
+                                    Começar a treinar
+                                </Link>
+                            }
+                        />
+                        {simpleMeso && (
                             // Sem onPersistMeso de propósito: aquele callback
                             // habilita a edição rápida pelo card do exercício,
                             // cuja fila offline grava em /students/:id/... —
@@ -357,6 +406,7 @@ export default function MontarTreinoPage() {
                     dayLabelStyle={macroDayLabel}
                     resolveVideoLink={resolveMyVideoLink}
                     videoPlanHint={VIDEO_PLAN_HINT}
+                    guideAudience="student"
                 />
             )}
         </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { FiArrowRight, FiCheckCircle } from 'react-icons/fi';
 import type { MacrocycleResponse } from '@/libs/planningService';
 import s from '../builder.module.css';
@@ -52,7 +53,11 @@ export function nextPlanningStep(
         .find(({ training }) => (training.exercises?.length ?? 0) === 0);
     if (emptyTraining) {
         return {
-            message: `O treino ${emptyTraining.training.reference || 'sem referência'} da fase "${emptyTraining.meso.name}" está sem exercícios.`,
+            // No modo simples não existe fase para o usuário, e a letra
+            // interna (A, B…) não é o rótulo que ele vê (dia ou número).
+            message: isSimpleMode
+                ? 'Há treino da semana ainda sem exercícios. Abra e adicione.'
+                : `O treino ${emptyTraining.training.reference || 'sem referência'} da fase "${emptyTraining.meso.name}" está sem exercícios.`,
             action: 'Abrir e adicionar exercícios',
             done: false,
         };
@@ -67,8 +72,18 @@ export function nextPlanningStep(
             ),
         0,
     );
+    if (isSimpleMode) {
+        const trainingCount = mesocycles.reduce(
+            (acc, m) => acc + (m.trainings?.length ?? 0),
+            0,
+        );
+        return {
+            message: `Treino montado: ${trainingCount} treino${trainingCount === 1 ? '' : 's'} na semana e ${totalExercises} exercício${totalExercises === 1 ? '' : 's'}.`,
+            done: true,
+        };
+    }
     return {
-        message: `Plano montado: ${mesocycles.length} ${isSimpleMode ? 'semana' : `fase${mesocycles.length === 1 ? '' : 's'}`} e ${totalExercises} exercício${totalExercises === 1 ? '' : 's'} prescritos.`,
+        message: `Plano montado: ${mesocycles.length} fase${mesocycles.length === 1 ? '' : 's'} e ${totalExercises} exercício${totalExercises === 1 ? '' : 's'} prescritos.`,
         done: true,
     };
 }
@@ -85,16 +100,30 @@ export default function PlanningNextStep({
     macro,
     isSimpleMode,
     onAction,
+    doneAction,
 }: {
     macro: MacrocycleResponse;
     isSimpleMode: boolean;
     /** Recebe o id da fase a abrir, ou undefined quando o passo é criar uma. */
     onAction: (mesocycleId?: string) => void;
+    /** Próximo passo depois de montado (ex.: o aluno ir treinar). Ausente, o
+     * plano pronto vira só a linha de confirmação. */
+    doneAction?: ReactNode;
 }) {
     const step = nextPlanningStep(macro, isSimpleMode);
     const mesocycles = macro.mesocycles ?? [];
 
     if (step.done) {
+        if (doneAction) {
+            return (
+                <div className={s.nextStep}>
+                    <p className={s.nextStepText}>
+                        <FiCheckCircle /> {step.message}
+                    </p>
+                    {doneAction}
+                </div>
+            );
+        }
         return (
             <p className={s.nextStepDone}>
                 <FiCheckCircle /> {step.message}
