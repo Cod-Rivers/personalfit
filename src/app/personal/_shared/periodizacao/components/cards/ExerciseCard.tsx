@@ -1,6 +1,6 @@
 'use client';
 
-import { FiPlay } from 'react-icons/fi';
+import { FiPlay, FiRepeat } from 'react-icons/fi';
 import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
 import HelpTooltip from '@/components/atoms/HelpTooltip';
 import { getGlossaryTerm } from '@/libs/glossaryContent';
@@ -38,6 +38,7 @@ export default function ExerciseCard({
     onUpdate,
     onSetVideo,
     onPreview,
+    onReplace,
     resolveVideoLink,
     videoPlanHint,
 }: {
@@ -47,6 +48,9 @@ export default function ExerciseCard({
     onUpdate: (field: UpdateField, value: string | boolean) => void;
     onSetVideo: (videoUrl: string, videoThumb: string) => void;
     onPreview: () => void;
+    /** Troca por outro exercício da biblioteca mantendo posição e prescrição.
+     * Ausente = sem botão (ex.: telas que não têm o picker). */
+    onReplace?: () => void;
     /** Repassados ao campo de vídeo — ver ExerciseVideoField. Ausentes, valem
      * o endpoint e a regra de plano do personal. */
     resolveVideoLink?: (videoUrl: string) => Promise<ResolvedVideoLink>;
@@ -85,6 +89,16 @@ export default function ExerciseCard({
                     className={s.formInput}
                     aria-label="Nome do exercício"
                 />
+                {onReplace && (
+                    <button
+                        type="button"
+                        className={s.btnSmall}
+                        onClick={onReplace}
+                        title="Trocar por outro exercício da biblioteca, mantendo séries, carga e posição"
+                    >
+                        <FiRepeat /> Trocar
+                    </button>
+                )}
             </div>
 
             <div className={s.cardTabs} role="tablist">

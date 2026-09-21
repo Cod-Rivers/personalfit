@@ -593,3 +593,11 @@
 ## 2026-09-19 08:30 — River (via Claude Code)
 **Resumo:** Se você descartou a versão que estava em análise, a versão anterior continua em produção. O Play Console só troca a versão publicada quando uma nova é aprovada. Confira em **Produção → Versões**, onde a anterior deve aparecer como "Disponível". Se ela **não** estiver disponível, por exemplo porque o app foi suspenso ou removido pela rejeição, siga estes passos: 1. Abra **Produção → Criar nova versão**. 2. Clique em **Adicionar da biblioteca** e escolha o AAB antigo que estava funcionando. 3. Se o Play Console recusar por causa do versionCode, rebuilde o mesmo código com um versionCode maior. O…
 **Arquivos:** CHANGELOG_FRONTEND.md
+
+## 2026-09-21 09:22 — River (via Claude Code)
+**Resumo:** Os 6 caminhos corrigidos ontem estão certos e já estão no remoto, mas achei **2 problemas novos**. Não mexi em nada, só li o código. Para confirmar o segundo, rodei um teste descartável e depois apaguei. ## Caminhos que criam treino | Caminho | Como monta o exercício | Situação | |---|---|---| | Editor de periodização (salvar, atualizar, mesociclo, aluno sem personal) | `buildMesocycle` → `NewExerciseWithPeriodization` + todos os campos | ✅ | | Template do admin | `BuildNewMesocycle`, o mesmo construtor do editor | ✅ | | Clones (template → aluno, duplicar, salvar como template, template de cel…
+**Commits:** Nao perde o nome do exercicio quando a fila cai no fallback de registro | Atualiza changelog do frontend
+
+## 2026-09-21 09:28 — River (via Claude Code)
+**Resumo:** Na tela "Ver Treino" o card só edita **séries e carga**. Falta checar a outra ponta: se o aluno vê a alteração na hora ou só ao recarregar.
+**Arquivos:** CHANGELOG_FRONTEND.md, WorkoutLogger.tsx, mesocycleTransforms.ts, protocolService.ts

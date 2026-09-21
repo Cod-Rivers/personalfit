@@ -28,8 +28,10 @@ export interface CardStack<T> {
  * exercício) o resultado é uma pilha de folhas e um Escape que fecha a coisa
  * errada. Aqui o modal é sempre um só, e o que muda é o card renderizado.
  */
-export function useCardStack<T>(root: T): CardStack<T> {
-    const [stack, setStack] = useState<T[]>([root]);
+export function useCardStack<T>(root: T, initialAbove: T[] = []): CardStack<T> {
+    // initialAbove: cards já empilhados na abertura (ex.: o editor aberto
+    // direto num exercício). Só vale no primeiro render, como todo useState.
+    const [stack, setStack] = useState<T[]>(() => [root, ...initialAbove]);
 
     const push = useCallback((card: T) => setStack((s) => [...s, card]), []);
 

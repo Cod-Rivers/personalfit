@@ -15,7 +15,9 @@ export type EditorCard =
           exerciseId: string;
           tab: ExerciseTab;
       }
-    | { card: 'picker'; trainingId: string }
+    /** replaceExerciseId (`_id` local): o picker troca esse exercício em vez
+     * de adicionar — seleção única, mesma posição e prescrição. */
+    | { card: 'picker'; trainingId: string; replaceExerciseId?: string }
     | { card: 'bulkPrescription'; trainingId: string }
     | { card: 'weeks' }
     | { card: 'week'; microId: string };

@@ -341,9 +341,12 @@ export function responseToLocal(trainings: TrainingResponse[]): LocalTraining[] 
         exercises: t.exercises.map((ex) => {
             const timed = ex.timed ?? false;
             const seriesLabel = ex.series_label;
+            // Planos importados de PDF antes da correção no backend têm
+            // `series: null` gravado no banco.
+            const series = ex.series ?? [];
             let mode: SeriesMode = 'reps';
-            let sets = String(ex.series.length || 3);
-            let value = String(ex.series[0] ?? 10);
+            let sets = String(series.length || 3);
+            let value = String(series[0] ?? 10);
             let free = '';
 
             if (seriesLabel) {
@@ -351,18 +354,18 @@ export function responseToLocal(trainings: TrainingResponse[]): LocalTraining[] 
                 free = seriesLabel;
             } else if (timed) {
                 mode = 'time';
-                sets = String(ex.series.length || 3);
-                value = String(ex.series[0] ?? 30);
+                sets = String(series.length || 3);
+                value = String(series[0] ?? 30);
             } else {
                 mode = 'reps';
                 // se as séries forem não-uniformes, usa texto livre
-                const uniform = ex.series.every((v) => v === ex.series[0]);
-                if (!uniform && ex.series.length > 0) {
+                const uniform = series.every((v) => v === series[0]);
+                if (!uniform && series.length > 0) {
                     mode = 'free';
-                    free = ex.series.join(' × ');
+                    free = series.join(' × ');
                 } else {
-                    sets = String(ex.series.length || 3);
-                    value = String(ex.series[0] ?? 10);
+                    sets = String(series.length || 3);
+                    value = String(series[0] ?? 10);
                 }
             }
 

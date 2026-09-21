@@ -16,6 +16,15 @@ export interface ExerciseDTO {
     tempo_seconds?: number | null;
     rpe_target?: number | null;
     muscle_group?: string;
+    // Não editados pela tela de protocolos, mas precisam voltar no save — o
+    // form usa spread, então basta não descartá-los.
+    exercise_library_id?: string;
+    load_prescribed_at?: string;
+    group_id?: string;
+    group_technique?: string;
+    technique?: string;
+    technique_params?: Record<string, unknown>;
+    non_substitutable?: boolean;
 }
 
 export interface TrainingDTO {

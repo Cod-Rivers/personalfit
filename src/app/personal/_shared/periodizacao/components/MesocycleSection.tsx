@@ -1,23 +1,19 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import axios from 'axios';
 import { FiEdit3, FiCopy, FiTrash2, FiChevronRight, FiLink } from 'react-icons/fi';
 import type {
     ExerciseRequest,
     MesocycleRequest,
     MesocycleResponse,
 } from '@/libs/planningService';
-import { formatDate, mesoToRequest, weekdayLabel } from '../lib/mesocycleTransforms';
+import { formatDate, weekdayLabel } from '../lib/mesocycleTransforms';
+import { saveExercisePatch } from '../lib/exercisePatch';
 import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
 import ExerciseDetailCard from '@/components/features/ExerciseDetailCard';
 import type { ExerciseLog } from '@/components/features/types';
 import { toExerciseLog } from '@/libs/exerciseLog';
 import { formatSeries } from '@/libs/seriesPrescription';
-import {
-    enqueuePrescriptionPatch,
-    PrescriptionQueuedOfflineError,
-} from '@/libs/offline/prescriptionQueue';
 import {
     partitionExerciseGroups,
     comboGroupLabel,
@@ -50,19 +46,6 @@ function nextInSameGroup(selected: SelectedView | null): ExerciseLog | null {
         return next;
     }
     return null;
-}
-
-/** Mensagem de erro de uma gravação de prescrição. Sem rede é um caso
- * diferente de erro do servidor, e aqui a distinção importa: o personal está
- * na academia, e precisa saber se a alteração chegou ao aluno ou não. */
-function describeSaveError(err: unknown): string {
-    if (axios.isAxiosError(err) && !err.response) {
-        return 'Sem conexão — a alteração NÃO foi salva. Tente de novo quando a internet voltar.';
-    }
-    const message = axios.isAxiosError(err)
-        ? (err.response?.data as { message?: string } | undefined)?.message
-        : undefined;
-    return message || 'Não foi possível salvar a alteração. Tente novamente.';
 }
 
 interface Props {
@@ -136,93 +119,22 @@ export default function MesocycleSection({
         return exercise ? { exercise, siblings } : null;
     }, [meso, selected]);
 
-    /**
-     * Enfileira a edição no IndexedDB para sincronizar quando a rede voltar
-     * (ver prescriptionQueue.ts) e sinaliza isso ao card via
-     * PrescriptionQueuedOfflineError — NÃO é um erro de verdade, é o mesmo
-     * padrão do resto do app (SyncPendingBadge) para "salvo neste
-     * dispositivo, ainda não chegou ao servidor". Sem studentId/planningId
-     * (telas de template) não há como enfileirar — vira erro normal.
-     */
-    const queueOffline = async (
-        exerciseId: string,
-        exerciseName: string,
-        patch: Partial<ExerciseRequest>,
-    ): Promise<never> => {
-        if (!studentId || !planningId) {
-            throw new Error(
-                'Sem conexão — a alteração NÃO foi salva. Tente de novo quando a internet voltar.',
-            );
-        }
-        await enqueuePrescriptionPatch({
-            studentId,
-            planningId,
-            mesocycleId: meso.id,
-            trainingId: selected!.trainingId,
-            exerciseId,
-            exerciseName,
-            patch,
-        });
-        // Só depois de a fila aceitar a edição: o valor novo aparece na tela
-        // porque ele já está guardado, não porque "deu certo".
-        onPrescriptionQueued?.(
-            meso.id,
-            selected!.trainingId,
-            exerciseId,
-            patch,
-        );
-        throw new PrescriptionQueuedOfflineError();
-    };
-
-    /**
-     * Grava uma alteração pontual de prescrição no exercício aberto.
-     *
-     * Reenvia a FASE inteira (não só o exercício) porque é esse o contrato do
-     * endpoint de salvamento por card do editor — `UpsertMesocycleHandler`
-     * substitui o mesociclo pelo payload. Daí o cuidado de partir de
-     * `mesoToRequest(meso)`: ele preserva os IDs de treino, exercício e
-     * microciclo, e perder qualquer um deles órfãaria o histórico de séries e
-     * as anotações que o aluno já tem.
-     *
-     * Sem rede — detectada de antemão ou pela falha da chamada — a edição
-     * não é descartada: vai para a fila offline (ver queueOffline acima) e
-     * sincroniza sozinha quando a conexão voltar.
-     */
+    /** Grava uma alteração pontual de prescrição no exercício aberto — ver
+     * saveExercisePatch (fase inteira, IDs preservados, fila offline). */
     const patchSelectedExercise = async (patch: Partial<ExerciseRequest>) => {
         if (!onPersistMeso || !selected) return;
-        const exerciseName =
-            meso.trainings
-                .find((t) => t.id === selected.trainingId)
-                ?.exercises.find((e) => e.id === selected.exerciseId)?.name ??
-            'Exercício';
-
-        // Sem rede detectada ANTES de tentar: evita esperar o timeout de uma
-        // requisição que já se sabe que vai falhar.
-        if (typeof navigator !== 'undefined' && !navigator.onLine) {
-            await queueOffline(selected.exerciseId, exerciseName, patch);
-        }
-
-        const req = mesoToRequest(meso);
-        const training = req.trainings.find((t) => t.id === selected.trainingId);
-        const target = training?.exercises.find(
-            (e) => e.id === selected.exerciseId,
+        await saveExercisePatch(
+            {
+                meso,
+                trainingId: selected.trainingId,
+                exerciseId: selected.exerciseId,
+                persist: onPersistMeso,
+                studentId,
+                planningId,
+                onQueued: onPrescriptionQueued,
+            },
+            patch,
         );
-        if (!target) {
-            throw new Error(
-                'Este exercício não está mais nesta fase. Recarregue a página.',
-            );
-        }
-        Object.assign(target, patch);
-        try {
-            await onPersistMeso(req);
-        } catch (err) {
-            if (axios.isAxiosError(err) && !err.response) {
-                // Sem resposta do servidor = sem rede, mesmo que
-                // navigator.onLine ainda não tivesse percebido.
-                await queueOffline(selected.exerciseId, exerciseName, patch);
-            }
-            throw new Error(describeSaveError(err));
-        }
     };
 
     const canPrescribe = !!onPersistMeso;

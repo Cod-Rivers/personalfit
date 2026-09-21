@@ -120,6 +120,11 @@ interface Props {
      * resolveMyVideoLink); ausentes, valem os do personal. */
     resolveVideoLink?: (videoUrl: string) => Promise<ResolvedVideoLink>;
     videoPlanHint?: string;
+    /** Abre o editor direto num treino (e, opcionalmente, num exercício dele),
+     * pelos IDs do servidor. O treino vira a raiz: "Fechar" nele salva e sai,
+     * sem passar pelos cards da fase. É o que a tela de treino do aluno usa
+     * para ajustes pontuais com o aluno do lado. */
+    focus?: { trainingId: string; exerciseId?: string };
 }
 
 /**
@@ -143,6 +148,7 @@ export default function MesocycleFormModal({
     dayLabelStyle,
     resolveVideoLink,
     videoPlanHint,
+    focus,
 }: Props) {
     const isNumbered = simpleMode && dayLabelStyle === 'number';
 
@@ -168,7 +174,36 @@ export default function MesocycleFormModal({
      * servidor confirmou. */
     const orderRef = useRef(order);
 
-    const stack = useCardStack<EditorCard>(rootCard(simpleMode));
+    /** Cards de abertura quando há `focus`. Os cards endereçam pelo `_id`
+     * LOCAL, então o ID do servidor é traduzido aqui, sobre o estado inicial. */
+    const [initialCards] = useState<{ root: EditorCard; above: EditorCard[] }>(
+        () => {
+            const training = focus
+                ? localTrainings.find((t) => t.id === focus.trainingId)
+                : undefined;
+            if (!training) return { root: rootCard(simpleMode), above: [] };
+            const exercise = focus?.exerciseId
+                ? training.exercises.find((e) => e.id === focus.exerciseId)
+                : undefined;
+            return {
+                root: { card: 'training', trainingId: training._id },
+                above: exercise
+                    ? [
+                          {
+                              card: 'exercise',
+                              trainingId: training._id,
+                              exerciseId: exercise._id,
+                              tab: 'serie',
+                          },
+                      ]
+                    : [],
+            };
+        },
+    );
+    const stack = useCardStack<EditorCard>(
+        initialCards.root,
+        initialCards.above,
+    );
     /** localId é o _id do exercício no estado do editor. ExerciseLog.id carrega
      * o id do BACKEND quando existe (ver localExerciseToLog), então usar ele
      * para achar o exercício local faz a carga prescrita pelo preview sumir em
@@ -485,6 +520,45 @@ export default function MesocycleFormModal({
         [requestSave],
     );
 
+    /**
+     * Troca o exercício por outro da biblioteca, no MESMO lugar: posição,
+     * bloco (bi-set…), prescrição e técnica ficam; muda o que identifica o
+     * movimento (nome, vínculo, grupo muscular, mídia).
+     *
+     * `id: undefined` é deliberado: o servidor dá identidade nova ao exercício.
+     * ExercisePerformance e ExerciseAnnotation apontam pelo id, então manter o
+     * antigo faria o histórico de carga do supino virar a base de sugestão do
+     * agachamento que entrou no lugar dele.
+     */
+    const replaceExercise = useCallback(
+        (tid: string, eid: string, item: ExerciseLibraryItem) => {
+            setLocalTrainings((prev) =>
+                prev.map((t) =>
+                    t._id !== tid
+                        ? t
+                        : {
+                              ...t,
+                              exercises: t.exercises.map((e) =>
+                                  e._id !== eid
+                                      ? e
+                                      : {
+                                            ...e,
+                                            id: undefined,
+                                            exercise_library_id: item.id,
+                                            name: item.name,
+                                            muscle_group: item.muscle_group ?? '',
+                                            video_url: item.video_url ?? '',
+                                            video_thumb: item.video_thumb ?? '',
+                                        },
+                              ),
+                          },
+                ),
+            );
+            requestSave();
+        },
+        [requestSave],
+    );
+
     const updateExercise = useCallback(
         (
             tid: string,
@@ -752,7 +826,9 @@ export default function MesocycleFormModal({
             case 'exercise':
                 return activeExercise?.name || 'Exercício';
             case 'picker':
-                return 'Escolher exercício';
+                return current.replaceExerciseId
+                    ? 'Trocar exercício'
+                    : 'Escolher exercício';
             case 'bulkPrescription':
                 return 'Prescrição geral';
             case 'weeks':
@@ -909,6 +985,13 @@ export default function MesocycleFormModal({
                                 activeTraining.exercises,
                             )
                         }
+                        onReplace={() =>
+                            stack.push({
+                                card: 'picker',
+                                trainingId: activeTraining._id,
+                                replaceExerciseId: activeExercise._id,
+                            })
+                        }
                         resolveVideoLink={resolveVideoLink}
                         videoPlanHint={videoPlanHint}
                     />
@@ -916,6 +999,24 @@ export default function MesocycleFormModal({
 
             case 'picker':
                 if (!activeTraining) return null;
+                if (current.replaceExerciseId) {
+                    const replaceId = current.replaceExerciseId;
+                    return (
+                        <ExercisePicker
+                            onPick={(item: ExerciseLibraryItem) => {
+                                replaceExercise(
+                                    activeTraining._id,
+                                    replaceId,
+                                    item,
+                                );
+                                // Volta para o card do exercício (o _id local
+                                // não muda), já com o movimento novo.
+                                stack.pop();
+                            }}
+                            onClose={() => stack.pop()}
+                        />
+                    );
+                }
                 return (
                     <ExercisePicker
                         onPickMany={(

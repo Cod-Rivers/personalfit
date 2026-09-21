@@ -167,15 +167,18 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
             const loadAdjust = autoregulation
                 ? 1 + autoregulation.intraSessionLoadAdjustPct / 100
                 : 1;
+            // Planos importados de PDF antes da correção no backend têm
+            // `series: null` gravado no banco.
+            const plannedSeries = ex.series ?? [];
             return {
                 exerciseId: ex.id,
                 name: ex.name,
                 groupId: ex.group_id,
                 groupTechnique: ex.group_technique,
-                plannedSeries: ex.series,
+                plannedSeries,
                 series: (
-                    ex.series.length > 0
-                        ? ex.series
+                    plannedSeries.length > 0
+                        ? plannedSeries
                         : Array(DEFAULT_SERIES_ROWS_WHEN_UNSPECIFIED).fill(0)
                 ).map((plannedReps, i) => ({
                     seriesNum: i + 1,
