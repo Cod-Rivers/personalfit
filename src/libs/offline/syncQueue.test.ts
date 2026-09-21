@@ -39,7 +39,14 @@ function makeCompleteBody(
 ): CompleteWorkoutLogRequest {
     return {
         exercises: [
-            { exercise_id: 'ex-1', series: 3, reps: 10, load_kg: 40, rpe: 8 },
+            {
+                exercise_id: 'ex-1',
+                name: 'Agachamento',
+                series: 3,
+                reps: 10,
+                load_kg: 40,
+                rpe: 8,
+            },
         ],
         ...overrides,
     };
@@ -340,6 +347,13 @@ describe('offline/syncQueue', () => {
         expect(row.status).toBe('pending');
         expect(row.workoutLogId).toBe('new-log-id');
         expect(row.completeBody?.client_completed_at).toBe('2026-09-04T08:00:00-03:00');
+        // A reescrita não pode perder campo nenhum da série. `name` já se
+        // perdia aqui: o histórico de cargas casa exercícios por nome quando
+        // o exercise_id muda entre reedições do plano, então uma sessão
+        // anônima some da base de sugestão do aluno.
+        expect(row.completeBody?.exercises).toEqual(
+            expect.arrayContaining([expect.objectContaining({ name: 'Agachamento' })]),
+        );
         expect(row.sessionBody).toBeUndefined();
     });
 

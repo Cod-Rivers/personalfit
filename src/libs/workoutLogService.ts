@@ -73,15 +73,13 @@ export interface CreateNewWorkoutLogRequest {
 
 export interface CompleteWorkoutLogRequest {
     duration_minutes?: number;
-    exercises: Array<{
-        exercise_id: string;
-        series: number;
-        reps: number;
-        load_kg: number;
-        rpe: number;
-        notes?: string;
-        group_id?: string;
-    }>;
+    /** Mesma forma de WorkoutSessionExerciseRequest de propósito: os dois são
+     * o MESMO ExercisePerformanceRequest no backend, e este endpoint é o
+     * fallback de /session na fila offline. Enquanto `name` faltava aqui, uma
+     * série registrada pelo caminho de fallback chegava sem o nome do
+     * exercício — e o histórico de cargas perde o casamento por nome assim
+     * que o personal reedita o plano e o exercise_id muda. */
+    exercises: WorkoutSessionExerciseRequest[];
     notes?: string;
     /** Quando o aluno concluiu o treino NESTE aparelho, em RFC3339 com offset
      * de fuso. Preenchido com clientCompletedAtNow() no instante em que ele

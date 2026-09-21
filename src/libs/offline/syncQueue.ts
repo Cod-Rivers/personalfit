@@ -220,15 +220,14 @@ async function rewriteSessionAsCreateThenComplete(
         // aluno mesmo depois da reescrita (RN-11/RN-14: tempo na fila, e
         // agora também tempo esperando o rollback, nunca vira atraso dele).
         client_completed_at: body.client_completed_at,
-        exercises: body.exercises.map((e) => ({
-            exercise_id: e.exercise_id,
-            series: e.series,
-            reps: e.reps,
-            load_kg: e.load_kg,
-            rpe: e.rpe,
-            notes: e.notes,
-            group_id: e.group_id,
-        })),
+        // Repassado inteiro, sem remontar campo a campo: os dois endpoints
+        // recebem o mesmo ExercisePerformanceRequest. A cópia manual que
+        // existia aqui esquecia `name`, então uma série que caísse no
+        // fallback chegava anônima ao servidor — e o histórico de cargas,
+        // que casa por nome quando o exercise_id muda entre reedições do
+        // plano, perdia essa sessão. Repassar o objeto faz o próximo campo
+        // novo de série acompanhar os dois caminhos sozinho.
+        exercises: body.exercises,
     };
 
     await db.put('pendingMutations', {
