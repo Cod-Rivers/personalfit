@@ -585,3 +585,11 @@
 **Resumo:** Agora dá para escolher bi-set, tri-set, superset e os outros tipos de combinação no momento em que se marcam os exercícios. Fiz commit e push nos dois repositórios, e o deploy é automático. **Ainda não testei no navegador nem no app.** **Como funciona:** no rodapé do seletor, abaixo das caixas de seleção, há um campo **"Adicionar como"**: - **Exercícios separados** é o padrão. - Os tipos que já existem no app: bi-set, superset, tri-set, série gigante, pré-exaustão e pós-exaustão. - **Só aparecem liberados os tipos que cabem na quantidade marcada:** - bi-set: exatamente 2 exercícios; - tri-set:…
 **Arquivos:** CHANGELOG_FRONTEND.md
 **Commits:** Permite selecionar varios exercicios de uma vez ao montar o treino | Revisao do PDF: adiciona varios exercicios da biblioteca de uma vez | Escolhe bi-set, tri-set, superset etc. ja na selecao de exercicios
+
+## 2026-09-18 18:24 — River (via Claude Code)
+**Resumo:** Commitei e enviei tudo o que estava pendente nos três repositórios. Os três estão limpos e em dia com o remoto. O push dispara o deploy automático do backend e do frontend. Antes de commitar, rodei os testes: os do backend passaram, e os 276 do frontend também, com TypeScript sem erros. Escrevi as mensagens de commit a partir do diff sem abrir os arquivos do `acompanhar/` e do `WorkoutLogger`/`WorkoutCheckIn`, que vieram de uma sessão anterior. Só li o diff completo do backend. | Repositório | Commit | Conteúdo | |---|---|---| | Backend (`main`) | `83b8c68` | Acompanhamento presencial: o trein…
+**Commits:** Acompanhamento presencial: tela /acompanhar e finalizar treino pelo aluno atendido | Atualiza changelog do frontend
+
+## 2026-09-19 08:30 — River (via Claude Code)
+**Resumo:** Se você descartou a versão que estava em análise, a versão anterior continua em produção. O Play Console só troca a versão publicada quando uma nova é aprovada. Confira em **Produção → Versões**, onde a anterior deve aparecer como "Disponível". Se ela **não** estiver disponível, por exemplo porque o app foi suspenso ou removido pela rejeição, siga estes passos: 1. Abra **Produção → Criar nova versão**. 2. Clique em **Adicionar da biblioteca** e escolha o AAB antigo que estava funcionando. 3. Se o Play Console recusar por causa do versionCode, rebuilde o mesmo código com um versionCode maior. O…
+**Arquivos:** CHANGELOG_FRONTEND.md
