@@ -37,6 +37,7 @@ import {
 import { useCardStack } from '@/hooks/useCardStack';
 import { useSaveQueue } from '@/hooks/useSaveQueue';
 import Modal from '@/components/system/Modal';
+import { useToast } from '@/components/system/Toast';
 import ExerciseDetailCard from '@/components/features/ExerciseDetailCard';
 import type { ExerciseLog } from '@/components/features/types';
 import ExercisePicker from './ExercisePicker';
@@ -1026,51 +1027,13 @@ export default function MesocycleFormModal({
                 }
                 return (
                     <ExercisePicker
-                        onPickMany={(
-                            items: ExerciseLibraryItem[],
-                            groupTechnique?: string,
-                        ) => {
-                            // Combinados na seleção: mesmo group_id novo para
-                            // todos — são consecutivos (entram no fim da lista),
-                            // que é o que partitionExerciseGroups exige.
-                            const group = groupTechnique
-                                ? {
-                                      group_id: genId(),
-                                      group_technique: groupTechnique,
-                                  }
-                                : {};
-                            const exercises = items.map((item) =>
-                                blankExercise({
-                                    ...group,
-                                    // Vem da biblioteca: já nasce vinculado, é
-                                    // o que permite propagar mídia depois.
-                                    exercise_library_id: item.id,
-                                    name: item.name,
-                                    muscle_group: item.muscle_group ?? '',
-                                    video_url: item.video_url ?? '',
-                                    video_thumb: item.video_thumb ?? '',
-                                }),
-                            );
-                            // setState funcional: as chamadas se acumulam.
-                            exercises.forEach((ex) =>
-                                addExercise(activeTraining._id, ex),
-                            );
-                            if (exercises.length === 1) {
-                                // Um só: segue direto para a prescrição dele,
-                                // como era antes da multi-seleção.
-                                stack.replace({
-                                    card: 'exercise',
-                                    trainingId: activeTraining._id,
-                                    exerciseId: exercises[0]._id,
-                                    tab: 'serie',
-                                });
-                            } else {
-                                // Lote: volta para a lista do treino, onde a
-                                // "prescrição geral" preenche todos de uma vez.
-                                goBack();
-                            }
-                        }}
-                        onClose={goBack}
+                        onPickMany={commitPicked}
+                        onSelectionChange={(items, groupTechnique) =>
+                            setPendingPick(
+                                items.length ? { items, groupTechnique } : null,
+                            )
+                        }
+                        onClose={guardedBack}
                     />
                 );
 
@@ -1112,6 +1075,71 @@ export default function MesocycleFormModal({
         }
     };
 
+    /* Seleção do picker que o personal marcou mas ainda não adicionou. */
+    const [pendingPick, setPendingPick] = useState<{
+        items: ExerciseLibraryItem[];
+        groupTechnique?: string;
+    } | null>(null);
+    const [confirmPending, setConfirmPending] = useState(false);
+    const { showSuccess, ToastSlot } = useToast();
+
+    const commitPicked = (
+        items: ExerciseLibraryItem[],
+        groupTechnique?: string,
+    ) => {
+        if (!activeTraining || items.length === 0) return;
+        // Combinados na seleção: mesmo group_id novo para todos — são
+        // consecutivos (entram no fim da lista), que é o que
+        // partitionExerciseGroups exige.
+        const group = groupTechnique
+            ? { group_id: genId(), group_technique: groupTechnique }
+            : {};
+        const exercises = items.map((item) =>
+            blankExercise({
+                ...group,
+                // Vem da biblioteca: já nasce vinculado, é o que permite
+                // propagar mídia depois.
+                exercise_library_id: item.id,
+                name: item.name,
+                muscle_group: item.muscle_group ?? '',
+                video_url: item.video_url ?? '',
+                video_thumb: item.video_thumb ?? '',
+            }),
+        );
+        // setState funcional: as chamadas se acumulam.
+        exercises.forEach((ex) => addExercise(activeTraining._id, ex));
+        setPendingPick(null);
+        setConfirmPending(false);
+        showSuccess(
+            exercises.length === 1
+                ? '1 exercício adicionado ao treino'
+                : `${exercises.length} exercícios adicionados ao treino`,
+        );
+        if (exercises.length === 1) {
+            // Um só: segue direto para a prescrição dele.
+            stack.replace({
+                card: 'exercise',
+                trainingId: activeTraining._id,
+                exerciseId: exercises[0]._id,
+                tab: 'serie',
+            });
+        } else {
+            // Lote: volta para a lista do treino, onde a "prescrição geral"
+            // preenche todos de uma vez.
+            goBack();
+        }
+    };
+
+    /* Voltar/Concluir no picker com exercícios marcados e não adicionados
+     * pede confirmação em vez de descartar a seleção em silêncio. */
+    const guardedBack = () => {
+        if (current.card === 'picker' && pendingPick) {
+            setConfirmPending(true);
+            return;
+        }
+        goBack();
+    };
+
     const saveIndicator = () => {
         if (blockedField)
             return (
@@ -1151,7 +1179,7 @@ export default function MesocycleFormModal({
             <Modal
                 open
                 onClose={handleClose}
-                onBack={stack.depth > 0 ? goBack : undefined}
+                onBack={stack.depth > 0 ? guardedBack : undefined}
                 title={cardTitle()}
                 closeOnBackdrop={false}
                 footer={
@@ -1169,7 +1197,7 @@ export default function MesocycleFormModal({
                         <button
                             type="button"
                             className={s.btnEdit}
-                            onClick={stack.depth > 0 ? goBack : handleClose}
+                            onClick={stack.depth > 0 ? guardedBack : handleClose}
                             style={{ padding: '8px 24px', fontSize: '0.9rem' }}
                         >
                             {stack.depth > 0 ? 'Concluir' : 'Fechar'}
@@ -1179,6 +1207,60 @@ export default function MesocycleFormModal({
             >
                 {cardBody()}
             </Modal>
+
+            {ToastSlot}
+
+            {confirmPending && pendingPick && (
+                <Modal
+                    open
+                    onClose={() => setConfirmPending(false)}
+                    title="Exercícios não adicionados"
+                    footer={
+                        <>
+                            <button
+                                type="button"
+                                className={s.btnSmall}
+                                onClick={() => {
+                                    setConfirmPending(false);
+                                    setPendingPick(null);
+                                    goBack();
+                                }}
+                            >
+                                Descartar
+                            </button>
+                            <button
+                                type="button"
+                                className={s.btnEdit}
+                                onClick={() =>
+                                    commitPicked(
+                                        pendingPick.items,
+                                        pendingPick.groupTechnique,
+                                    )
+                                }
+                                style={{ padding: '8px 24px' }}
+                            >
+                                Adicionar{' '}
+                                {pendingPick.items.length === 1
+                                    ? '1 exercício'
+                                    : `${pendingPick.items.length} exercícios`}
+                            </button>
+                        </>
+                    }
+                >
+                    <p>
+                        Você marcou{' '}
+                        <strong>
+                            {pendingPick.items.length === 1
+                                ? '1 exercício'
+                                : `${pendingPick.items.length} exercícios`}
+                        </strong>{' '}
+                        que ainda não{' '}
+                        {pendingPick.items.length === 1 ? 'foi' : 'foram'}{' '}
+                        adicionado{pendingPick.items.length === 1 ? '' : 's'} ao
+                        treino. Se sair agora, a seleção será perdida.
+                    </p>
+                </Modal>
+            )}
 
             {/* Pré-visualização do exercício (o mesmo card que o aluno vê).
                 readOnly: anotações e o registro de carga do próprio aluno não

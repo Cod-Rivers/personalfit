@@ -31,6 +31,12 @@ interface Props {
         items: ExerciseLibraryItem[],
         groupTechnique?: string,
     ) => void;
+    /** Seleção ainda não adicionada ao treino (vazia ao desmontar): o pai a usa
+     * para avisar antes de descartar quando o personal sai sem confirmar. */
+    onSelectionChange?: (
+        items: ExerciseLibraryItem[],
+        groupTechnique?: string,
+    ) => void;
     onClose: () => void;
 }
 
@@ -39,7 +45,12 @@ interface Props {
  * dentro do modal de mesociclo. Monta com estado limpo sempre que aberto
  * (o pai só o renderiza enquanto o picker de um treino específico está ativo).
  */
-export default function ExercisePicker({ onPick, onPickMany, onClose }: Props) {
+export default function ExercisePicker({
+    onPick,
+    onPickMany,
+    onSelectionChange,
+    onClose,
+}: Props) {
     const [search, setSearch] = useState('');
     const [tab, setTab] = useState<'all' | 'mine'>('all');
     const [muscle, setMuscle] = useState('');
@@ -61,6 +72,16 @@ export default function ExercisePicker({ onPick, onPickMany, onClose }: Props) {
         isGroupTechniqueValidForSize(groupTechnique, selected.size)
             ? groupTechnique
             : '';
+
+    const selectionCbRef = useRef(onSelectionChange);
+    selectionCbRef.current = onSelectionChange;
+    useEffect(() => {
+        selectionCbRef.current?.(
+            Array.from(selected.values()),
+            effectiveGroup || undefined,
+        );
+    }, [selected, effectiveGroup]);
+    useEffect(() => () => selectionCbRef.current?.([], undefined), []);
 
     const toggle = (item: ExerciseLibraryItem) =>
         setSelected((prev) => {
