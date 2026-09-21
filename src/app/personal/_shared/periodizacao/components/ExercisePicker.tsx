@@ -288,7 +288,9 @@ export default function ExercisePicker({
             )}
             <div
                 style={{
-                    maxHeight: multi ? 340 : 280,
+                    // No celular a lista não pode empurrar a barra de ação
+                    // para fora da tela: limita pela altura visível.
+                    maxHeight: multi ? 'min(340px, 42dvh)' : 280,
                     overflowY: 'auto',
                     display: 'flex',
                     flexDirection: 'column',
@@ -411,6 +413,18 @@ export default function ExercisePicker({
                         marginTop: 12,
                         paddingTop: 12,
                         borderTop: '1px solid var(--border-subtle)',
+                        // Barra de ação presa ao rodapé da área rolável: o
+                        // botão "Adicionar" fica sempre visível.
+                        position: 'sticky',
+                        bottom: 0,
+                        zIndex: 2,
+                        background: 'var(--surface-1)',
+                        marginInline: -14,
+                        marginBottom: -14,
+                        paddingInline: 14,
+                        paddingBottom: 14,
+                        borderRadius: '0 0 10px 10px',
+                        boxShadow: '0 -8px 16px -8px rgba(0, 0, 0, 0.45)',
                     }}
                 >
                     <div
