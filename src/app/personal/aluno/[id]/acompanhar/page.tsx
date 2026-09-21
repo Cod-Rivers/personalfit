@@ -43,6 +43,7 @@ import {
     FiCheck,
     FiCheckCircle,
     FiPlus,
+    FiRepeat,
     FiWifiOff,
     FiX,
 } from 'react-icons/fi';
@@ -1043,6 +1044,24 @@ export default function AcompanharTreinoPage() {
                                                                 s.rowActions
                                                             }
                                                         >
+                                                            <button
+                                                                type="button"
+                                                                className={
+                                                                    s.iconBtn
+                                                                }
+                                                                onClick={() =>
+                                                                    setPicker({
+                                                                        mode: 'replace',
+                                                                        exerciseId:
+                                                                            ex.id,
+                                                                    })
+                                                                }
+                                                                disabled={busy}
+                                                                aria-label={`Trocar ${ex.name}`}
+                                                                title="Trocar exercício"
+                                                            >
+                                                                <FiRepeat />
+                                                            </button>
                                                             <button
                                                                 type="button"
                                                                 className={`${s.iconBtn} ${s.iconBtnDanger}`}

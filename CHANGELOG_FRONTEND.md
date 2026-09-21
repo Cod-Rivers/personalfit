@@ -628,3 +628,7 @@
 **Resumo:** Fiz as três propostas e a troca automática de letra ao arrastar. Os dois repositórios compilam e os testes passam (47 no front, incluindo 4 novos, e os novos do backend), mas ainda não testei na tela de verdade e nada foi commitado. **Letra acompanhando a posição** Hoje arrastar só muda a ordem e a letra fica com o treino: se o B vai para cima, a lista fica "B, A, C". Os registros do aluno se ligam ao treino **pela letra**, e o backend não guarda o ID do treino neles. Se o frontend trocasse só a letra, o "Treino A feito ontem" passaria a apontar para o treino que acabou de virar A. Por isso a …
 **Arquivos:** ExerciseInlineEditor.tsx, MesocycleFormModal.tsx, MesocycleSection.tsx, reorderPatch.ts, trainingEditPatch.test.ts, trainingEditPatch.ts
 **Commits:** Unifica a edicao do exercicio no card do /acompanhar e adiciona +/x
+
+## 2026-09-21 18:11 — River (via Claude Code)
+**Resumo:** Pronto, o botão de troca (⟳) voltou para a lista. Ele fica em cada linha de exercício, ao lado do ×, em [page.tsx](personalfit/src/app/personal/aluno/[id]/acompanhar/page.tsx#L1046). **Por que tinha sumido:** na rodada anterior, quando o "Trocar" foi colocado no topo do card do exercício, ele saiu da lista e ficou só dentro do card. Agora está nos dois lugares. **Como funciona:** - O toque abre a biblioteca no modo de troca. - O exercício novo entra na mesma posição e no mesmo bi-set, e fica com a mesma prescrição. - O histórico do exercício antigo não passa para o novo. - O botão fica desativ…
+**Commits:**  arrastar e soltar muda letra automaticamente
