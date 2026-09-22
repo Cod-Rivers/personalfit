@@ -8,6 +8,7 @@ import type {
 } from '@/libs/planningService';
 import type { ExerciseLog } from '@/components/features/types';
 import { partitionExerciseGroups, comboGroupLabel } from '@/libs/trainingTechniques';
+import { MAX_SETS } from '@/libs/seriesPrescription';
 
 export { partitionExerciseGroups, comboGroupLabel };
 
@@ -239,6 +240,18 @@ function fieldToNum(
  * ExerciseDetailCard, para o personal pré-visualizar vídeo e prescrição sem
  * precisar salvar o mesociclo antes. Espelha o mapeamento de séries usado no
  * save (ver `toRequest`), então o que ele vê é o que será gravado. */
+
+/** Quantidade de séries no modo livre: opcional (ver seriesPrescription.ts,
+ * fromSeriesDraft) — o texto às vezes já descreve a progressão inteira
+ * sozinho, e um número ao lado ficaria redundante. Vazio/inválido = sem
+ * contagem, igual sempre foi; só grava um array quando o personal de fato
+ * preencheu o campo. Os valores em si não importam, só o tamanho do array
+ * (ver formatSeries, que é quem lê essa contagem de volta). */
+function freeSeriesCount(setsField: string): number[] {
+    const n = parseInt(setsField, 10);
+    return Number.isFinite(n) && n > 0 ? Array(Math.min(n, MAX_SETS)).fill(0) : [];
+}
+
 export function localExerciseToLog(ex: LocalExercise): ExerciseLog {
     const isFree = ex.series_mode === 'free';
     const sets = Math.max(1, parseInt(ex.series_sets, 10) || 1);
@@ -249,7 +262,7 @@ export function localExerciseToLog(ex: LocalExercise): ExerciseLog {
         // só serve para identificar o card aberto.
         id: ex.id ?? ex._id,
         name: ex.name || 'Exercício sem nome',
-        series: isFree ? [] : Array(sets).fill(val),
+        series: isFree ? freeSeriesCount(ex.series_sets) : Array(sets).fill(val),
         series_label: isFree ? ex.series_free || undefined : undefined,
         timed: ex.series_mode === 'time',
         variations: ex.variations ?? '',
@@ -266,6 +279,11 @@ export function localExerciseToLog(ex: LocalExercise): ExerciseLog {
             max: 999,
             decimal: true,
         }),
+        loadPercentage:
+            fieldToNum(ex.load_percentage, { min: 0, max: 100 }) || undefined,
+        tempoSeconds:
+            fieldToNum(ex.tempo_seconds, { min: 0, max: 65535 }) || undefined,
+        rpeTarget: fieldToNum(ex.rpe_target, { min: 1, max: 10 }),
         technique: ex.technique || undefined,
         technique_params: ex.technique
             ? {
@@ -372,6 +390,10 @@ export function exerciseToLocal(ex: ExerciseResponse): LocalExercise {
     if (seriesLabel) {
         mode = 'free';
         free = seriesLabel;
+        // series aqui só carrega a CONTAGEM (ver localExerciseToRequest) —
+        // vazio = nunca foi informada, mostra o campo em branco em vez de
+        // herdar o "3" padrão do fallback acima.
+        sets = series.length > 0 ? String(series.length) : '';
     } else if (timed) {
         mode = 'time';
         sets = String(series.length || 3);
@@ -527,8 +549,11 @@ export function localExerciseToRequest(ex: LocalExercise): ExerciseRequest {
         series = Array(sets).fill(val);
         timed = true;
     } else {
-        // free mode: envia séries vazias e guarda no series_label
-        series = [];
+        // free mode: guarda a descrição no series_label; series carrega só a
+        // CONTAGEM de séries quando o personal a informou (ver
+        // freeSeriesCount) — opcional, o texto pode já descrever a
+        // progressão inteira sozinho.
+        series = freeSeriesCount(ex.series_sets);
         timed = false;
         seriesLabel = ex.series_free || undefined;
     }

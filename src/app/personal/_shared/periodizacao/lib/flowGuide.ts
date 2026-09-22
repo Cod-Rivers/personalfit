@@ -198,8 +198,8 @@ export function editorHint(ctx: GuideContext): GuideHint | null {
             return {
                 key: 'exercise',
                 text: student
-                    ? 'Na aba Série, copie da sua ficha as séries × repetições e o descanso. As outras abas são opcionais. “Concluir” salva e volta ao treino.'
-                    : 'Série é o essencial: séries × repetições e descanso. Prescrição, Técnica e Mídia são ajuste fino. “Concluir” salva e volta ao treino.',
+                    ? 'Na aba Prescrição, copie da sua ficha as séries × repetições e o descanso. O resto é opcional. “Concluir” salva e volta ao treino.'
+                    : 'Na aba Prescrição, o essencial são séries × repetições e descanso; carga, % de 1RM, cadência e RPE refinam a intensidade. Técnica e Mídia são ajuste fino. “Concluir” salva e volta ao treino.',
             };
 
         case 'bulkPrescription':

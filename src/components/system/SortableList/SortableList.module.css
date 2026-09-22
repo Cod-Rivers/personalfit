@@ -13,7 +13,7 @@
 .item {
     display: flex;
     align-items: stretch;
-    gap: 6px;
+    gap: 4px;
     min-width: 0;
 }
 
@@ -34,17 +34,32 @@
     min-width: 0;
 }
 
-.handle {
+/* Coluna da alça: mesma largura de sempre, mas agora pode ter algo acima do
+   grip (ver `topSlot` em index.tsx — ex.: o checkbox de "aplicado" no
+   /acompanhar). Sem topSlot, fica igual a antes: só o botão de arrastar. */
+.handleColumn {
     flex: 0 0 auto;
+    width: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.handle {
+    flex: 1 1 auto;
     display: flex;
     align-items: center;
     justify-content: center;
-    /* 32x44 é o mínimo que o dedo acerta sem encostar na linha ao lado. */
-    width: 32px;
-    min-height: 44px;
+    /* Estreita (era 32px) pro card ganhar largura — os 44px de ALTURA
+       continuam de pé, é o que sobra pro dedo acertar sem arrastar sem
+       querer o card vizinho. Largura mais apertada não tem esse risco: o
+       gesto é arrastar, não tocar de leve, então o dedo entra tolerante
+       mesmo num alvo mais estreito. */
+    width: 100%;
+    min-height: 32px;
     padding: 0;
     border: 1px dashed var(--border-mid, rgba(255, 255, 255, 0.18));
-    border-radius: 8px;
+    border-radius: 6px;
     background: transparent;
     color: var(--text-muted, #9aa5b1);
     font-size: 1rem;

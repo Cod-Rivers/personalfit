@@ -19,6 +19,13 @@ export interface ExerciseLog {
      * load_prescribed_at) — ver libs/loadSuggestion.ts. Ausente no fluxo
      * legado, igual a plannedWeight. */
     loadPrescribedAt?: string;
+    /** Intensidade prescrita pelo personal, mostrada ao aluno no card. Só
+     * informativos: o app não guarda o 1RM do aluno, então a % não vira kg. */
+    loadPercentage?: number;
+    /** Cadência: segundos por repetição. */
+    tempoSeconds?: number;
+    /** RPE alvo (1–10). */
+    rpeTarget?: number;
     /** Técnica de treinamento avançada (dropset, isometria etc) — ver
      * TECHNIQUE_CATALOG em @/libs/trainingTechniques. */
     technique?: string;

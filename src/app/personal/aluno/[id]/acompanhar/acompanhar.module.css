@@ -152,45 +152,177 @@
     padding: 0 var(--space-2);
 }
 
+/* Linha do exercício: miniatura grande à esquerda e nome no topo com a
+   largura toda (espremer o nome ao lado dos botões partia "Agachamento" em
+   três linhas). Rodapé: registro do aluno à esquerda; trocar/excluir e o
+   cronômetro de descanso empilhados à direita. */
 .exerciseRow {
     display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    padding: var(--space-3);
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: var(--space-2);
     border-radius: var(--radius-lg);
     border: 1px solid var(--border-subtle);
     background: var(--surface-1);
+    transition: border-color 0.15s, opacity 0.15s;
 }
 
-.exerciseInfo {
-    min-width: 0;
-    flex: 1;
+/* Marcado pelo checkbox na coluna da alça (ver .completeToggle, abaixo, e
+   topSlot em SortableList). Recua visualmente da lista, sem sumir — ainda
+   dá pra reabrir e desmarcar. */
+.exerciseRow[data-completed] {
+    border-color: var(--mint);
+    opacity: 0.72;
+}
+
+.srOnly {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+/* Checkbox de "aplicado", no topSlot da coluna da alça (ver
+   SortableList.module.css .handleColumn) — mesma largura do grip logo
+   abaixo, então a coluna inteira lê como um trilho único. Checkbox de
+   verdade, mas invisível; o visual é todo deste label (htmlFor), clicável
+   no toque e pelo teclado. */
+.completeCheckbox {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+/* O ícone de check fica visível (mudo) mesmo desmarcado — é o que faz a
+   caixa se ler como "checkbox" à primeira vista, em vez de um retângulo sem
+   função nenhuma. Some content abaixo, na hint da tela, explica por
+   extenso, mas ninguém lê isso antes de tocar; a forma tem que carregar o
+   significado sozinha. */
+.completeToggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 28px;
+    border: 1px dashed var(--border-mid);
+    border-radius: 6px;
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.completeToggle:hover {
+    border-color: var(--mint);
+    color: var(--mint-text, var(--mint));
+}
+
+.completeCheckbox:focus-visible + .completeToggle {
+    outline: 2px solid var(--mint);
+    outline-offset: 1px;
+}
+
+.completeToggle[data-checked] {
+    background: var(--mint);
+    border-style: solid;
+    border-color: var(--mint);
+    color: var(--btn-text, #062019);
+    font-size: 1rem;
+}
+
+/* Miniatura como float: só assim o texto recupera a largura inteira do
+   card abaixo dela (ver nota em .exerciseOpen), em vez de ficar espremido
+   numa coluna à direita até o fim do card inteiro. */
+.thumbFloat {
+    float: left;
+    margin: 0 var(--space-2) var(--space-2) 0;
 }
 
 .exerciseName {
+    font-size: var(--font-md);
+    font-weight: 700;
+    line-height: 1.25;
+    margin: 0 0 var(--space-2);
+    /* Quebra entre palavras; só parte a palavra se ela sozinha não couber. */
+    overflow-wrap: break-word;
+    hyphens: auto;
+}
+
+/* Trocar e excluir: float, não item de flex — ver nota em .exerciseOpen.
+   Vem no HTML depois do nome (que assim nunca perde largura por causa
+   deles) e antes da prescrição (que ganha a largura toda de volta assim
+   que passa da altura dos botões). */
+.actionsInline {
+    float: right;
+    display: flex;
+    gap: var(--space-1);
+    margin: 0 0 var(--space-2) var(--space-2);
+}
+
+/* Prescrição em pares rótulo/valor: o valor é o que se lê de relance.
+   inline-block (não flex): flex criaria um formatting context opaco ao
+   float acima, voltando a reservar a largura da faixa dos botões em toda a
+   altura da prescrição — inclusive nas linhas que não cruzam com eles. */
+.prescription {
+    margin: 0;
+}
+
+/* Espaço curto entre Séries e Carga de propósito: são a dupla que o
+   personal lê junto, de relance — precisam caber lado a lado na mesma
+   linha na maioria dos casos, não só quando a tela é larga. */
+.prescriptionItem {
+    display: inline-block;
+    vertical-align: top;
+    min-width: 0;
+    margin: 0 var(--space-3) var(--space-2) 0;
+}
+
+.prescriptionItem dt,
+.weekRecordLabel {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+}
+
+.prescriptionItem dd {
+    margin: 0;
+    font-size: var(--font-sm);
+    font-weight: 600;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: break-word;
+}
+
+.rowFooter {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+}
+
+/* Rótulo e valor na mesma linha — o cronômetro encolheu (ver RestTimer) e
+   sobrou espaço horizontal que duas linhas empilhadas não aproveitavam. */
+.weekRecord {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    min-width: 0;
+}
+
+.weekRecordValue {
     font-size: var(--font-base);
     font-weight: 600;
-    margin: 0 0 2px;
-    overflow-wrap: anywhere;
-}
-
-.prescription {
-    font-size: var(--font-xs);
-    color: var(--text-muted);
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px 10px;
-}
-
-.lastLoad {
-    font-size: var(--font-xs);
     color: var(--text-secondary);
-    text-align: right;
-    flex-shrink: 0;
-    max-width: 40%;
 }
 
-.lastLoadEmpty {
+.weekRecordEmpty {
+    font-size: var(--font-base);
     color: var(--text-muted);
 }
 
@@ -266,36 +398,58 @@
     margin: 0 0 var(--space-3);
 }
 
-/* A linha inteira abre o card do aluno; o lápis fica fora do botão para não
-   aninhar botões. */
+.hintIcon {
+    vertical-align: -2px;
+    border: 1px dashed var(--border-mid);
+    border-radius: 4px;
+    padding: 1px;
+}
+
+/* A linha inteira abre o card do aluno. flow-root (não flex/grid): miniatura
+   e trocar/excluir são floats (ver .thumbFloat/.actionsInline) — só dentro
+   do MESMO formatting context do texto um float é respeitado; flow-root
+   também garante que a altura do card acompanhe a miniatura flutuante
+   (o clearfix moderno, sem precisar de um elemento ::after à parte).
+   É uma div com papel de botão, não um <button> — trocar/excluir são
+   botões de verdade, e um <button> não pode conter outro. */
 .exerciseOpen {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    flex: 1;
-    min-width: 0;
-    background: transparent;
-    border: 0;
-    padding: 0;
+    display: flow-root;
+    width: 100%;
     color: inherit;
     text-align: left;
     cursor: pointer;
-    font: inherit;
 }
 
+.exerciseOpen:focus-visible {
+    outline: 2px solid var(--mint);
+    outline-offset: 2px;
+    border-radius: var(--radius-md);
+}
+
+/* Visualmente ~22px (mesma ideia do RestTimer): o alvo de toque de 44px —
+   usado na academia, com uma mão — continua ali, só que invisível (o
+   ::before abaixo). Só estica pra cima/baixo: trocar e excluir ficam lado a
+   lado, esticar também os lados invadiria um no outro. */
 .iconBtn {
+    position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    /* Alvo de toque de 44px — usado na academia, com uma mão. */
-    min-width: 2.75rem;
-    min-height: 2.75rem;
-    border-radius: var(--radius-md);
+    min-width: 1.375rem;
+    min-height: 1.375rem;
+    font-size: var(--font-sm);
+    border-radius: var(--radius-sm);
     border: 1px solid var(--border-mid);
     background: transparent;
     color: var(--text-primary);
     cursor: pointer;
     flex-shrink: 0;
+}
+
+.iconBtn::before {
+    content: '';
+    position: absolute;
+    inset: -11px 0;
 }
 
 .iconBtn:active {
@@ -321,14 +475,6 @@
 .iconBtn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-}
-
-/* Trocar e excluir, lado a lado. O .exerciseOpen ao lado tem min-width: 0 e
-   é ele que cede espaço num celular estreito — os alvos de 44px não. */
-.rowActions {
-    display: flex;
-    gap: var(--space-1);
-    flex-shrink: 0;
 }
 
 .iconBtnDanger {

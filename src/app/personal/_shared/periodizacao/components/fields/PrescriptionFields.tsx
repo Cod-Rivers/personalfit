@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { FiAlertTriangle } from 'react-icons/fi';
 import { MUSCLE_GROUPS, muscleGroupLabel } from '@/libs/planningService';
 import {
     TECHNIQUE_CATALOG,
@@ -90,6 +91,27 @@ export function PrescriptionNumber({
                 <span className={s.seriesUnitLabel}>{unit}</span>
             </div>
         </div>
+    );
+}
+
+/** Aviso de carga em kg e % de 1RM preenchidas juntas. O app não guarda o
+ * 1RM do aluno, então uma não é calculada a partir da outra: as duas chegam ao
+ * aluno como estão, e podem se contradizer (80% de 1RM e 20 kg). */
+export function LoadPercentageWarning({
+    loadKg,
+    loadPercentage,
+}: {
+    loadKg: string;
+    loadPercentage: string;
+}) {
+    if (!(Number(loadKg) > 0) || !(Number(loadPercentage) > 0)) return null;
+    return (
+        <p className={s.inlineWarning} role="note">
+            <FiAlertTriangle aria-hidden /> Carga ({loadKg} kg) e % de 1RM (
+            {loadPercentage}%) preenchidas juntas. O app não conhece o 1RM do
+            aluno, então a % não vira kg: o aluno vê as duas. Confira se batem
+            ou deixe só uma.
+        </p>
     );
 }
 

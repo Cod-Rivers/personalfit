@@ -90,6 +90,17 @@ const nextConfig: NextConfig = {
       ),
     ];
   },
+  // Proxy local só para testar o front contra um backend remoto sem CORS: o
+  // backend de produção só libera as origens em CORS_ALLOWED_ORIGINS, e
+  // localhost não está nessa lista. Passando pelo próprio servidor Next
+  // (mesma origem do navegador), a chamada nunca sai do domínio local.
+  // Inativo por padrão — só existe quando LOCAL_API_PROXY_TARGET é setada
+  // (nunca em produção, onde a env não é definida).
+  async rewrites() {
+    const target = process.env.LOCAL_API_PROXY_TARGET;
+    if (!target) return [];
+    return [{ source: "/api-proxy/:path*", destination: `${target}/:path*` }];
+  },
   webpack: (config) => {
     // Desativa source maps de JS e CSS no nível do webpack
     config.devtool = false;

@@ -803,26 +803,58 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                                 className={styles.seriesEditRow}
                                             >
                                                 {seriesDraft.mode === 'free' ? (
-                                                    <input
-                                                        type="text"
-                                                        autoFocus
-                                                        value={seriesDraft.free}
-                                                        onChange={(e) =>
-                                                            setSeriesDraft({
-                                                                ...seriesDraft,
-                                                                free: e.target
-                                                                    .value,
-                                                            })
-                                                        }
-                                                        onKeyDown={
-                                                            handleSeriesKeyDown
-                                                        }
-                                                        placeholder="Ex: 3-4 × 10-12"
-                                                        aria-label="Descrição livre das séries"
-                                                        className={
-                                                            styles.seriesFreeInput
-                                                        }
-                                                    />
+                                                    <>
+                                                        <input
+                                                            type="number"
+                                                            autoFocus
+                                                            min="1"
+                                                            max={MAX_SETS}
+                                                            value={
+                                                                seriesDraft.sets
+                                                            }
+                                                            onChange={(e) =>
+                                                                setSeriesDraft({
+                                                                    ...seriesDraft,
+                                                                    sets: e
+                                                                        .target
+                                                                        .value,
+                                                                })
+                                                            }
+                                                            onKeyDown={
+                                                                handleSeriesKeyDown
+                                                            }
+                                                            placeholder="Séries"
+                                                            aria-label="Quantidade de séries (opcional — deixe em branco se o texto já descrever todas as séries)"
+                                                            className={
+                                                                styles.seriesNumInput
+                                                            }
+                                                        />
+                                                        <span aria-hidden>
+                                                            ×
+                                                        </span>
+                                                        <input
+                                                            type="text"
+                                                            value={
+                                                                seriesDraft.free
+                                                            }
+                                                            onChange={(e) =>
+                                                                setSeriesDraft({
+                                                                    ...seriesDraft,
+                                                                    free: e
+                                                                        .target
+                                                                        .value,
+                                                                })
+                                                            }
+                                                            onKeyDown={
+                                                                handleSeriesKeyDown
+                                                            }
+                                                            placeholder="Ex: 8 a 10"
+                                                            aria-label="Descrição livre das séries"
+                                                            className={
+                                                                styles.seriesFreeInput
+                                                            }
+                                                        />
+                                                    </>
                                                 ) : (
                                                     <>
                                                         <input
@@ -1396,6 +1428,53 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                                 exercise.group_technique,
                                             )}
                                         </p>
+                                    </div>
+                                )}
+                                {/* Intensidade prescrita (% de 1RM, cadência,
+                                    RPE). A carga em kg fica no topo do card. */}
+                                {(exercise.loadPercentage ||
+                                    exercise.tempoSeconds ||
+                                    exercise.rpeTarget) && (
+                                    <div className={styles.notesSection}>
+                                        <p>
+                                            <strong>Intensidade:</strong>
+                                        </p>
+                                        <ul className={styles.intensityList}>
+                                            {exercise.loadPercentage ? (
+                                                <li>
+                                                    {exercise.loadPercentage}% de
+                                                    1RM{' '}
+                                                    <HelpTooltip
+                                                        text={getGlossaryTerm('1rm').short}
+                                                        href="/ajuda#glossario-1rm"
+                                                        label="Ajuda sobre 1RM"
+                                                    />
+                                                </li>
+                                            ) : null}
+                                            {exercise.tempoSeconds ? (
+                                                <li>
+                                                    Cadência:{' '}
+                                                    {exercise.tempoSeconds} s por
+                                                    repetição{' '}
+                                                    <HelpTooltip
+                                                        text={getGlossaryTerm('cadencia').short}
+                                                        href="/ajuda#glossario-cadencia"
+                                                        label="Ajuda sobre cadência"
+                                                    />
+                                                </li>
+                                            ) : null}
+                                            {exercise.rpeTarget ? (
+                                                <li>
+                                                    Esforço alvo: RPE{' '}
+                                                    {exercise.rpeTarget} de 10{' '}
+                                                    <HelpTooltip
+                                                        text={getGlossaryTerm('rpe').short}
+                                                        href="/ajuda#glossario-rpe"
+                                                        label="Ajuda sobre RPE"
+                                                    />
+                                                </li>
+                                            ) : null}
+                                        </ul>
                                     </div>
                                 )}
                                 {/* Instruções do personal trainer (campo comments) */}

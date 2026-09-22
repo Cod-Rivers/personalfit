@@ -209,7 +209,7 @@ export default function MesocycleFormModal({
                               card: 'exercise',
                               trainingId: training._id,
                               exerciseId: exercise._id,
-                              tab: 'serie',
+                              tab: 'prescricao',
                           },
                       ]
                     : [],
@@ -932,7 +932,7 @@ export default function MesocycleFormModal({
                                 card: 'exercise',
                                 trainingId: activeTraining._id,
                                 exerciseId,
-                                tab: 'serie',
+                                tab: 'prescricao',
                             })
                         }
                         onOpenPicker={() =>
@@ -954,7 +954,7 @@ export default function MesocycleFormModal({
                                 card: 'exercise',
                                 trainingId: activeTraining._id,
                                 exerciseId: exercise._id,
-                                tab: 'serie',
+                                tab: 'prescricao',
                             });
                         }}
                         onRemoveExercise={(eid) =>
@@ -1150,7 +1150,7 @@ export default function MesocycleFormModal({
                 card: 'exercise',
                 trainingId: activeTraining._id,
                 exerciseId: exercises[0]._id,
-                tab: 'serie',
+                tab: 'prescricao',
             });
         } else {
             // Lote: volta para a lista do treino, onde a "prescrição geral"

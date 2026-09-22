@@ -43,7 +43,6 @@ import {
     FiCheck,
     FiCheckCircle,
     FiPlus,
-    FiRepeat,
     FiWifiOff,
     FiX,
 } from 'react-icons/fi';
@@ -73,12 +72,10 @@ import {
     isOfflineError,
 } from '@/libs/offline/personalCache';
 import { Api } from '@/libs/api';
-import { formatSeries } from '@/libs/seriesPrescription';
 import {
     comboGroupLabel,
     partitionExerciseGroups,
 } from '@/libs/trainingTechniques';
-import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
 import WorkoutLogger from '@/components/features/WorkoutLogger';
 import ExerciseDetailCard from '@/components/features/ExerciseDetailCard';
 import type { ExerciseLog } from '@/components/features/types';
@@ -108,6 +105,7 @@ import Modal from '@/components/system/Modal';
 import { SortableItem, SortableList } from '@/components/system/SortableList';
 import { useToast } from '@/components/system/Toast';
 import { markWorkoutStartIfNeeded } from '@/libs/workoutSessionTimer';
+import StudentExerciseRow, { type WeekRecord } from './StudentExerciseRow';
 import s from './acompanhar.module.css';
 
 interface StudentRow {
@@ -168,6 +166,9 @@ export default function AcompanharTreinoPage() {
     const [studentName, setStudentName] = useState('');
     const [macro, setMacro] = useState<MacrocycleResponse | null>(null);
     const [logs, setLogs] = useState<NewWorkoutLogResponse[]>([]);
+    /** Registros da semana não carregaram: a linha não afirma "ainda não
+     * fez" sem saber (ver WeekRecord). */
+    const [logsFailed, setLogsFailed] = useState(false);
     const [selectedTrainingId, setSelectedTrainingId] = useState<string | null>(
         null,
     );
@@ -178,6 +179,23 @@ export default function AcompanharTreinoPage() {
     /** Exercício aberto no card do aluno (ajuste rápido). Só o ID: o card é
      * derivado do macrociclo atual, então uma gravação aparece nele na hora. */
     const [openExerciseId, setOpenExerciseId] = useState<string | null>(null);
+    /** Marcação visual do personal durante o atendimento presencial — "já
+     * apliquei este exercício com o aluno". Só nesta tela, só nesta sessão:
+     * não é o registro do aluno (isso é `record`/`lastLoadByExercise`, vindo
+     * do workout log) nem grava em lugar nenhum — reinicia ao trocar de
+     * treino ou recarregar a página, de propósito, para nunca ficar
+     * marcado de uma sessão presencial para a próxima. */
+    const [completedExerciseIds, setCompletedExerciseIds] = useState<
+        Set<string>
+    >(new Set());
+    const toggleExerciseCompleted = (id: string) => {
+        setCompletedExerciseIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
     /** Biblioteca aberta: para acrescentar exercícios ao treino, ou para
      * trocar um deles. */
     const [picker, setPicker] = useState<
@@ -296,8 +314,10 @@ export default function AcompanharTreinoPage() {
                 cycle.micro.id,
             );
             setLogs(data);
+            setLogsFailed(false);
         } catch {
             setLogs([]);
+            setLogsFailed(true);
         }
     }, [studentId, macro, cycle]);
 
@@ -690,6 +710,12 @@ export default function AcompanharTreinoPage() {
         markWorkoutStartIfNeeded(cycle.micro.id, selectedTraining.reference);
     }, [cycle, selectedTraining]);
 
+    // Troca de treino (A/B/C) = novo atendimento: as marcações do anterior
+    // não fazem sentido aqui.
+    useEffect(() => {
+        setCompletedExerciseIds(new Set());
+    }, [selectedTraining?.id]);
+
     if (loading) {
         return (
             <div className="text-center py-5">
@@ -922,7 +948,9 @@ export default function AcompanharTreinoPage() {
                                 </div>
                                 <p className={s.hint}>
                                     Toque no exercício para ver e editar. A
-                                    alça ⠿ muda a ordem.
+                                    alça ⠿ muda a ordem; o <FiCheck aria-hidden className={s.hintIcon} /> acima
+                                    dela marca o exercício como aplicado com o
+                                    aluno nesta sessão.
                                 </p>
                                 <SortableList
                                     ids={exerciseBlocks.map(blockId)}
@@ -944,145 +972,50 @@ export default function AcompanharTreinoPage() {
                                     className={s.sortableSpacing}
                                 >
                                     {exerciseBlocks.map((block) => {
-                                        const rows = block.map((ex) => {
-                                            const last =
+                                        const rows = block.map((ex, i) => {
+                                            const kg =
                                                 lastLoadByExercise.get(ex.id) ??
                                                 lastLoadByExercise.get(
                                                     ex.name.toLowerCase(),
                                                 );
+                                            const record: WeekRecord =
+                                                logsFailed
+                                                    ? { kind: 'unknown' }
+                                                    : kg != null
+                                                      ? { kind: 'load', kg }
+                                                      : selectedDone
+                                                        ? { kind: 'done-no-load' }
+                                                        : { kind: 'not-done' };
                                             return (
-                                                <div
+                                                <StudentExerciseRow
                                                     key={ex.id}
-                                                    className={s.exerciseRow}
-                                                >
-                                                    <button
-                                                        type="button"
-                                                        className={
-                                                            s.exerciseOpen
-                                                        }
-                                                        onClick={() =>
-                                                            setOpenExerciseId(
-                                                                ex.id,
-                                                            )
-                                                        }
-                                                        aria-label={`Abrir ${ex.name}`}
-                                                    >
-                                                        <ExerciseThumbnail
-                                                            name={ex.name}
-                                                            videoThumb={
-                                                                ex.video_thumb
-                                                            }
-                                                            videoUrl={
-                                                                ex.video_url
-                                                            }
-                                                            width={52}
-                                                            height={52}
-                                                            lazyCapture
-                                                            captureFrame={false}
-                                                        />
-                                                        <div
-                                                            className={
-                                                                s.exerciseInfo
-                                                            }
-                                                        >
-                                                            <p
-                                                                className={
-                                                                    s.exerciseName
-                                                                }
-                                                            >
-                                                                {ex.name}
-                                                            </p>
-                                                            <div
-                                                                className={
-                                                                    s.prescription
-                                                                }
-                                                            >
-                                                                <span>
-                                                                    {formatSeries(
-                                                                        ex,
-                                                                    )}
-                                                                </span>
-                                                                {ex.load_kg ? (
-                                                                    <span>
-                                                                        {
-                                                                            ex.load_kg
-                                                                        }
-                                                                        kg
-                                                                        prescritos
-                                                                    </span>
-                                                                ) : null}
-                                                                {ex.rest_seconds ? (
-                                                                    <span>
-                                                                        {
-                                                                            ex.rest_seconds
-                                                                        }
-                                                                        s de
-                                                                        descanso
-                                                                    </span>
-                                                                ) : null}
-                                                                {ex.rpe_target ? (
-                                                                    <span>
-                                                                        RPE{' '}
-                                                                        {
-                                                                            ex.rpe_target
-                                                                        }
-                                                                    </span>
-                                                                ) : null}
-                                                            </div>
-                                                        </div>
-                                                        <span
-                                                            className={`${s.lastLoad}${last ? '' : ` ${s.lastLoadEmpty}`}`}
-                                                        >
-                                                            {last
-                                                                ? `Última: ${last}kg`
-                                                                : 'Sem registro'}
-                                                        </span>
-                                                    </button>
-                                                    {!isOfflineData && (
-                                                        <div
-                                                            className={
-                                                                s.rowActions
-                                                            }
-                                                        >
-                                                            <button
-                                                                type="button"
-                                                                className={
-                                                                    s.iconBtn
-                                                                }
-                                                                onClick={() =>
-                                                                    setPicker({
-                                                                        mode: 'replace',
-                                                                        exerciseId:
-                                                                            ex.id,
-                                                                    })
-                                                                }
-                                                                disabled={busy}
-                                                                aria-label={`Trocar ${ex.name}`}
-                                                                title="Trocar exercício"
-                                                            >
-                                                                <FiRepeat />
-                                                            </button>
-                                                            <button
-                                                                type="button"
-                                                                className={`${s.iconBtn} ${s.iconBtnDanger}`}
-                                                                onClick={() =>
-                                                                    setPendingDelete(
-                                                                        {
-                                                                            kind: 'exercise',
-                                                                            id: ex.id,
-                                                                            name: ex.name,
-                                                                        },
-                                                                    )
-                                                                }
-                                                                disabled={busy}
-                                                                aria-label={`Excluir ${ex.name}`}
-                                                                title="Excluir do treino"
-                                                            >
-                                                                <FiX />
-                                                            </button>
-                                                        </div>
+                                                    exercise={ex}
+                                                    record={record}
+                                                    showRestTimer={
+                                                        i === block.length - 1
+                                                    }
+                                                    showActions={!isOfflineData}
+                                                    busy={busy}
+                                                    completed={completedExerciseIds.has(
+                                                        ex.id,
                                                     )}
-                                                </div>
+                                                    onOpen={() =>
+                                                        setOpenExerciseId(ex.id)
+                                                    }
+                                                    onReplace={() =>
+                                                        setPicker({
+                                                            mode: 'replace',
+                                                            exerciseId: ex.id,
+                                                        })
+                                                    }
+                                                    onDelete={() =>
+                                                        setPendingDelete({
+                                                            kind: 'exercise',
+                                                            id: ex.id,
+                                                            name: ex.name,
+                                                        })
+                                                    }
+                                                />
                                             );
                                         });
 
@@ -1102,6 +1035,68 @@ export default function AcompanharTreinoPage() {
                                                 disabled={
                                                     isOfflineData ||
                                                     exerciseBlocks.length < 2
+                                                }
+                                                topSlot={
+                                                    // Só em bloco de UM exercício: num bi-set/tri-set a
+                                                    // alça é do bloco inteiro, não dá pra marcar "qual"
+                                                    // dos exercícios foi aplicado com um único checkbox.
+                                                    block.length === 1 ? (
+                                                        <>
+                                                            <input
+                                                                id={`complete-${block[0].id}`}
+                                                                type="checkbox"
+                                                                className={
+                                                                    s.completeCheckbox
+                                                                }
+                                                                checked={completedExerciseIds.has(
+                                                                    block[0].id,
+                                                                )}
+                                                                onChange={() =>
+                                                                    toggleExerciseCompleted(
+                                                                        block[0]
+                                                                            .id,
+                                                                    )
+                                                                }
+                                                            />
+                                                            <label
+                                                                htmlFor={`complete-${block[0].id}`}
+                                                                className={
+                                                                    s.completeToggle
+                                                                }
+                                                                data-checked={
+                                                                    completedExerciseIds.has(
+                                                                        block[0]
+                                                                            .id,
+                                                                    ) ||
+                                                                    undefined
+                                                                }
+                                                                title={
+                                                                    completedExerciseIds.has(
+                                                                        block[0]
+                                                                            .id,
+                                                                    )
+                                                                        ? 'Desmarcar como aplicado'
+                                                                        : 'Marcar como aplicado com o aluno'
+                                                                }
+                                                            >
+                                                                <FiCheck
+                                                                    aria-hidden
+                                                                />
+                                                                <span
+                                                                    className={
+                                                                        s.srOnly
+                                                                    }
+                                                                >
+                                                                    {completedExerciseIds.has(
+                                                                        block[0]
+                                                                            .id,
+                                                                    )
+                                                                        ? `Desmarcar ${block[0].name} como aplicado`
+                                                                        : `Marcar ${block[0].name} como aplicado com o aluno`}
+                                                                </span>
+                                                            </label>
+                                                        </>
+                                                    ) : undefined
                                                 }
                                             >
                                                 {block.length === 1 ? (

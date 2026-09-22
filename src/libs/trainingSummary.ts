@@ -60,13 +60,18 @@ export function summarizeTraining(
         0,
     );
 
-    // Estimativa heurística: tempo ativo por série (fixo p/ exercícios normais,
-    // tempo_seconds p/ isométricos) + descanso configurado, somados por série.
+    // Estimativa heurística: tempo ativo por série + descanso configurado,
+    // somados por série. Em exercício por tempo, o valor de cada série JÁ É a
+    // duração em segundos (aba de prescrição, modo "Tempo"). tempo_seconds é a
+    // cadência — segundos por REPETIÇÃO — e não serve de duração da série.
     const estimatedSeconds = exercises.reduce((total, ex) => {
-        const sets = ex.series?.length ?? 0;
-        const activePerSet = ex.timed ? (ex.tempo_seconds ?? 30) : 35;
+        const series = ex.series ?? [];
         const restPerSet = ex.rest_seconds ?? 90;
-        return total + sets * (activePerSet + restPerSet);
+        const active = series.reduce(
+            (sum, value) => sum + (ex.timed ? value || 30 : 35),
+            0,
+        );
+        return total + active + series.length * restPerSet;
     }, 0);
     const estimatedMinutes =
         exerciseCount > 0 ? Math.max(15, Math.round(estimatedSeconds / 60)) : 0;

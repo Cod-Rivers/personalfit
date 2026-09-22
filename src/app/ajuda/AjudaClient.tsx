@@ -1143,8 +1143,9 @@ const personalSections: HelpSection[] = [
                     </li>
                     <li>
                         <strong>Séries e carga:</strong> toque no exercício. A
-                        aba Série tem o essencial; Prescrição, Técnica e Mídia
-                        são ajuste fino. <strong>Prescrição geral</strong>{' '}
+                        aba Prescrição tem as séries, o descanso e a
+                        intensidade (carga, % de 1RM, cadência e RPE); Técnica
+                        e Mídia são ajuste fino. <strong>Prescrição geral</strong>{' '}
                         preenche todos os exercícios do treino de uma vez.
                     </li>
                 </ol>

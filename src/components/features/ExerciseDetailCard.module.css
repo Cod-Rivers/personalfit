@@ -207,3 +207,16 @@
     outline: 2px solid var(--mint);
     outline-offset: 2px;
 }
+
+/* Intensidade prescrita (% de 1RM, cadência, RPE) — uma linha por item. */
+.intensityList {
+    list-style: none;
+    margin: 0 auto 0.5rem;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-align: center;
+}

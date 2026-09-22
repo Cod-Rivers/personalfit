@@ -22,10 +22,9 @@ export type EditorCard =
     | { card: 'weeks' }
     | { card: 'week'; microId: string };
 
-export type ExerciseTab = 'serie' | 'prescricao' | 'tecnica' | 'midia';
+export type ExerciseTab = 'prescricao' | 'tecnica' | 'midia';
 
 export const EXERCISE_TABS: { id: ExerciseTab; label: string }[] = [
-    { id: 'serie', label: 'Série' },
     { id: 'prescricao', label: 'Prescrição' },
     { id: 'tecnica', label: 'Técnica' },
     { id: 'midia', label: 'Mídia e notas' },

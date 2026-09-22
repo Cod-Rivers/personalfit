@@ -1,0 +1,88 @@
+.timer {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 1px 1px 1px var(--space-1);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+    background: var(--surface-2);
+}
+
+.time {
+    min-width: 2.5rem;
+    font-size: var(--font-base);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+    text-align: center;
+}
+
+.timer[data-state='running'] {
+    border-color: var(--mint);
+}
+
+.timer[data-state='running'] .time {
+    color: var(--mint-text);
+}
+
+.timer[data-state='done'] {
+    border-color: var(--amber);
+    background: rgba(240, 165, 0, 0.12);
+}
+
+.timer[data-state='done'] .time {
+    color: var(--amber-text);
+    font-size: var(--font-xs);
+}
+
+/* Visualmente uns 22px de altura (metade dos 44px do resto do app), mas o
+   alvo de toque de verdade (o ::before abaixo) continua perto de 44px —
+   ainda é usado de pé, com uma mão. Só estica pra cima/baixo: os botões
+   ficam lado a lado, esticar também os lados invadiria o vizinho. */
+.btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.5rem;
+    min-height: 1.375rem;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-primary);
+    font-size: var(--font-sm);
+    cursor: pointer;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    inset: -11px 0;
+}
+
+.btnPrimary {
+    color: var(--mint-text);
+}
+
+.btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.btn:active:not(:disabled) {
+    transform: scale(0.94);
+}
+
+.btn:focus-visible {
+    outline: 2px solid var(--mint);
+    outline-offset: 1px;
+}
+
+.srOnly {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}

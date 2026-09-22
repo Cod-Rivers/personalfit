@@ -53,7 +53,16 @@ export function toSeriesDraft(ex: SeriesSource): SeriesPrescriptionDraft {
     const series = ex.series ?? [];
 
     if (ex.series_label) {
-        return { mode: 'free', sets: '3', value: '10', free: ex.series_label };
+        // series vazio = a quantidade de séries nunca foi informada (texto
+        // livre puro, ex: "8 a 10") — '' deixa isso visível no campo em vez
+        // de inventar um "3" que o personal nunca digitou (ver
+        // fromSeriesDraft, que é o outro lado desta mesma escolha).
+        return {
+            mode: 'free',
+            sets: series.length > 0 ? String(series.length) : '',
+            value: '10',
+            free: ex.series_label,
+        };
     }
     if (ex.timed) {
         return {
@@ -92,8 +101,16 @@ export function fromSeriesDraft(
     draft: SeriesPrescriptionDraft,
 ): SeriesPrescriptionPatch {
     if (draft.mode === 'free') {
+        // Campo de séries é opcional aqui: o texto às vezes já descreve a
+        // progressão inteira sozinho (ex: "8 até a falha + 5 a 6 rep + 1 a 3
+        // rep", uma série por trecho) e um número ao lado ficaria
+        // redundante. Só grava uma contagem quando o personal de fato
+        // preencheu — os valores em si não importam (o texto livre é quem
+        // manda na exibição, ver formatSeries), só a QUANTIDADE de séries.
+        const setsN = parseInt(draft.sets.trim(), 10);
+        const hasCount = Number.isFinite(setsN) && setsN > 0;
         return {
-            series: [],
+            series: hasCount ? Array(Math.min(setsN, MAX_SETS)).fill(0) : [],
             timed: false,
             series_label: draft.free.trim() || undefined,
         };
@@ -112,12 +129,29 @@ export function fromSeriesDraft(
 
 /** Texto da prescrição, na mesma forma usada pelos cards de exercício. */
 export function formatSeries(ex: SeriesSource): string {
-    if (ex.series_label) return ex.series_label;
+    if (ex.series_label) {
+        // series só carrega uma CONTAGEM aqui (ver fromSeriesDraft) — os
+        // valores em si são só zeros. Vazio = contagem nunca informada,
+        // mostra só o texto como sempre foi.
+        const count = (ex.series ?? []).length;
+        return count > 0 ? `${count} × ${ex.series_label}` : ex.series_label;
+    }
     const series = ex.series ?? [];
     if (series.length === 0) return '—';
     return ex.timed
         ? series.map((n) => `${n}s`).join(' - ')
         : series.join(' - ');
+}
+
+/** Mesma prescrição em "séries × valor" quando todas as séries são iguais
+ * ("4 × 10", "3 × 30s") — é assim que o personal lê e escreve. Pirâmide
+ * (valores diferentes) e texto livre caem no formatSeries, que não perde
+ * informação. */
+export function formatSeriesCompact(ex: SeriesSource): string {
+    const series = ex.series ?? [];
+    if (ex.series_label || series.length < 2) return formatSeries(ex);
+    if (series.some((n) => n !== series[0])) return formatSeries(ex);
+    return `${series.length} × ${series[0]}${ex.timed ? 's' : ''}`;
 }
 
 /** Assinatura estável do que uma edição de séries altera. Serve para saber se

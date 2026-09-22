@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
     MAX_SETS,
     formatSeries,
+    formatSeriesCompact,
     fromSeriesDraft,
     seriesSignature,
     toSeriesDraft,
@@ -40,6 +41,19 @@ describe('toSeriesDraft', () => {
         expect(draft.mode).toBe('free');
         expect(draft.free).toBe('3-4 × 10-12');
     });
+
+    it('reads the set count alongside free text when one was saved', () => {
+        const draft = toSeriesDraft({
+            series: [0, 0, 0],
+            series_label: '8 a 10',
+        });
+        expect(draft.sets).toBe('3');
+    });
+
+    it('leaves the set count blank for free text that never had one', () => {
+        const draft = toSeriesDraft({ series: [], series_label: '8 a 10' });
+        expect(draft.sets).toBe('');
+    });
 });
 
 describe('fromSeriesDraft', () => {
@@ -72,7 +86,7 @@ describe('fromSeriesDraft', () => {
         expect(patch.series_label).toBeUndefined();
     });
 
-    it('stores free text and drops the numeric series', () => {
+    it('stores free text and drops the numeric values, keeping only a set count', () => {
         expect(
             fromSeriesDraft({
                 mode: 'free',
@@ -80,7 +94,18 @@ describe('fromSeriesDraft', () => {
                 value: '10',
                 free: '  3-4 × 10-12  ',
             }),
-        ).toEqual({ series: [], timed: false, series_label: '3-4 × 10-12' });
+        ).toEqual({
+            series: [0, 0, 0],
+            timed: false,
+            series_label: '3-4 × 10-12',
+        });
+    });
+
+    it('leaves the set count out when the field is blank — the text stands alone', () => {
+        expect(
+            fromSeriesDraft({ mode: 'free', sets: '', value: '10', free: '8 a 10' })
+                .series,
+        ).toEqual([]);
     });
 
     it('turns empty free text into undefined, not an empty label', () => {
@@ -130,13 +155,48 @@ describe('formatSeries', () => {
         expect(formatSeries({ series: [30, 30], timed: true })).toBe('30s - 30s');
     });
 
-    it('shows the free-text label verbatim', () => {
+    it('shows the free-text label verbatim when no set count was saved', () => {
         expect(formatSeries({ series: [], series_label: '3-4 × 10-12' })).toBe(
             '3-4 × 10-12',
         );
     });
 
+    it('prefixes the set count when one was saved alongside the free text', () => {
+        expect(
+            formatSeries({ series: [0, 0, 0], series_label: '8 a 10' }),
+        ).toBe('3 × 8 a 10');
+    });
+
     it('shows a dash when there is no prescription at all', () => {
         expect(formatSeries({ series: [] })).toBe('—');
+    });
+});
+
+describe('formatSeriesCompact', () => {
+    it('collapses equal sets into sets × reps', () => {
+        expect(formatSeriesCompact({ series: [10, 10, 10, 10] })).toBe('4 × 10');
+    });
+
+    it('keeps the seconds suffix for timed exercises', () => {
+        expect(formatSeriesCompact({ series: [30, 30, 30], timed: true })).toBe(
+            '3 × 30s',
+        );
+    });
+
+    it('falls back to the full list for pyramids', () => {
+        expect(formatSeriesCompact({ series: [12, 10, 8] })).toBe('12 - 10 - 8');
+    });
+
+    it('keeps single (non-label) sets as they are', () => {
+        expect(formatSeriesCompact({ series: [15] })).toBe('15');
+    });
+
+    it('defers to formatSeries for free text, count prefix included', () => {
+        expect(
+            formatSeriesCompact({
+                series: [0, 0],
+                series_label: '8 a 10 + falha',
+            }),
+        ).toBe('2 × 8 a 10 + falha');
     });
 });

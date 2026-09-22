@@ -2,6 +2,7 @@
 
 import {
     PrescriptionNumber,
+    LoadPercentageWarning,
     MuscleGroupSelect,
     TechniqueBlock,
     TECHNIQUE_FIELD_MAP,
@@ -62,6 +63,10 @@ export default function BulkPrescriptionCard({
                     value={fields.load_percentage}
                     onChange={setField('load_percentage')}
                     helpId="1rm"
+                />
+                <LoadPercentageWarning
+                    loadKg={fields.load_kg}
+                    loadPercentage={fields.load_percentage}
                 />
                 <PrescriptionNumber
                     label="Cadência"

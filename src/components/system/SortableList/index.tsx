@@ -100,6 +100,7 @@ export function SortableItem({
     label,
     disabled,
     className,
+    topSlot,
     children,
 }: {
     id: string;
@@ -108,6 +109,13 @@ export function SortableItem({
     /** Sem gravação possível (offline, tela só de leitura): sem alça. */
     disabled?: boolean;
     className?: string;
+    /** Conteúdo extra no topo da própria coluna da alça — mesma largura,
+     * acima do grip de arrastar (ver /acompanhar, que põe um checkbox de
+     * "aplicado" ali). Existe para não abrir uma faixa NOVA dentro do card
+     * só para isso; a coluna da alça já reserva aquele espaço. Não é o botão
+     * de arrastar — um elemento próprio, então o toque nele não inicia um
+     * arrasto (dnd-kit só escuta o botão do grip). */
+    topSlot?: React.ReactNode;
     children: React.ReactNode;
 }) {
     const {
@@ -132,17 +140,25 @@ export function SortableItem({
             }}
             className={`${s.item}${isDragging ? ` ${s.itemDragging}` : ''}${className ? ` ${className}` : ''}`}
         >
-            {!disabled && (
-                <button
-                    type="button"
-                    className={s.handle}
-                    aria-label={`Arrastar ${label} para reordenar`}
-                    title="Arrastar para reordenar"
-                    {...attributes}
-                    {...listeners}
-                >
-                    <span aria-hidden>⠿</span>
-                </button>
+            {/* topSlot fica de fora do `!disabled`: reordenar pode estar
+                desligado (offline, item único) sem desligar o checkbox — são
+                duas coisas independentes que só dividem a mesma coluna. */}
+            {(topSlot || !disabled) && (
+                <div className={s.handleColumn}>
+                    {topSlot}
+                    {!disabled && (
+                        <button
+                            type="button"
+                            className={s.handle}
+                            aria-label={`Arrastar ${label} para reordenar`}
+                            title="Arrastar para reordenar"
+                            {...attributes}
+                            {...listeners}
+                        >
+                            <span aria-hidden>⠿</span>
+                        </button>
+                    )}
+                </div>
             )}
             <div className={s.body}>{children}</div>
         </div>

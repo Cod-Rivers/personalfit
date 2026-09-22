@@ -11,6 +11,7 @@ import {
 } from '../../lib/editorNavigation';
 import {
     PrescriptionNumber,
+    LoadPercentageWarning,
     MuscleGroupSelect,
     NonSubstitutableSelect,
     TechniqueBlock,
@@ -23,13 +24,14 @@ import s from '../../builder.module.css';
 type UpdateField = keyof Omit<LocalExercise, '_id'>;
 
 /**
- * Card de UM exercício. Os 24 campos editáveis de LocalExercise ficam em
- * quatro abas de 3 a 5 campos, em vez de empilhados: nenhuma aba passa da
- * altura da tela num aparelho de 390×740, que é o critério do editor.
+ * Card de UM exercício, em três abas: Prescrição, Técnica e Mídia e notas.
  *
- * A divisão segue a frequência de uso, não a estrutura do tipo: Série é o que
- * se mexe sempre, Prescrição é o ajuste fino, e Técnica e Mídia quase nunca
- * mudam depois do primeiro cadastro.
+ * Prescrição junta volume (séries, descanso) e intensidade (carga, % de 1RM,
+ * cadência, RPE). Eram duas abas, Série e Prescrição, sem nenhum campo de uma
+ * depender da outra — e é justamente a relação entre elas que importa: as
+ * séries dizem quanto, a intensidade diz com que peso e esforço. Separadas, o
+ * personal prescrevia uma sem ver a outra. Técnica e Mídia quase nunca mudam
+ * depois do primeiro cadastro.
  */
 export default function ExerciseCard({
     exercise,
@@ -59,15 +61,12 @@ export default function ExerciseCard({
     resolveVideoLink?: (videoUrl: string) => Promise<ResolvedVideoLink>;
     videoPlanHint?: string;
     /** Sem séries e carga: quem usa já mostra os dois fora daqui (o card do
-     * aluno no /acompanhar, que edita os dois no topo). A aba Série some e o
-     * descanso, que morava nela, passa para Prescrição — o mesmo campo em
-     * dois lugares era o que confundia. */
+     * aluno, que edita os dois no topo). Mostrar o mesmo campo em dois lugares
+     * era o que confundia. */
     withoutQuickFields?: boolean;
 }) {
     const ex = exercise;
-    const tabs = withoutQuickFields
-        ? EXERCISE_TABS.filter((t) => t.id !== 'serie')
-        : EXERCISE_TABS;
+    const tabs = EXERCISE_TABS;
 
     const restField = (
         <div className={s.formGroup}>
@@ -160,7 +159,7 @@ export default function ExerciseCard({
                 ))}
             </div>
 
-            {tab === 'serie' && (
+            {tab === 'prescricao' && !withoutQuickFields && (
                 <>
                     <div className={s.formGroup}>
                         <label className={s.formLabel}>
@@ -227,24 +226,54 @@ export default function ExerciseCard({
                         )}
 
                         {ex.series_mode === 'free' && (
-                            <input
-                                value={ex.series_free}
-                                onChange={(e) =>
-                                    onUpdate('series_free', e.target.value)
-                                }
-                                placeholder="Ex: 3-4 × 10-12 reps"
-                                className={s.formInput}
-                                style={{ marginTop: 8 }}
-                                aria-label="Descrição livre das séries"
-                            />
+                            <div style={{ marginTop: 8 }}>
+                                <div className={s.seriesSubfieldRow}>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        value={ex.series_sets}
+                                        onChange={(e) =>
+                                            onUpdate(
+                                                'series_sets',
+                                                e.target.value,
+                                            )
+                                        }
+                                        placeholder="Séries"
+                                        className={s.smallNumInput}
+                                        aria-label="Quantidade de séries (opcional)"
+                                    />
+                                    <span className={s.seriesTimesSign}>
+                                        ×
+                                    </span>
+                                    <input
+                                        value={ex.series_free}
+                                        onChange={(e) =>
+                                            onUpdate(
+                                                'series_free',
+                                                e.target.value,
+                                            )
+                                        }
+                                        placeholder="Ex: 8 a 10 reps"
+                                        className={s.formInput}
+                                        aria-label="Descrição livre das séries"
+                                    />
+                                </div>
+                                <small className={s.fieldHint}>
+                                    Quantidade de séries é opcional aqui — só
+                                    preencha se o texto acima descrever UMA
+                                    série repetida (ex.: &ldquo;8 a 10
+                                    reps&rdquo; × 3). Deixe em branco se o
+                                    texto já descreve a progressão inteira
+                                    (ex.: &ldquo;8 até a falha + 5 a 6 rep + 1
+                                    a 3 rep&rdquo;).
+                                </small>
+                            </div>
                         )}
                     </div>
-
-                    {restField}
                 </>
             )}
 
-            {tab === 'prescricao' && withoutQuickFields && restField}
+            {tab === 'prescricao' && restField}
             {tab === 'prescricao' && (
                 <div className={s.prescriptionBody}>
                     {!withoutQuickFields && (
@@ -266,6 +295,10 @@ export default function ExerciseCard({
                         value={ex.load_percentage}
                         onChange={(v) => onUpdate('load_percentage', v)}
                         helpId="1rm"
+                    />
+                    <LoadPercentageWarning
+                        loadKg={ex.load_kg}
+                        loadPercentage={ex.load_percentage}
                     />
                     <PrescriptionNumber
                         label="Cadência"
