@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     PrescriptionNumber,
     LoadPercentageWarning,
@@ -17,13 +17,19 @@ import s from '../../builder.module.css';
  *
  * Só o que for preenchido aqui é aplicado — os demais campos de cada exercício
  * continuam intocados, para o personal ajustar pontualmente depois.
+ *
+ * `onPendingChange` conta ao modal o que está preenchido e ainda não foi
+ * aplicado: o "Concluir" do rodapé só volta de tela, e sair assim descartava
+ * a prescrição em silêncio (o personal achava que tinha aplicado).
  */
 export default function BulkPrescriptionCard({
     exerciseCount,
     onApply,
+    onPendingChange,
 }: {
     exerciseCount: number;
     onApply: (fields: BulkPrescriptionFields) => void;
+    onPendingChange?: (fields: BulkPrescriptionFields | null) => void;
 }) {
     const { fields, setFields, setField, hasAnyValue } =
         useBulkPrescriptionFields();
@@ -31,6 +37,21 @@ export default function BulkPrescriptionCard({
     // exercício por tempo guarda a série).
     const [timeUnit, setTimeUnit] = useState<'seg' | 'min'>('seg');
     const isTime = fields.series_mode === 'time';
+
+    /** Os campos como vão para os exercícios: tempo sempre em segundos. */
+    const resolved = (): BulkPrescriptionFields => ({
+        ...fields,
+        series_reps:
+            isTime && timeUnit === 'min' && fields.series_reps !== ''
+                ? String(Math.round(Number(fields.series_reps) * 60))
+                : fields.series_reps,
+    });
+
+    useEffect(() => {
+        onPendingChange?.(hasAnyValue ? resolved() : null);
+        // resolved() só depende de fields e timeUnit.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [fields, timeUnit, hasAnyValue, onPendingChange]);
 
     const handleApply = () => {
         if (!hasAnyValue) return;
@@ -40,11 +61,7 @@ export default function BulkPrescriptionCard({
             )
         )
             return;
-        const seconds =
-            isTime && timeUnit === 'min' && fields.series_reps !== ''
-                ? String(Math.round(Number(fields.series_reps) * 60))
-                : fields.series_reps;
-        onApply({ ...fields, series_reps: seconds });
+        onApply(resolved());
     };
 
     return (
@@ -204,8 +221,7 @@ export default function BulkPrescriptionCard({
                 disabled={!hasAnyValue}
                 onClick={handleApply}
             >
-                Aplicar a todos os {exerciseCount} exercício
-                {exerciseCount === 1 ? '' : 's'}
+                Clique aqui para aplicar
             </button>
         </>
     );

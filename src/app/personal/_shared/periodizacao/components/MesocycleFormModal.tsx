@@ -1096,10 +1096,8 @@ export default function MesocycleFormModal({
                 return (
                     <BulkPrescriptionCard
                         exerciseCount={activeTraining.exercises.length}
-                        onApply={(fields) => {
-                            bulkFillPrescription(activeTraining._id, fields);
-                            stack.pop();
-                        }}
+                        onApply={applyBulk}
+                        onPendingChange={setPendingBulk}
                     />
                 );
 
@@ -1136,6 +1134,45 @@ export default function MesocycleFormModal({
     } | null>(null);
     const [confirmPending, setConfirmPending] = useState(false);
     const { showSuccess, ToastSlot } = useToast();
+
+    /* Prescrição geral preenchida e ainda não aplicada. Sair do card pelo
+     * "Concluir"/voltar/fechar descartava tudo sem aviso — o personal via o
+     * botão que nos outros cards encerra a edição e achava que tinha
+     * aplicado. Agora pergunta, como a seleção do picker. */
+    const [pendingBulk, setPendingBulk] =
+        useState<BulkPrescriptionFields | null>(null);
+    const [confirmBulk, setConfirmBulk] = useState<'back' | 'close' | null>(
+        null,
+    );
+
+    const applyBulk = (fields: BulkPrescriptionFields) => {
+        if (!activeTraining) return;
+        const count = activeTraining.exercises.length;
+        bulkFillPrescription(activeTraining._id, fields);
+        setPendingBulk(null);
+        setConfirmBulk(null);
+        showSuccess(
+            count === 1
+                ? 'Prescrição geral aplicada ao exercício'
+                : `Prescrição geral aplicada aos ${count} exercícios`,
+        );
+        stack.pop();
+    };
+
+    const leaveBulk = (how: 'back' | 'close') => {
+        setPendingBulk(null);
+        setConfirmBulk(null);
+        if (how === 'back') goBack();
+        else handleClose();
+    };
+
+    const guardedClose = () => {
+        if (current.card === 'bulkPrescription' && pendingBulk) {
+            setConfirmBulk('close');
+            return;
+        }
+        handleClose();
+    };
 
     const commitPicked = (
         items: ExerciseLibraryItem[],
@@ -1189,6 +1226,10 @@ export default function MesocycleFormModal({
     const guardedBack = () => {
         if (current.card === 'picker' && pendingPick) {
             setConfirmPending(true);
+            return;
+        }
+        if (current.card === 'bulkPrescription' && pendingBulk) {
+            setConfirmBulk('back');
             return;
         }
         goBack();
@@ -1265,7 +1306,7 @@ export default function MesocycleFormModal({
         <>
             <Modal
                 open
-                onClose={handleClose}
+                onClose={guardedClose}
                 onBack={stack.depth > 0 ? guardedBack : undefined}
                 title={cardTitle()}
                 closeOnBackdrop={false}
@@ -1284,7 +1325,7 @@ export default function MesocycleFormModal({
                         <button
                             type="button"
                             className={s.btnEdit}
-                            onClick={stack.depth > 0 ? guardedBack : handleClose}
+                            onClick={stack.depth > 0 ? guardedBack : guardedClose}
                             style={{ padding: '8px 24px', fontSize: '0.9rem' }}
                         >
                             {stack.depth > 0 ? 'Concluir' : 'Fechar'}
@@ -1346,6 +1387,44 @@ export default function MesocycleFormModal({
                         {pendingPick.items.length === 1 ? 'foi' : 'foram'}{' '}
                         adicionado{pendingPick.items.length === 1 ? '' : 's'} ao
                         treino. Se sair agora, a seleção será perdida.
+                    </p>
+                </Modal>
+            )}
+
+            {confirmBulk && pendingBulk && activeTraining && (
+                <Modal
+                    open
+                    onClose={() => setConfirmBulk(null)}
+                    title="Prescrição geral não aplicada"
+                    footer={
+                        <>
+                            <button
+                                type="button"
+                                className={s.btnSmall}
+                                onClick={() => leaveBulk(confirmBulk)}
+                            >
+                                Descartar
+                            </button>
+                            <button
+                                type="button"
+                                className={s.btnEdit}
+                                onClick={() => applyBulk(pendingBulk)}
+                                style={{ padding: '8px 24px' }}
+                            >
+                                Aplicar a{' '}
+                                {activeTraining.exercises.length === 1
+                                    ? '1 exercício'
+                                    : `${activeTraining.exercises.length} exercícios`}
+                            </button>
+                        </>
+                    }
+                >
+                    <p>
+                        Você preencheu a prescrição geral, mas ela ainda não foi
+                        aplicada aos exercícios deste treino. Os campos
+                        preenchidos substituem os valores de cada exercício; os
+                        que ficaram em branco não mudam. Se sair sem aplicar, o
+                        que foi preenchido será perdido.
                     </p>
                 </Modal>
             )}
