@@ -691,3 +691,7 @@
 **Resumo:** Fiz as duas coisas e enviei: o tipo de série (repetições ou tempo) na Prescrição geral e o contador regressivo das séries por tempo. Nada foi testado ao vivo. A checagem de tipos e o lint passaram, e os 356 testes passam, sendo 4 novos do contador. **1. Repetições ou tempo na Prescrição geral (`d5384cd`)** - Há um campo novo, "Tipo de série", com três opções: - **Manter o de cada exercício**, que é o comportamento anterior. - **Repetições**. - **Tempo**, em segundos ou minutos. Os minutos são convertidos e guardados em segundos, como o app já faz. - Escolher Repetições ou Tempo troca **todos**…
 **Arquivos:** CHANGELOG_FRONTEND.md
 **Commits:** feat(periodizacao): tipo de série (repetições ou tempo) na Prescrição geral | feat(series-por-tempo): contador regressivo por série para aluno e personal
+
+## 2026-09-24 13:47 — River (via Claude Code)
+**Resumo:** Enviado. O código já estava commitado e enviado (`d5384cd` e `f5c853f`), então só faltavam os changelogs, que agora também foram para o GitHub. | Repositório | Commit | |---|---| | personalfit | `7979ad1` | | Personal-fit-Back | `8b21384` | | VenafitApp | `908c531` | Os três repositórios estão sem pendências e sincronizados com o GitHub.
+**Commits:** docs: atualiza changelog
