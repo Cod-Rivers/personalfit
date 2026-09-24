@@ -682,3 +682,12 @@
 ## 2026-09-24 12:57 — River (via Claude Code)
 **Resumo:** A Prescrição geral agora tem os campos **Séries** e **Repetições**, sem limite de quantidade: 3 × 20, 4 × 50, o que você quiser. Está commitado e enviado (`d7ea916`), e o deploy é automático. Ainda não testei ao vivo. **A causa:** a Prescrição geral não tinha campo de séries nem de repetições. O "10" que você via é o padrão 3 × 10 com que todo exercício entra no treino, e até agora só dava para mudar isso um exercício por vez. **Como funciona:** - **Séries** vale para todos os exercícios do treino. - **Repetições** vale só para os exercícios no formato séries × repetições. Dois tipos ficam com…
 **Commits:** feat(periodizacao): séries e repetições na Prescrição geral
+
+## 2026-09-24 13:03 — River (via Claude Code)
+**Resumo:** Não havia nenhuma mudança de código pendente. Todo o código desta sessão já tinha sido commitado e enviado nas respostas anteriores. O que sobrava eram os três arquivos de changelog, que agora estão commitados e enviados. Os três repositórios estão sem pendências e sincronizados com o GitHub. | Repositório | Commit | O que foi | |---|---|---| | personalfit | `092e63f` | changelog do frontend (inclui as entradas de 22/09 que estavam soltas) | | Personal-fit-Back | `9236f16` | changelog do backend | | VenafitApp | `d57edf2` | changelog do Android | Os commits de código da sessão, já enviados: - …
+**Commits:** docs: atualiza changelog
+
+## 2026-09-24 13:45 — River (via Claude Code)
+**Resumo:** Fiz as duas coisas e enviei: o tipo de série (repetições ou tempo) na Prescrição geral e o contador regressivo das séries por tempo. Nada foi testado ao vivo. A checagem de tipos e o lint passaram, e os 356 testes passam, sendo 4 novos do contador. **1. Repetições ou tempo na Prescrição geral (`d5384cd`)** - Há um campo novo, "Tipo de série", com três opções: - **Manter o de cada exercício**, que é o comportamento anterior. - **Repetições**. - **Tempo**, em segundos ou minutos. Os minutos são convertidos e guardados em segundos, como o app já faz. - Escolher Repetições ou Tempo troca **todos**…
+**Arquivos:** CHANGELOG_FRONTEND.md
+**Commits:** feat(periodizacao): tipo de série (repetições ou tempo) na Prescrição geral | feat(series-por-tempo): contador regressivo por série para aluno e personal
