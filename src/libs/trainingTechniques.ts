@@ -345,7 +345,12 @@ export function comboGroupLabel(size: number, groupTechnique?: string): string {
     return 'Superssérie';
 }
 
-type Groupable = { group_id?: string; group_technique?: string };
+type Groupable = {
+    group_id?: string;
+    group_technique?: string;
+    /** number na API, string no editor — aqui só é apagado ou mantido. */
+    group_recovery_seconds?: number | string;
+};
 
 /** Tira `group_id`/`group_technique` de quem ficou sozinho no bloco (um
  * "bi-set" de um exercício só esconderia o descanso dele) e apaga a variante
@@ -361,7 +366,12 @@ export function tidyExerciseGroups<T extends Groupable>(items: T[]): T[] {
         if (!e.group_id) return e;
         const size = sizes.get(e.group_id) ?? 0;
         if (size < 2) {
-            return { ...e, group_id: undefined, group_technique: undefined };
+            return {
+                ...e,
+                group_id: undefined,
+                group_technique: undefined,
+                group_recovery_seconds: undefined,
+            };
         }
         if (
             e.group_technique &&
@@ -399,6 +409,9 @@ export function mergeIntoGroup<T extends Groupable>(
         ...e,
         group_id: groupId,
         group_technique: technique || undefined,
+        // Bloco novo nasce sem tabata: a recuperação é escolhida depois, no
+        // cabeçalho do bloco.
+        group_recovery_seconds: undefined,
     }));
     return tidyExerciseGroups([
         ...rest.slice(0, insertAt),

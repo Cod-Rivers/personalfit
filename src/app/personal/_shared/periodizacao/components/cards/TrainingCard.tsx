@@ -9,6 +9,7 @@ import {
     BlockMarkToggle,
     GroupSelectionBar,
     GroupTechniqueOptions,
+    GroupRecoverySelect,
     useBlockSelection,
 } from '../GroupingControls';
 import {
@@ -358,6 +359,31 @@ export default function TrainingCard({
                                                         size={group.length}
                                                     />
                                                 </select>
+                                                <GroupRecoverySelect
+                                                    value={
+                                                        Number(
+                                                            group.find(
+                                                                (g) =>
+                                                                    g.group_recovery_seconds,
+                                                            )
+                                                                ?.group_recovery_seconds,
+                                                        ) || 0
+                                                    }
+                                                    onChange={(secs) =>
+                                                        group.forEach((g) =>
+                                                            onUpdateExercise(
+                                                                g._id,
+                                                                'group_recovery_seconds',
+                                                                secs > 0
+                                                                    ? String(
+                                                                          secs,
+                                                                      )
+                                                                    : '',
+                                                            ),
+                                                        )
+                                                    }
+                                                    className={s.formInput}
+                                                />
                                                 <button
                                                     type="button"
                                                     className={s.linkBtn}

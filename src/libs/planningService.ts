@@ -35,6 +35,9 @@ export interface ExerciseResponse {
     /** Variante do bloco de group_id (biset/superset/triset/giant_set/
      * pre_exhaustion/post_exhaustion) — ver GROUP_TECHNIQUE_CATALOG. */
     group_technique?: string;
+    /** Recuperação (s) entre os exercícios do bloco no circuito — modo
+     * tabata, prescrito pelo personal. Igual em todo o bloco. */
+    group_recovery_seconds?: number;
     /** Técnica de treinamento aplicada a este exercício (dropset, isometria
      * etc) — ver TECHNIQUE_CATALOG em trainingTechniques.ts. */
     technique?: string;
@@ -171,6 +174,9 @@ export interface ExerciseRequest {
     muscle_group?: string;
     group_id?: string;
     group_technique?: string;
+    /** Recuperação (s) entre os exercícios do bloco no circuito — modo
+     * tabata, prescrito pelo personal. Igual em todo o bloco. */
+    group_recovery_seconds?: number;
     technique?: string;
     technique_params?: TechniqueParamsResponse;
     /** Ver ExerciseResponse.non_substitutable — mesmo três-estados. */

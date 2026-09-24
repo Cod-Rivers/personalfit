@@ -94,12 +94,8 @@ describe('CircuitTimer', () => {
         const sounds = () =>
             vi.mocked(playCircuitSound).mock.calls.map((c) => c[0]);
 
-        it('recuperação configurada entra entre os exercícios da rodada', () => {
-            window.localStorage.setItem(
-                'venafit.circuit.settings',
-                JSON.stringify({ recoverySeconds: 10, sound: true }),
-            );
-            render(<CircuitTimer exercises={pair} />);
+        it('recuperação prescrita entra entre os exercícios da rodada', () => {
+            render(<CircuitTimer exercises={pair} recoverySeconds={10} />);
             expect(screen.getByText('Tabata · 10 s')).toBeTruthy();
             fireEvent.click(
                 screen.getByRole('button', { name: /Iniciar circuito/ }),
@@ -112,26 +108,21 @@ describe('CircuitTimer', () => {
             expect(screen.getByText(/Exercício 2 de 2/)).toBeTruthy();
         });
 
-        it('escolher o atalho Tabata no painel de configuração muda o plano', () => {
+        it('sem recuperação prescrita os exercícios emendam, e não há como mudar no aparelho', () => {
             render(<CircuitTimer exercises={pair} />);
-            fireEvent.click(
-                screen.getByRole('button', { name: 'Configurar circuito' }),
-            );
-            fireEvent.click(screen.getByRole('button', { name: 'Tabata · 10 s' }));
-            expect(screen.getByText(/com 10 s de recuperação entre eles/)).toBeTruthy();
+            expect(screen.queryByText(/Tabata/)).toBeNull();
             expect(
-                JSON.parse(
-                    window.localStorage.getItem('venafit.circuit.settings') ?? '{}',
-                ).recoverySeconds,
-            ).toBe(10);
+                screen.queryByRole('button', { name: 'Configurar circuito' }),
+            ).toBeNull();
+            fireEvent.click(
+                screen.getByRole('button', { name: /Iniciar circuito/ }),
+            );
+            tick(20_000);
+            expect(screen.getByText(/Exercício 2 de 2/)).toBeTruthy();
         });
 
         it('toca um som por transição: vai, bips da contagem, recuperação, descanso, fim', () => {
-            window.localStorage.setItem(
-                'venafit.circuit.settings',
-                JSON.stringify({ recoverySeconds: 10, sound: true }),
-            );
-            render(<CircuitTimer exercises={pair} />);
+            render(<CircuitTimer exercises={pair} recoverySeconds={10} />);
             fireEvent.click(
                 screen.getByRole('button', { name: /Iniciar circuito/ }),
             );
@@ -149,7 +140,7 @@ describe('CircuitTimer', () => {
         it('com o som desligado não toca nada', () => {
             window.localStorage.setItem(
                 'venafit.circuit.settings',
-                JSON.stringify({ recoverySeconds: 0, sound: false }),
+                JSON.stringify({ sound: false }),
             );
             render(<CircuitTimer exercises={pair} />);
             fireEvent.click(

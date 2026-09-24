@@ -114,3 +114,30 @@ export function circuitHasTimedWork(exercises: CircuitExercise[]): boolean {
         )
     );
 }
+
+/** Teto da recuperação entre exercícios: acima disso já é descanso, que tem
+ * campo próprio. Espelha training.MaxGroupRecoverySeconds no backend. */
+export const MAX_GROUP_RECOVERY_SECONDS = 120;
+
+/** Atalhos do seletor do personal; o tabata clássico é 10 s. */
+export const GROUP_RECOVERY_PRESETS = [
+    { seconds: 0, label: 'Sem recuperação' },
+    { seconds: 10, label: 'Tabata · 10 s' },
+    { seconds: 15, label: 'Recuperação 15 s' },
+    { seconds: 20, label: 'Recuperação 20 s' },
+    { seconds: 30, label: 'Recuperação 30 s' },
+    { seconds: 45, label: 'Recuperação 45 s' },
+    { seconds: 60, label: 'Recuperação 60 s' },
+] as const;
+
+/** Recuperação prescrita para o bloco: a de qualquer exercício dele (o
+ * personal grava a mesma em todos; um exercício recém-juntado ao bloco pode
+ * ainda não tê-la). */
+export function blockRecoverySeconds(
+    block: { group_recovery_seconds?: number }[],
+): number {
+    return block.reduce(
+        (max, e) => Math.max(max, e.group_recovery_seconds ?? 0),
+        0,
+    );
+}

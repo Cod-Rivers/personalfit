@@ -646,7 +646,11 @@ export default function MesocycleFormModal({
                               ...t,
                               exercises: t.exercises.map((e) =>
                                   e.group_id === groupId
-                                      ? { ...e, group_id: undefined }
+                                      ? {
+                                            ...e,
+                                            group_id: undefined,
+                                            group_recovery_seconds: undefined,
+                                        }
                                       : e,
                               ),
                           },
@@ -676,7 +680,11 @@ export default function MesocycleFormModal({
                         ...t,
                         exercises: t.exercises.map((e) =>
                             e._id === eid || e._id === clearAlso
-                                ? { ...e, group_id: undefined }
+                                ? {
+                                      ...e,
+                                      group_id: undefined,
+                                      group_recovery_seconds: undefined,
+                                  }
                                 : e,
                         ),
                     };

@@ -1,5 +1,6 @@
 'use client';
 
+import { blockRecoverySeconds } from '@/libs/circuitPlan';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     FiEdit3,
@@ -21,6 +22,7 @@ import {
     replaceExerciseInTraining,
     saveTrainingEdit,
     setGroupTechniqueInTraining,
+    setGroupRecoveryInTraining,
     ungroupInTraining,
 } from '../lib/trainingEditPatch';
 import {
@@ -391,6 +393,15 @@ export default function MesocycleSection({
                 groupId,
                 value || undefined,
             ),
+        );
+
+    const changeGroupRecovery = (
+        trainingId: string,
+        groupId: string,
+        seconds: number,
+    ) =>
+        void editGroups((req) =>
+            setGroupRecoveryInTraining(req, trainingId, groupId, seconds),
         );
 
     const ungroup = (trainingId: string, groupId: string) =>
@@ -823,6 +834,20 @@ export default function MesocycleSection({
                                                                                                             group,
                                                                                                         ),
                                                                                                         v,
+                                                                                                    )
+                                                                                                }
+                                                                                                recoverySeconds={blockRecoverySeconds(
+                                                                                                    group,
+                                                                                                )}
+                                                                                                onChangeRecovery={(
+                                                                                                    secs,
+                                                                                                ) =>
+                                                                                                    changeGroupRecovery(
+                                                                                                        t.id,
+                                                                                                        blockId(
+                                                                                                            group,
+                                                                                                        ),
+                                                                                                        secs,
                                                                                                     )
                                                                                                 }
                                                                                                 onUngroup={() =>

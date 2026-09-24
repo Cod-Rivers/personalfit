@@ -38,6 +38,8 @@ export interface ExerciseLog {
     };
     /** Variante do bloco de bi-set/superset (ver GROUP_TECHNIQUE_CATALOG). */
     group_technique?: string;
+    /** Recuperação (s) entre os exercícios do bloco no circuito (tabata). */
+    group_recovery_seconds?: number;
     /** Agrupa exercícios executados em sequência, sem descanso entre si.
      * Exercícios consecutivos com o mesmo group_id formam um bloco. */
     group_id?: string;

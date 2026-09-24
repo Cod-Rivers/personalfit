@@ -1,5 +1,6 @@
 'use client';
 
+import { GROUP_RECOVERY_PRESETS } from '@/libs/circuitPlan';
 import { useEffect, useMemo, useState } from 'react';
 import { FiCheck, FiLink } from 'react-icons/fi';
 import {
@@ -124,6 +125,41 @@ export function GroupTechniqueOptions({ size }: { size: number }) {
     );
 }
 
+/** Recuperação entre os exercícios do bloco no circuito (modo tabata),
+ * prescrita pelo personal e seguida pelo aluno. Valor fora dos atalhos (um
+ * plano antigo, outra tela) continua aparecendo como opção. */
+export function GroupRecoverySelect({
+    value,
+    onChange,
+    disabled,
+    className,
+}: {
+    value?: number;
+    onChange: (seconds: number) => void;
+    disabled?: boolean;
+    className?: string;
+}) {
+    const current = value ?? 0;
+    const known = GROUP_RECOVERY_PRESETS.some((p) => p.seconds === current);
+    return (
+        <select
+            value={current}
+            onChange={(e) => onChange(Number(e.target.value))}
+            disabled={disabled}
+            className={className}
+            aria-label="Recuperação entre os exercícios do bloco (tabata)"
+            title="Pausa curta entre um exercício e o próximo do bloco, no circuito"
+        >
+            {GROUP_RECOVERY_PRESETS.map((p) => (
+                <option key={p.seconds} value={p.seconds}>
+                    {p.label}
+                </option>
+            ))}
+            {!known && <option value={current}>Recuperação {current} s</option>}
+        </select>
+    );
+}
+
 /** Tipo de um bloco que já existe + "Desagrupar", para listas que gravam na
  * hora (periodização). O editor da fase tem os dele no TrainingCard. */
 export function GroupBlockControls({
@@ -132,12 +168,16 @@ export function GroupBlockControls({
     busy,
     onChange,
     onUngroup,
+    recoverySeconds,
+    onChangeRecovery,
 }: {
     size: number;
     technique?: string;
     busy?: boolean;
     onChange: (value: string) => void;
     onUngroup: () => void;
+    recoverySeconds?: number;
+    onChangeRecovery?: (seconds: number) => void;
 }) {
     return (
         <div className={s.groupBlockControls}>
@@ -151,6 +191,14 @@ export function GroupBlockControls({
                 <option value="">Tipo de combinação…</option>
                 <GroupTechniqueOptions size={size} />
             </select>
+            {onChangeRecovery && (
+                <GroupRecoverySelect
+                    value={recoverySeconds}
+                    onChange={onChangeRecovery}
+                    disabled={busy}
+                    className={s.formInput}
+                />
+            )}
             <button
                 type="button"
                 className={s.linkBtn}

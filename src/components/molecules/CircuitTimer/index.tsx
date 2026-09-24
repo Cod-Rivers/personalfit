@@ -6,7 +6,6 @@ import {
     FiPause,
     FiPlay,
     FiRotateCcw,
-    FiSettings,
     FiSkipForward,
     FiVolume2,
     FiVolumeX,
@@ -19,8 +18,6 @@ import {
 } from '@/libs/circuitPlan';
 import {
     DEFAULT_CIRCUIT_SETTINGS,
-    MAX_RECOVERY_SECONDS,
-    RECOVERY_PRESETS,
     loadCircuitSettings,
     saveCircuitSettings,
     type CircuitSettings,
@@ -55,8 +52,9 @@ const TICK_FROM = 3;
  * libs/circuitPlan.ts): uma série de cada exercício em sequência, sem
  * descanso entre eles, descanso no fim da rodada, próxima rodada.
  *
- * Modo tabata (opcional, em "Configurar"): recuperação curta entre um
- * exercício e outro da rodada, com sons distintos para cada transição.
+ * Modo tabata: recuperação curta entre um exercício e outro da rodada,
+ * PRESCRITA pelo personal no bloco (group_recovery_seconds) — o aluno segue o
+ * que foi gravado, em qualquer aparelho. Só o som é escolha de quem executa.
  *
  * Passo por tempo termina sozinho e já emenda o seguinte — no meio do
  * circuito ninguém quer largar o exercício para tocar na tela. Passo por
@@ -68,15 +66,17 @@ const TICK_FROM = 3;
  */
 export default function CircuitTimer({
     exercises,
+    recoverySeconds = 0,
 }: {
     exercises: CircuitExercise[];
+    /** Recuperação prescrita entre os exercícios do bloco; 0 = emendados. */
+    recoverySeconds?: number;
 }) {
-    // Preferências do aparelho. Lidas depois de montar (no servidor não há
-    // localStorage, e ler antes daria diferença de hidratação).
+    // Preferência de som do aparelho. Lida depois de montar (no servidor não
+    // há localStorage, e ler antes daria diferença de hidratação).
     const [settings, setSettings] = useState<CircuitSettings>(
         DEFAULT_CIRCUIT_SETTINGS,
     );
-    const [showConfig, setShowConfig] = useState(false);
     const soundRef = useRef(settings.sound);
     soundRef.current = settings.sound;
 
@@ -103,9 +103,9 @@ export default function CircuitTimer({
     const plan = useMemo(
         () =>
             buildCircuitPlan(JSON.parse(signature) as CircuitExercise[], {
-                recoverySeconds: settings.recoverySeconds,
+                recoverySeconds,
             }),
-        [signature, settings.recoverySeconds],
+        [signature, recoverySeconds],
     );
     const { steps, rounds } = plan;
 
@@ -142,7 +142,7 @@ export default function CircuitTimer({
         [steps, play],
     );
 
-    // Mudar a recuperação antes de começar troca o plano: volta ao 1º passo.
+    // O personal mudou a recuperação antes de começar: volta ao 1º passo.
     useEffect(() => {
         if (started) return;
         setIndex(0);
@@ -179,7 +179,6 @@ export default function CircuitTimer({
 
     const start = () => {
         setStarted(true);
-        setShowConfig(false);
         goTo(0, true);
     };
 
@@ -241,9 +240,9 @@ export default function CircuitTimer({
             <div className={styles.head}>
                 <span className={styles.label}>
                     Circuito
-                    {settings.recoverySeconds > 0 && (
+                    {recoverySeconds > 0 && (
                         <span className={styles.badge}>
-                            Tabata · {settings.recoverySeconds} s
+                            Tabata · {recoverySeconds} s
                         </span>
                     )}
                 </span>
@@ -263,95 +262,15 @@ export default function CircuitTimer({
                     >
                         {settings.sound ? <FiVolume2 /> : <FiVolumeX />}
                     </button>
-                    {!started && (
-                        <button
-                            type="button"
-                            className={styles.iconBtn}
-                            onClick={() => setShowConfig((v) => !v)}
-                            aria-expanded={showConfig}
-                            aria-label="Configurar circuito"
-                            title="Configurar"
-                        >
-                            <FiSettings />
-                        </button>
-                    )}
                 </span>
             </div>
-
-            {!started && showConfig && (
-                <div className={styles.config}>
-                    <p className={styles.configTitle}>
-                        Recuperação entre os exercícios (modo tabata)
-                    </p>
-                    <p className={styles.hint}>
-                        Pausa curta entre um exercício e o próximo da mesma
-                        rodada. O descanso do fim da rodada continua como está.
-                    </p>
-                    <div
-                        className={styles.chips}
-                        role="group"
-                        aria-label="Recuperação entre exercícios"
-                    >
-                        {RECOVERY_PRESETS.map((p) => (
-                            <button
-                                key={p.seconds}
-                                type="button"
-                                className={styles.chip}
-                                aria-pressed={
-                                    settings.recoverySeconds === p.seconds
-                                }
-                                onClick={() =>
-                                    updateSettings({
-                                        recoverySeconds: p.seconds,
-                                    })
-                                }
-                            >
-                                {p.label}
-                            </button>
-                        ))}
-                    </div>
-                    <label className={styles.customRow}>
-                        <span>Outro valor</span>
-                        <input
-                            type="number"
-                            min={0}
-                            max={MAX_RECOVERY_SECONDS}
-                            step={5}
-                            inputMode="numeric"
-                            className={styles.numInput}
-                            value={settings.recoverySeconds}
-                            onChange={(e) =>
-                                updateSettings({
-                                    recoverySeconds: Math.min(
-                                        MAX_RECOVERY_SECONDS,
-                                        Math.max(
-                                            0,
-                                            Math.round(
-                                                Number(e.target.value) || 0,
-                                            ),
-                                        ),
-                                    ),
-                                })
-                            }
-                        />
-                        <span>seg</span>
-                    </label>
-                    <button
-                        type="button"
-                        className={styles.btn}
-                        onClick={() => playCircuitSound('go')}
-                    >
-                        <FiVolume2 /> Testar som
-                    </button>
-                </div>
-            )}
 
             {!started ? (
                 <p className={styles.hint}>
                     {rounds} {rounds === 1 ? 'rodada' : 'rodadas'} de{' '}
                     {queue.length} exercícios em sequência
-                    {settings.recoverySeconds > 0
-                        ? `, com ${settings.recoverySeconds} s de recuperação entre eles`
+                    {recoverySeconds > 0
+                        ? `, com ${recoverySeconds} s de recuperação entre eles`
                         : ', sem descanso entre eles'}
                     . O descanso vem no fim de cada rodada.
                 </p>

@@ -3,6 +3,8 @@ import type { TrainingResponse } from '@/libs/planningService';
 import {
     responseToLocal,
     localToMesoRequest,
+    exerciseToLocal,
+    localExerciseToRequest,
     type MesoPhaseFormData,
 } from './mesocycleTransforms';
 
@@ -65,5 +67,30 @@ describe('mesocycleTransforms — round-trip de non_substitutable (tri-estado)',
         expect(localFalse[0].exercises[0].non_substitutable).not.toBe(
             localAbsent[0].exercises[0].non_substitutable,
         );
+    });
+});
+
+describe('recuperação do circuito (group_recovery_seconds) no editor', () => {
+    const base = {
+        id: 'e1',
+        name: 'Burpee',
+        series: [60, 60],
+        variations: '',
+        video_url: '',
+        video_thumb: '',
+        timed: true,
+        group_id: 'g',
+    };
+
+    it('ida e volta pelo editor preserva o valor', () => {
+        const local = exerciseToLocal({ ...base, group_recovery_seconds: 10 });
+        expect(local.group_recovery_seconds).toBe('10');
+        expect(localExerciseToRequest(local).group_recovery_seconds).toBe(10);
+    });
+
+    it('sem recuperação vai como ausente, não como 0', () => {
+        const local = exerciseToLocal(base);
+        expect(local.group_recovery_seconds).toBe('');
+        expect(localExerciseToRequest(local).group_recovery_seconds).toBeUndefined();
     });
 });

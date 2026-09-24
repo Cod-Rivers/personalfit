@@ -27,6 +27,7 @@ import {
 import { ExerciseLog } from '../../../../components/features/types';
 import CircuitTimer from '@/components/molecules/CircuitTimer';
 import {
+    blockRecoverySeconds,
     circuitHasTimedWork,
     type CircuitExercise,
 } from '@/libs/circuitPlan';
@@ -1087,7 +1088,9 @@ export default function MeusTreinosExercisesPage({
                                             group.length,
                                             group[0].group_technique,
                                         )}{' '}
-                                        — sem descanso entre os exercícios
+                                        {blockRecoverySeconds(group) > 0
+                                            ? `— ${blockRecoverySeconds(group)} s de recuperação entre os exercícios`
+                                            : '— sem descanso entre os exercícios'}
                                     </div>
                                     <div className={styles.exerciseGroupItems}>
                                         {items}
@@ -1096,6 +1099,9 @@ export default function MeusTreinosExercisesPage({
                                         <CircuitTimer
                                             key={JSON.stringify(circuit)}
                                             exercises={circuit}
+                                            recoverySeconds={blockRecoverySeconds(
+                                                group,
+                                            )}
                                         />
                                     )}
                                 </li>

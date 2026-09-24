@@ -18,6 +18,7 @@ import {
     mergeIntoGroup,
 } from '@/libs/trainingTechniques';
 import { describeSaveError } from './exercisePatch';
+import { MAX_GROUP_RECOVERY_SECONDS } from '@/libs/circuitPlan';
 
 /**
  * Adicionar, excluir e trocar exercício direto da tela do treino do aluno
@@ -147,6 +148,7 @@ export function removeExerciseFromTraining(
         if (left.length === 1) {
             left[0].group_id = undefined;
             left[0].group_technique = undefined;
+            left[0].group_recovery_seconds = undefined;
         }
     }
     training.exercises = remaining;
@@ -203,8 +205,31 @@ export function ungroupInTraining(
         if (e.group_id === groupId) {
             e.group_id = undefined;
             e.group_technique = undefined;
+            e.group_recovery_seconds = undefined;
         }
     }
+}
+
+/** Recuperação entre os exercícios do bloco no circuito (modo tabata),
+ * gravada em todos os exercícios dele. 0/undefined = sem recuperação. */
+export function setGroupRecoveryInTraining(
+    req: MesocycleRequest,
+    trainingId: string,
+    groupId: string,
+    seconds?: number,
+): void {
+    const training = findTraining(req, trainingId);
+    const members = training.exercises.filter((e) => e.group_id === groupId);
+    if (members.length === 0) {
+        throw new Error(
+            'Este bloco não está mais neste treino. Recarregue a página.',
+        );
+    }
+    const value =
+        seconds && seconds > 0
+            ? Math.min(MAX_GROUP_RECOVERY_SECONDS, Math.round(seconds))
+            : undefined;
+    for (const e of members) e.group_recovery_seconds = value;
 }
 
 /** Troca a variante de um bloco que já existe (bi-set ↔ superset…). Vazio =

@@ -34,6 +34,7 @@ export function toExerciseLog(ex: ExerciseResponse): ExerciseLog {
         technique: ex.technique,
         technique_params: ex.technique_params,
         group_technique: ex.group_technique,
+        group_recovery_seconds: ex.group_recovery_seconds,
         group_id: ex.group_id,
         muscle_group: ex.muscle_group,
         non_substitutable: ex.non_substitutable,

@@ -105,6 +105,7 @@ import {
     replaceExerciseInTraining,
     saveTrainingEdit,
     setGroupTechniqueInTraining,
+    setGroupRecoveryInTraining,
     ungroupInTraining,
 } from '@/app/personal/_shared/periodizacao/lib/trainingEditPatch';
 import ExercisePicker from '@/app/personal/_shared/periodizacao/components/ExercisePicker';
@@ -115,9 +116,11 @@ import { useToast } from '@/components/system/Toast';
 import { markWorkoutStartIfNeeded } from '@/libs/workoutSessionTimer';
 import CircuitTimer from '@/components/molecules/CircuitTimer';
 import {
+    blockRecoverySeconds,
     circuitHasTimedWork,
     type CircuitExercise,
 } from '@/libs/circuitPlan';
+import { GroupRecoverySelect } from '@/app/personal/_shared/periodizacao/components/GroupingControls';
 import StudentExerciseRow, { type WeekRecord } from './StudentExerciseRow';
 import s from './acompanhar.module.css';
 
@@ -735,6 +738,22 @@ export default function AcompanharTreinoPage() {
         }
     };
 
+    const changeGroupRecovery = async (groupId: string, seconds: number) => {
+        if (!selectedTraining) return;
+        try {
+            await editTraining((req) =>
+                setGroupRecoveryInTraining(
+                    req,
+                    selectedTraining.id,
+                    groupId,
+                    seconds,
+                ),
+            );
+        } catch (e) {
+            showError((e as Error).message);
+        }
+    };
+
     /** O ✓ na coluna da alça: marca o exercício (ou o bloco inteiro) como
      * aplicado — e é a seleção da barra "Agrupar como". */
     const renderMarkToggle = (block: ExerciseResponse[]) => {
@@ -1226,6 +1245,18 @@ export default function AcompanharTreinoPage() {
                                                                         v,
                                                                     )
                                                                 }
+                                                                recoverySeconds={blockRecoverySeconds(
+                                                                    block,
+                                                                )}
+                                                                onChangeRecovery={(
+                                                                    secs,
+                                                                ) =>
+                                                                    void changeGroupRecovery(
+                                                                        block[0]
+                                                                            .group_id!,
+                                                                        secs,
+                                                                    )
+                                                                }
                                                                 onUngroup={() =>
                                                                     void ungroup(
                                                                         block[0]
@@ -1243,6 +1274,9 @@ export default function AcompanharTreinoPage() {
                                                                 exercises={
                                                                     circuit
                                                                 }
+                                                                recoverySeconds={blockRecoverySeconds(
+                                                                    block,
+                                                                )}
                                                             />
                                                         )}
                                                     </div>
@@ -1533,12 +1567,17 @@ function GroupHeader({
     busy,
     onChange,
     onUngroup,
+    recoverySeconds,
+    onChangeRecovery,
 }: {
     size: number;
     technique?: string;
     busy: boolean;
     onChange: (value: string) => void;
     onUngroup: () => void;
+    /** Recuperação do circuito (tabata) — gravada no plano, o aluno segue. */
+    recoverySeconds: number;
+    onChangeRecovery: (seconds: number) => void;
 }) {
     return (
         <div className={s.groupHeader}>
@@ -1560,6 +1599,12 @@ function GroupHeader({
                     </option>
                 ))}
             </select>
+            <GroupRecoverySelect
+                value={recoverySeconds}
+                onChange={onChangeRecovery}
+                disabled={busy}
+                className="form-control form-control-sm"
+            />
             <button
                 type="button"
                 className={s.btnBack}
@@ -1569,7 +1614,11 @@ function GroupHeader({
             >
                 Desagrupar
             </button>
-            <span className={s.groupLabel}>Sem descanso entre os exercícios</span>
+            <span className={s.groupLabel}>
+                {recoverySeconds > 0
+                    ? `${recoverySeconds} s de recuperação entre os exercícios`
+                    : 'Sem descanso entre os exercícios'}
+            </span>
         </div>
     );
 }

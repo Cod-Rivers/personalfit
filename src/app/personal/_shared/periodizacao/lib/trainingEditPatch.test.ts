@@ -14,6 +14,7 @@ import {
     removeTrainingFromMeso,
     replaceExerciseInTraining,
     saveTrainingEdit,
+    setGroupRecoveryInTraining,
     setGroupTechniqueInTraining,
     ungroupInTraining,
 } from './trainingEditPatch';
@@ -393,5 +394,56 @@ describe('ungroupInTraining / setGroupTechniqueInTraining', () => {
         expect(() =>
             setGroupTechniqueInTraining(req, 't-a', 'g', 'triset'),
         ).toThrow(/não combina/);
+    });
+});
+
+/**
+ * Recuperação do circuito (tabata) prescrita pelo personal: grava em todo o
+ * bloco, chega ao request pelo mesmo caminho do resto da fase (mesoToRequest)
+ * e sai junto quando o bloco se desfaz.
+ */
+describe('setGroupRecoveryInTraining', () => {
+    const grouped = (recovery?: number) =>
+        mesoToRequest(
+            meso([
+                ex('ex-1', { group_id: 'g', group_recovery_seconds: recovery }),
+                ex('ex-2', { group_id: 'g', group_recovery_seconds: recovery }),
+                ex('ex-3'),
+            ]),
+        );
+    const recoveries = (req: MesocycleRequest) =>
+        req.trainings[0].exercises.map((e) => e.group_recovery_seconds);
+
+    it('grava a mesma recuperação em todos os exercícios do bloco', () => {
+        const req = grouped();
+        setGroupRecoveryInTraining(req, 't-a', 'g', 10);
+        expect(recoveries(req)).toEqual([10, 10, undefined]);
+    });
+
+    it('0 tira a recuperação; valor acima do teto é limitado', () => {
+        const req = grouped(10);
+        setGroupRecoveryInTraining(req, 't-a', 'g', 0);
+        expect(recoveries(req)).toEqual([undefined, undefined, undefined]);
+        setGroupRecoveryInTraining(req, 't-a', 'g', 999);
+        expect(recoveries(req)).toEqual([120, 120, undefined]);
+    });
+
+    it('a recuperação já gravada sobrevive ao reenvio da fase', () => {
+        expect(recoveries(grouped(15))).toEqual([15, 15, undefined]);
+    });
+
+    it('desagrupar e excluir metade do bloco apagam a recuperação', () => {
+        const a = grouped(10);
+        ungroupInTraining(a, 't-a', 'g');
+        expect(recoveries(a)).toEqual([undefined, undefined, undefined]);
+        const b = grouped(10);
+        removeExerciseFromTraining(b, 't-a', 'ex-1');
+        expect(recoveries(b)).toEqual([undefined, undefined]);
+    });
+
+    it('bloco que não existe mais dá erro legível', () => {
+        expect(() =>
+            setGroupRecoveryInTraining(grouped(), 't-a', 'x', 10),
+        ).toThrow(/não está mais/);
     });
 });

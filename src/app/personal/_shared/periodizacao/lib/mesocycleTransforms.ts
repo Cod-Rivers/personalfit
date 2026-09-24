@@ -1,3 +1,4 @@
+import { MAX_GROUP_RECOVERY_SECONDS } from '@/libs/circuitPlan';
 import type {
     ExerciseRequest,
     ExerciseResponse,
@@ -151,6 +152,9 @@ export interface LocalExercise {
     group_id?: string;
     /** Variante do bloco de group_id — ver GROUP_TECHNIQUE_CATALOG. */
     group_technique?: string;
+    /** Recuperação entre os exercícios do bloco no circuito (tabata), em
+     * segundos. '' ou ausente = sem. */
+    group_recovery_seconds?: string;
     /** Técnica de treinamento avançada (dropset, isometria etc). '' = nenhuma. */
     technique: string;
     // Parâmetros da técnica selecionada (mesmo padrão string-para-input dos
@@ -307,6 +311,10 @@ export function localExerciseToLog(ex: LocalExercise): ExerciseLog {
               }
             : undefined,
         group_technique: ex.group_technique,
+        group_recovery_seconds: fieldToNum(ex.group_recovery_seconds ?? '', {
+            min: 0,
+            max: MAX_GROUP_RECOVERY_SECONDS,
+        }) || undefined,
         group_id: ex.group_id,
         muscle_group: ex.muscle_group || undefined,
         non_substitutable: fieldToTriBool(ex.non_substitutable),
@@ -433,6 +441,7 @@ export function exerciseToLocal(ex: ExerciseResponse): LocalExercise {
         video_thumb: ex.video_thumb ?? '',
         group_id: ex.group_id,
         group_technique: ex.group_technique,
+        group_recovery_seconds: numToField(ex.group_recovery_seconds),
         technique: ex.technique ?? '',
         technique_rounds: numToField(ex.technique_params?.rounds),
         technique_reduction_pct: numToField(
@@ -579,6 +588,10 @@ export function localExerciseToRequest(ex: LocalExercise): ExerciseRequest {
         muscle_group: ex.muscle_group || undefined,
         group_id: ex.group_id,
         group_technique: ex.group_technique,
+        group_recovery_seconds: fieldToNum(ex.group_recovery_seconds ?? '', {
+            min: 0,
+            max: MAX_GROUP_RECOVERY_SECONDS,
+        }) || undefined,
         technique: ex.technique || undefined,
         technique_params: ex.technique
             ? {
@@ -647,6 +660,7 @@ export function mesoToRequest(meso: MesocycleResponse): MesocycleRequest {
                 muscle_group: ex.muscle_group,
                 group_id: ex.group_id,
                 group_technique: ex.group_technique,
+                group_recovery_seconds: ex.group_recovery_seconds,
                 technique: ex.technique,
                 technique_params: ex.technique_params,
                 non_substitutable: ex.non_substitutable,
