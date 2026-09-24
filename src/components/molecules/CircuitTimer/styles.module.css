@@ -167,3 +167,121 @@
     clip: rect(0 0 0 0);
     white-space: nowrap;
 }
+
+/* ── Modo tabata: recuperação entre exercícios, configuração e som ── */
+.wrap[data-state='recover'] {
+    border-color: var(--mint);
+    border-style: dashed;
+}
+
+.wrap[data-state='recover'] .time {
+    color: var(--mint-text);
+}
+
+.badge {
+    margin-left: var(--space-2);
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--mint);
+    color: var(--mint-text);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.headRight {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+/* Botão de ícone com área de toque de ~44px sem aumentar o ícone. */
+.iconBtn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+    background: transparent;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.iconBtn::after {
+    content: '';
+    position: absolute;
+    inset: -8px;
+}
+
+.iconBtn[aria-pressed='false'] {
+    color: var(--text-muted);
+}
+
+.iconBtn[aria-expanded='true'] {
+    border-color: var(--mint);
+    color: var(--mint-text);
+}
+
+.config {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+    background: var(--surface-1);
+}
+
+.configTitle {
+    margin: 0;
+    font-size: var(--font-sm);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.chip {
+    min-height: 36px;
+    padding: 0 var(--space-3);
+    border-radius: 999px;
+    border: 1px solid var(--border-mid);
+    background: transparent;
+    color: var(--text-primary);
+    font-size: var(--font-sm);
+    cursor: pointer;
+}
+
+.chip[aria-pressed='true'] {
+    border-color: var(--mint);
+    background: var(--mint-glow);
+    color: var(--mint-text);
+    font-weight: 600;
+}
+
+.customRow {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--font-sm);
+    color: var(--text-muted);
+}
+
+.numInput {
+    width: 72px;
+    min-height: 36px;
+    padding: 0 var(--space-2);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-mid);
+    background: var(--surface-2);
+    color: var(--text-primary);
+    font-size: var(--font-sm);
+}

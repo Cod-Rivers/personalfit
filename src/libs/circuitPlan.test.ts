@@ -79,6 +79,46 @@ describe('buildCircuitPlan', () => {
     });
 });
 
+describe('buildCircuitPlan — modo tabata', () => {
+    it('recuperação entre os exercícios da rodada, não depois do último', () => {
+        const plan = buildCircuitPlan(
+            [timed('A', 2, 20, 60), timed('B', 2, 20, 60), timed('C', 2, 20, 60)],
+            { recoverySeconds: 10 },
+        );
+        const round1 = plan.steps.filter((s) => s.round === 1);
+        expect(round1.map((s) => s.kind)).toEqual([
+            'work', 'recover', 'work', 'recover', 'work', 'rest',
+        ]);
+        expect(round1[1]).toEqual({
+            kind: 'recover',
+            round: 1,
+            seconds: 10,
+            next: 'B',
+        });
+        // Última rodada: sem recuperação após o último nem descanso.
+        const round2 = plan.steps.filter((s) => s.round === 2);
+        expect(round2.map((s) => s.kind)).toEqual([
+            'work', 'recover', 'work', 'recover', 'work',
+        ]);
+    });
+
+    it('0 ou ausente não muda o plano', () => {
+        const exs = [timed('A', 2, 20, 30), timed('B', 2, 20, 30)];
+        expect(buildCircuitPlan(exs, { recoverySeconds: 0 })).toEqual(
+            buildCircuitPlan(exs),
+        );
+    });
+
+    it('exercício que sai das últimas rodadas não deixa recuperação órfã', () => {
+        const plan = buildCircuitPlan(
+            [timed('A', 2, 20), timed('B', 1, 20)],
+            { recoverySeconds: 10 },
+        );
+        const round2 = plan.steps.filter((s) => s.round === 2);
+        expect(round2.map((s) => s.kind)).toEqual(['work']);
+    });
+});
+
 describe('circuitHasTimedWork', () => {
     it('só com algum exercício por tempo num bloco de 2+', () => {
         expect(circuitHasTimedWork([timed('A', 3, 30), timed('B', 3, 30)])).toBe(true);

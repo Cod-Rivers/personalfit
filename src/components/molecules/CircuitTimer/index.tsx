@@ -6,7 +6,10 @@ import {
     FiPause,
     FiPlay,
     FiRotateCcw,
+    FiSettings,
     FiSkipForward,
+    FiVolume2,
+    FiVolumeX,
 } from 'react-icons/fi';
 import { formatCountdown } from '@/hooks/useRestCountdown';
 import {
@@ -14,6 +17,19 @@ import {
     type CircuitExercise,
     type CircuitStep,
 } from '@/libs/circuitPlan';
+import {
+    DEFAULT_CIRCUIT_SETTINGS,
+    MAX_RECOVERY_SECONDS,
+    RECOVERY_PRESETS,
+    loadCircuitSettings,
+    saveCircuitSettings,
+    type CircuitSettings,
+} from '@/libs/circuitSettings';
+import {
+    playCircuitSound,
+    preloadCircuitSounds,
+    type CircuitSound,
+} from '@/libs/circuitSounds';
 import styles from './styles.module.css';
 
 function vibrate(pattern: number[]) {
@@ -24,10 +40,23 @@ function vibrate(pattern: number[]) {
     }
 }
 
+/** Som que marca a ENTRADA em cada tipo de passo. */
+const SOUND_OF_STEP: Record<CircuitStep['kind'], CircuitSound> = {
+    work: 'go',
+    recover: 'recover',
+    rest: 'rest',
+};
+
+/** Últimos segundos de um passo avisam com um bip por segundo. */
+const TICK_FROM = 3;
+
 /**
  * Cronômetro de um bloco agrupado executado como circuito (ver
  * libs/circuitPlan.ts): uma série de cada exercício em sequência, sem
  * descanso entre eles, descanso no fim da rodada, próxima rodada.
+ *
+ * Modo tabata (opcional, em "Configurar"): recuperação curta entre um
+ * exercício e outro da rodada, com sons distintos para cada transição.
  *
  * Passo por tempo termina sozinho e já emenda o seguinte — no meio do
  * circuito ninguém quer largar o exercício para tocar na tela. Passo por
@@ -42,12 +71,41 @@ export default function CircuitTimer({
 }: {
     exercises: CircuitExercise[];
 }) {
+    // Preferências do aparelho. Lidas depois de montar (no servidor não há
+    // localStorage, e ler antes daria diferença de hidratação).
+    const [settings, setSettings] = useState<CircuitSettings>(
+        DEFAULT_CIRCUIT_SETTINGS,
+    );
+    const [showConfig, setShowConfig] = useState(false);
+    const soundRef = useRef(settings.sound);
+    soundRef.current = settings.sound;
+
+    useEffect(() => {
+        setSettings(loadCircuitSettings());
+        preloadCircuitSounds();
+    }, []);
+
+    const updateSettings = (patch: Partial<CircuitSettings>) => {
+        setSettings((prev) => {
+            const next = { ...prev, ...patch };
+            saveCircuitSettings(next);
+            return next;
+        });
+    };
+
+    const play = useCallback((name: CircuitSound) => {
+        if (soundRef.current) playCircuitSound(name);
+    }, []);
+
     // Pela assinatura: quem chama monta o array a cada render, e um plano
     // novo reiniciaria o intervalo do relógio a cada tick.
     const signature = JSON.stringify(exercises);
     const plan = useMemo(
-        () => buildCircuitPlan(JSON.parse(signature) as CircuitExercise[]),
-        [signature],
+        () =>
+            buildCircuitPlan(JSON.parse(signature) as CircuitExercise[], {
+                recoverySeconds: settings.recoverySeconds,
+            }),
+        [signature, settings.recoverySeconds],
     );
     const { steps, rounds } = plan;
 
@@ -56,17 +114,20 @@ export default function CircuitTimer({
     const [running, setRunning] = useState(false);
     const [remaining, setRemaining] = useState(steps[0]?.seconds ?? 0);
     const endAtRef = useRef<number | null>(null);
+    const lastTickRef = useRef<number | null>(null);
 
     const step: CircuitStep | undefined = steps[index];
     const finished = started && index >= steps.length;
 
     /** Vai para o passo `i`. Passo cronometrado já começa a contar quando
-     * `autostart`; passo manual fica esperando o "Feito". */
+     * `autostart`; passo manual fica esperando o "Feito". O som da entrada
+     * só toca quando a pessoa está de fato seguindo (autostart). */
     const goTo = useCallback(
         (i: number, autostart: boolean) => {
             setIndex(i);
+            lastTickRef.current = null;
             const next = steps[i];
-            const secs = next?.seconds ?? 0;
+            const secs = next && next.seconds != null ? next.seconds : 0;
             setRemaining(secs);
             if (next && secs > 0 && autostart) {
                 endAtRef.current = Date.now() + secs * 1000;
@@ -75,10 +136,18 @@ export default function CircuitTimer({
                 endAtRef.current = null;
                 setRunning(false);
             }
+            if (autostart) play(next ? SOUND_OF_STEP[next.kind] : 'done');
             if (!next) vibrate([300, 150, 300, 150, 300]);
         },
-        [steps],
+        [steps, play],
     );
+
+    // Mudar a recuperação antes de começar troca o plano: volta ao 1º passo.
+    useEffect(() => {
+        if (started) return;
+        setIndex(0);
+        setRemaining(steps[0]?.seconds ?? 0);
+    }, [steps, started]);
 
     useEffect(() => {
         if (!running) return;
@@ -87,6 +156,16 @@ export default function CircuitTimer({
             if (endAt == null) return;
             const left = Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
             setRemaining(left);
+            const current = steps[index];
+            if (
+                left > 0 &&
+                left <= TICK_FROM &&
+                lastTickRef.current !== left &&
+                (current?.seconds ?? 0) > TICK_FROM
+            ) {
+                lastTickRef.current = left;
+                play('tick');
+            }
             if (left === 0) {
                 endAtRef.current = null;
                 vibrate([200, 100, 200]);
@@ -96,10 +175,11 @@ export default function CircuitTimer({
         tick();
         const id = window.setInterval(tick, 250);
         return () => window.clearInterval(id);
-    }, [running, index, goTo]);
+    }, [running, index, goTo, steps, play]);
 
     const start = () => {
         setStarted(true);
+        setShowConfig(false);
         goTo(0, true);
     };
 
@@ -129,9 +209,11 @@ export default function CircuitTimer({
         ? 'done'
         : step?.kind === 'rest'
           ? 'rest'
-          : running
-            ? 'running'
-            : 'idle';
+          : step?.kind === 'recover'
+            ? 'recover'
+            : running
+              ? 'running'
+              : 'idle';
 
     // Exercícios da rodada atual (ou da próxima, durante o descanso), para a
     // fila com o que já foi, o atual e o que falta.
@@ -141,24 +223,137 @@ export default function CircuitTimer({
         (s): s is Extract<CircuitStep, { kind: 'work' }> =>
             s.kind === 'work' && s.round === queueRound,
     );
-    const currentPos = step?.kind === 'work' ? step.position : -1;
+    // Posição do exercício em andamento — ou, na recuperação, do que acabou
+    // de terminar (o próximo é o que vem depois dele).
+    const positionNow = (() => {
+        if (!started || !step || step.kind === 'rest') return -1;
+        if (step.kind === 'work') return step.position;
+        const before = steps
+            .slice(0, index)
+            .filter((s) => s.kind === 'work' && s.round === step.round);
+        return before.length - 1;
+    })();
+
+    const soundLabel = settings.sound ? 'Desligar sons' : 'Ligar sons';
 
     return (
         <div className={styles.wrap} data-state={state}>
             <div className={styles.head}>
-                <span className={styles.label}>Circuito</span>
-                <span className={styles.meta}>
-                    {finished
-                        ? `${rounds} ${rounds === 1 ? 'rodada' : 'rodadas'} concluídas`
-                        : `Rodada ${Math.min(queueRound, rounds)} de ${rounds}`}
+                <span className={styles.label}>
+                    Circuito
+                    {settings.recoverySeconds > 0 && (
+                        <span className={styles.badge}>
+                            Tabata · {settings.recoverySeconds} s
+                        </span>
+                    )}
+                </span>
+                <span className={styles.headRight}>
+                    <span className={styles.meta}>
+                        {finished
+                            ? `${rounds} ${rounds === 1 ? 'rodada' : 'rodadas'} concluídas`
+                            : `Rodada ${Math.min(queueRound, rounds)} de ${rounds}`}
+                    </span>
+                    <button
+                        type="button"
+                        className={styles.iconBtn}
+                        onClick={() => updateSettings({ sound: !settings.sound })}
+                        aria-pressed={settings.sound}
+                        aria-label={soundLabel}
+                        title={soundLabel}
+                    >
+                        {settings.sound ? <FiVolume2 /> : <FiVolumeX />}
+                    </button>
+                    {!started && (
+                        <button
+                            type="button"
+                            className={styles.iconBtn}
+                            onClick={() => setShowConfig((v) => !v)}
+                            aria-expanded={showConfig}
+                            aria-label="Configurar circuito"
+                            title="Configurar"
+                        >
+                            <FiSettings />
+                        </button>
+                    )}
                 </span>
             </div>
+
+            {!started && showConfig && (
+                <div className={styles.config}>
+                    <p className={styles.configTitle}>
+                        Recuperação entre os exercícios (modo tabata)
+                    </p>
+                    <p className={styles.hint}>
+                        Pausa curta entre um exercício e o próximo da mesma
+                        rodada. O descanso do fim da rodada continua como está.
+                    </p>
+                    <div
+                        className={styles.chips}
+                        role="group"
+                        aria-label="Recuperação entre exercícios"
+                    >
+                        {RECOVERY_PRESETS.map((p) => (
+                            <button
+                                key={p.seconds}
+                                type="button"
+                                className={styles.chip}
+                                aria-pressed={
+                                    settings.recoverySeconds === p.seconds
+                                }
+                                onClick={() =>
+                                    updateSettings({
+                                        recoverySeconds: p.seconds,
+                                    })
+                                }
+                            >
+                                {p.label}
+                            </button>
+                        ))}
+                    </div>
+                    <label className={styles.customRow}>
+                        <span>Outro valor</span>
+                        <input
+                            type="number"
+                            min={0}
+                            max={MAX_RECOVERY_SECONDS}
+                            step={5}
+                            inputMode="numeric"
+                            className={styles.numInput}
+                            value={settings.recoverySeconds}
+                            onChange={(e) =>
+                                updateSettings({
+                                    recoverySeconds: Math.min(
+                                        MAX_RECOVERY_SECONDS,
+                                        Math.max(
+                                            0,
+                                            Math.round(
+                                                Number(e.target.value) || 0,
+                                            ),
+                                        ),
+                                    ),
+                                })
+                            }
+                        />
+                        <span>seg</span>
+                    </label>
+                    <button
+                        type="button"
+                        className={styles.btn}
+                        onClick={() => playCircuitSound('go')}
+                    >
+                        <FiVolume2 /> Testar som
+                    </button>
+                </div>
+            )}
 
             {!started ? (
                 <p className={styles.hint}>
                     {rounds} {rounds === 1 ? 'rodada' : 'rodadas'} de{' '}
-                    {queue.length} exercícios em sequência, sem descanso entre
-                    eles. O descanso vem no fim de cada rodada.
+                    {queue.length} exercícios em sequência
+                    {settings.recoverySeconds > 0
+                        ? `, com ${settings.recoverySeconds} s de recuperação entre eles`
+                        : ', sem descanso entre eles'}
+                    . O descanso vem no fim de cada rodada.
                 </p>
             ) : finished ? (
                 <p className={styles.current}>
@@ -170,6 +365,11 @@ export default function CircuitTimer({
                     <p className={styles.sub}>
                         Próxima: rodada {step.round + 1} de {rounds}
                     </p>
+                </div>
+            ) : step?.kind === 'recover' ? (
+                <div>
+                    <p className={styles.current}>Recuperação</p>
+                    <p className={styles.sub}>Próximo: {step.next}</p>
                 </div>
             ) : step ? (
                 <div>
@@ -187,11 +387,13 @@ export default function CircuitTimer({
                 <ol className={styles.queue} aria-label="Exercícios da rodada">
                     {queue.map((s) => {
                         const status =
-                            !started || step?.kind === 'rest'
+                            positionNow < 0
                                 ? 'next'
-                                : s.position < currentPos
+                                : s.position < positionNow ||
+                                    (step?.kind === 'recover' &&
+                                        s.position === positionNow)
                                   ? 'done'
-                                  : s.position === currentPos
+                                  : s.position === positionNow
                                     ? 'current'
                                     : 'next';
                         return (
@@ -271,9 +473,9 @@ export default function CircuitTimer({
                                     className={styles.btn}
                                     onClick={() => goTo(index + 1, true)}
                                     aria-label={
-                                        step.kind === 'rest'
-                                            ? 'Pular descanso'
-                                            : 'Pular para o próximo'
+                                        step.kind === 'work'
+                                            ? 'Pular para o próximo'
+                                            : 'Pular a pausa'
                                     }
                                     title="Pular"
                                 >
@@ -299,7 +501,9 @@ export default function CircuitTimer({
                     : started && step
                       ? step.kind === 'rest'
                           ? `Descanso antes da rodada ${step.round + 1}`
-                          : `${step.name}, exercício ${step.position + 1} de ${step.roundSize}`
+                          : step.kind === 'recover'
+                            ? `Recuperação. Próximo: ${step.next}`
+                            : `${step.name}, exercício ${step.position + 1} de ${step.roundSize}`
                       : ''}
             </span>
         </div>

@@ -7,6 +7,13 @@ import {
     screen,
 } from '@testing-library/react';
 import CircuitTimer from './index';
+import { playCircuitSound } from '@/libs/circuitSounds';
+
+// Howler não toca em jsdom: os sons são espiados no módulo.
+vi.mock('@/libs/circuitSounds', () => ({
+    playCircuitSound: vi.fn(),
+    preloadCircuitSounds: vi.fn(),
+}));
 
 /**
  * Circuito de um bloco agrupado: exercícios da rodada em sequência sem
@@ -15,6 +22,8 @@ import CircuitTimer from './index';
 describe('CircuitTimer', () => {
     beforeEach(() => {
         vi.useFakeTimers();
+        vi.mocked(playCircuitSound).mockClear();
+        window.localStorage.clear();
     });
     afterEach(() => {
         cleanup();
@@ -75,5 +84,79 @@ describe('CircuitTimer', () => {
 
         fireEvent.click(screen.getByRole('button', { name: /Feito/ }));
         expect(screen.getByText("Circuito concluído!")).toBeTruthy();
+    });
+
+    describe('modo tabata e sons', () => {
+        const pair = [
+            { name: 'A', series: [20, 20], timed: true, rest: 30 },
+            { name: 'B', series: [20, 20], timed: true, rest: 30 },
+        ];
+        const sounds = () =>
+            vi.mocked(playCircuitSound).mock.calls.map((c) => c[0]);
+
+        it('recuperação configurada entra entre os exercícios da rodada', () => {
+            window.localStorage.setItem(
+                'venafit.circuit.settings',
+                JSON.stringify({ recoverySeconds: 10, sound: true }),
+            );
+            render(<CircuitTimer exercises={pair} />);
+            expect(screen.getByText('Tabata · 10 s')).toBeTruthy();
+            fireEvent.click(
+                screen.getByRole('button', { name: /Iniciar circuito/ }),
+            );
+            tick(20_000);
+            expect(screen.getByText('Recuperação')).toBeTruthy();
+            expect(screen.getByText('Próximo: B')).toBeTruthy();
+            expect(screen.getByRole('timer').textContent).toBe('0:10');
+            tick(10_000);
+            expect(screen.getByText(/Exercício 2 de 2/)).toBeTruthy();
+        });
+
+        it('escolher o atalho Tabata no painel de configuração muda o plano', () => {
+            render(<CircuitTimer exercises={pair} />);
+            fireEvent.click(
+                screen.getByRole('button', { name: 'Configurar circuito' }),
+            );
+            fireEvent.click(screen.getByRole('button', { name: 'Tabata · 10 s' }));
+            expect(screen.getByText(/com 10 s de recuperação entre eles/)).toBeTruthy();
+            expect(
+                JSON.parse(
+                    window.localStorage.getItem('venafit.circuit.settings') ?? '{}',
+                ).recoverySeconds,
+            ).toBe(10);
+        });
+
+        it('toca um som por transição: vai, bips da contagem, recuperação, descanso, fim', () => {
+            window.localStorage.setItem(
+                'venafit.circuit.settings',
+                JSON.stringify({ recoverySeconds: 10, sound: true }),
+            );
+            render(<CircuitTimer exercises={pair} />);
+            fireEvent.click(
+                screen.getByRole('button', { name: /Iniciar circuito/ }),
+            );
+            expect(sounds()).toEqual(['go']);
+            tick(20_000); // A termina
+            const afterA = sounds();
+            expect(afterA.filter((n) => n === 'tick')).toHaveLength(3);
+            expect(afterA[afterA.length - 1]).toBe('recover');
+            tick(10_000); // recuperação (10 s) termina -> B
+            expect(sounds().pop()).toBe('go');
+            tick(20_000); // B termina -> descanso da rodada
+            expect(sounds().pop()).toBe('rest');
+        });
+
+        it('com o som desligado não toca nada', () => {
+            window.localStorage.setItem(
+                'venafit.circuit.settings',
+                JSON.stringify({ recoverySeconds: 0, sound: false }),
+            );
+            render(<CircuitTimer exercises={pair} />);
+            fireEvent.click(
+                screen.getByRole('button', { name: /Iniciar circuito/ }),
+            );
+            tick(20_000);
+            expect(playCircuitSound).not.toHaveBeenCalled();
+        });
     });
 });

@@ -8,6 +8,10 @@
  * sai das últimas rodadas. O descanso é o do ÚLTIMO exercício do bloco — a
  * mesma convenção da tela, que só mostra timer de descanso nele.
  *
+ * Modo tabata: com `recoverySeconds` > 0, cada exercício da rodada (menos o
+ * último, que já é seguido pelo descanso) ganha uma recuperação curta antes
+ * do próximo — 20 s de trabalho + 10 s de recuperação é o clássico.
+ *
  * Série por tempo vira passo cronometrado; série por repetições (ou texto
  * livre) vira passo manual — o aluno toca em "Feito" ao terminar.
  */
@@ -37,14 +41,25 @@ export type CircuitStep =
           /** Rótulo da série manual ("12 reps", texto livre). */
           target?: string;
       }
-    | { kind: 'rest'; round: number; seconds: number };
+    | { kind: 'rest'; round: number; seconds: number }
+    /** Recuperação curta ENTRE exercícios da mesma rodada (modo tabata). */
+    | { kind: 'recover'; round: number; seconds: number; next: string };
+
+export interface CircuitOptions {
+    /** Segundos de recuperação entre os exercícios da rodada; 0 = sem. */
+    recoverySeconds?: number;
+}
 
 export interface CircuitPlan {
     rounds: number;
     steps: CircuitStep[];
 }
 
-export function buildCircuitPlan(exercises: CircuitExercise[]): CircuitPlan {
+export function buildCircuitPlan(
+    exercises: CircuitExercise[],
+    options: CircuitOptions = {},
+): CircuitPlan {
+    const recovery = Math.max(0, Math.floor(options.recoverySeconds ?? 0));
     const rounds = exercises.reduce(
         (max, e) => Math.max(max, e.series?.length ?? 0),
         0,
@@ -72,6 +87,15 @@ export function buildCircuitPlan(exercises: CircuitExercise[]): CircuitPlan {
                         ? `${value} reps`
                         : undefined,
             });
+            const following = inRound[position + 1];
+            if (following && recovery > 0) {
+                steps.push({
+                    kind: 'recover',
+                    round: r + 1,
+                    seconds: recovery,
+                    next: following.name,
+                });
+            }
         });
         if (r < rounds - 1 && rest > 0) {
             steps.push({ kind: 'rest', round: r + 1, seconds: rest });
