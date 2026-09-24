@@ -31,6 +31,7 @@ import {
     clearWorkoutStart,
 } from '@/libs/workoutSessionTimer';
 import NavRow, { NavRowGroup } from '@/components/molecules/NavRow';
+import RestTimer from '@/components/molecules/RestTimer';
 import { useCardStack } from '@/hooks/useCardStack';
 import {
     describeSeries,
@@ -132,6 +133,9 @@ interface ExerciseLog {
     groupId?: string;
     /** Variante do bloco (ver GROUP_TECHNIQUE_CATALOG), só para exibição. */
     groupTechnique?: string;
+    /** Exercício por tempo: cada valor de plannedSeries e o campo do registro
+     * são SEGUNDOS, não repetições. */
+    timed: boolean;
     plannedSeries: number[];
     series: Array<{
         seriesNum: number;
@@ -175,6 +179,7 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                 name: ex.name,
                 groupId: ex.group_id,
                 groupTechnique: ex.group_technique,
+                timed: !!ex.timed,
                 plannedSeries,
                 series: (
                     plannedSeries.length > 0
@@ -620,9 +625,9 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
         stack.push({ card: 'block', blockKey: key });
     };
 
-    const seriesGridHeader = (
+    const seriesGridHeader = (timed: boolean) => (
         <div className={s.gridHeader}>
-            <span className={s.gridHeaderLabel}>Reps</span>
+            <span className={s.gridHeaderLabel}>{timed ? 'Seg' : 'Reps'}</span>
             <span className={s.gridHeaderLabel}>Kg</span>
             <span className={s.gridHeaderLabel}>
                 RPE
@@ -658,10 +663,22 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                     </button>
                 )}
             </label>
+            {/* Série por tempo: contador regressivo da duração prescrita, para
+                o aluno (ou o personal, no atendimento) não cronometrar fora do
+                app. Só nas séries que têm duração prescrita. */}
+            {logs[exIdx].timed && (logs[exIdx].plannedSeries[seriesIdx] ?? 0) > 0 && (
+                <div>
+                    <RestTimer
+                        seconds={logs[exIdx].plannedSeries[seriesIdx]}
+                        exerciseName={logs[exIdx].name}
+                        kind="series"
+                    />
+                </div>
+            )}
             <div className={s.inputs}>
                 <input
                     type="number"
-                    placeholder="Reps"
+                    placeholder={logs[exIdx].timed ? 'Seg' : 'Reps'}
                     value={sr.reps || ''}
                     onChange={(e) =>
                         updateSeriesLog(
@@ -736,11 +753,11 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                 <div className={s.content}>
                     <p className={s.blockHeader}>
                         {ex.plannedSeries.length > 0
-                            ? `Prescrito: ${ex.plannedSeries.join(' / ')} reps`
+                            ? `Prescrito: ${ex.plannedSeries.join(' / ')} ${ex.timed ? 'seg' : 'reps'}`
                             : 'Sem prescrição de séries — ajuste como você fez'}
                     </p>
                     <div className={s.seriesGrid}>
-                        {seriesGridHeader}
+                        {seriesGridHeader(ex.timed)}
                         {ex.series.map((sr, seriesIdx) =>
                             renderSeriesRow(
                                 exIdx,
@@ -802,7 +819,7 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                     entre as séries abaixo
                 </p>
                 <div className={s.seriesGrid}>
-                    {seriesGridHeader}
+                    {seriesGridHeader(block.some((b) => logs[b.idx].timed))}
                     {rows}
                 </div>
             </div>

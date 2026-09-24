@@ -1,0 +1,104 @@
+/* Contador regressivo das séries por tempo (ver index.tsx). Tokens de
+   app/css/constants.css. */
+.wrap {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    margin: var(--space-3) 0;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-subtle);
+    background: var(--surface-2);
+}
+
+.wrap[data-state='running'] {
+    border-color: var(--mint);
+}
+
+.wrap[data-state='done'] {
+    border-color: var(--amber);
+    background: rgba(240, 165, 0, 0.12);
+}
+
+.head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--space-2);
+    font-size: var(--font-sm);
+}
+
+.label {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.total {
+    color: var(--text-muted);
+}
+
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+}
+
+.time {
+    font-size: 2.25rem;
+    font-weight: 700;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+}
+
+.wrap[data-state='running'] .time {
+    color: var(--mint-text);
+}
+
+.wrap[data-state='done'] .time {
+    color: var(--amber-text);
+}
+
+.controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+/* Alvo de toque confortável: usado de pé, com uma mão. */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 0 var(--space-4);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-mid);
+    background: transparent;
+    color: var(--text-primary);
+    font-size: var(--font-sm);
+    cursor: pointer;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btnPrimary {
+    border-color: var(--mint);
+    color: var(--mint-text);
+    font-weight: 600;
+}
+
+.srOnly {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}

@@ -15,16 +15,21 @@ import styles from './styles.module.css';
 export default function RestTimer({
     seconds,
     exerciseName,
+    kind = 'rest',
     className,
 }: {
-    /** Descanso prescrito, em segundos. */
+    /** Duração prescrita, em segundos. */
     seconds: number;
+    /** 'rest' = descanso entre séries; 'series' = a própria série por tempo
+     * (só muda os rótulos acessíveis). */
+    kind?: 'rest' | 'series';
     /** Só para os rótulos acessíveis ("Iniciar descanso de Leg Press"). */
     exerciseName?: string;
     className?: string;
 }) {
     const { remaining, running, finished, start, pause, reset } =
         useRestCountdown(seconds);
+    const noun = kind === 'series' ? 'série' : 'descanso';
     const of = exerciseName ? ` de ${exerciseName}` : '';
     const state = finished ? 'done' : running ? 'running' : 'idle';
 
@@ -34,14 +39,18 @@ export default function RestTimer({
             data-state={state}
         >
             <span className={styles.time} role="timer" aria-live="off">
-                {finished ? 'Pronto' : formatCountdown(remaining)}
+                {finished
+                    ? kind === 'series'
+                        ? 'Tempo!'
+                        : 'Pronto'
+                    : formatCountdown(remaining)}
             </span>
             {running ? (
                 <button
                     type="button"
                     className={styles.btn}
                     onClick={pause}
-                    aria-label={`Pausar descanso${of}`}
+                    aria-label={`Pausar ${noun}${of}`}
                     title="Pausar"
                 >
                     <FiPause />
@@ -51,8 +60,8 @@ export default function RestTimer({
                     type="button"
                     className={`${styles.btn} ${styles.btnPrimary}`}
                     onClick={start}
-                    aria-label={`Iniciar descanso${of}`}
-                    title="Iniciar descanso"
+                    aria-label={`Iniciar ${noun}${of}`}
+                    title={`Iniciar ${noun}`}
                 >
                     <FiPlay />
                 </button>
@@ -62,14 +71,16 @@ export default function RestTimer({
                 className={styles.btn}
                 onClick={reset}
                 disabled={!running && !finished && remaining === seconds}
-                aria-label={`Zerar descanso${of}`}
+                aria-label={`Zerar ${noun}${of}`}
                 title="Zerar"
             >
                 <FiRotateCcw />
             </button>
             {/* Anúncio só no fim — ler cada segundo seria ruído. */}
             <span className={styles.srOnly} aria-live="polite">
-                {finished ? `Descanso${of} concluído` : ''}
+                {finished
+                    ? `${kind === 'series' ? 'Série' : 'Descanso'}${of} concluído`
+                    : ''}
             </span>
         </div>
     );

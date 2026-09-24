@@ -20,6 +20,7 @@ import { ExerciseLog } from './types';
 import styles from './ExerciseDetailCard.module.css';
 import Modal from '@/components/system/Modal';
 import Button from '@/components/atoms/Button';
+import SeriesTimer from '@/components/molecules/SeriesTimer';
 import {
     isVideoExtension,
     isInstagramUrl,
@@ -1363,9 +1364,22 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                     </div>
                                 )}
                                 {exercise.timed && (
-                                    <p className={styles.timedInfo}>
-                                        Controlado por tempo
-                                    </p>
+                                    <>
+                                        <p className={styles.timedInfo}>
+                                            Controlado por tempo
+                                        </p>
+                                        {/* Contador regressivo por série, para
+                                            o aluno e o personal — sem ele os
+                                            dois cronometravam fora do app.
+                                            key: outro exercício, contador novo. */}
+                                        <SeriesTimer
+                                            key={exercise.id}
+                                            durations={(
+                                                exercise.series ?? []
+                                            ).filter((d) => d > 0)}
+                                            exerciseName={exercise.name}
+                                        />
+                                    </>
                                 )}
                                 {exercise.video_url &&
                                     !exercise.video_thumb && (
