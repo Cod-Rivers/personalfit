@@ -16,8 +16,9 @@
  *   reordena.
  * - Nos cartões de treino: + cria um treino novo e × exclui (com
  *   confirmação). O antigo "Editar treino" (editor da fase) saiu daqui;
- *   bi-set se monta pelo "+ Exercício" (multi-seleção → "Adicionar como"),
- *   e o resto da fase segue em "Plano completo".
+ *   bi-set se monta pelo "+ Exercício" (multi-seleção → "Adicionar como")
+ *   ou, com os exercícios já no treino, marcando 2+ no ✓ da alça →
+ *   "Agrupar como". O resto da fase segue em "Plano completo".
  * - Fases e semanas continuam na periodização ("Plano completo").
  *
  * Por que não bastavam as telas antigas:
@@ -42,6 +43,7 @@ import {
     FiArrowLeft,
     FiCheck,
     FiCheckCircle,
+    FiLink,
     FiPlus,
     FiWifiOff,
     FiX,
@@ -54,6 +56,7 @@ import {
     updateMesocycle,
     type ExerciseLibraryItem,
     type ExerciseRequest,
+    type ExerciseResponse,
     type MacrocycleResponse,
     type MesocycleRequest,
     type MesocycleResponse,
@@ -73,7 +76,9 @@ import {
 } from '@/libs/offline/personalCache';
 import { Api } from '@/libs/api';
 import {
+    GROUP_TECHNIQUE_CATALOG,
     comboGroupLabel,
+    isGroupTechniqueValidForSize,
     partitionExerciseGroups,
 } from '@/libs/trainingTechniques';
 import WorkoutLogger from '@/components/features/WorkoutLogger';
@@ -94,10 +99,13 @@ import {
 import {
     addExercisesToTraining,
     addTrainingToMeso,
+    groupExercisesInTraining,
     removeExerciseFromTraining,
     removeTrainingFromMeso,
     replaceExerciseInTraining,
     saveTrainingEdit,
+    setGroupTechniqueInTraining,
+    ungroupInTraining,
 } from '@/app/personal/_shared/periodizacao/lib/trainingEditPatch';
 import ExercisePicker from '@/app/personal/_shared/periodizacao/components/ExercisePicker';
 import ExerciseInlineEditor from '@/app/personal/_shared/periodizacao/components/ExerciseInlineEditor';
@@ -184,18 +192,30 @@ export default function AcompanharTreinoPage() {
      * não é o registro do aluno (isso é `record`/`lastLoadByExercise`, vindo
      * do workout log) nem grava em lugar nenhum — reinicia ao trocar de
      * treino ou recarregar a página, de propósito, para nunca ficar
-     * marcado de uma sessão presencial para a próxima. */
+     * marcado de uma sessão presencial para a próxima.
+     *
+     * É também a SELEÇÃO do agrupamento: com 2+ marcados aparece a barra
+     * "Agrupar como" (bi-set, tri-set…), para combinar exercícios que já
+     * foram incluídos separados. Uma marcação só, dois usos — o personal
+     * não precisa de um modo de seleção à parte. */
     const [completedExerciseIds, setCompletedExerciseIds] = useState<
         Set<string>
     >(new Set());
-    const toggleExerciseCompleted = (id: string) => {
+    /** Marca/desmarca um bloco inteiro: exercício solto ou todos os de um
+     * bi-set. Bloco parcialmente marcado conta como desmarcado → marca tudo. */
+    const toggleBlockCompleted = (ids: string[]) => {
         setCompletedExerciseIds((prev) => {
             const next = new Set(prev);
-            if (next.has(id)) next.delete(id);
-            else next.add(id);
+            const allOn = ids.every((id) => next.has(id));
+            for (const id of ids) {
+                if (allOn) next.delete(id);
+                else next.add(id);
+            }
             return next;
         });
     };
+    /** Variante escolhida na barra "Agrupar como" ('' = sem variante). */
+    const [groupTechnique, setGroupTechnique] = useState('');
     /** Biblioteca aberta: para acrescentar exercícios ao treino, ou para
      * trocar um deles. */
     const [picker, setPicker] = useState<
@@ -638,6 +658,116 @@ export default function AcompanharTreinoPage() {
         }
     };
 
+    /** Exercícios marcados no treino aberto, na ordem da lista. */
+    const markedExerciseIds = useMemo(
+        () =>
+            selectedExercises
+                .filter((e) => completedExerciseIds.has(e.id))
+                .map((e) => e.id),
+        [selectedExercises, completedExerciseIds],
+    );
+    const effectiveGroupTechnique =
+        groupTechnique &&
+        isGroupTechniqueValidForSize(groupTechnique, markedExerciseIds.length)
+            ? groupTechnique
+            : '';
+
+    /** Junta os marcados num bloco (ver groupExercisesInTraining). */
+    const groupMarked = async () => {
+        if (!selectedTraining || markedExerciseIds.length < 2) return;
+        const ids = markedExerciseIds;
+        const technique = effectiveGroupTechnique || undefined;
+        try {
+            await editTraining((req) =>
+                groupExercisesInTraining(
+                    req,
+                    selectedTraining.id,
+                    ids,
+                    technique,
+                ),
+            );
+            setCompletedExerciseIds((prev) => {
+                const next = new Set(prev);
+                for (const id of ids) next.delete(id);
+                return next;
+            });
+            setGroupTechnique('');
+            showSuccess(
+                `${comboGroupLabel(ids.length, technique)} montado com ${ids.length} exercícios.`,
+            );
+        } catch (e) {
+            showError((e as Error).message);
+        }
+    };
+
+    const ungroup = async (groupId: string) => {
+        if (!selectedTraining) return;
+        try {
+            await editTraining((req) =>
+                ungroupInTraining(req, selectedTraining.id, groupId),
+            );
+            showSuccess(
+                'Bloco desfeito — os exercícios voltaram a ser separados.',
+            );
+        } catch (e) {
+            showError((e as Error).message);
+        }
+    };
+
+    const changeGroupTechnique = async (groupId: string, value: string) => {
+        if (!selectedTraining) return;
+        try {
+            await editTraining((req) =>
+                setGroupTechniqueInTraining(
+                    req,
+                    selectedTraining.id,
+                    groupId,
+                    value || undefined,
+                ),
+            );
+        } catch (e) {
+            showError((e as Error).message);
+        }
+    };
+
+    /** O ✓ na coluna da alça: marca o exercício (ou o bloco inteiro) como
+     * aplicado — e é a seleção da barra "Agrupar como". */
+    const renderMarkToggle = (block: ExerciseResponse[]) => {
+        const ids = block.map((e) => e.id);
+        const checked = ids.every((id) => completedExerciseIds.has(id));
+        const name =
+            block.length === 1
+                ? block[0].name
+                : comboGroupLabel(block.length, block[0].group_technique);
+        const inputId = `complete-${blockId(block)}`;
+        return (
+            <>
+                <input
+                    id={inputId}
+                    type="checkbox"
+                    className={s.completeCheckbox}
+                    checked={checked}
+                    onChange={() => toggleBlockCompleted(ids)}
+                />
+                <label
+                    htmlFor={inputId}
+                    className={s.completeToggle}
+                    data-checked={checked || undefined}
+                    title={
+                        checked
+                            ? 'Desmarcar'
+                            : 'Marcar como aplicado ou para agrupar'
+                    }
+                >
+                    <FiCheck aria-hidden />
+                    <span className={s.srOnly}>
+                        {checked ? `Desmarcar ${name}` : `Marcar ${name}`}
+                    </span>
+                </label>
+            </>
+        );
+    };
+
     const replaceExercise = async (
         exerciseId: string,
         item: ExerciseLibraryItem,
@@ -714,6 +844,7 @@ export default function AcompanharTreinoPage() {
     // não fazem sentido aqui.
     useEffect(() => {
         setCompletedExerciseIds(new Set());
+        setGroupTechnique('');
     }, [selectedTraining?.id]);
 
     if (loading) {
@@ -950,7 +1081,8 @@ export default function AcompanharTreinoPage() {
                                     Toque no exercício para ver e editar. A
                                     alça ⠿ muda a ordem; o <FiCheck aria-hidden className={s.hintIcon} /> acima
                                     dela marca o exercício como aplicado com o
-                                    aluno nesta sessão.
+                                    aluno nesta sessão. Marque 2 ou mais para
+                                    agrupá-los em bi-set, tri-set, superset…
                                 </p>
                                 <SortableList
                                     ids={exerciseBlocks.map(blockId)}
@@ -1036,68 +1168,9 @@ export default function AcompanharTreinoPage() {
                                                     isOfflineData ||
                                                     exerciseBlocks.length < 2
                                                 }
-                                                topSlot={
-                                                    // Só em bloco de UM exercício: num bi-set/tri-set a
-                                                    // alça é do bloco inteiro, não dá pra marcar "qual"
-                                                    // dos exercícios foi aplicado com um único checkbox.
-                                                    block.length === 1 ? (
-                                                        <>
-                                                            <input
-                                                                id={`complete-${block[0].id}`}
-                                                                type="checkbox"
-                                                                className={
-                                                                    s.completeCheckbox
-                                                                }
-                                                                checked={completedExerciseIds.has(
-                                                                    block[0].id,
-                                                                )}
-                                                                onChange={() =>
-                                                                    toggleExerciseCompleted(
-                                                                        block[0]
-                                                                            .id,
-                                                                    )
-                                                                }
-                                                            />
-                                                            <label
-                                                                htmlFor={`complete-${block[0].id}`}
-                                                                className={
-                                                                    s.completeToggle
-                                                                }
-                                                                data-checked={
-                                                                    completedExerciseIds.has(
-                                                                        block[0]
-                                                                            .id,
-                                                                    ) ||
-                                                                    undefined
-                                                                }
-                                                                title={
-                                                                    completedExerciseIds.has(
-                                                                        block[0]
-                                                                            .id,
-                                                                    )
-                                                                        ? 'Desmarcar como aplicado'
-                                                                        : 'Marcar como aplicado com o aluno'
-                                                                }
-                                                            >
-                                                                <FiCheck
-                                                                    aria-hidden
-                                                                />
-                                                                <span
-                                                                    className={
-                                                                        s.srOnly
-                                                                    }
-                                                                >
-                                                                    {completedExerciseIds.has(
-                                                                        block[0]
-                                                                            .id,
-                                                                    )
-                                                                        ? `Desmarcar ${block[0].name} como aplicado`
-                                                                        : `Marcar ${block[0].name} como aplicado com o aluno`}
-                                                                </span>
-                                                            </label>
-                                                        </>
-                                                    ) : undefined
-                                                }
+                                                topSlot={renderMarkToggle(
+                                                    block,
+                                                )}
                                             >
                                                 {block.length === 1 ? (
                                                     rows[0]
@@ -1105,19 +1178,47 @@ export default function AcompanharTreinoPage() {
                                                     <div
                                                         className={s.groupBlock}
                                                     >
-                                                        <span
-                                                            className={
-                                                                s.groupLabel
-                                                            }
-                                                        >
-                                                            {comboGroupLabel(
-                                                                block.length,
-                                                                block[0]
-                                                                    .group_technique,
-                                                            )}{' '}
-                                                            — sem descanso entre
-                                                            os exercícios
-                                                        </span>
+                                                        {isOfflineData ||
+                                                        !block[0].group_id ? (
+                                                            <span
+                                                                className={
+                                                                    s.groupLabel
+                                                                }
+                                                            >
+                                                                {comboGroupLabel(
+                                                                    block.length,
+                                                                    block[0]
+                                                                        .group_technique,
+                                                                )}{' '}
+                                                                — sem descanso
+                                                                entre os
+                                                                exercícios
+                                                            </span>
+                                                        ) : (
+                                                            <GroupHeader
+                                                                size={
+                                                                    block.length
+                                                                }
+                                                                technique={
+                                                                    block[0]
+                                                                        .group_technique
+                                                                }
+                                                                busy={busy}
+                                                                onChange={(v) =>
+                                                                    void changeGroupTechnique(
+                                                                        block[0]
+                                                                            .group_id!,
+                                                                        v,
+                                                                    )
+                                                                }
+                                                                onUngroup={() =>
+                                                                    void ungroup(
+                                                                        block[0]
+                                                                            .group_id!,
+                                                                    )
+                                                                }
+                                                            />
+                                                        )}
                                                         {rows}
                                                     </div>
                                                 )}
@@ -1131,6 +1232,73 @@ export default function AcompanharTreinoPage() {
                                         </p>
                                     )}
                                 </SortableList>
+
+                                {!isOfflineData &&
+                                    markedExerciseIds.length >= 2 && (
+                                        <div
+                                            className={s.groupBar}
+                                            role="region"
+                                            aria-label="Agrupar exercícios marcados"
+                                        >
+                                            <span className={s.groupBarCount}>
+                                                {markedExerciseIds.length}{' '}
+                                                marcados — agrupar como
+                                            </span>
+                                            <select
+                                                value={effectiveGroupTechnique}
+                                                onChange={(e) =>
+                                                    setGroupTechnique(
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                className="form-control form-control-sm"
+                                                aria-label="Agrupar os marcados como"
+                                            >
+                                                <option value="">
+                                                    Bloco sem tipo definido
+                                                </option>
+                                                {GROUP_TECHNIQUE_CATALOG.map(
+                                                    (gt) => (
+                                                        <option
+                                                            key={gt.value}
+                                                            value={gt.value}
+                                                            disabled={
+                                                                !isGroupTechniqueValidForSize(
+                                                                    gt.value,
+                                                                    markedExerciseIds.length,
+                                                                )
+                                                            }
+                                                        >
+                                                            {gt.label}
+                                                        </option>
+                                                    ),
+                                                )}
+                                            </select>
+                                            <div className={s.groupBarActions}>
+                                                <button
+                                                    type="button"
+                                                    className={s.btnBack}
+                                                    onClick={() =>
+                                                        setCompletedExerciseIds(
+                                                            new Set(),
+                                                        )
+                                                    }
+                                                >
+                                                    Limpar
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className={s.btnAdd}
+                                                    onClick={() =>
+                                                        void groupMarked()
+                                                    }
+                                                    disabled={busy}
+                                                >
+                                                    <FiLink /> Agrupar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
 
                                 <div className={s.finishBar}>
                                     <button
@@ -1317,6 +1485,56 @@ export default function AcompanharTreinoPage() {
                     }}
                 />
             )}
+        </div>
+    );
+}
+
+/** Cabeçalho de um bi-set/tri-set na tela de edição: troca a variante do
+ * bloco ou o desfaz. Só existe aqui (personal, online) — o aluno vê o rótulo
+ * fixo. */
+function GroupHeader({
+    size,
+    technique,
+    busy,
+    onChange,
+    onUngroup,
+}: {
+    size: number;
+    technique?: string;
+    busy: boolean;
+    onChange: (value: string) => void;
+    onUngroup: () => void;
+}) {
+    return (
+        <div className={s.groupHeader}>
+            <select
+                value={technique ?? ''}
+                onChange={(e) => onChange(e.target.value)}
+                disabled={busy}
+                className="form-control form-control-sm"
+                aria-label="Tipo de agrupamento do bloco"
+            >
+                <option value="">{comboGroupLabel(size)} (sem tipo definido)</option>
+                {GROUP_TECHNIQUE_CATALOG.map((gt) => (
+                    <option
+                        key={gt.value}
+                        value={gt.value}
+                        disabled={!isGroupTechniqueValidForSize(gt.value, size)}
+                    >
+                        {gt.label}
+                    </option>
+                ))}
+            </select>
+            <button
+                type="button"
+                className={s.btnBack}
+                onClick={onUngroup}
+                disabled={busy}
+                title="Separar os exercícios deste bloco"
+            >
+                Desagrupar
+            </button>
+            <span className={s.groupLabel}>Sem descanso entre os exercícios</span>
         </div>
     );
 }

@@ -13,6 +13,7 @@ import {
     nextFreeWeekday,
     relabelByPosition,
 } from './mesocycleTransforms';
+import { isGroupTechniqueValidForSize } from '@/libs/trainingTechniques';
 import { describeSaveError } from './exercisePatch';
 
 /**
@@ -146,6 +147,128 @@ export function removeExerciseFromTraining(
         }
     }
     training.exercises = remaining;
+}
+
+/** Tira `group_id`/`group_technique` de quem ficou sozinho no bloco (um
+ * "bi-set" de um exercício só esconderia o descanso dele) e apaga a variante
+ * de quem deixou de caber nela (um tri-set que perdeu um exercício não é mais
+ * tri-set — cai no rótulo pelo tamanho, ver comboGroupLabel). */
+function tidyGroups(training: TrainingRequest): void {
+    const sizes = new Map<string, number>();
+    for (const e of training.exercises) {
+        if (e.group_id) sizes.set(e.group_id, (sizes.get(e.group_id) ?? 0) + 1);
+    }
+    for (const e of training.exercises) {
+        if (!e.group_id) continue;
+        const size = sizes.get(e.group_id) ?? 0;
+        if (size < 2) {
+            e.group_id = undefined;
+            e.group_technique = undefined;
+        } else if (
+            e.group_technique &&
+            !isGroupTechniqueValidForSize(e.group_technique, size)
+        ) {
+            e.group_technique = undefined;
+        }
+    }
+}
+
+/**
+ * Junta exercícios que JÁ estão no treino num bloco só (bi-set, tri-set,
+ * superset…) — o caminho de quem adicionou os exercícios separados e só
+ * depois decidiu combiná-los. `technique` vazio = bloco sem variante
+ * explícita (rótulo pelo tamanho).
+ *
+ * O bloco nasce na posição do PRIMEIRO selecionado e os demais sobem para
+ * junto dele, na ordem em que já estavam: partitionExerciseGroups só
+ * reconhece um bloco se os exercícios forem consecutivos. Um exercício que
+ * estava noutro bloco sai de lá; se o bloco antigo ficar com um só, ele se
+ * desfaz (tidyGroups). Os ids ficam — é o mesmo exercício, com o mesmo
+ * histórico, só executado em sequência.
+ */
+export function groupExercisesInTraining(
+    req: MesocycleRequest,
+    trainingId: string,
+    exerciseIds: string[],
+    technique?: string,
+): void {
+    const training = findTraining(req, trainingId);
+    const wanted = new Set(exerciseIds);
+    const selected = training.exercises.filter(
+        (e) => e.id !== undefined && wanted.has(e.id),
+    );
+    if (selected.length !== wanted.size) {
+        throw new Error(
+            'Algum exercício marcado não está mais neste treino. Recarregue a página.',
+        );
+    }
+    if (selected.length < 2) {
+        throw new Error('Marque pelo menos 2 exercícios para agrupar.');
+    }
+    if (technique && !isGroupTechniqueValidForSize(technique, selected.length)) {
+        throw new Error(
+            'Esse tipo de agrupamento não combina com a quantidade de exercícios marcados.',
+        );
+    }
+    const isSelected = (e: ExerciseRequest) => selected.includes(e);
+    const firstIdx = training.exercises.findIndex(isSelected);
+    // Quantos NÃO selecionados vinham antes do primeiro selecionado: é ali
+    // que o bloco entra na lista sem eles.
+    const insertAt = training.exercises
+        .slice(0, firstIdx)
+        .filter((e) => !isSelected(e)).length;
+    const rest = training.exercises.filter((e) => !isSelected(e));
+    const groupId = genId();
+    const grouped = selected.map((e) => ({
+        ...e,
+        group_id: groupId,
+        group_technique: technique || undefined,
+    }));
+    training.exercises = [
+        ...rest.slice(0, insertAt),
+        ...grouped,
+        ...rest.slice(insertAt),
+    ];
+    tidyGroups(training);
+}
+
+/** Desfaz o bloco: os exercícios ficam onde estão, agora separados, cada um
+ * com o próprio descanso. */
+export function ungroupInTraining(
+    req: MesocycleRequest,
+    trainingId: string,
+    groupId: string,
+): void {
+    const training = findTraining(req, trainingId);
+    for (const e of training.exercises) {
+        if (e.group_id === groupId) {
+            e.group_id = undefined;
+            e.group_technique = undefined;
+        }
+    }
+}
+
+/** Troca a variante de um bloco que já existe (bi-set ↔ superset…). Vazio =
+ * sem variante explícita. */
+export function setGroupTechniqueInTraining(
+    req: MesocycleRequest,
+    trainingId: string,
+    groupId: string,
+    technique?: string,
+): void {
+    const training = findTraining(req, trainingId);
+    const members = training.exercises.filter((e) => e.group_id === groupId);
+    if (members.length === 0) {
+        throw new Error(
+            'Este bloco não está mais neste treino. Recarregue a página.',
+        );
+    }
+    if (technique && !isGroupTechniqueValidForSize(technique, members.length)) {
+        throw new Error(
+            'Esse tipo de agrupamento não combina com a quantidade de exercícios do bloco.',
+        );
+    }
+    for (const e of members) e.group_technique = technique || undefined;
 }
 
 /**

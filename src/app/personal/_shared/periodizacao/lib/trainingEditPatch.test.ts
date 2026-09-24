@@ -9,10 +9,13 @@ import { mesoToRequest, relabelByPosition } from './mesocycleTransforms';
 import {
     addExercisesToTraining,
     addTrainingToMeso,
+    groupExercisesInTraining,
     removeExerciseFromTraining,
     removeTrainingFromMeso,
     replaceExerciseInTraining,
     saveTrainingEdit,
+    setGroupTechniqueInTraining,
+    ungroupInTraining,
 } from './trainingEditPatch';
 
 /**
@@ -287,5 +290,108 @@ describe('a letra acompanha a posição', () => {
         const req = mesoToRequest(m);
         removeTrainingFromMeso(req, 't-b');
         expect(refs(req.trainings)).toEqual(['A', 'C']);
+    });
+});
+
+describe('groupExercisesInTraining', () => {
+    const group = (req: MesocycleRequest) =>
+        req.trainings[0].exercises.map((e) => [e.id, e.group_id ?? null]);
+
+    it('junta exercícios já incluídos num bloco, na posição do primeiro', () => {
+        const req = mesoToRequest(
+            meso([ex('ex-1'), ex('ex-2'), ex('ex-3'), ex('ex-4')]),
+        );
+        groupExercisesInTraining(req, 't-a', ['ex-4', 'ex-2'], 'biset');
+        expect(ids(req)).toEqual(['ex-1', 'ex-2', 'ex-4', 'ex-3']);
+        const [, a, b] = req.trainings[0].exercises;
+        expect(a.group_id).toBeTruthy();
+        expect(b.group_id).toBe(a.group_id);
+        expect(a.group_technique).toBe('biset');
+        expect(req.trainings[0].exercises[0].group_id).toBeUndefined();
+    });
+
+    it('tirar um exercício de um bi-set desfaz o bloco que sobrou com um só', () => {
+        const req = mesoToRequest(
+            meso([
+                ex('ex-1', { group_id: 'g', group_technique: 'biset' }),
+                ex('ex-2', { group_id: 'g', group_technique: 'biset' }),
+                ex('ex-3'),
+            ]),
+        );
+        groupExercisesInTraining(req, 't-a', ['ex-2', 'ex-3'], 'superset');
+        const [first] = req.trainings[0].exercises;
+        expect(first.id).toBe('ex-1');
+        expect(first.group_id).toBeUndefined();
+        expect(first.group_technique).toBeUndefined();
+    });
+
+    it('tri-set que perde um exercício continua bloco, sem a variante', () => {
+        const req = mesoToRequest(
+            meso([
+                ex('ex-1', { group_id: 'g', group_technique: 'triset' }),
+                ex('ex-2', { group_id: 'g', group_technique: 'triset' }),
+                ex('ex-3', { group_id: 'g', group_technique: 'triset' }),
+                ex('ex-4'),
+            ]),
+        );
+        groupExercisesInTraining(req, 't-a', ['ex-3', 'ex-4']);
+        const [a, b] = req.trainings[0].exercises;
+        expect(a.group_id).toBe('g');
+        expect(b.group_id).toBe('g');
+        expect(a.group_technique).toBeUndefined();
+    });
+
+    it('mantém os ids (o histórico do aluno aponta por eles)', () => {
+        const req = mesoToRequest(meso([ex('ex-1'), ex('ex-2')]));
+        groupExercisesInTraining(req, 't-a', ['ex-1', 'ex-2'], 'superset');
+        expect(ids(req)).toEqual(['ex-1', 'ex-2']);
+        expect(group(req)[0][1]).toBe(group(req)[1][1]);
+    });
+
+    it('recusa menos de 2, variante que não cabe e id que sumiu', () => {
+        const req = mesoToRequest(meso([ex('ex-1'), ex('ex-2'), ex('ex-3')]));
+        expect(() => groupExercisesInTraining(req, 't-a', ['ex-1'])).toThrow(
+            /pelo menos 2/,
+        );
+        expect(() =>
+            groupExercisesInTraining(req, 't-a', ['ex-1', 'ex-2', 'ex-3'], 'biset'),
+        ).toThrow(/não combina/);
+        expect(() =>
+            groupExercisesInTraining(req, 't-a', ['ex-1', 'ex-9']),
+        ).toThrow(/Recarregue/);
+        expect(group(req).every(([, g]) => g === null)).toBe(true);
+    });
+});
+
+describe('ungroupInTraining / setGroupTechniqueInTraining', () => {
+    const grouped = () =>
+        mesoToRequest(
+            meso([
+                ex('ex-1', { group_id: 'g', group_technique: 'biset' }),
+                ex('ex-2', { group_id: 'g', group_technique: 'biset' }),
+                ex('ex-3'),
+            ]),
+        );
+
+    it('desagrupar mantém a ordem e limpa o bloco', () => {
+        const req = grouped();
+        ungroupInTraining(req, 't-a', 'g');
+        expect(ids(req)).toEqual(['ex-1', 'ex-2', 'ex-3']);
+        expect(
+            req.trainings[0].exercises.every(
+                (e) => !e.group_id && !e.group_technique,
+            ),
+        ).toBe(true);
+    });
+
+    it('troca a variante do bloco e recusa a que não cabe', () => {
+        const req = grouped();
+        setGroupTechniqueInTraining(req, 't-a', 'g', 'superset');
+        expect(
+            req.trainings[0].exercises.slice(0, 2).map((e) => e.group_technique),
+        ).toEqual(['superset', 'superset']);
+        expect(() =>
+            setGroupTechniqueInTraining(req, 't-a', 'g', 'triset'),
+        ).toThrow(/não combina/);
     });
 });

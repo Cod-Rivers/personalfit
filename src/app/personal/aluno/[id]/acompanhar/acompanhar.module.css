@@ -152,6 +152,57 @@
     padding: 0 var(--space-2);
 }
 
+/* Cabeçalho do bloco na edição: tipo do agrupamento + desagrupar. Com
+   flex-wrap — ver nota em .btnBack. */
+.groupHeader {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.groupHeader select {
+    flex: 1 1 180px;
+    min-width: 0;
+}
+
+/* Barra "Agrupar como" — aparece com 2+ exercícios marcados. Sticky no pé
+   da área rolável para ficar à mão enquanto o personal marca a lista. */
+.groupBar {
+    position: sticky;
+    bottom: var(--space-2);
+    z-index: 2;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+    padding: var(--space-3);
+    background: var(--surface-2);
+    border: 1px solid var(--mint);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+}
+
+.groupBarCount {
+    flex: 1 1 100%;
+    font-size: var(--font-sm);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.groupBar select {
+    flex: 1 1 200px;
+    min-width: 0;
+}
+
+.groupBarActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-left: auto;
+}
+
 /* Linha do exercício: miniatura grande à esquerda e nome no topo com a
    largura toda (espremer o nome ao lado dos botões partia "Agachamento" em
    três linhas). Rodapé: registro do aluno à esquerda; trocar/excluir e o
