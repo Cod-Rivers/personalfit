@@ -27,6 +27,19 @@ function ex(extra: Partial<LocalExercise> = {}): LocalExercise {
 }
 
 describe('applyBulkPrescription', () => {
+    it('descanso: aplica a todos; em branco mantém o de cada exercício', () => {
+        const withRest = applyBulkPrescription(ex(), {
+            ...EMPTY_BULK_FIELDS,
+            rest_seconds: '90',
+        });
+        expect(withRest.rest_seconds).toBe('90');
+        const untouched = applyBulkPrescription(ex(), {
+            ...EMPTY_BULK_FIELDS,
+            series_sets: '4',
+        });
+        expect(untouched.rest_seconds).toBe('60');
+    });
+
     it('3 × 20: sem teto de repetições', () => {
         const out = applyBulkPrescription(ex(), {
             ...EMPTY_BULK_FIELDS,

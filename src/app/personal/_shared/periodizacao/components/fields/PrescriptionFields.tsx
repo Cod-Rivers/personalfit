@@ -262,6 +262,8 @@ export interface BulkPrescriptionFields {
     series_mode: '' | 'reps' | 'time';
     /** Repetições por série — ou SEGUNDOS por série quando o modo é tempo. */
     series_reps: string;
+    /** Descanso entre séries, em segundos. */
+    rest_seconds: string;
     load_kg: string;
     load_percentage: string;
     tempo_seconds: string;
@@ -279,6 +281,7 @@ export const EMPTY_BULK_FIELDS: BulkPrescriptionFields = {
     series_sets: '',
     series_mode: '',
     series_reps: '',
+    rest_seconds: '',
     load_kg: '',
     load_percentage: '',
     tempo_seconds: '',

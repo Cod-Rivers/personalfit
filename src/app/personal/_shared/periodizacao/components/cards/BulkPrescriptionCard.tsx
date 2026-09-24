@@ -152,6 +152,15 @@ export default function BulkPrescriptionCard({
                     </p>
                 )}
                 <PrescriptionNumber
+                    label="Descanso entre séries"
+                    unit="seg"
+                    min="0"
+                    step="5"
+                    value={fields.rest_seconds}
+                    onChange={setField('rest_seconds')}
+                    helpId="descanso"
+                />
+                <PrescriptionNumber
                     label="Carga"
                     unit="kg"
                     min="0"
