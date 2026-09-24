@@ -1,14 +1,16 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { FiCheck, FiX, FiLink, FiPlay } from 'react-icons/fi';
+import React, { useMemo } from 'react';
+import { FiX, FiLink, FiPlay } from 'react-icons/fi';
 import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
 import HelpTooltip from '@/components/atoms/HelpTooltip';
 import { getGlossaryTerm } from '@/libs/glossaryContent';
 import {
-    GROUP_TECHNIQUE_CATALOG,
-    isGroupTechniqueValidForSize,
-} from '@/libs/trainingTechniques';
+    BlockMarkToggle,
+    GroupSelectionBar,
+    GroupTechniqueOptions,
+    useBlockSelection,
+} from '../GroupingControls';
 import {
     WEEKDAYS,
     partitionExerciseGroups,
@@ -107,76 +109,31 @@ export default function TrainingCard({
         );
     };
 
-    /* ── Seleção para agrupar ── */
-    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-    const [groupTechnique, setGroupTechnique] = useState('');
-    // Outro treino aberto no mesmo card: a seleção era do anterior.
-    useEffect(() => {
-        setSelectedIds(new Set());
-        setGroupTechnique('');
-    }, [training._id]);
-
-    /** Marcados, na ordem da lista — ignora quem foi removido do treino. */
-    const markedIds = useMemo(
-        () =>
-            training.exercises
-                .filter((e) => selectedIds.has(e._id))
-                .map((e) => e._id),
-        [training.exercises, selectedIds],
+    /* ── Seleção para agrupar (ver GroupingControls) ── */
+    const orderedIds = useMemo(
+        () => training.exercises.map((e) => e._id),
+        [training.exercises],
     );
-    const effectiveTechnique =
-        groupTechnique &&
-        isGroupTechniqueValidForSize(groupTechnique, markedIds.length)
-            ? groupTechnique
-            : '';
-
-    /** Marca/desmarca o bloco inteiro; parcialmente marcado → marca tudo. */
-    const toggleBlock = (ids: string[]) => {
-        setSelectedIds((prev) => {
-            const next = new Set(prev);
-            const allOn = ids.every((id) => next.has(id));
-            for (const id of ids) {
-                if (allOn) next.delete(id);
-                else next.add(id);
-            }
-            return next;
-        });
-    };
+    const selection = useBlockSelection(orderedIds, training._id);
 
     const groupMarked = () => {
-        if (!onGroupExercises || markedIds.length < 2) return;
-        onGroupExercises(markedIds, effectiveTechnique || undefined);
-        setSelectedIds(new Set());
-        setGroupTechnique('');
+        if (!onGroupExercises || selection.markedIds.length < 2) return;
+        onGroupExercises(
+            selection.markedIds,
+            selection.effectiveTechnique || undefined,
+        );
+        selection.clear();
     };
 
     const markToggle = (group: LocalExercise[], label: string) => {
         const ids = group.map((e) => e._id);
-        const checked = ids.every((id) => selectedIds.has(id));
-        const inputId = `select-${group[0].group_id ?? group[0]._id}`;
         return (
-            <>
-                <input
-                    id={inputId}
-                    type="checkbox"
-                    className={s.selectCheckbox}
-                    checked={checked}
-                    onChange={() => toggleBlock(ids)}
-                />
-                <label
-                    htmlFor={inputId}
-                    className={s.selectToggle}
-                    data-checked={checked || undefined}
-                    title={checked ? 'Desmarcar' : 'Marcar para agrupar'}
-                >
-                    <FiCheck aria-hidden />
-                    <span className={s.srOnly}>
-                        {checked
-                            ? `Desmarcar ${label}`
-                            : `Marcar ${label} para agrupar`}
-                    </span>
-                </label>
-            </>
+            <BlockMarkToggle
+                inputId={`select-${group[0].group_id ?? group[0]._id}`}
+                label={label}
+                checked={ids.every((id) => selection.selectedIds.has(id))}
+                onToggle={() => selection.toggleBlock(ids)}
+            />
         );
     };
 
@@ -397,22 +354,9 @@ export default function TrainingCard({
                                                     <option value="">
                                                         Tipo de combinação…
                                                     </option>
-                                                    {GROUP_TECHNIQUE_CATALOG.map(
-                                                        (gt) => (
-                                                            <option
-                                                                key={gt.value}
-                                                                value={gt.value}
-                                                                disabled={
-                                                                    !isGroupTechniqueValidForSize(
-                                                                        gt.value,
-                                                                        group.length,
-                                                                    )
-                                                                }
-                                                            >
-                                                                {gt.label}
-                                                            </option>
-                                                        ),
-                                                    )}
+                                                    <GroupTechniqueOptions
+                                                        size={group.length}
+                                                    />
                                                 </select>
                                                 <button
                                                     type="button"
@@ -436,54 +380,14 @@ export default function TrainingCard({
                 </SortableList>
             )}
 
-            {onGroupExercises && markedIds.length >= 2 && (
-                <div
-                    className={s.groupBar}
-                    role="region"
-                    aria-label="Agrupar exercícios marcados"
-                >
-                    <span className={s.groupBarCount}>
-                        {markedIds.length} marcados — agrupar como
-                    </span>
-                    <select
-                        value={effectiveTechnique}
-                        onChange={(e) => setGroupTechnique(e.target.value)}
-                        className={s.formInput}
-                        aria-label="Agrupar os marcados como"
-                    >
-                        <option value="">Bloco sem tipo definido</option>
-                        {GROUP_TECHNIQUE_CATALOG.map((gt) => (
-                            <option
-                                key={gt.value}
-                                value={gt.value}
-                                disabled={
-                                    !isGroupTechniqueValidForSize(
-                                        gt.value,
-                                        markedIds.length,
-                                    )
-                                }
-                            >
-                                {gt.label}
-                            </option>
-                        ))}
-                    </select>
-                    <div className={s.groupBarActions}>
-                        <button
-                            type="button"
-                            className={s.btnSmall}
-                            onClick={() => setSelectedIds(new Set())}
-                        >
-                            Limpar
-                        </button>
-                        <button
-                            type="button"
-                            className={s.btnSmall}
-                            onClick={groupMarked}
-                        >
-                            <FiLink /> Agrupar
-                        </button>
-                    </div>
-                </div>
+            {onGroupExercises && (
+                <GroupSelectionBar
+                    count={selection.markedIds.length}
+                    technique={selection.effectiveTechnique}
+                    onTechniqueChange={selection.setTechnique}
+                    onGroup={groupMarked}
+                    onClear={selection.clear}
+                />
             )}
 
             <div className={s.cardActionsRow}>

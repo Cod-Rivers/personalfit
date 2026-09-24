@@ -17,9 +17,18 @@ import type {
 import { formatDate, weekdayLabel } from '../lib/mesocycleTransforms';
 import { saveExercisePatch } from '../lib/exercisePatch';
 import {
+    groupExercisesInTraining,
     replaceExerciseInTraining,
     saveTrainingEdit,
+    setGroupTechniqueInTraining,
+    ungroupInTraining,
 } from '../lib/trainingEditPatch';
+import {
+    BlockMarkToggle,
+    GroupBlockControls,
+    GroupSelectionBar,
+    useBlockSelection,
+} from './GroupingControls';
 import ExerciseInlineEditor from './ExerciseInlineEditor';
 import ExercisePicker from './ExercisePicker';
 import Modal from '@/components/system/Modal';
@@ -178,7 +187,11 @@ export default function MesocycleSection({
                 }
                 const persist = async (req: MesocycleRequest) => {
                     const saved = await onPersistMeso(req);
-                    if (saved && typeof saved === 'object' && 'trainings' in saved) {
+                    if (
+                        saved &&
+                        typeof saved === 'object' &&
+                        'trainings' in saved
+                    ) {
                         mesoRef.current = saved as MesocycleResponse;
                     }
                     return saved;
@@ -306,7 +319,9 @@ export default function MesocycleSection({
                       )?.exercises[position]?.id
                     : undefined;
             setSelected(
-                newId ? { trainingId: target.trainingId, exerciseId: newId } : null,
+                newId
+                    ? { trainingId: target.trainingId, exerciseId: newId }
+                    : null,
             );
             showSuccess(`Trocado por ${item.name}.`);
         } catch (e) {
@@ -317,6 +332,94 @@ export default function MesocycleSection({
     const canPrescribe = !!onPersistMeso;
     /** Sem gravação possível (telas de template) a ordem também não muda. */
     const canReorder = !!onPersistMeso;
+    /** Idem para agrupar em bi-set/tri-set pelo ✓. */
+    const canGroup = !!onPersistMeso;
+
+    /* ── Agrupar pelo ✓ (ver GroupingControls) ──
+     * Um treino aberto por vez, então uma seleção só, que zera ao trocar de
+     * treino. A ordem é a que a tela mostra (inclui o espelho do arrasto). */
+    const openTrainingExerciseIds = useMemo(() => {
+        const t = meso.trainings.find((tr) => tr.id === openTraining);
+        if (!t) return [];
+        const pending = exerciseOrder[t.id];
+        const list = pending ? reorderById(t.exercises, pending) : t.exercises;
+        return list.map((e) => e.id);
+    }, [meso, openTraining, exerciseOrder]);
+    const selection = useBlockSelection(openTrainingExerciseIds, openTraining);
+    const [grouping, setGrouping] = useState(false);
+
+    /** Mudança de bloco: fase inteira, sem fila offline (trainingEditPatch). */
+    const editGroups = async (
+        mutate: Parameters<typeof saveTrainingEdit>[1],
+        success?: string,
+    ) => {
+        setGrouping(true);
+        try {
+            await serialized((current, persist) =>
+                saveTrainingEdit({ meso: current, persist }, mutate),
+            );
+            if (success) showSuccess(success);
+            return true;
+        } catch (e) {
+            showError((e as Error).message);
+            return false;
+        } finally {
+            setGrouping(false);
+        }
+    };
+
+    const groupMarked = async (trainingId: string) => {
+        const ids = selection.markedIds;
+        if (ids.length < 2) return;
+        const technique = selection.effectiveTechnique || undefined;
+        const ok = await editGroups(
+            (req) => groupExercisesInTraining(req, trainingId, ids, technique),
+            `${comboGroupLabel(ids.length, technique)} montado com ${ids.length} exercícios.`,
+        );
+        if (ok) selection.clear();
+    };
+
+    const changeGroupTechnique = (
+        trainingId: string,
+        groupId: string,
+        value: string,
+    ) =>
+        void editGroups((req) =>
+            setGroupTechniqueInTraining(
+                req,
+                trainingId,
+                groupId,
+                value || undefined,
+            ),
+        );
+
+    const ungroup = (trainingId: string, groupId: string) =>
+        void editGroups(
+            (req) => ungroupInTraining(req, trainingId, groupId),
+            'Bloco desfeito — os exercícios voltaram a ser separados.',
+        );
+
+    /** O ✓ de um bloco da lista (exercício solto ou bi-set inteiro). */
+    const markToggle = (
+        trainingId: string,
+        group: {
+            id: string;
+            name: string;
+            group_id?: string;
+            group_technique?: string;
+        }[],
+    ) => (
+        <BlockMarkToggle
+            inputId={`select-${trainingId}-${group[0].group_id ?? group[0].id}`}
+            label={
+                group.length > 1
+                    ? comboGroupLabel(group.length, group[0].group_technique)
+                    : group[0].name
+            }
+            checked={group.every((e) => selection.selectedIds.has(e.id))}
+            onToggle={() => selection.toggleBlock(group.map((e) => e.id))}
+        />
+    );
 
     return (
         <div className={s.mesoSection}>
@@ -664,6 +767,16 @@ export default function MesocycleSection({
                                                                                     ? s.exerciseGroupBlock
                                                                                     : undefined
                                                                             }
+                                                                            topSlot={
+                                                                                canGroup &&
+                                                                                exerciseLogs.length >
+                                                                                    1
+                                                                                    ? markToggle(
+                                                                                          t.id,
+                                                                                          group,
+                                                                                      )
+                                                                                    : undefined
+                                                                            }
                                                                         >
                                                                             {!isCombo ? (
                                                                                 items
@@ -687,6 +800,41 @@ export default function MesocycleSection({
                                                                                         os
                                                                                         exercícios
                                                                                     </div>
+                                                                                    {canGroup &&
+                                                                                        group[0]
+                                                                                            .group_id && (
+                                                                                            <GroupBlockControls
+                                                                                                size={
+                                                                                                    group.length
+                                                                                                }
+                                                                                                technique={
+                                                                                                    group[0]
+                                                                                                        .group_technique
+                                                                                                }
+                                                                                                busy={
+                                                                                                    grouping
+                                                                                                }
+                                                                                                onChange={(
+                                                                                                    v,
+                                                                                                ) =>
+                                                                                                    changeGroupTechnique(
+                                                                                                        t.id,
+                                                                                                        blockId(
+                                                                                                            group,
+                                                                                                        ),
+                                                                                                        v,
+                                                                                                    )
+                                                                                                }
+                                                                                                onUngroup={() =>
+                                                                                                    ungroup(
+                                                                                                        t.id,
+                                                                                                        blockId(
+                                                                                                            group,
+                                                                                                        ),
+                                                                                                    )
+                                                                                                }
+                                                                                            />
+                                                                                        )}
                                                                                     <div
                                                                                         className={
                                                                                             s.exerciseGroupItems
@@ -705,6 +853,30 @@ export default function MesocycleSection({
                                                         </SortableList>
                                                     );
                                                 })()}
+                                            {canGroup &&
+                                                openTraining === t.id && (
+                                                    <GroupSelectionBar
+                                                        count={
+                                                            selection.markedIds
+                                                                .length
+                                                        }
+                                                        technique={
+                                                            selection.effectiveTechnique
+                                                        }
+                                                        onTechniqueChange={
+                                                            selection.setTechnique
+                                                        }
+                                                        onGroup={() =>
+                                                            void groupMarked(
+                                                                t.id,
+                                                            )
+                                                        }
+                                                        onClear={
+                                                            selection.clear
+                                                        }
+                                                        busy={grouping}
+                                                    />
+                                                )}
                                         </div>
                                     </SortableItem>
                                 );
@@ -776,9 +948,7 @@ export default function MesocycleSection({
                     // Trocar grava na hora e não entra na fila offline (ver
                     // trainingEditPatch.ts).
                     onReplace={
-                        canPrescribe
-                            ? () => setReplacing(selected)
-                            : undefined
+                        canPrescribe ? () => setReplacing(selected) : undefined
                     }
                 />
             )}
