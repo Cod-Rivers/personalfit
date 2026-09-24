@@ -658,3 +658,27 @@
 ## 2026-09-22 09:43 — River (via Claude Code)
 **Resumo:** A causa não é CORS, pelo menos no domínio de produção. O problema está nos próprios arquivos de vídeo: são pesados demais e estão sem "faststart", então a captura do frame estoura o timeout de 10s de `captureVideoFrameFromUrl` ([exerciseVideoService.ts:276](personalfit/src/libs/exerciseVideoService.ts#L276)) e cai no ícone. Não alterei nada em produção nem no código. ## O que testei **1–2. Onde estão os vídeos.** Não consultei o banco: usei as 129 URLs de vídeo dos seeds do backend, que são as que foram carregadas em prod. Todas estão no R2 via `midia.venafit.codriverslabs.com`. Nenhuma é link…
 **Arquivos:** SortableList.module.css, index.tsx, next.config.ts
+
+## 2026-09-22 16:59 — River (via Claude Code)
+**Resumo:** Enquanto as builds rodam, o resumo do que ficou feito. **Commitado e pushado nos 3 repos:** | Repo | Commit | |---|---| | Personal-fit-Back | `1ffd280` limpeza de mídia órfã genérica + `LastModified` no `ObjectInfo` | | Personal-fit-Back | `76dc6a9` comando `generate-video-thumbs` | | personalfit | `6431a9b` guia de etapas no editor e edição pelo card (trabalho pendente de 21/09) | | VenafitApp | `84a529d` changelog | Antes de commitar rodei as verificações: frontend com `tsc` limpo e 337 testes passando; backend compila. As falhas de `go test ./...` são de `vet` em pacotes que não toquei (`cm…
+**Commits:** Guia de etapas no editor e edição do exercício pelo mesmo card
+
+## 2026-09-22 17:22 — River (via Claude Code)
+**Resumo:** O deploy do backend terminou com sucesso. O do frontend está em andamento e te aviso quando fechar.
+**Arquivos:** CHANGELOG_FRONTEND.md
+
+## 2026-09-24 12:09 — River (via Claude Code)
+**Resumo:** Os exercícios que você já incluiu separados agora podem virar bi-set, tri-set e os outros agrupamentos pelo próprio seletor (o ✓). Está commitado e enviado para o GitHub (`361cc15`, em `master`). O push dispara o deploy automático do frontend. Ainda não testei ao vivo. **Como funciona na tela do treino do aluno (acompanhar)** - O ✓ continua marcando o exercício como aplicado e agora também serve para selecionar. - Com 2 ou mais marcados, aparece no pé da lista uma barra "N marcados — agrupar como", com a escolha do tipo e os botões **Agrupar** e **Limpar**. Os tipos que não combinam com a quan…
+**Commits:** feat(acompanhar): agrupar exercícios já incluídos em bi-set/tri-set pelo marcador
+
+## 2026-09-24 12:15 — River (via Claude Code)
+**Resumo:** O editor da fase agora tem o mesmo seletor de agrupamento da tela do treino do aluno. Está commitado e enviado para o GitHub (`44c9b68`, em `master`), e o deploy do frontend sai automático. Ainda não testei ao vivo. **Como funciona na lista de exercícios do treino, no editor da fase** - Cada exercício ou bloco tem um ✓ acima da alça ⠿. Num bloco, o ✓ marca o bloco inteiro, então dá para juntar um bi-set com mais um exercício e formar um tri-set. - Com 2 ou mais marcados, aparece a barra "N marcados — agrupar como", com o tipo e os botões **Agrupar** e **Limpar**. Os tipos que não combinam com …
+**Commits:** feat(periodizacao): agrupar pelo ✓ também no editor da fase
+
+## 2026-09-24 12:23 — River (via Claude Code)
+**Resumo:** Pronto: a lista de treinos da periodização do aluno (a página do link) agora também tem o ✓ para agrupar exercícios. Está commitado e enviado (`ddd04e5`); o deploy do frontend é automático no push. Ainda não testei ao vivo. **Na periodização**, ao abrir um treino: - Cada exercício, ou bloco inteiro, tem um ✓ acima da alça ⠿. - Com 2 ou mais marcados, aparece a barra "N marcados — agrupar como", com o tipo e os botões **Agrupar** e **Limpar**. Os tipos que não combinam com a quantidade marcada ficam desativados. - Nos blocos que já existem há um seletor para trocar o tipo e o botão **Desagrupar…
+**Commits:** feat(periodizacao): agrupar pelo ✓ também na lista de treinos da periodização
+
+## 2026-09-24 12:57 — River (via Claude Code)
+**Resumo:** A Prescrição geral agora tem os campos **Séries** e **Repetições**, sem limite de quantidade: 3 × 20, 4 × 50, o que você quiser. Está commitado e enviado (`d7ea916`), e o deploy é automático. Ainda não testei ao vivo. **A causa:** a Prescrição geral não tinha campo de séries nem de repetições. O "10" que você via é o padrão 3 × 10 com que todo exercício entra no treino, e até agora só dava para mudar isso um exercício por vez. **Como funciona:** - **Séries** vale para todos os exercícios do treino. - **Repetições** vale só para os exercícios no formato séries × repetições. Dois tipos ficam com…
+**Commits:** feat(periodizacao): séries e repetições na Prescrição geral
