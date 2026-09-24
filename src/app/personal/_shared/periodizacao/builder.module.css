@@ -1614,3 +1614,85 @@
     color: var(--text-muted);
     cursor: pointer;
 }
+
+/* ── Seleção para agrupar (✓ acima da alça, ver TrainingCard) ──
+   Mesmo desenho do marcador de /acompanhar: checkbox real porém invisível,
+   o visual é todo do label (htmlFor), clicável no toque e pelo teclado. */
+.srOnly,
+.selectCheckbox {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+.selectToggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 28px;
+    border: 1px dashed var(--border-mid);
+    border-radius: 6px;
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.selectToggle:hover {
+    border-color: var(--mint);
+    color: var(--mint-text, var(--mint));
+}
+
+.selectCheckbox:focus-visible + .selectToggle {
+    outline: 2px solid var(--mint);
+    outline-offset: 1px;
+}
+
+.selectToggle[data-checked] {
+    background: var(--mint);
+    border-style: solid;
+    border-color: var(--mint);
+    color: var(--btn-text, #062019);
+    font-size: 1rem;
+}
+
+/* Barra "Agrupar como" — aparece com 2+ marcados. Sticky no pé da área
+   rolável do card, à mão enquanto o personal marca a lista. */
+.groupBar {
+    position: sticky;
+    bottom: var(--space-2);
+    z-index: 2;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    margin: var(--space-3) 0;
+    padding: var(--space-3);
+    background: var(--surface-2);
+    border: 1px solid var(--mint);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+}
+
+.groupBarCount {
+    flex: 1 1 100%;
+    font-size: var(--font-sm);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.groupBar select {
+    flex: 1 1 200px;
+    width: auto;
+    min-width: 0;
+}
+
+.groupBarActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-left: auto;
+}

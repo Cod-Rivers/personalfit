@@ -60,6 +60,7 @@ import BulkPrescriptionCard from './cards/BulkPrescriptionCard';
 import { WeeksListCard, WeekCard } from './cards/WeekCards';
 import { trainingFullLabel } from './fields/PrescriptionFields';
 import type { BulkPrescriptionFields } from './fields/PrescriptionFields';
+import { mergeIntoGroup } from '@/libs/trainingTechniques';
 import s from '../builder.module.css';
 
 const mesoSchema = z.object({
@@ -685,6 +686,31 @@ export default function MesocycleFormModal({
         [requestSave],
     );
 
+    /** Junta os exercícios marcados no ✓ do TrainingCard num bloco (mesma
+     * regra da tela do treino do aluno — ver mergeIntoGroup). */
+    const groupExercises = useCallback(
+        (tid: string, exerciseIds: string[], technique?: string) => {
+            const wanted = new Set(exerciseIds);
+            setLocalTrainings((prev) =>
+                prev.map((t) =>
+                    t._id !== tid
+                        ? t
+                        : {
+                              ...t,
+                              exercises: mergeIntoGroup(
+                                  t.exercises,
+                                  (e) => wanted.has(e._id),
+                                  genId(),
+                                  technique,
+                              ),
+                          },
+                ),
+            );
+            requestSave();
+        },
+        [requestSave],
+    );
+
     /* ── Ordenação por arrastar e soltar ── */
     const reorderTrainings = useCallback(
         (order: string[]) => {
@@ -974,6 +1000,9 @@ export default function MesocycleFormModal({
                         }
                         onRemoveLastFromGroup={(eid) =>
                             removeLastFromGroup(activeTraining._id, eid)
+                        }
+                        onGroupExercises={(ids, technique) =>
+                            groupExercises(activeTraining._id, ids, technique)
                         }
                         onPreviewExercise={(ex) =>
                             openPreview(ex, activeTraining.exercises)

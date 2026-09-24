@@ -345,6 +345,68 @@ export function comboGroupLabel(size: number, groupTechnique?: string): string {
     return 'Superssérie';
 }
 
+type Groupable = { group_id?: string; group_technique?: string };
+
+/** Tira `group_id`/`group_technique` de quem ficou sozinho no bloco (um
+ * "bi-set" de um exercício só esconderia o descanso dele) e apaga a variante
+ * de quem deixou de caber nela (um tri-set que perdeu um exercício não é mais
+ * tri-set — cai no rótulo pelo tamanho, ver comboGroupLabel). Devolve itens
+ * novos só onde mudou algo. */
+export function tidyExerciseGroups<T extends Groupable>(items: T[]): T[] {
+    const sizes = new Map<string, number>();
+    for (const e of items) {
+        if (e.group_id) sizes.set(e.group_id, (sizes.get(e.group_id) ?? 0) + 1);
+    }
+    return items.map((e) => {
+        if (!e.group_id) return e;
+        const size = sizes.get(e.group_id) ?? 0;
+        if (size < 2) {
+            return { ...e, group_id: undefined, group_technique: undefined };
+        }
+        if (
+            e.group_technique &&
+            !isGroupTechniqueValidForSize(e.group_technique, size)
+        ) {
+            return { ...e, group_technique: undefined };
+        }
+        return e;
+    });
+}
+
+/**
+ * Junta itens que JÁ estão na lista num bloco só (bi-set, tri-set…). Usado
+ * pela tela do treino do aluno e pelo editor da fase, sobre a seleção do ✓.
+ *
+ * O bloco nasce na posição do PRIMEIRO selecionado e os demais sobem para
+ * junto dele, na ordem em que já estavam — partitionExerciseGroups só
+ * reconhece bloco consecutivo. Quem estava noutro bloco sai de lá; o bloco
+ * antigo que ficar com um só se desfaz (tidyExerciseGroups). Não mexe em
+ * ids: é o mesmo exercício, com o mesmo histórico.
+ */
+export function mergeIntoGroup<T extends Groupable>(
+    items: T[],
+    isSelected: (item: T) => boolean,
+    groupId: string,
+    technique?: string,
+): T[] {
+    const firstIdx = items.findIndex(isSelected);
+    if (firstIdx === -1) return items;
+    const insertAt = items
+        .slice(0, firstIdx)
+        .filter((e) => !isSelected(e)).length;
+    const rest = items.filter((e) => !isSelected(e));
+    const grouped = items.filter(isSelected).map((e) => ({
+        ...e,
+        group_id: groupId,
+        group_technique: technique || undefined,
+    }));
+    return tidyExerciseGroups([
+        ...rest.slice(0, insertAt),
+        ...grouped,
+        ...rest.slice(insertAt),
+    ]);
+}
+
 /**
  * Particiona uma lista de itens (exercícios do personal ou logs do aluno) em
  * blocos: cada bloco é uma sequência consecutiva com o mesmo group_id
