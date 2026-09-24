@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import {
     PrescriptionNumber,
     LoadPercentageWarning,
@@ -26,6 +27,10 @@ export default function BulkPrescriptionCard({
 }) {
     const { fields, setFields, setField, hasAnyValue } =
         useBulkPrescriptionFields();
+    // Só existe na tela: o que vai adiante é sempre em SEGUNDOS (é como o
+    // exercício por tempo guarda a série).
+    const [timeUnit, setTimeUnit] = useState<'seg' | 'min'>('seg');
+    const isTime = fields.series_mode === 'time';
 
     const handleApply = () => {
         if (!hasAnyValue) return;
@@ -35,7 +40,11 @@ export default function BulkPrescriptionCard({
             )
         )
             return;
-        onApply(fields);
+        const seconds =
+            isTime && timeUnit === 'min' && fields.series_reps !== ''
+                ? String(Math.round(Number(fields.series_reps) * 60))
+                : fields.series_reps;
+        onApply({ ...fields, series_reps: seconds });
     };
 
     return (
@@ -54,21 +63,75 @@ export default function BulkPrescriptionCard({
                     onChange={setField('series_sets')}
                     helpId="series-repeticoes"
                 />
-                <PrescriptionNumber
-                    label="Repetições"
-                    unit="reps"
-                    min="1"
-                    value={fields.series_reps}
-                    onChange={setField('series_reps')}
-                />
-                {fields.series_reps !== '' && (
+                <div className={s.prescriptionField}>
+                    <label className={s.formLabel} htmlFor="bulk-series-mode">
+                        Tipo de série
+                    </label>
+                    <select
+                        id="bulk-series-mode"
+                        value={fields.series_mode}
+                        onChange={(e) =>
+                            setField('series_mode')(e.target.value)
+                        }
+                        className={s.formSelect}
+                    >
+                        <option value="">Manter o de cada exercício</option>
+                        <option value="reps">Repetições</option>
+                        <option value="time">Tempo</option>
+                    </select>
+                </div>
+                <div className={s.prescriptionField}>
+                    <label className={s.formLabel} htmlFor="bulk-series-value">
+                        {isTime ? 'Tempo por série' : 'Repetições'}
+                    </label>
+                    <div className={s.prescriptionInputRow}>
+                        <input
+                            id="bulk-series-value"
+                            type="number"
+                            min="1"
+                            step={isTime && timeUnit === 'min' ? '0.5' : '1'}
+                            value={fields.series_reps}
+                            onChange={(e) =>
+                                setField('series_reps')(e.target.value)
+                            }
+                            className={s.smallNumInput}
+                        />
+                        {isTime ? (
+                            <select
+                                value={timeUnit}
+                                onChange={(e) =>
+                                    setTimeUnit(e.target.value as 'seg' | 'min')
+                                }
+                                className={s.formSelect}
+                                style={{ width: 'auto' }}
+                                aria-label="Unidade do tempo"
+                            >
+                                <option value="seg">seg</option>
+                                <option value="min">min</option>
+                            </select>
+                        ) : (
+                            <span className={s.seriesUnitLabel}>reps</span>
+                        )}
+                    </div>
+                </div>
+                {fields.series_mode === '' && fields.series_reps !== '' && (
                     <p
                         className={s.fieldHint}
                         style={{ gridColumn: '1 / -1', marginTop: 0 }}
                     >
-                        As repetições valem para os exercícios de séries ×
-                        repetições. Os feitos por tempo ou com série em texto
-                        livre (ex.: pirâmide 12-10-8) mantêm a série deles.
+                        Sem escolher o tipo, as repetições valem só para os
+                        exercícios de séries × repetições. Os feitos por tempo
+                        ou com série em texto livre (ex.: pirâmide 12-10-8)
+                        mantêm a série deles.
+                    </p>
+                )}
+                {fields.series_mode !== '' && (
+                    <p
+                        className={s.fieldHint}
+                        style={{ gridColumn: '1 / -1', marginTop: 0 }}
+                    >
+                        Troca o tipo de série de TODOS os exercícios deste
+                        treino, inclusive os com série em texto livre.
                     </p>
                 )}
                 <PrescriptionNumber

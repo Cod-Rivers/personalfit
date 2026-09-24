@@ -75,4 +75,48 @@ describe('applyBulkPrescription', () => {
             '10',
         ]);
     });
+
+    it('tipo Tempo: troca todos para por tempo, valor em segundos', () => {
+        const fields = {
+            ...EMPTY_BULK_FIELDS,
+            series_mode: 'time' as const,
+            series_sets: '3',
+            series_reps: '90',
+        };
+        const fromReps = applyBulkPrescription(ex(), fields);
+        expect([
+            fromReps.series_mode,
+            fromReps.timed,
+            fromReps.series_sets,
+            fromReps.series_value,
+        ]).toEqual(['time', true, '3', '90']);
+        const fromFree = applyBulkPrescription(
+            ex({ series_mode: 'free', series_free: '12-10-8' }),
+            fields,
+        );
+        expect([fromFree.series_mode, fromFree.series_value]).toEqual([
+            'time',
+            '90',
+        ]);
+    });
+
+    it('tipo Repetições: volta um exercício por tempo para reps', () => {
+        const out = applyBulkPrescription(
+            ex({ series_mode: 'time', timed: true, series_value: '30' }),
+            { ...EMPTY_BULK_FIELDS, series_mode: 'reps', series_reps: '12' },
+        );
+        expect([out.series_mode, out.timed, out.series_value]).toEqual([
+            'reps',
+            false,
+            '12',
+        ]);
+    });
+
+    it('tipo sem valor: troca o modo e mantém o valor que já tinha', () => {
+        const out = applyBulkPrescription(ex({ series_value: '10' }), {
+            ...EMPTY_BULK_FIELDS,
+            series_mode: 'time',
+        });
+        expect([out.series_mode, out.series_value]).toEqual(['time', '10']);
+    });
 });

@@ -249,6 +249,9 @@ export interface BulkPrescriptionFields {
     /** Séries (vale para qualquer modo de série) e repetições por série (só
      * nos exercícios em modo reps) — ver applyBulkPrescription. */
     series_sets: string;
+    /** '' = manter o modo de cada exercício. 'reps'/'time' = trocar TODOS. */
+    series_mode: '' | 'reps' | 'time';
+    /** Repetições por série — ou SEGUNDOS por série quando o modo é tempo. */
     series_reps: string;
     load_kg: string;
     load_percentage: string;
@@ -265,6 +268,7 @@ export interface BulkPrescriptionFields {
 
 export const EMPTY_BULK_FIELDS: BulkPrescriptionFields = {
     series_sets: '',
+    series_mode: '',
     series_reps: '',
     load_kg: '',
     load_percentage: '',
