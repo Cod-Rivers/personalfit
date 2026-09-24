@@ -61,6 +61,7 @@ import { WeeksListCard, WeekCard } from './cards/WeekCards';
 import { trainingFullLabel } from './fields/PrescriptionFields';
 import type { BulkPrescriptionFields } from './fields/PrescriptionFields';
 import { mergeIntoGroup } from '@/libs/trainingTechniques';
+import { applyBulkPrescription } from '../lib/bulkPrescription';
 import s from '../builder.module.css';
 
 const mesoSchema = z.object({
@@ -751,19 +752,14 @@ export default function MesocycleFormModal({
             setLocalTrainings((prev) =>
                 prev.map((t) => {
                     if (t._id !== tid) return t;
-                    const entries = (
-                        Object.entries(fields) as [
-                            keyof BulkPrescriptionFields,
-                            string,
-                        ][]
-                    ).filter(([, value]) => value !== '');
-                    if (entries.length === 0) return t;
+                    if (Object.values(fields).every((v) => v === '')) return t;
+                    // Séries/repetições têm regra por modo de série — ver
+                    // applyBulkPrescription.
                     return {
                         ...t,
-                        exercises: t.exercises.map((e) => ({
-                            ...e,
-                            ...Object.fromEntries(entries),
-                        })),
+                        exercises: t.exercises.map((e) =>
+                            applyBulkPrescription(e, fields),
+                        ),
                     };
                 }),
             );

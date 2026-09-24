@@ -246,6 +246,10 @@ export function TechniqueBlock({
 /** Campos de prescrição preenchíveis em bloco (não pertencem a nenhum
  * exercício até serem aplicados). */
 export interface BulkPrescriptionFields {
+    /** Séries (vale para qualquer modo de série) e repetições por série (só
+     * nos exercícios em modo reps) — ver applyBulkPrescription. */
+    series_sets: string;
+    series_reps: string;
     load_kg: string;
     load_percentage: string;
     tempo_seconds: string;
@@ -260,6 +264,8 @@ export interface BulkPrescriptionFields {
 }
 
 export const EMPTY_BULK_FIELDS: BulkPrescriptionFields = {
+    series_sets: '',
+    series_reps: '',
     load_kg: '',
     load_percentage: '',
     tempo_seconds: '',

@@ -47,6 +47,31 @@ export default function BulkPrescriptionCard({
 
             <div className={s.prescriptionBody}>
                 <PrescriptionNumber
+                    label="Séries"
+                    unit="séries"
+                    min="1"
+                    value={fields.series_sets}
+                    onChange={setField('series_sets')}
+                    helpId="series-repeticoes"
+                />
+                <PrescriptionNumber
+                    label="Repetições"
+                    unit="reps"
+                    min="1"
+                    value={fields.series_reps}
+                    onChange={setField('series_reps')}
+                />
+                {fields.series_reps !== '' && (
+                    <p
+                        className={s.fieldHint}
+                        style={{ gridColumn: '1 / -1', marginTop: 0 }}
+                    >
+                        As repetições valem para os exercícios de séries ×
+                        repetições. Os feitos por tempo ou com série em texto
+                        livre (ex.: pirâmide 12-10-8) mantêm a série deles.
+                    </p>
+                )}
+                <PrescriptionNumber
                     label="Carga"
                     unit="kg"
                     min="0"
