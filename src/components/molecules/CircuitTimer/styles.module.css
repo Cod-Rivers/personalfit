@@ -1,0 +1,169 @@
+/* Cronômetro do circuito de um bloco agrupado (ver index.tsx). Mesma
+   linguagem visual do SeriesTimer; tokens de app/css/constants.css. */
+.wrap {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    margin-top: var(--space-2);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-subtle);
+    background: var(--surface-2);
+}
+
+.wrap[data-state='running'] {
+    border-color: var(--mint);
+}
+
+.wrap[data-state='rest'] {
+    border-color: var(--amber);
+}
+
+.wrap[data-state='done'] {
+    border-color: var(--amber);
+    background: rgba(240, 165, 0, 0.12);
+}
+
+.head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--space-2);
+    font-size: var(--font-sm);
+}
+
+.label {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.meta {
+    color: var(--text-muted);
+}
+
+.hint {
+    margin: 0;
+    font-size: var(--font-sm);
+    color: var(--text-muted);
+}
+
+.current {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.sub {
+    margin: 2px 0 0;
+    font-size: var(--font-sm);
+    color: var(--text-muted);
+}
+
+.queue {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.queueItem {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px var(--space-2);
+    border-radius: var(--radius-md);
+    font-size: var(--font-sm);
+    color: var(--text-muted);
+}
+
+.queueItem > span:first-of-type {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.queueItem[data-status='done'] {
+    color: var(--text-muted);
+    text-decoration: line-through;
+    opacity: 0.7;
+}
+
+.queueItem[data-status='current'] {
+    background: var(--mint-glow);
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.queueValue {
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+}
+
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+}
+
+.time {
+    font-size: 2.25rem;
+    font-weight: 700;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+}
+
+.wrap[data-state='running'] .time {
+    color: var(--mint-text);
+}
+
+.wrap[data-state='rest'] .time {
+    color: var(--amber-text);
+}
+
+.controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+/* Alvo de toque confortável: usado de pé, com uma mão. */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 0 var(--space-4);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-mid);
+    background: transparent;
+    color: var(--text-primary);
+    font-size: var(--font-sm);
+    cursor: pointer;
+}
+
+.btnPrimary {
+    border-color: var(--mint);
+    color: var(--mint-text);
+    font-weight: 600;
+}
+
+.srOnly {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}

@@ -25,6 +25,11 @@ import {
     pickActiveMicrocycle,
 } from '@/libs/planningService';
 import { ExerciseLog } from '../../../../components/features/types';
+import CircuitTimer from '@/components/molecules/CircuitTimer';
+import {
+    circuitHasTimedWork,
+    type CircuitExercise,
+} from '@/libs/circuitPlan';
 import ExerciseDetailCard from '../../../../components/features/ExerciseDetailCard';
 import ExerciseSubstitutionModal from '../../../../components/features/ExerciseSubstitutionModal';
 import WorkoutLogger, {
@@ -1060,6 +1065,17 @@ export default function MeusTreinosExercisesPage({
                             if (!isCombo) {
                                 return <li key={group[0].id}>{items}</li>;
                             }
+                            // Bloco com série por tempo: guia a execução em
+                            // rodadas (ver libs/circuitPlan.ts).
+                            const circuit: CircuitExercise[] = group.map(
+                                (e) => ({
+                                    name: e.name,
+                                    series: e.series ?? [],
+                                    timed: e.timed,
+                                    series_label: e.series_label,
+                                    rest: e.restTime,
+                                }),
+                            );
                             return (
                                 <li
                                     key={group[0].id}
@@ -1076,6 +1092,12 @@ export default function MeusTreinosExercisesPage({
                                     <div className={styles.exerciseGroupItems}>
                                         {items}
                                     </div>
+                                    {circuitHasTimedWork(circuit) && (
+                                        <CircuitTimer
+                                            key={JSON.stringify(circuit)}
+                                            exercises={circuit}
+                                        />
+                                    )}
                                 </li>
                             );
                         })}

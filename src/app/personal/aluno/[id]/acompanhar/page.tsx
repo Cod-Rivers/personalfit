@@ -113,6 +113,11 @@ import Modal from '@/components/system/Modal';
 import { SortableItem, SortableList } from '@/components/system/SortableList';
 import { useToast } from '@/components/system/Toast';
 import { markWorkoutStartIfNeeded } from '@/libs/workoutSessionTimer';
+import CircuitTimer from '@/components/molecules/CircuitTimer';
+import {
+    circuitHasTimedWork,
+    type CircuitExercise,
+} from '@/libs/circuitPlan';
 import StudentExerciseRow, { type WeekRecord } from './StudentExerciseRow';
 import s from './acompanhar.module.css';
 
@@ -1104,6 +1109,14 @@ export default function AcompanharTreinoPage() {
                                     className={s.sortableSpacing}
                                 >
                                     {exerciseBlocks.map((block) => {
+                                        // Bloco com série por tempo roda como
+                                        // circuito: o descanso da rodada fica
+                                        // no CircuitTimer, não no último item.
+                                        const circuit = block.map(
+                                            toCircuitExercise,
+                                        );
+                                        const asCircuit =
+                                            circuitHasTimedWork(circuit);
                                         const rows = block.map((ex, i) => {
                                             const kg =
                                                 lastLoadByExercise.get(ex.id) ??
@@ -1124,7 +1137,9 @@ export default function AcompanharTreinoPage() {
                                                     exercise={ex}
                                                     record={record}
                                                     showRestTimer={
-                                                        i === block.length - 1
+                                                        i ===
+                                                            block.length - 1 &&
+                                                        !asCircuit
                                                     }
                                                     showActions={!isOfflineData}
                                                     busy={busy}
@@ -1220,6 +1235,16 @@ export default function AcompanharTreinoPage() {
                                                             />
                                                         )}
                                                         {rows}
+                                                        {asCircuit && (
+                                                            <CircuitTimer
+                                                                key={JSON.stringify(
+                                                                    circuit,
+                                                                )}
+                                                                exercises={
+                                                                    circuit
+                                                                }
+                                                            />
+                                                        )}
                                                     </div>
                                                 )}
                                             </SortableItem>
@@ -1487,6 +1512,16 @@ export default function AcompanharTreinoPage() {
             )}
         </div>
     );
+}
+
+function toCircuitExercise(ex: ExerciseResponse): CircuitExercise {
+    return {
+        name: ex.name,
+        series: ex.series ?? [],
+        timed: ex.timed,
+        series_label: ex.series_label,
+        rest: ex.rest_seconds,
+    };
 }
 
 /** Cabeçalho de um bi-set/tri-set na tela de edição: troca a variante do
