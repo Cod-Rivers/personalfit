@@ -8,8 +8,10 @@ import {
     TECHNIQUE_CATEGORIES,
     formatTechniqueSummary,
     type TechniqueParamKey,
+    type TechniqueParamsValue,
 } from '@/libs/trainingTechniques';
 import HelpTooltip from '@/components/atoms/HelpTooltip';
+import TechniqueHelpTooltip from '@/components/molecules/TechniqueHelpTooltip';
 import { getGlossaryTerm } from '@/libs/glossaryContent';
 import {
     weekdayLabel,
@@ -197,15 +199,22 @@ export function TechniqueBlock({
     getParamValue: (key: TechniqueParamKey) => string;
     onChangeParam: (key: TechniqueParamKey, value: string) => void;
 }) {
+    // Parâmetros já digitados, para o passo a passo do "?" citar os números
+    // deste exercício. Campo vazio fica de fora e o passo usa a faixa usual.
+    const params: TechniqueParamsValue = {};
+    for (const f of TECHNIQUE_CATALOG[technique]?.fields ?? []) {
+        const raw = getParamValue(f.key);
+        if (raw !== '' && Number.isFinite(Number(raw))) params[f.key] = Number(raw);
+    }
+
     return (
         <>
             <div className={s.prescriptionFieldWide}>
                 <label className={s.formLabel}>
                     Técnica avançada{' '}
-                    <HelpTooltip
-                        text={getGlossaryTerm('tecnica').short}
-                        href="/ajuda#glossario-tecnica"
-                        label="Ajuda sobre técnica de treinamento"
+                    <TechniqueHelpTooltip
+                        technique={technique}
+                        params={params}
                     />
                 </label>
                 <select

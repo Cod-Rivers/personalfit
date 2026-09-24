@@ -57,6 +57,7 @@ import {
 } from '@/libs/seriesPrescription';
 import { PrescriptionQueuedOfflineError } from '@/libs/offline/prescriptionQueue';
 import HelpTooltip from '@/components/atoms/HelpTooltip';
+import TechniqueHelpTooltip from '@/components/molecules/TechniqueHelpTooltip';
 import ExternalLink from '@/components/atoms/ExternalLink';
 import { getGlossaryTerm } from '@/libs/glossaryContent';
 
@@ -1413,10 +1414,9 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                     <div className={styles.notesSection}>
                                         <p>
                                             <strong>Técnica:</strong>{' '}
-                                            <HelpTooltip
-                                                text={getGlossaryTerm('tecnica').short}
-                                                href="/ajuda#glossario-tecnica"
-                                                label="Ajuda sobre técnica de treinamento"
+                                            <TechniqueHelpTooltip
+                                                technique={exercise.technique}
+                                                params={exercise.technique_params}
                                             />
                                         </p>
                                         <p>

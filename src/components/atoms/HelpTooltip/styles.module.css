@@ -126,6 +126,35 @@
     padding-right: 20px;
 }
 
+.bubbleTitle {
+    font-size: 0.8125rem;
+    line-height: 1.3;
+    font-weight: 700;
+    color: var(--mint-text);
+    padding-right: 20px;
+}
+
+/* Com título, o espaço do "×" já está reservado na linha de cima. */
+.bubbleTitle + .bubbleText {
+    padding-right: 0;
+}
+
+.bubbleSteps {
+    margin: 2px 0 0;
+    padding-left: 1.25em;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: var(--text-primary);
+}
+
+.bubbleSteps li::marker {
+    color: var(--mint-text);
+    font-weight: 700;
+}
+
 .bubbleLink {
     align-self: flex-end;
     font-size: 0.75rem;

@@ -155,6 +155,31 @@ describe('HelpTooltip', () => {
         expect(screen.getByRole('tooltip')).toBeInTheDocument();
     });
 
+    it('mostra título e passo a passo numerado quando recebe steps', () => {
+        asDesktop();
+        render(
+            <HelpTooltip
+                text="Resumo"
+                title="Dropset"
+                steps={['Primeiro passo', 'Segundo passo']}
+                href="/ajuda#glossario-tecnica"
+            />,
+        );
+        const trigger = screen.getByRole('button', { name: 'Ajuda' });
+        placeTrigger(trigger, 400);
+
+        fireEvent.click(trigger);
+
+        const bubble = screen.getByRole('tooltip');
+        expect(bubble).toHaveTextContent('Dropset');
+        const items = bubble.querySelectorAll('ol > li');
+        expect(Array.from(items, (li) => li.textContent)).toEqual([
+            'Primeiro passo',
+            'Segundo passo',
+        ]);
+        expect(bubble.style.width).toBe('320px');
+    });
+
     it('fecha ao sair do balão e com Escape', () => {
         vi.useFakeTimers();
         asDesktop();

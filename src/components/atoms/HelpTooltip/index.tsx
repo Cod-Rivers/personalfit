@@ -21,9 +21,16 @@ interface HelpTooltipProps {
     linkLabel?: string;
     /** Rótulo acessível do botão de gatilho. */
     label?: string;
+    /** Título em destaque acima do texto (ex: nome da técnica selecionada). */
+    title?: string;
+    /** Passo a passo numerado exibido abaixo do texto. */
+    steps?: string[];
 }
 
 const BUBBLE_WIDTH = 240;
+/** Com passo a passo o balão fica mais largo, senão a lista vira uma coluna
+ * estreita e alta demais. */
+const BUBBLE_WIDTH_WITH_STEPS = 320;
 const VIEWPORT_MARGIN = 12;
 /** Distância entre o "?" e a borda do balão (o rabicho ocupa esse vão). */
 const TRIGGER_GAP = 10;
@@ -66,7 +73,13 @@ export default function HelpTooltip({
     href,
     linkLabel = 'Saiba mais',
     label = 'Ajuda',
+    title,
+    steps,
 }: HelpTooltipProps) {
+    const hasSteps = !!steps && steps.length > 0;
+    /** Chave estável do conteúdo: o chamador costuma montar `steps` a cada
+     * render, e o array novo não pode disparar uma nova medição do balão. */
+    const contentKey = `${title ?? ''}\n${text}\n${hasSteps ? steps.join('\n') : ''}`;
     const [open, setOpen] = useState(false);
     /** Telas estreitas viram caixa de diálogo fixa no rodapé. */
     const [sheetMode, setSheetMode] = useState(false);
@@ -145,7 +158,10 @@ export default function HelpTooltip({
                 document.documentElement.clientWidth || window.innerWidth;
             const vh =
                 document.documentElement.clientHeight || window.innerHeight;
-            const width = Math.min(BUBBLE_WIDTH, vw - VIEWPORT_MARGIN * 2);
+            const width = Math.min(
+                hasSteps ? BUBBLE_WIDTH_WITH_STEPS : BUBBLE_WIDTH,
+                vw - VIEWPORT_MARGIN * 2,
+            );
 
             // A altura só é conhecida com a largura final aplicada. Na 1ª
             // passada o balão já está no DOM (invisível, ainda sem estilo do
@@ -214,7 +230,7 @@ export default function HelpTooltip({
             window.removeEventListener('scroll', updatePosition, true);
             window.removeEventListener('resize', updatePosition);
         };
-    }, [open, sheetMode, text]);
+    }, [open, sheetMode, contentKey, hasSteps]);
 
     useEffect(() => {
         if (!open) return;
@@ -299,7 +315,17 @@ export default function HelpTooltip({
                 >
                     <FiX />
                 </button>
+                {title && (
+                    <span className={styles.bubbleTitle}>{title}</span>
+                )}
                 <span className={styles.bubbleText}>{text}</span>
+                {hasSteps && (
+                    <ol className={styles.bubbleSteps}>
+                        {steps.map((step, i) => (
+                            <li key={i}>{step}</li>
+                        ))}
+                    </ol>
+                )}
                 <Link
                     href={href}
                     className={styles.bubbleLink}
