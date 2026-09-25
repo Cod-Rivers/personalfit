@@ -159,6 +159,20 @@
     font-weight: 600;
 }
 
+/* "Iniciar circuito" é a ação da vez: largura toda e preenchido, para não
+   passar por um botão qualquer (feedback de aluna, 09-24). */
+.btnStart {
+    flex: 1 1 100%;
+    min-height: 52px;
+    background: var(--mint);
+    color: var(--btn-text, #062019);
+    font-size: var(--font-md);
+}
+
+.controls:has(.btnStart) {
+    flex: 1 1 100%;
+}
+
 .srOnly {
     position: absolute;
     width: 1px;

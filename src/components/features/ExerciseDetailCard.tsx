@@ -13,6 +13,7 @@ import {
     FiAlertCircle,
     FiLock,
     FiPlus,
+    FiPlay,
     FiRepeat,
     FiX,
 } from 'react-icons/fi';
@@ -113,6 +114,11 @@ interface ExerciseDetailCardProps {
      * aluno). Fica visível no topo, e não dentro do editor recolhido: é a
      * ação mais comum depois de séries e carga. */
     onReplace?: () => void;
+    /** Presente quando o exercício faz parte de um bloco que roda como
+     * circuito (CircuitTimer). O cronômetro fica no bloco, na lista — quem
+     * abriu o card do 1º exercício não o via sem rolar a tela. O atalho
+     * aparece no topo do card; quem chama fecha o card e dá o start. */
+    onStartCircuit?: () => void;
 }
 
 const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
@@ -128,6 +134,7 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
     onPrescribeSeries,
     editor,
     onReplace,
+    onStartCircuit,
 }) => {
     // --- Estados ---
     const [timerValue, setTimerValue] = useState<number>(
@@ -748,6 +755,21 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                             <h3 className={styles.exerciseTitle}>
                                 {exercise.name}
                             </h3>
+                            {onStartCircuit && (
+                                <div className={styles.circuitCallout}>
+                                    <span>
+                                        Este exercício faz parte de um{' '}
+                                        <strong>circuito</strong>.
+                                    </span>
+                                    <button
+                                        type="button"
+                                        className={styles.circuitStartBtn}
+                                        onClick={onStartCircuit}
+                                    >
+                                        <FiPlay /> Iniciar circuito
+                                    </button>
+                                </div>
+                            )}
                             {onReplace && (
                                 <button
                                     type="button"

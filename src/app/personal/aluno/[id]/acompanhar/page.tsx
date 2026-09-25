@@ -114,7 +114,9 @@ import Modal from '@/components/system/Modal';
 import { SortableItem, SortableList } from '@/components/system/SortableList';
 import { useToast } from '@/components/system/Toast';
 import { markWorkoutStartIfNeeded } from '@/libs/workoutSessionTimer';
-import CircuitTimer from '@/components/molecules/CircuitTimer';
+import CircuitTimer, {
+    type CircuitTimerHandle,
+} from '@/components/molecules/CircuitTimer';
 import {
     blockRecoverySeconds,
     circuitHasTimedWork,
@@ -571,6 +573,19 @@ export default function AcompanharTreinoPage() {
         const raw = selectedExercises.find((e) => e.id === openExerciseId);
         return exercise && raw ? { exercise, siblings, raw } : null;
     }, [openExerciseId, selectedTraining, selectedExercises]);
+
+    // Cronômetro de cada bloco-circuito, por blockId: o card do exercício
+    // aberto ganha um "Iniciar circuito" que dá o start no cronômetro certo.
+    const circuitTimers = useRef(new Map<string, CircuitTimerHandle>());
+    const openCircuitKey = useMemo(() => {
+        if (!openExerciseId) return null;
+        const block = exerciseBlocks.find(
+            (b) => b.length > 1 && b.some((e) => e.id === openExerciseId),
+        );
+        return block && circuitHasTimedWork(block.map(toCircuitExercise))
+            ? blockId(block)
+            : null;
+    }, [exerciseBlocks, openExerciseId]);
 
     /** Adicionar, excluir e trocar exercício: a fase inteira vai ao servidor
      * e a resposta substitui o plano da tela (ver trainingEditPatch.ts). */
@@ -1265,12 +1280,30 @@ export default function AcompanharTreinoPage() {
                                                                 }
                                                             />
                                                         )}
-                                                        {rows}
+                                                        {/* Antes dos exercícios:
+                                                            embaixo, o "Iniciar
+                                                            circuito" só aparecia
+                                                            depois de rolar. */}
                                                         {asCircuit && (
                                                             <CircuitTimer
                                                                 key={JSON.stringify(
                                                                     circuit,
                                                                 )}
+                                                                ref={(h) => {
+                                                                    const k =
+                                                                        blockId(
+                                                                            block,
+                                                                        );
+                                                                    if (h)
+                                                                        circuitTimers.current.set(
+                                                                            k,
+                                                                            h,
+                                                                        );
+                                                                    else
+                                                                        circuitTimers.current.delete(
+                                                                            k,
+                                                                        );
+                                                                }}
                                                                 exercises={
                                                                     circuit
                                                                 }
@@ -1279,6 +1312,7 @@ export default function AcompanharTreinoPage() {
                                                                 )}
                                                             />
                                                         )}
+                                                        {rows}
                                                     </div>
                                                 )}
                                             </SortableItem>
@@ -1402,6 +1436,16 @@ export default function AcompanharTreinoPage() {
                     )}
                     onSelectExercise={(exercise) =>
                         setOpenExerciseId(exercise.id)
+                    }
+                    onStartCircuit={
+                        openCircuitKey
+                            ? () => {
+                                  circuitTimers.current
+                                      .get(openCircuitKey)
+                                      ?.start();
+                                  setOpenExerciseId(null);
+                              }
+                            : undefined
                     }
                     // readOnly: anotações e registro de carga do card são
                     // "/me/..." — do usuário logado, o personal. A prescrição

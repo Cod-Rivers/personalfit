@@ -1,6 +1,14 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+    forwardRef,
+    useCallback,
+    useEffect,
+    useImperativeHandle,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
 import {
     FiCheck,
     FiPause,
@@ -47,6 +55,15 @@ const SOUND_OF_STEP: Record<CircuitStep['kind'], CircuitSound> = {
 /** Últimos segundos de um passo avisam com um bip por segundo. */
 const TICK_FROM = 3;
 
+/** O que a página pode pedir ao cronômetro de fora — o atalho "Iniciar
+ * circuito" do card do exercício (ExerciseDetailCard) usa isto para começar
+ * o circuito sem a pessoa ter que rolar a tela até o bloco. */
+export type CircuitTimerHandle = {
+    /** Começa do 1º passo (se ainda não começou) e rola o cronômetro para a
+     * tela. Chamar dentro do clique: o som de entrada precisa do gesto. */
+    start: () => void;
+};
+
 /**
  * Cronômetro de um bloco agrupado executado como circuito (ver
  * libs/circuitPlan.ts): uma série de cada exercício em sequência, sem
@@ -64,14 +81,14 @@ const TICK_FROM = 3;
  * Quem chama deve passar `key` com a assinatura da prescrição: mudou o
  * bloco, o circuito recomeça do zero.
  */
-export default function CircuitTimer({
-    exercises,
-    recoverySeconds = 0,
-}: {
-    exercises: CircuitExercise[];
-    /** Recuperação prescrita entre os exercícios do bloco; 0 = emendados. */
-    recoverySeconds?: number;
-}) {
+const CircuitTimer = forwardRef<
+    CircuitTimerHandle,
+    {
+        exercises: CircuitExercise[];
+        /** Recuperação prescrita entre os exercícios do bloco; 0 = emendados. */
+        recoverySeconds?: number;
+    }
+>(function CircuitTimer({ exercises, recoverySeconds = 0 }, ref) {
     // Preferência de som do aparelho. Lida depois de montar (no servidor não
     // há localStorage, e ler antes daria diferença de hidratação).
     const [settings, setSettings] = useState<CircuitSettings>(
@@ -182,6 +199,21 @@ export default function CircuitTimer({
         goTo(0, true);
     };
 
+    const wrapRef = useRef<HTMLDivElement>(null);
+    useImperativeHandle(ref, () => ({
+        start: () => {
+            // Em andamento: só mostra — recomeçar apagaria a rodada atual.
+            if (!started || finished) start();
+            // Espera o modal fechar e devolver a rolagem da página.
+            window.setTimeout(() => {
+                wrapRef.current?.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center',
+                });
+            }, 80);
+        },
+    }));
+
     const resume = () => {
         if (!step?.seconds || remaining <= 0) return;
         endAtRef.current = Date.now() + remaining * 1000;
@@ -236,7 +268,7 @@ export default function CircuitTimer({
     const soundLabel = settings.sound ? 'Desligar sons' : 'Ligar sons';
 
     return (
-        <div className={styles.wrap} data-state={state}>
+        <div ref={wrapRef} className={styles.wrap} data-state={state}>
             <div className={styles.head}>
                 <span className={styles.label}>
                     Circuito
@@ -346,7 +378,7 @@ export default function CircuitTimer({
                     {!started ? (
                         <button
                             type="button"
-                            className={`${styles.btn} ${styles.btnPrimary}`}
+                            className={`${styles.btn} ${styles.btnPrimary} ${styles.btnStart}`}
                             onClick={start}
                         >
                             <FiPlay /> Iniciar circuito
@@ -427,4 +459,6 @@ export default function CircuitTimer({
             </span>
         </div>
     );
-}
+});
+
+export default CircuitTimer;

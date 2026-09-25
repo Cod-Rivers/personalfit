@@ -6,7 +6,8 @@ import {
     render,
     screen,
 } from '@testing-library/react';
-import CircuitTimer from './index';
+import { createRef } from 'react';
+import CircuitTimer, { type CircuitTimerHandle } from './index';
 import { playCircuitSound } from '@/libs/circuitSounds';
 
 // Howler não toca em jsdom: os sons são espiados no módulo.
@@ -149,5 +150,30 @@ describe('CircuitTimer', () => {
             tick(20_000);
             expect(playCircuitSound).not.toHaveBeenCalled();
         });
+    });
+
+    it('start() de fora (atalho do card) começa e não reinicia em andamento', () => {
+        const scroll = vi.fn();
+        Element.prototype.scrollIntoView = scroll;
+        const ref = createRef<CircuitTimerHandle>();
+        render(
+            <CircuitTimer
+                ref={ref}
+                exercises={[
+                    { name: 'Polichinelo', series: [60], timed: true, rest: 30 },
+                    { name: 'Burpee', series: [60], timed: true, rest: 30 },
+                ]}
+            />,
+        );
+        act(() => ref.current!.start());
+        expect(screen.getByText(/Exercício 1 de 2/)).toBeTruthy();
+        tick(100);
+        expect(scroll).toHaveBeenCalled();
+
+        tick(60_000);
+        expect(screen.getByText(/Exercício 2 de 2/)).toBeTruthy();
+        // Chamar de novo no meio do circuito só rola até ele.
+        act(() => ref.current!.start());
+        expect(screen.getByText(/Exercício 2 de 2/)).toBeTruthy();
     });
 });

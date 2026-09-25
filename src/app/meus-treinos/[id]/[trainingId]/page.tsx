@@ -1,7 +1,7 @@
 // src/app/meus-treinos/[id]/[trainingId]/page.tsx
 'use client';
 
-import React, { useEffect, useMemo, useState, use } from 'react';
+import React, { useEffect, useMemo, useRef, useState, use } from 'react';
 import Link from 'next/link';
 import axios from 'axios';
 import {
@@ -25,7 +25,9 @@ import {
     pickActiveMicrocycle,
 } from '@/libs/planningService';
 import { ExerciseLog } from '../../../../components/features/types';
-import CircuitTimer from '@/components/molecules/CircuitTimer';
+import CircuitTimer, {
+    type CircuitTimerHandle,
+} from '@/components/molecules/CircuitTimer';
 import {
     blockRecoverySeconds,
     circuitHasTimedWork,
@@ -71,6 +73,17 @@ import {
 import { applySubstitutability, toExerciseLog } from '@/libs/exerciseLog';
 import { isOverdueBlockError } from '@/libs/overdueBlock';
 import OverdueBlockNotice from '@/components/features/OverdueBlockNotice';
+
+/** Bloco agrupado no formato do cronômetro de circuito (libs/circuitPlan.ts). */
+function toCircuit(group: ExerciseLog[]): CircuitExercise[] {
+    return group.map((e) => ({
+        name: e.name,
+        series: e.series ?? [],
+        timed: e.timed,
+        series_label: e.series_label,
+        rest: e.restTime,
+    }));
+}
 
 interface TrainingPageParams {
     id: string; // macrocycle ID
@@ -643,6 +656,21 @@ export default function MeusTreinosExercisesPage({
         return null;
     }, [exercises, selectedExercise]);
 
+    // Cronômetro de cada bloco-circuito, pelo id do 1º exercício do bloco:
+    // o card do exercício aberto ganha um "Iniciar circuito" que dá o start
+    // no cronômetro certo sem a aluna ter que achar o bloco na lista.
+    const circuitTimers = useRef(new Map<string, CircuitTimerHandle>());
+    const selectedCircuitKey = useMemo(() => {
+        if (!selectedExercise?.group_id) return null;
+        const group = exerciseGroups.find(
+            (g) =>
+                g.length > 1 && g.some((e) => e.id === selectedExercise.id),
+        );
+        return group && circuitHasTimedWork(toCircuit(group))
+            ? group[0].id
+            : null;
+    }, [exerciseGroups, selectedExercise]);
+
     if (isLoading) {
         return <div className="p-6 text-center">Carregando exercícios...</div>;
     }
@@ -1068,15 +1096,8 @@ export default function MeusTreinosExercisesPage({
                             }
                             // Bloco com série por tempo: guia a execução em
                             // rodadas (ver libs/circuitPlan.ts).
-                            const circuit: CircuitExercise[] = group.map(
-                                (e) => ({
-                                    name: e.name,
-                                    series: e.series ?? [],
-                                    timed: e.timed,
-                                    series_label: e.series_label,
-                                    rest: e.restTime,
-                                }),
-                            );
+                            const circuit = toCircuit(group);
+                            const circuitKey = group[0].id;
                             return (
                                 <li
                                     key={group[0].id}
@@ -1092,18 +1113,33 @@ export default function MeusTreinosExercisesPage({
                                             ? `— ${blockRecoverySeconds(group)} s de recuperação entre os exercícios`
                                             : '— sem descanso entre os exercícios'}
                                     </div>
-                                    <div className={styles.exerciseGroupItems}>
-                                        {items}
-                                    </div>
+                                    {/* Cronômetro ANTES dos exercícios: embaixo
+                                        do bloco, o "Iniciar circuito" só
+                                        aparecia depois de rolar a tela. */}
                                     {circuitHasTimedWork(circuit) && (
                                         <CircuitTimer
                                             key={JSON.stringify(circuit)}
+                                            ref={(h) => {
+                                                if (h) {
+                                                    circuitTimers.current.set(
+                                                        circuitKey,
+                                                        h,
+                                                    );
+                                                } else {
+                                                    circuitTimers.current.delete(
+                                                        circuitKey,
+                                                    );
+                                                }
+                                            }}
                                             exercises={circuit}
                                             recoverySeconds={blockRecoverySeconds(
                                                 group,
                                             )}
                                         />
                                     )}
+                                    <div className={styles.exerciseGroupItems}>
+                                        {items}
+                                    </div>
                                 </li>
                             );
                         })}
@@ -1134,6 +1170,16 @@ export default function MeusTreinosExercisesPage({
                         nextInGroup={nextInGroup}
                         onSelectExercise={handleExerciseClick}
                         onEquipmentUnavailable={setSubstitutionFor}
+                        onStartCircuit={
+                            selectedCircuitKey
+                                ? () => {
+                                      circuitTimers.current
+                                          .get(selectedCircuitKey)
+                                          ?.start();
+                                      handleCloseDetailCard();
+                                  }
+                                : undefined
+                        }
                     />
                 )}
                 {substitutionFor && (
