@@ -18,6 +18,12 @@ vi.mock('@/libs/api', () => ({
     Api: { delete: vi.fn(), get: vi.fn(), patch: vi.fn() },
 }));
 
+// O card do Aluno Plus tem teste próprio (StudentPlusCard.test.tsx) e faz o
+// seu próprio GET — aqui ele consumiria as respostas preparadas para a página.
+vi.mock('@/components/features/StudentPlusCard', () => ({
+    default: () => null,
+}));
+
 // jsdom doesn't implement these; the export/download flow relies on them.
 const createObjectURLMock = vi.fn(() => 'blob:mock-url');
 const revokeObjectURLMock = vi.fn();

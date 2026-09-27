@@ -92,11 +92,34 @@ export default function RetentionTab() {
                 </div>
             </div>
 
+            {data.pro_grace_until && (
+                <div className="alert alert-warning" role="status">
+                    A partir de{' '}
+                    {new Date(data.pro_grace_until).toLocaleDateString('pt-BR')}, a
+                    lista de quem está em risco passa a fazer parte do PRO. Os
+                    números acima continuam grátis.
+                </div>
+            )}
+
             <h2 className={s.sectionTitle}>
-                Alunos em risco de abandono ({atRisk.length})
+                Alunos em risco de abandono (
+                {data.details_locked ? data.at_risk + data.never_trained : atRisk.length})
             </h2>
 
-            {atRisk.length === 0 ? (
+            {data.details_locked ? (
+                <div className={s.empty}>
+                    Saiba quem são, há quantos dias estão parados e mande um lembrete
+                    com um toque: o detalhe do painel de retenção faz parte do PRO.
+                    <div>
+                        <button
+                            className={s.btn}
+                            onClick={() => router.push('/pagamento?produto=pro')}
+                        >
+                            Conhecer o PRO
+                        </button>
+                    </div>
+                </div>
+            ) : atRisk.length === 0 ? (
                 <div className={s.empty}>
                     <FiCheckCircle className={s.emptyIcon} /> Nenhum aluno
                     ativo está parado há mais de {data.risk_days} dias. Bom
@@ -157,7 +180,7 @@ export default function RetentionTab() {
                 </div>
             )}
 
-            <h2 className={s.sectionTitle}>Todos os alunos</h2>
+            {!data.details_locked && <h2 className={s.sectionTitle}>Todos os alunos</h2>}
             <div className={s.list}>
                 {data.students.map((st) => (
                     <div className={s.row} key={`all-${st.id}`}>

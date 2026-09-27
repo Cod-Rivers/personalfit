@@ -17,13 +17,16 @@ export interface PlanCatalogItem {
     cycle?: string;
     value: number;
     play_product_id: string;
+    /** false = fora de venda agora (hoje só a nova anamnese, enquanto o
+     *  treino automático está pausado). Ausente = à venda. */
+    available?: boolean;
 }
 
 export interface PlanCatalog {
     pro: PlanCatalogItem[];
     early_anamnesis: PlanCatalogItem;
     library_plan: PlanCatalogItem;
-    ai_substitution: PlanCatalogItem;
+    student_plus: PlanCatalogItem;
 }
 
 export async function getPlans(): Promise<PlanCatalog> {
@@ -92,18 +95,65 @@ export async function cancelSubscription(): Promise<void> {
     await Api.post('/user/cancel-subscribe');
 }
 
-/* ── Substituição Inteligente de Exercícios: assinatura avulsa (aluno sem personal) ── */
-/* Só cartão de crédito — PIX no Asaas é cobrança única, não assinatura recorrente. */
+/* ── Aluno Plus: assinatura do aluno sem personal ──
+ * Sem anúncios + Substituição Inteligente de Exercícios + links do Instagram
+ * e do TikTok + mais importações de PDF. No site, só cartão (PIX no Asaas é
+ * cobrança única, não assinatura recorrente); dentro do app Android, só
+ * Google Play (política de pagamentos da loja). */
 
-export async function subscribeAISubstitutionCard(
-    card: CardSubscriptionForm,
-): Promise<SubscribeCardResponse> {
-    const res = await Api.post<SubscribeCardResponse>('/me/ai-substitution/subscribe', card);
+export interface StudentPlusStatus {
+    active: boolean;
+    /** Status cru da última assinatura (ACTIVE, SUSPENDED, CANCELED...). */
+    status?: string;
+    billing_type?: string;
+    /** Só aluno sem personal vinculado pode assinar. */
+    eligible: boolean;
+    price: number;
+    cycle: string;
+    /** Conta antiga de aluno com Pro próprio: já tem os benefícios. */
+    own_pro: boolean;
+}
+
+export async function getStudentPlusStatus(): Promise<StudentPlusStatus> {
+    const res = await Api.get<StudentPlusStatus>('/me/student-plus');
     return res.data;
 }
 
-export async function cancelAISubstitution(): Promise<void> {
-    await Api.post('/me/ai-substitution/cancel');
+export async function subscribeStudentPlusCard(
+    card: CardSubscriptionForm,
+): Promise<SubscribeCardResponse> {
+    const res = await Api.post<SubscribeCardResponse>('/me/student-plus/subscribe', card);
+    return res.data;
+}
+
+export async function cancelStudentPlus(): Promise<void> {
+    await Api.post('/me/student-plus/cancel');
+}
+
+/* ── Teste grátis de 14 dias do PRO (personal) ── */
+
+export interface ProTrialStatus {
+    plan_type: string;
+    pro_trial_eligible: boolean;
+    pro_trial_active: boolean;
+    pro_trial_ends_at?: string;
+}
+
+export async function getProTrialStatus(): Promise<ProTrialStatus> {
+    const res = await Api.get<ProTrialStatus>('/personal/pro-trial');
+    return res.data;
+}
+
+export async function startProTrial(): Promise<ProTrialStatus> {
+    const res = await Api.post<ProTrialStatus>('/personal/pro-trial');
+    return res.data;
+}
+
+/** Dias inteiros que faltam até `endsAt` (arredonda para cima; mínimo 0). */
+export function daysUntil(endsAt: string | undefined, now = Date.now()): number {
+    if (!endsAt) return 0;
+    const ms = new Date(endsAt).getTime() - now;
+    return ms > 0 ? Math.ceil(ms / 86_400_000) : 0;
 }
 
 /* ── Nova anamnese (aluno free) via PIX ── */

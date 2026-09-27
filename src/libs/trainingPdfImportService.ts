@@ -4,8 +4,23 @@ import type { TechniqueParamsResponse } from '@/libs/planningService';
 /** Deve espelhar storage.MaxTrainingPdfImportBytes no backend (r2.go). */
 export const MAX_TRAINING_PDF_IMPORT_MB = 10;
 
-/** Deve espelhar training.MaxPdfImportsPerStudentPerMonth no backend. */
-export const MAX_TRAINING_PDF_IMPORTS_PER_MONTH = 3;
+/** Tetos mensais por aluno — devem espelhar
+ * training.DefaultPdfImportsPerStudentMonth* no backend. Cada papel conta à
+ * parte: o personal importa para o aluno, e o aluno importa para si (mais
+ * com o Aluno Plus). Reduzidos à metade em 2026-09-27 (eram 3 + 3). */
+export const PDF_IMPORT_LIMITS = {
+    fromPersonal: 2,
+    self: 1,
+    selfPlus: 2,
+} as const;
+
+export function pdfImportMonthlyLimit(opts: {
+    byPersonal: boolean;
+    studentPlus: boolean;
+}): number {
+    if (opts.byPersonal) return PDF_IMPORT_LIMITS.fromPersonal;
+    return opts.studentPlus ? PDF_IMPORT_LIMITS.selfPlus : PDF_IMPORT_LIMITS.self;
+}
 
 export type TrainingPdfImportStatus =
     | 'processing'
@@ -83,7 +98,7 @@ export async function uploadTrainingPdf(
 
 /** Cria o rascunho a partir do PDF já enviado e dispara a extração síncrona
  * (pode levar até ~45s quando o Gemini está configurado). Sujeito ao teto
- * mensal de importações (ver MAX_TRAINING_PDF_IMPORTS_PER_MONTH) — 403 com
+ * mensal de importações (ver PDF_IMPORT_LIMITS) — 403 com
  * code "training_pdf_import_limit_reached" quando atingido. */
 export async function createTrainingPdfImport(
     pdfKey: string,

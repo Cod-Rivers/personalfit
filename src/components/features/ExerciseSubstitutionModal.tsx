@@ -33,7 +33,7 @@ type Step =
     | { kind: 'checking-access' }
     | { kind: 'not_substitutable' }
     | { kind: 'blocked_by_personal' }
-    | { kind: 'subscription_required'; price?: number }
+    | { kind: 'student_plus_required'; price?: number }
     | { kind: 'pick-equipment' }
     | { kind: 'loading' }
     | {
@@ -87,7 +87,7 @@ export default function ExerciseSubstitutionModal({
                 } else if (access.reason === 'blocked_by_personal') {
                     setStep({ kind: 'blocked_by_personal' });
                 } else {
-                    setStep({ kind: 'subscription_required', price: access.price });
+                    setStep({ kind: 'student_plus_required', price: access.price });
                 }
             })
             .catch((err) => {
@@ -130,9 +130,9 @@ export default function ExerciseSubstitutionModal({
                 setStep({ kind: 'blocked_by_personal' });
             } else if (
                 axios.isAxiosError(err) &&
-                err.response?.data?.code === 'ai_substitution_subscription_required'
+                err.response?.data?.code === 'student_plus_required'
             ) {
-                setStep({ kind: 'subscription_required' });
+                setStep({ kind: 'student_plus_required' });
             } else if (
                 axios.isAxiosError(err) &&
                 err.response?.data?.code === 'exercise_not_substitutable'
@@ -193,12 +193,13 @@ export default function ExerciseSubstitutionModal({
                     </div>
                 )}
 
-                {step.kind === 'subscription_required' && (
+                {step.kind === 'student_plus_required' && (
                     <div className={styles.centered}>
                         <FiAlertCircle className={styles.infoIcon} />
                         <p>
                             Sugestões inteligentes de exercícios substitutos, geradas na
-                            hora com base no seu treino e no seu nível.
+                            hora com base no seu treino e no seu nível, fazem parte do
+                            Aluno Plus, junto com o app sem anúncios.
                         </p>
                         {step.price != null && (
                             <p className={styles.price}>
@@ -208,9 +209,9 @@ export default function ExerciseSubstitutionModal({
                         <Button
                             variant="primary"
                             fullWidth
-                            onClick={() => router.push('/pagamento?produto=ia-substituicao')}
+                            onClick={() => router.push('/pagamento?produto=plus')}
                         >
-                            Assinar
+                            Conhecer o Aluno Plus
                         </Button>
                         <Button variant="ghost" fullWidth onClick={onClose}>
                             Manter o exercício original

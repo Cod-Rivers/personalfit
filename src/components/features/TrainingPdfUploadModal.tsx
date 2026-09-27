@@ -9,9 +9,10 @@ import {
     createTrainingPdfImport,
     retryTrainingPdfImport,
     MAX_TRAINING_PDF_IMPORT_MB,
-    MAX_TRAINING_PDF_IMPORTS_PER_MONTH,
+    pdfImportMonthlyLimit,
     type TrainingPdfImport,
 } from '@/libs/trainingPdfImportService';
+import { useBranding } from '@/context/BrandingContext';
 import TrainingPdfReviewScreen from './TrainingPdfReviewScreen';
 import styles from './TrainingPdfUploadModal.module.css';
 
@@ -38,6 +39,11 @@ export default function TrainingPdfUploadModal({
 }: Props) {
     const [step, setStep] = useState<Step>('select');
     const [file, setFile] = useState<File | null>(null);
+    const { studentPlus } = useBranding();
+    const monthlyLimit = pdfImportMonthlyLimit({
+        byPersonal: !!studentId,
+        studentPlus,
+    });
     const [error, setError] = useState('');
     const [importData, setImportData] = useState<TrainingPdfImport | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -92,7 +98,9 @@ export default function TrainingPdfUploadModal({
                 const code = e.response.data?.code;
                 if (code === 'training_pdf_import_limit_reached') {
                     setError(
-                        'Limite mensal de importação de treino via PDF atingido. Tente novamente no próximo mês.',
+                        studentId || studentPlus
+                            ? 'Limite mensal de importação de treino via PDF atingido. Tente novamente no próximo mês.'
+                            : 'Limite mensal de importação de treino via PDF atingido. Tente no próximo mês, ou assine o Aluno Plus (em Minha conta) para importar 2 por mês.',
                     );
                 } else {
                     setError(e.response.data?.error || 'Acesso negado.');
@@ -138,7 +146,11 @@ export default function TrainingPdfUploadModal({
                         Envie uma foto de caderno, planilha ou PDF de um plano de
                         treino de outra academia. A IA extrai os exercícios
                         automaticamente — você revisa e corrige antes de aplicar.
-                        Limite de {MAX_TRAINING_PDF_IMPORTS_PER_MONTH} importações por mês.
+                        {monthlyLimit === 1
+                            ? 'Limite de 1 importação por mês'
+                            : `Limite de ${monthlyLimit} importações por mês`}
+                        {studentId ? ' para cada aluno.' : '.'}
+                        {!studentId && !studentPlus && ' Com o Aluno Plus, são 2.'}
                     </p>
 
                     <button

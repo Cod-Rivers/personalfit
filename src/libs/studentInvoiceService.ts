@@ -68,20 +68,28 @@ export async function reopenInvoice(
 }
 
 /** Bloqueio automático de alunos com cobrança vencida. Vale para TODOS os
- * alunos do personal logado (GET/PUT /personal/overdue-block). */
-export async function getOverdueBlock(): Promise<boolean> {
-    const { data } = await Api.get<{ enabled: boolean }>(
-        '/personal/overdue-block',
-    );
-    return data.enabled;
+ * alunos do personal logado (GET/PUT /personal/overdue-block).
+ *
+ * Ferramenta do PRO desde 2026-09-27, com carência para quem já usava:
+ * `requires_pro` diz que a carência acabou e o personal não é PRO (o
+ * interruptor fica guardado, mas não bloqueia ninguém nem pode ser ligado);
+ * `pro_grace_until` vem enquanto a carência vale, para a tela avisar. */
+export interface OverdueBlockSettings {
+    enabled: boolean;
+    requires_pro: boolean;
+    pro_grace_until?: string;
 }
 
-export async function setOverdueBlock(enabled: boolean): Promise<boolean> {
-    const { data } = await Api.put<{ enabled: boolean }>(
-        '/personal/overdue-block',
-        { enabled },
-    );
-    return data.enabled;
+export async function getOverdueBlock(): Promise<OverdueBlockSettings> {
+    const { data } = await Api.get<OverdueBlockSettings>('/personal/overdue-block');
+    return data;
+}
+
+export async function setOverdueBlock(enabled: boolean): Promise<OverdueBlockSettings> {
+    const { data } = await Api.put<OverdueBlockSettings>('/personal/overdue-block', {
+        enabled,
+    });
+    return data;
 }
 
 export async function deleteInvoice(

@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { FiDollarSign, FiArrowLeft, FiCheck } from 'react-icons/fi';
 import {
@@ -11,6 +12,7 @@ import {
     getOverdueBlock,
     setOverdueBlock,
     type InvoiceList,
+    type OverdueBlockSettings,
 } from '@/libs/studentInvoiceService';
 import s from './financeiro.module.css';
 
@@ -40,21 +42,27 @@ export default function StudentFinanceiroPage() {
     const [saving, setSaving] = useState(false);
     // null = ainda não carregado (ou falhou): o interruptor não aparece em vez
     // de mostrar um estado que talvez não seja o salvo.
-    const [blockEnabled, setBlockEnabled] = useState<boolean | null>(null);
+    const [blockSettings, setBlockSettings] = useState<OverdueBlockSettings | null>(null);
+    const blockEnabled = blockSettings ? blockSettings.enabled : null;
     const [blockSaving, setBlockSaving] = useState(false);
 
     useEffect(() => {
         getOverdueBlock()
-            .then(setBlockEnabled)
-            .catch(() => setBlockEnabled(null));
+            .then(setBlockSettings)
+            .catch(() => setBlockSettings(null));
     }, []);
 
     async function toggleBlock(next: boolean) {
         setBlockSaving(true);
         try {
-            setBlockEnabled(await setOverdueBlock(next));
-        } catch {
-            alert('Não foi possível salvar o bloqueio. Tente de novo.');
+            setBlockSettings(await setOverdueBlock(next));
+        } catch (err: unknown) {
+            const code = (err as { response?: { data?: { code?: string } } })?.response?.data?.code;
+            alert(
+                code === 'requires_pro'
+                    ? 'O bloqueio automático faz parte do plano PRO.'
+                    : 'Não foi possível salvar o bloqueio. Tente de novo.',
+            );
         } finally {
             setBlockSaving(false);
         }
@@ -130,17 +138,36 @@ export default function StudentFinanceiroPage() {
                     pago.
                 </div>
 
-                {blockEnabled !== null && (
+                {blockSettings !== null && (
                     <div className={s.blockSetting}>
                         <label className={s.blockToggle}>
                             <input
                                 type="checkbox"
-                                checked={blockEnabled}
-                                disabled={blockSaving}
+                                checked={blockSettings.enabled}
+                                // Fora do PRO dá para DESLIGAR (limpar o interruptor
+                                // guardado), mas não ligar.
+                                disabled={blockSaving || (blockSettings.requires_pro && !blockSettings.enabled)}
                                 onChange={(e) => toggleBlock(e.target.checked)}
                             />
                             Bloquear alunos com mensalidade vencida
                         </label>
+                        {blockSettings.requires_pro && (
+                            <p className={s.blockHint}>
+                                <strong>Recurso do PRO.</strong> O registro das
+                                mensalidades continua grátis; o bloqueio automático
+                                faz parte do PRO e, fora dele, não é aplicado a
+                                ninguém.{' '}
+                                <Link href="/pagamento?produto=pro">Conhecer o PRO</Link>
+                            </p>
+                        )}
+                        {blockSettings.pro_grace_until && (
+                            <p className={s.blockHint}>
+                                A partir de{' '}
+                                {new Date(blockSettings.pro_grace_until).toLocaleDateString('pt-BR')},
+                                o bloqueio automático passa a fazer parte do PRO. Até
+                                lá, continua funcionando no seu plano.
+                            </p>
+                        )}
                         <p className={s.blockHint}>
                             Vale para todos os seus alunos. Passado o dia do
                             vencimento sem o pagamento marcado, o aluno perde o
@@ -149,7 +176,7 @@ export default function StudentFinanceiroPage() {
                             Login, notificações e treinos já baixados continuam
                             funcionando.
                         </p>
-                        {blockEnabled && data?.summary.has_overdue && (
+                        {blockEnabled && !blockSettings?.requires_pro && data?.summary.has_overdue && (
                             <p className={s.blockActive}>
                                 Este aluno está sem acesso agora.
                             </p>

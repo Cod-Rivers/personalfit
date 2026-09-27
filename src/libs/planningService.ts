@@ -894,7 +894,7 @@ export async function updateMyMesocycle(
  *
  * Separado do `/my-exercises/resolve-video-link` (que é só do personal) porque
  * a regra de plano é outra: no gratuito o aluno usa YouTube e Vimeo, enquanto
- * Instagram e TikTok exigem Pro. Quem aplica a regra é o servidor — a tela só
+ * Instagram e TikTok fazem parte do Aluno Plus. Quem aplica a regra é o servidor — a tela só
  * explica.
  *
  * O retorno é descrito aqui em vez de importar ResolvedVideoLink porque é

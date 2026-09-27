@@ -72,6 +72,18 @@ export interface ShareCardInput {
     stats?: ShareCardStat[];
     /** Frase do rodapé, logo acima do endereço. */
     callToAction?: string;
+    /** Co-marca do personal PRO: um segundo selo, abaixo do Venafit, com o
+     *  logo e o nome dele. SOMA à marca do app, nunca a substitui — a
+     *  assinatura do Venafit continua obrigatória (ver o topo do arquivo). É
+     *  benefício do PRO: o personal divulga a si mesmo no que o aluno posta
+     *  (Todo/PLANO_MONETIZACAO_FREE_PRO.md §5.5). */
+    coBrand?: ShareCardCoBrand;
+}
+
+export interface ShareCardCoBrand {
+    name: string;
+    /** Logo da marca do personal (data URI, como é guardado no branding). */
+    logoDataUri?: string;
 }
 
 /** Carrega uma imagem com prazo, resolvendo `null` em vez de rejeitar.
@@ -221,6 +233,52 @@ function drawBrandChip(
     ctx.restore();
 }
 
+/** Selo da co-marca do personal, logo abaixo do selo do Venafit. Mesmo
+ *  desenho, mais discreto (menor, texto branco), e o nome é cortado com
+ *  reticências para nunca invadir a foto. */
+function drawCoBrandChip(
+    ctx: CanvasRenderingContext2D,
+    coBrand: ShareCardCoBrand,
+    logo: HTMLImageElement | null,
+) {
+    const x = 56;
+    const y = 232;
+    const h = 76;
+    const maxTextWidth = SHARE_CARD_WIDTH - x * 2 - 200;
+    ctx.save();
+    ctx.font = `600 34px ${FONT_STACK}`;
+    let label = coBrand.name.trim();
+    if (ctx.measureText(label).width > maxTextWidth) {
+        while (label.length > 1 && ctx.measureText(`${label}…`).width > maxTextWidth) {
+            label = label.slice(0, -1);
+        }
+        label = `${label.trimEnd()}…`;
+    }
+    const textWidth = ctx.measureText(label).width;
+    const logoSize = logo ? 48 : 0;
+    const w = 32 + logoSize + (logo ? 16 : 0) + textWidth + 32;
+
+    ctx.fillStyle = 'rgba(5,12,20,0.55)';
+    ctx.beginPath();
+    if (typeof ctx.roundRect === 'function') {
+        ctx.roundRect(x, y, w, h, h / 2);
+    } else {
+        ctx.rect(x, y, w, h);
+    }
+    ctx.fill();
+
+    let cursor = x + 32;
+    if (logo) {
+        ctx.drawImage(logo, cursor, y + (h - logoSize) / 2, logoSize, logoSize);
+        cursor += logoSize + 16;
+    }
+    ctx.fillStyle = BRAND.white;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, cursor, y + h / 2 + 2);
+    ctx.restore();
+}
+
 /** Compõe o card e devolve um File pronto para `navigator.share`.
  *
  *  Qualquer falha de decodificação da foto vira card sem foto (só a marca),
@@ -235,11 +293,14 @@ export async function buildShareCard(input: ShareCardInput): Promise<File> {
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Este aparelho não conseguiu montar a imagem.');
 
-    const [photo, logo] = await Promise.all([
+    const [photo, logo, coBrandLogo] = await Promise.all([
         input.photo
             ? loadImage(URL.createObjectURL(input.photo), true)
             : Promise.resolve(null),
         loadImage('/assets/images/logo.png'),
+        input.coBrand?.logoDataUri
+            ? loadImage(input.coBrand.logoDataUri)
+            : Promise.resolve(null),
     ]);
 
     // Fundo: a foto, ou o gradiente da marca quando não há foto.
@@ -295,6 +356,9 @@ export async function buildShareCard(input: ShareCardInput): Promise<File> {
     ctx.fillRect(0, SHARE_CARD_HEIGHT - 620, SHARE_CARD_WIDTH, 620);
 
     drawBrandChip(ctx, logo);
+    if (input.coBrand?.name.trim()) {
+        drawCoBrandChip(ctx, input.coBrand, coBrandLogo);
+    }
 
     // ── Bloco de baixo, montado de baixo para cima ──
     const marginX = 72;

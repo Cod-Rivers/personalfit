@@ -32,6 +32,9 @@ export interface SessionUser {
     // Vazio quando o personal pré-cadastrou o aluno sem informar CPF — a
     // tela de troca de senha do primeiro login exige completá-lo nesse caso.
     cpf?: string;
+    // "free" | "pro". Cache do que o login devolveu — o backend é quem decide
+    // o que é Pro; isto só evita a tela oferecer o que vai dar 403.
+    plan_type?: string;
 }
 
 const TOKEN_KEY = 'token';
@@ -139,6 +142,18 @@ export function getUser(): SessionUser | null {
     } catch {
         return null;
     }
+}
+
+/**
+ * Atualiza o plano no usuário guardado da sessão, depois de uma compra ou do
+ * início do teste grátis do PRO — as telas que leem `plan_type` da sessão
+ * passam a ver o plano novo sem precisar de um novo login.
+ */
+export function updateSessionPlanType(planType: string): void {
+    if (typeof window === 'undefined') return;
+    const user = getUser();
+    if (!user) return;
+    localStorage.setItem(USER_KEY, JSON.stringify({ ...user, plan_type: planType }));
 }
 
 /**

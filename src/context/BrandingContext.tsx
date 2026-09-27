@@ -8,6 +8,10 @@ interface BrandingContextValue {
     personalName: string | null;
     /** "free" | "pro" | null enquanto não carregado — ver getPersonalBranding. */
     effectivePlanType: string | null;
+    /** Sem anúncios: PRO efetivo ou Aluno Plus (ver getPersonalBranding). */
+    adFree: boolean;
+    /** Aluno com o Aluno Plus ativo. */
+    studentPlus: boolean;
     setBranding: (b: PersonalBranding | null) => void;
 }
 
@@ -15,6 +19,8 @@ const BrandingContext = createContext<BrandingContextValue>({
     branding: null,
     personalName: null,
     effectivePlanType: null,
+    adFree: false,
+    studentPlus: false,
     setBranding: () => {},
 });
 
@@ -45,6 +51,8 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
     const [effectivePlanType, setEffectivePlanType] = useState<string | null>(
         null,
     );
+    const [adFree, setAdFree] = useState(false);
+    const [studentPlus, setStudentPlus] = useState(false);
 
     useEffect(() => {
         const token =
@@ -54,10 +62,12 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
         if (!token) return;
 
         getPersonalBranding()
-            .then(({ branding: b, personalName: name, effectivePlanType: plan }) => {
+            .then(({ branding: b, personalName: name, effectivePlanType: plan, adFree: noAds, studentPlus: plus }) => {
                 setBrandingState(b);
                 setPersonalName(name);
                 setEffectivePlanType(plan);
+                setAdFree(noAds);
+                setStudentPlus(plus);
                 applyBrandingVars(b);
             })
             .catch(() => {
@@ -72,7 +82,7 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
 
     return (
         <BrandingContext.Provider
-            value={{ branding, personalName, effectivePlanType, setBranding }}
+            value={{ branding, personalName, effectivePlanType, adFree, studentPlus, setBranding }}
         >
             {children}
         </BrandingContext.Provider>

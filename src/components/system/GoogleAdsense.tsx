@@ -10,7 +10,7 @@ import {
 } from '@/libs/adsense';
 
 export default function GoogleAdsense() {
-    const { effectivePlanType } = useBranding();
+    const { effectivePlanType, adFree } = useBranding();
     // Decidido só depois da montagem: se é o app nativo, e com qual ponte, não
     // dá para saber no servidor (ver isAdEnvironmentSafe).
     const [environmentSafe, setEnvironmentSafe] = useState(false);
@@ -19,7 +19,7 @@ export default function GoogleAdsense() {
         setEnvironmentSafe(isAdEnvironmentSafe());
     }, []);
 
-    if (!environmentSafe || !shouldShowAds(effectivePlanType)) return null;
+    if (!environmentSafe || !shouldShowAds(effectivePlanType, adFree)) return null;
 
     return (
         <Script

@@ -40,7 +40,7 @@ import s from '@/app/personal/_shared/periodizacao/builder.module.css';
 /** Regra de plano do link de vídeo, exibida sob o campo. Quem a aplica é o
  * servidor (ver ResolveMyVideoLink no backend); aqui é só explicação. */
 const VIDEO_PLAN_HINT =
-    'No plano gratuito valem YouTube e Vimeo — Instagram e TikTok requerem plano Pro.';
+    'No plano gratuito valem YouTube e Vimeo — Instagram e TikTok fazem parte do Aluno Plus (em Minha conta).';
 
 /**
  * Montagem do treino pelo PRÓPRIO aluno.

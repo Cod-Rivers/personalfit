@@ -92,7 +92,8 @@ const studentSections: HelpSection[] = [
                 </p>
                 <p className="mb-0">
                     No link de vídeo de um exercício, YouTube e Vimeo valem no
-                    plano gratuito; Instagram e TikTok exigem o PRO. O treino
+                    plano gratuito; Instagram e TikTok fazem parte do{' '}
+                    <Link href="#aluno-plus">Aluno Plus</Link>. O treino
                     é de sua responsabilidade: o Venafit não o prescreve nem
                     revisa.
                 </p>
@@ -248,14 +249,23 @@ const studentSections: HelpSection[] = [
         id: 'anamnese',
         title: 'Triagem automática',
         body: (
-            <p className="mb-0">
-                É o questionário de saúde e dores (tornozelo, lombar, joelho,
-                quadril, ombro etc.) que monta um treino pronto quando você
-                não tem personal. Ninguém lê essas respostas: elas só servem
-                para escolher o plano. Se você já tem personal, é ele quem
-                monta seu treino, e ele pode pedir a{' '}
-                <Link href="#anamnese-do-personal">Anamnese do personal</Link>.
-            </p>
+            <>
+                <p className="mb-2">
+                    É o questionário de saúde e dores (tornozelo, lombar, joelho,
+                    quadril, ombro etc.) que monta um treino pronto quando você
+                    não tem personal. Ninguém lê essas respostas: elas só servem
+                    para escolher o plano. Se você já tem personal, é ele quem
+                    monta seu treino, e ele pode pedir a{' '}
+                    <Link href="#anamnese-do-personal">Anamnese do personal</Link>.
+                </p>
+                <p className="mb-0">
+                    No momento, a geração automática do treino está pausada:
+                    suas respostas ficam registradas, e você pode refazer a
+                    triagem quando quiser, de graça, para manter seus dados de
+                    saúde em dia. Enquanto isso, monte o seu próprio treino em{' '}
+                    <Link href="#montar-meu-treino">Montar meu treino</Link>.
+                </p>
+            </>
         ),
     },
     {
@@ -283,6 +293,40 @@ const studentSections: HelpSection[] = [
                 lugar. Cada plano é uma compra avulsa e pode ser baixado para
                 treinar offline.
             </p>
+        ),
+    },
+    {
+        id: 'aluno-plus',
+        title: 'Aluno Plus',
+        body: (
+            <>
+                <p className="mb-2">
+                    O <strong>Aluno Plus</strong> é a assinatura de quem treina
+                    sem personal. Ele inclui:
+                </p>
+                <ul className="mb-2 ps-3">
+                    <li>o app <strong>sem anúncios</strong>;</li>
+                    <li>
+                        a <strong>Substituição Inteligente de Exercícios</strong>:
+                        quando o aparelho do seu treino está ocupado, a IA sugere
+                        trocas pelo mesmo grupo muscular e pelo seu nível;
+                    </li>
+                    <li>
+                        links de vídeo do <strong>Instagram</strong> e do{' '}
+                        <strong>TikTok</strong> no treino que você monta;
+                    </li>
+                    <li>
+                        <strong>2 importações de treino por PDF</strong> por mês,
+                        em vez de 1.
+                    </li>
+                </ul>
+                <p className="mb-0">
+                    Assine e cancele em <strong>Minha conta</strong>. No site, o
+                    pagamento é no cartão; dentro do app Android, pelo Google
+                    Play (e aí o cancelamento também é pela Play Store). Se você
+                    treina com personal, esses recursos vêm do plano dele.
+                </p>
+            </>
         ),
     },
     {
@@ -319,6 +363,41 @@ const studentSections: HelpSection[] = [
                     <strong>zonas de frequência cardíaca</strong>, que mostra
                     em que faixa de batimentos treinar. Editar uma avaliação
                     nunca apaga as fotos já enviadas — elas apenas somam.
+                    Avaliações registradas pelo seu personal aparecem aqui,
+                    mas só ele pode editá-las ou excluí-las.
+                </p>
+            </>
+        ),
+    },
+    {
+        id: 'evolucao-carga',
+        title: 'Evolução de carga',
+        body: (
+            <>
+                <p className="mb-2">
+                    Na aba <strong>Cargas</strong> da Evolução fica o histórico
+                    de cada exercício, em ordem cronológica, montado a partir
+                    dos treinos que você concluiu: a maior carga de cada dia, o{' '}
+                    <GlossaryLink id="1rm-estimado">1RM estimado</GlossaryLink>,
+                    o <GlossaryLink id="volume-de-treino">volume</GlossaryLink>{' '}
+                    e os seus <GlossaryLink id="recorde-pessoal">recordes</GlossaryLink>.
+                    O mesmo exercício continua no mesmo histórico mesmo quando o
+                    seu personal troca de ciclo.
+                </p>
+                <p className="mb-2">
+                    Toque num exercício para ver o gráfico e cada sessão. Em{' '}
+                    <strong>Comparar</strong> você coloca dois períodos lado a
+                    lado (duas fases, ou os últimos 30 dias contra os 30
+                    anteriores). No card do exercício, durante o treino, o botão{' '}
+                    <strong>Histórico de carga</strong> mostra quanto você pegou
+                    da última vez — também sem internet.
+                </p>
+                <p className="mb-0">
+                    Ao finalizar um treino, o app avisa quando você bateu um
+                    recorde e deixa compartilhar. <strong>Halteres e máquinas
+                    de um lado só:</strong> anote a carga de um lado (por
+                    halter), como está na anilha — assim o histórico compara
+                    igual com igual.
                 </p>
             </>
         ),
@@ -905,12 +984,22 @@ const personalSections: HelpSection[] = [
         id: 'retencao',
         title: 'Retenção',
         body: (
-            <p className="mb-0">
-                Na aba <strong>Retenção</strong> você vê há quantos dias
-                cada aluno não registra um treino, para agir antes que ele
-                abandone o acompanhamento. Direto da lista você pode{' '}
-                <strong>enviar um lembrete</strong> ao aluno.
-            </p>
+            <>
+                <p>
+                    Na aba <strong>Retenção</strong> você vê há quantos dias
+                    cada aluno não registra um treino, para agir antes que ele
+                    abandone o acompanhamento. Direto da lista você pode{' '}
+                    <strong>enviar um lembrete</strong> ao aluno.
+                </p>
+                <p className="mb-0">
+                    Os números do painel (ativos, quantos treinaram na semana,
+                    quantos estão em risco) são grátis. A lista de{' '}
+                    <strong>quem</strong> está em risco, com os dias parados e o
+                    lembrete, faz parte do{' '}
+                    <Link href="#plano-pro">plano PRO</Link> a partir de
+                    27/11/2026 — até lá continua liberada para todos.
+                </p>
+            </>
         ),
     },
     {
@@ -925,7 +1014,7 @@ const personalSections: HelpSection[] = [
                     controle simples de cobrança por aluno, sem meio de
                     pagamento integrado.
                 </p>
-                <p className="mb-0">
+                <p>
                     Na mesma tela dá para ligar o{' '}
                     <strong>bloqueio de inadimplentes</strong>, que vale para
                     todos os seus alunos. Quando uma cobrança passa do dia do
@@ -934,6 +1023,13 @@ const personalSections: HelpSection[] = [
                     até você registrar o pagamento. Ele continua entrando no
                     app, recebendo notificações e registrando os treinos que já
                     tinha baixado no aparelho.
+                </p>
+                <p className="mb-0">
+                    O lançamento das cobranças é grátis. O bloqueio automático
+                    faz parte do <Link href="#plano-pro">plano PRO</Link> a
+                    partir de 27/11/2026 — até lá funciona em qualquer plano.
+                    Fora do PRO, o interruptor fica guardado, mas não bloqueia
+                    ninguém.
                 </p>
             </>
         ),
@@ -1039,6 +1135,15 @@ const personalSections: HelpSection[] = [
                     na hora, respeitando o grupo muscular, o objetivo do
                     treino, o nível dele e as restrições da{' '}
                     <GlossaryLink id="anamnese">anamnese</GlossaryLink>.
+                </p>
+                <p className="mb-2">
+                    Para conter o custo da IA há dois tetos mensais: até{' '}
+                    <strong>15 sugestões por aluno</strong> e até{' '}
+                    <strong>250 somando todos os seus alunos</strong>. Uma
+                    sugestão que o app já tem guardada do mesmo dia não conta.
+                    Passado o teto, o aluno
+                    continua recebendo alternativas, escolhidas pela biblioteca
+                    de exercícios, sem IA.
                 </p>
                 <p className="mb-0">
                     É um recurso do{' '}
@@ -1801,10 +1906,55 @@ const personalSections: HelpSection[] = [
         body: (
             <p className="mb-0">
                 Pelo cartão do aluno em <strong>Evolução</strong> você
-                acompanha medidas e fotos ao longo do tempo, para comparar o
-                antes e o depois. O acompanhamento de evolução é gratuito — o
-                próprio aluno também registra as medidas dele.
+                registra a avaliação física (peso, % de gordura,
+                circunferências, testes de força e cardio) e acompanha tudo
+                no gráfico e na comparação antes × depois — isso é gratuito.
+                Enviar <strong>fotos</strong> na avaliação é do{' '}
+                <Link href="#plano-pro">plano PRO</Link>; as fotos que o
+                próprio aluno envia aparecem para você em qualquer plano. O
+                aluno vê as avaliações que você registra, mas não pode
+                editá-las nem excluí-las.
             </p>
+        ),
+    },
+    {
+        id: 'evolucao-carga-personal',
+        title: 'Evolução de carga do aluno',
+        body: (
+            <>
+                <p className="mb-2">
+                    A aba <strong>Cargas</strong> da Evolução mostra, para cada
+                    exercício, o histórico cronológico do aluno: maior carga,{' '}
+                    <GlossaryLink id="1rm-estimado">1RM estimado</GlossaryLink>,{' '}
+                    <GlossaryLink id="volume-de-treino">volume</GlossaryLink>,{' '}
+                    <GlossaryLink id="recorde-pessoal">recordes</GlossaryLink> e
+                    a variação em 30 dias. O mesmo exercício fica no mesmo
+                    histórico entre ciclos diferentes — o vínculo com a
+                    biblioteca é o que garante isso, então prefira adicionar
+                    exercícios pela biblioteca.
+                </p>
+                <p className="mb-2">
+                    No gráfico aparecem a carga que você prescreveu (linha
+                    tracejada), as semanas de{' '}
+                    <GlossaryLink id="deload">deload</GlossaryLink>, a troca de
+                    fase e as datas das avaliações físicas — e, no supino,
+                    agachamento e terra, o 1RM testado na avaliação ao lado do
+                    estimado. Ordene por <strong>Parados há mais tempo</strong>{' '}
+                    para achar o que não sobe há semanas. Um valor digitado
+                    errado (400 no lugar de 40) é marcado como fora do padrão e
+                    não conta como recorde.
+                </p>
+                <p className="mb-0">
+                    <strong>Comparar</strong> dois períodos é gratuito.
+                    Comparar vários exercícios no mesmo gráfico, cruzar a carga
+                    com o intervalo entre duas avaliações físicas e gerar o{' '}
+                    <strong>relatório</strong> para enviar ao aluno são do{' '}
+                    <Link href="#plano-pro">plano PRO</Link>. No{' '}
+                    <strong>Acompanhar</strong>, cada exercício mostra a última
+                    carga do aluno e o atalho para o histórico, e ao concluir o
+                    treino no atendimento o app avisa se ele bateu recorde.
+                </p>
+            </>
         ),
     },
     {
@@ -2951,6 +3101,23 @@ const personalSections: HelpSection[] = [
                         <Link href="#agenda">Agenda e controle de presença</Link>
                         , com recorrências e remarcações.
                     </li>
+                    <li>
+                        <Link href="#financeiro-personal">
+                            Bloqueio automático de inadimplentes
+                        </Link>{' '}
+                        e a lista completa do painel de{' '}
+                        <Link href="#retencao">retenção</Link> (a partir de
+                        27/11/2026; até lá, liberados para todos).
+                    </li>
+                    <li>
+                        Substituição Inteligente de Exercícios para os seus
+                        alunos, com uma cota mensal de sugestões da IA somada
+                        entre todos eles.
+                    </li>
+                    <li>
+                        Seu logo e seu nome junto com a marca do Venafit na
+                        imagem que os alunos compartilham nas redes.
+                    </li>
                 </ul>
                 <p className="mb-2">
                     Planos: <strong>Mensal</strong>, <strong>Semestral</strong>{' '}
@@ -2958,10 +3125,21 @@ const personalSections: HelpSection[] = [
                     tela de{' '}
                     <Link href="/pagamento?produto=pro">assinatura</Link>.
                 </p>
+                <p className="mb-2">
+                    <strong>Teste grátis:</strong> quem nunca assinou pode usar o
+                    PRO por 14 dias, sem cartão, uma vez por conta. Se não
+                    assinar até o fim, a conta volta ao plano gratuito sozinha;
+                    o que você configurou (marca, vitrine, vídeos) fica guardado
+                    e volta a valer quando assinar. Os alunos que passaram de 3
+                    continuam vinculados, mas novos cadastros voltam a seguir o
+                    limite do plano gratuito.
+                </p>
                 <p className="mb-0 text-muted small">
                     Observação: os seus alunos não têm plano PRO. Eles
                     acompanham a evolução gratuitamente e podem comprar planos
-                    de treino avulsos (estilo famosos) quando quiserem.
+                    de treino avulsos (estilo famosos) quando quiserem. O{' '}
+                    <strong>Aluno Plus</strong> é só para quem treina sem
+                    personal.
                 </p>
             </>
         ),

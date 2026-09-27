@@ -8,12 +8,14 @@ import { Api } from '@/libs/api';
  * Ver Todo/PLANO_SUBSTITUICAO_EXERCICIOS_IA.md.
  */
 
+/** 'student_plus_required': aluno sem personal, sem Pro e sem o Aluno Plus —
+ *  a IA faz parte do Plus (antes era uma assinatura avulsa só dela). */
 export type AISubstitutionAccessReason =
     | 'allowed_by_personal'
     | 'allowed_by_own_pro'
-    | 'allowed_by_subscription'
+    | 'allowed_by_student_plus'
     | 'blocked_by_personal'
-    | 'subscription_required';
+    | 'student_plus_required';
 
 export interface AISubstitutionAccessResponse {
     allowed: boolean;

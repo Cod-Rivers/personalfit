@@ -22,7 +22,14 @@ export const ADSENSE_CLIENT_ID = 'ca-pub-9935304322065680';
  */
 export const ADSENSE_SLOT_ID: string = '7651283905';
 
-export function shouldShowAds(effectivePlanType: string | null): boolean {
+/**
+ * `adFree` vem do backend (/branding) e cobre quem não vê anúncio sem ter o
+ * plano efetivo PRO: o Aluno Plus. Ele não pode virar "pro" no
+ * effectivePlanType, que libera recursos do PRO do personal que o Plus não
+ * inclui (plano alimentar etc.).
+ */
+export function shouldShowAds(effectivePlanType: string | null, adFree = false): boolean {
+    if (adFree) return false;
     return effectivePlanType !== null && effectivePlanType !== 'pro';
 }
 

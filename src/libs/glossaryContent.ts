@@ -53,6 +53,39 @@ const trainingScienceTerms: GlossaryTerm[] = [
         long: 'O 1RM (Uma Repetição Máxima) é o peso mais alto que uma pessoa consegue mover em uma única repetição completa de um exercício, com técnica correta. Serve de referência para calcular cargas de treino em percentual (por exemplo, "70% de 1RM") e para acompanhar a evolução de força ao longo do tempo.',
     },
     {
+        id: '1rm-estimado',
+        term: '1RM estimado',
+        short: 'O 1RM calculado a partir de uma série com várias repetições, sem precisar testar a carga máxima.',
+        long: 'O 1RM estimado é a carga máxima calculada a partir de uma série comum — por exemplo, 40 kg × 10 repetições equivale a cerca de 53 kg de 1RM (fórmula de Epley: carga × (1 + repetições ÷ 30)). É o que deixa comparar dias com esquemas diferentes: 45 kg × 8 e 40 kg × 12 dão quase o mesmo 1RM estimado, então fazer mais repetições com a mesma carga também aparece como evolução. Só entram séries de até 12 repetições, porque acima disso a estimativa perde precisão. O histórico de carga usa esta conta para o gráfico, os recordes e a variação de 30 dias; o 1RM testado de verdade continua sendo registrado na avaliação física.',
+        seeAlso: {
+            id: 'evolucao-carga-personal',
+            label: 'Evolução de carga do aluno',
+            audience: 'personal',
+        },
+    },
+    {
+        id: 'volume-de-treino',
+        term: 'Volume (de um exercício)',
+        short: 'A soma de carga × repetições de todas as séries do exercício no dia.',
+        long: 'O volume é a soma de carga × repetições de todas as séries de um exercício na sessão — 3 séries de 10 com 40 kg são 1.200 kg. Ele mede o trabalho total, e não a carga máxima: é normal o volume subir numa fase de acumulação e cair num deload, mesmo com a carga máxima estável. Séries sem carga (peso do corpo) não entram no volume.',
+        seeAlso: {
+            id: 'evolucao-carga-personal',
+            label: 'Evolução de carga do aluno',
+            audience: 'personal',
+        },
+    },
+    {
+        id: 'recorde-pessoal',
+        term: 'Recorde (histórico de carga)',
+        short: 'Uma sessão que superou todas as anteriores do exercício — na carga máxima ou no 1RM estimado.',
+        long: 'Uma sessão vira recorde quando supera todas as anteriores do mesmo exercício: na maior carga, ou no 1RM estimado (mais repetições com a mesma carga também contam). Nos exercícios com o peso do corpo, o recorde é o maior número de repetições numa série. A primeira sessão nunca é recorde, porque não havia o que superar, e um valor fora do padrão — como 400 kg digitado no lugar de 40 — é marcado e ignorado, para um erro de digitação não virar marca.',
+        seeAlso: {
+            id: 'evolucao-carga',
+            label: 'Evolução de carga',
+            audience: 'student',
+        },
+    },
+    {
         id: 'macrociclo',
         term: 'Macrociclo',
         short: 'O plano de treino inteiro, do início ao fim — semanas ou meses.',
@@ -169,11 +202,22 @@ const productTerms: GlossaryTerm[] = [
         id: 'plano-pro',
         term: 'PRO',
         short: 'Assinatura do personal trainer: alunos ilimitados, sem anúncios, marca própria e mais.',
-        long: 'O PRO é a assinatura do personal trainer no Venafit. Desbloqueia alunos ilimitados, remove anúncios, libera a personalização da marca no app dos alunos, upload de vídeos próprios, ciclos de treino privados, plano alimentar, anúncios e a Agenda com controle de presença.',
+        long: 'O PRO é a assinatura do personal trainer no Venafit. Desbloqueia alunos ilimitados, remove anúncios, libera a personalização da marca no app dos alunos, upload de vídeos próprios, ciclos de treino privados, plano alimentar, anúncios, a Agenda com controle de presença, o bloqueio automático de inadimplentes e a lista completa do painel de retenção. Quem nunca assinou pode testar por 14 dias, sem cartão.',
         seeAlso: {
             id: 'plano-pro',
             label: 'Plano PRO — o que desbloqueia',
             audience: 'personal',
+        },
+    },
+    {
+        id: 'aluno-plus',
+        term: 'Aluno Plus',
+        short: 'Assinatura do aluno sem personal: sem anúncios, Substituição Inteligente, Instagram/TikTok e mais PDFs.',
+        long: 'O Aluno Plus é a assinatura de quem treina sem personal no Venafit. Inclui o app sem anúncios, a Substituição Inteligente de Exercícios, links de vídeo do Instagram e do TikTok no treino montado pelo próprio aluno e 2 importações de treino por PDF por mês em vez de 1. Quem treina com personal recebe esses recursos pelo plano dele.',
+        seeAlso: {
+            id: 'aluno-plus',
+            label: 'Aluno Plus',
+            audience: 'student',
         },
     },
     {
@@ -307,7 +351,7 @@ const trainingFieldTerms: GlossaryTerm[] = [
         id: 'carga',
         term: 'Carga (Kg)',
         short: 'O peso que você vai usar no exercício, em quilos. Você pode editar a qualquer momento; o app pode sugerir um valor com base na prescrição e no seu histórico.',
-        long: 'Carga é o peso, em quilos, prescrito ou registrado para o exercício. Você pode editar o valor a qualquer momento tocando nele; quando o Controle do Microciclo sugere um ajuste, aparece um chip "Sugerido: X kg" que aplica o valor com um toque. O RPE registrado em cada série ajuda o app a refinar essa sugestão nas próximas vezes.',
+        long: 'Carga é o peso, em quilos, prescrito ou registrado para o exercício. Você pode editar o valor a qualquer momento tocando nele; quando o Controle do Microciclo sugere um ajuste, aparece um chip "Sugerido: X kg" que aplica o valor com um toque. O RPE registrado em cada série ajuda o app a refinar essa sugestão nas próximas vezes. Halteres e máquinas de um lado só: anote a carga de UM lado (por halter), como está na anilha, e não a soma dos dois — é assim que o histórico de carga compara um dia com o outro.',
         seeAlso: {
             id: 'progressao-carga',
             label: 'Sugestão de carga e progressão temporal',

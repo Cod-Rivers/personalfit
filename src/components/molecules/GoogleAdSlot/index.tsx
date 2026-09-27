@@ -16,7 +16,7 @@ declare global {
 }
 
 const GoogleAdSlot: React.FC = () => {
-    const { effectivePlanType } = useBranding();
+    const { effectivePlanType, adFree } = useBranding();
     // Ver GoogleAdsense: o ambiente só é conhecido depois da montagem.
     const [environmentSafe, setEnvironmentSafe] = useState(false);
 
@@ -28,7 +28,7 @@ const GoogleAdSlot: React.FC = () => {
     const visible =
         environmentSafe &&
         ADSENSE_SLOT_ID !== '' &&
-        shouldShowAds(effectivePlanType);
+        shouldShowAds(effectivePlanType, adFree);
 
     useEffect(() => {
         if (!visible) return;

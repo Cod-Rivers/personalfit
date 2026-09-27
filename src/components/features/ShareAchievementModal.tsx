@@ -11,6 +11,8 @@ import {
 } from 'react-icons/fi';
 import Modal from '@/components/system/Modal';
 import { buildShareCard, type ShareCardInput } from '@/libs/shareCard';
+import { useBranding } from '@/context/BrandingContext';
+import { getUser } from '@/libs/session';
 import {
     buildCaption,
     copyToClipboard,
@@ -57,8 +59,20 @@ export default function ShareAchievementModal({
     const [outcome, setOutcome] = useState<ShareOutcome | null>(null);
     const [copied, setCopied] = useState(false);
     const fileRef = useRef<File | null>(null);
+    const { effectivePlanType, branding, personalName } = useBranding();
 
     const caption = buildCaption(captionLines);
+
+    // Co-marca do personal PRO no card (o aluno dele, ou o próprio personal,
+    // que não recebe personal_name do /branding e usa o nome da sessão). Fora
+    // do PRO, só a marca do Venafit.
+    const coBrand = (() => {
+        if (effectivePlanType !== 'pro') return undefined;
+        const session = getUser();
+        const name = personalName ?? (session?.role === 'personal' ? session.name : undefined);
+        if (!name) return undefined;
+        return { name, logoDataUri: branding?.logo_base64 || undefined };
+    })();
 
     useEffect(() => {
         if (!open) return;
@@ -70,7 +84,7 @@ export default function ShareAchievementModal({
         setOutcome(null);
         setCopied(false);
 
-        buildShareCard(card)
+        buildShareCard(coBrand ? { ...card, coBrand } : card)
             .then((file) => {
                 if (cancelled) return;
                 fileRef.current = file;

@@ -29,6 +29,8 @@ import StudentsTab from './_components/StudentsTab';
 import ExercisesTab from './_components/ExercisesTab';
 import CiclosTab from './_components/CiclosTab';
 import RetentionTab from './_components/RetentionTab';
+import { type ProTrialStatus, daysUntil, getProTrialStatus } from '@/libs/paymentService';
+import { updateSessionPlanType } from '@/libs/session';
 
 interface UserData {
     id: string;
@@ -72,6 +74,20 @@ export default function PersonalDashboard() {
         setPlanType(parsed.plan_type ?? 'free');
     }, [router]);
 
+    // Plano vindo do servidor: o da sessão é o do login, e o teste grátis do
+    // PRO começa e acaba sem novo login. Falhou (offline), fica o da sessão.
+    const [trial, setTrial] = useState<ProTrialStatus | null>(null);
+    useEffect(() => {
+        if (!user) return;
+        getProTrialStatus()
+            .then((t) => {
+                setTrial(t);
+                setPlanType(t.plan_type);
+                updateSessionPlanType(t.plan_type);
+            })
+            .catch(() => {});
+    }, [user]);
+
     // Compartilhado entre a aba "Meus Alunos" e a aba "Ciclos" (select de
     // aluno no modal de aplicar ciclo).
     const studentsState = usePersonalStudents(!!user);
@@ -91,6 +107,37 @@ export default function PersonalDashboard() {
                         <p className={s.headerSub}>Olá, {user.name}</p>
                     </div>
                 </div>
+
+                {trial?.pro_trial_active && (
+                    <div className="alert alert-info d-flex flex-wrap align-items-center justify-content-between gap-2" role="status">
+                        <span>
+                            Teste grátis do PRO: {daysUntil(trial.pro_trial_ends_at) === 1
+                                ? 'falta 1 dia'
+                                : `faltam ${daysUntil(trial.pro_trial_ends_at)} dias`}
+                            . Assine para não perder os recursos quando ele acabar.
+                        </span>
+                        <button
+                            className="btn btn-sm btn-primary"
+                            onClick={() => router.push('/pagamento?produto=pro')}
+                        >
+                            Assinar o PRO
+                        </button>
+                    </div>
+                )}
+                {trial?.pro_trial_eligible && (
+                    <div className="alert alert-success d-flex flex-wrap align-items-center justify-content-between gap-2" role="status">
+                        <span>
+                            Teste o PRO por 14 dias, de graça e sem cartão: alunos
+                            ilimitados, agenda, sua marca e mais.
+                        </span>
+                        <button
+                            className="btn btn-sm btn-primary"
+                            onClick={() => router.push('/pagamento?produto=pro')}
+                        >
+                            Conhecer e testar
+                        </button>
+                    </div>
+                )}
 
                 {/* Stats */}
                 <div className={s.stats}>

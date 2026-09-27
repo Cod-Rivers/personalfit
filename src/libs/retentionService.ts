@@ -21,6 +21,11 @@ export interface RetentionOverview {
     never_trained: number;
     risk_days: number;
     students: RetentionStudent[];
+    /** Personal fora do PRO depois da carência: os números vêm, a lista de
+     *  alunos (students) vem vazia. */
+    details_locked?: boolean;
+    /** Presente para o personal free enquanto a carência vale (ISO). */
+    pro_grace_until?: string;
 }
 
 export async function getRetentionOverview(): Promise<RetentionOverview> {

@@ -6,6 +6,7 @@ import { FiArrowLeft } from 'react-icons/fi';
 import { Api } from '@/libs/api';
 import { useRouter } from 'next/navigation';
 import Modal from '@/components/system/Modal';
+import StudentPlusCard from '@/components/features/StudentPlusCard';
 
 interface UserData {
     id?: string;
@@ -261,6 +262,8 @@ export default function MinhaContaPage() {
                         </div>
                     )}
                 </div>
+
+                {user.role === 'student' && <StudentPlusCard />}
 
                 {/* Portabilidade de dados (Art. 18, V LGPD) */}
                 <div className="card mb-4">

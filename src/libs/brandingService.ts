@@ -46,15 +46,23 @@ export async function getPersonalBranding(): Promise<{
     branding: PersonalBranding | null;
     personalName: string | null;
     effectivePlanType: string | null;
+    /** Sem anúncios: PRO efetivo ou Aluno Plus. */
+    adFree: boolean;
+    /** Aluno com o Aluno Plus ativo. */
+    studentPlus: boolean;
 }> {
     const res = await Api.get<{
         branding: PersonalBranding | null;
         personal_name?: string;
         effective_plan_type?: string;
+        ad_free?: boolean;
+        student_plus?: boolean;
     }>('/branding');
     return {
         branding: res.data.branding,
         personalName: res.data.personal_name ?? null,
         effectivePlanType: res.data.effective_plan_type ?? null,
+        adFree: res.data.ad_free ?? false,
+        studentPlus: res.data.student_plus ?? false,
     };
 }

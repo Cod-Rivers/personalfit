@@ -174,8 +174,13 @@ export default function VideoUploadModal({
             }
             onSuccess();
         } catch (err: unknown) {
+            // A mensagem do servidor, quando existe, explica o motivo (ex.:
+            // cota de mídia do personal cheia — code media_quota_exceeded).
+            const serverMsg = (err as { response?: { data?: { error?: string } } })
+                ?.response?.data?.error;
             const msg =
-                err instanceof Error ? err.message : 'Erro ao salvar mídia';
+                serverMsg ??
+                (err instanceof Error ? err.message : 'Erro ao salvar mídia');
             setError(
                 msg.includes('Erro de rede') || msg.includes('Tempo esgotado')
                     ? `${msg}. Verifique sua conexão e tente novamente.`
