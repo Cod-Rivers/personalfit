@@ -46,6 +46,9 @@ export interface ExerciseLog {
     /** Grupo muscular alvo (ExerciseResponse.muscle_group). Necessário para a
      * substituição por equipamento indisponível. Ausente no fluxo legado. */
     muscle_group?: string;
+    /** Vínculo com a biblioteca (ExerciseResponse.exercise_library_id) — é o
+     * que dá ao card a chave estável do histórico de carga (exerciseKeyFor). */
+    exercise_library_id?: string;
     /** Preenchido só em sessão, quando o aluno troca o exercício por um
      * substituto sugerido pela IA. Não é persistido — recarregar a página
      * restaura a prescrição original do personal. */

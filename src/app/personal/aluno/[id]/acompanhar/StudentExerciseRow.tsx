@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback } from 'react';
-import { FiRepeat, FiX } from 'react-icons/fi';
+import { FiRepeat, FiTrendingUp, FiX } from 'react-icons/fi';
 import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
 import RestTimer from '@/components/molecules/RestTimer';
 import { formatSeriesCompact } from '@/libs/seriesPrescription';
@@ -58,6 +58,7 @@ const RECORD_TEXT: Record<Exclude<WeekRecord['kind'], 'load' | 'unknown'>, strin
 export default function StudentExerciseRow({
     exercise: ex,
     record,
+    lastEver,
     showRestTimer,
     showActions,
     busy,
@@ -65,9 +66,15 @@ export default function StudentExerciseRow({
     onOpen,
     onReplace,
     onDelete,
+    onShowHistory,
 }: {
     exercise: ExerciseResponse;
     record: WeekRecord;
+    /** Última sessão do exercício no histórico inteiro ("42,5 kg × 8 ·
+     * 12/09"), para quando esta semana ainda não tem carga. */
+    lastEver?: string;
+    /** Abre o histórico de carga do exercício. Ausente nas séries por tempo. */
+    onShowHistory?: () => void;
     /** Falso nos exercícios que não fecham um bi-set/tri-set: entre eles
      * não há descanso, então não há o que cronometrar. */
     showRestTimer: boolean;
@@ -175,28 +182,45 @@ export default function StudentExerciseRow({
                 </dl>
             </div>
 
-            {(record.kind !== 'unknown' || hasTimer) && (
+            {(record.kind !== 'unknown' || hasTimer || lastEver || onShowHistory) && (
                 <div className={s.rowFooter}>
-                    {record.kind !== 'unknown' ? (
-                        <div className={s.weekRecord}>
+                    <div className={s.weekRecord}>
+                        {record.kind !== 'unknown' && (
+                            <>
+                                <span className={s.weekRecordLabel}>
+                                    Esta semana
+                                </span>
+                                <span
+                                    className={
+                                        record.kind === 'load'
+                                            ? s.weekRecordValue
+                                            : s.weekRecordEmpty
+                                    }
+                                >
+                                    {record.kind === 'load'
+                                        ? `${record.kg} kg`
+                                        : RECORD_TEXT[record.kind]}
+                                </span>
+                            </>
+                        )}
+                        {/* Sem carga nesta semana, o histórico diz de onde
+                            partir: é a pergunta do personal ao lado do aluno. */}
+                        {record.kind !== 'load' && lastEver && (
                             <span className={s.weekRecordLabel}>
-                                Esta semana
+                                Última vez: {lastEver}
                             </span>
-                            <span
-                                className={
-                                    record.kind === 'load'
-                                        ? s.weekRecordValue
-                                        : s.weekRecordEmpty
-                                }
+                        )}
+                        {onShowHistory && (
+                            <button
+                                type="button"
+                                className={s.historyBtn}
+                                onClick={stopAnd(onShowHistory)}
+                                aria-label={`Histórico de carga de ${ex.name}`}
                             >
-                                {record.kind === 'load'
-                                    ? `${record.kg} kg`
-                                    : RECORD_TEXT[record.kind]}
-                            </span>
-                        </div>
-                    ) : (
-                        <span />
-                    )}
+                                <FiTrendingUp aria-hidden="true" /> Histórico
+                            </button>
+                        )}
+                    </div>
                     {hasTimer && (
                         <RestTimer seconds={rest} exerciseName={ex.name} />
                     )}

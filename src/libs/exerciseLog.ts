@@ -37,6 +37,7 @@ export function toExerciseLog(ex: ExerciseResponse): ExerciseLog {
         group_recovery_seconds: ex.group_recovery_seconds,
         group_id: ex.group_id,
         muscle_group: ex.muscle_group,
+        exercise_library_id: ex.exercise_library_id,
         non_substitutable: ex.non_substitutable,
     };
 }

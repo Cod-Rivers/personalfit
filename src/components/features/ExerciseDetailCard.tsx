@@ -15,6 +15,7 @@ import {
     FiPlus,
     FiPlay,
     FiRepeat,
+    FiTrendingUp,
     FiX,
 } from 'react-icons/fi';
 import { ExerciseLog } from './types';
@@ -119,6 +120,10 @@ interface ExerciseDetailCardProps {
      * abriu o card do 1º exercício não o via sem rolar a tela. O atalho
      * aparece no topo do card; quem chama fecha o card e dá o start. */
     onStartCircuit?: () => void;
+    /** Abre o histórico de carga deste exercício (aba Cargas da Evolução,
+     * ExerciseLoadHistoryModal). Ausente no fluxo legado e nas séries por
+     * tempo — ali não há carga a acompanhar. */
+    onShowHistory?: () => void;
 }
 
 const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
@@ -135,6 +140,7 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
     editor,
     onReplace,
     onStartCircuit,
+    onShowHistory,
 }) => {
     // --- Estados ---
     const [timerValue, setTimerValue] = useState<number>(
@@ -1293,6 +1299,16 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                                 personal — considere revisar
                                                 com ele.
                                             </p>
+                                        )}
+                                        {onShowHistory && !exercise.timed && (
+                                            <button
+                                                type="button"
+                                                className={styles.historyLink}
+                                                onClick={onShowHistory}
+                                            >
+                                                <FiTrendingUp aria-hidden="true" />{' '}
+                                                Histórico de carga
+                                            </button>
                                         )}
                                     </div>
                                 </div>

@@ -361,9 +361,29 @@
    sobrou espaço horizontal que duas linhas empilhadas não aproveitavam. */
 .weekRecord {
     display: flex;
+    flex-wrap: wrap;
     align-items: baseline;
-    gap: 6px;
+    gap: 4px 6px;
     min-width: 0;
+}
+
+/* Atalho para o histórico de carga (ExerciseLoadHistoryModal). */
+.historyBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-full);
+    background: transparent;
+    color: var(--mint-text);
+    font-size: var(--font-xs);
+    font-weight: 700;
+    cursor: pointer;
+}
+.historyBtn:focus-visible {
+    outline: 2px solid var(--mint);
+    outline-offset: 2px;
 }
 
 .weekRecordValue {

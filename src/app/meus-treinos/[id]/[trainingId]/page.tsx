@@ -12,6 +12,7 @@ import {
     FiCheck,
     FiSave,
     FiAlertTriangle,
+    FiAward,
     FiShare2,
 } from 'react-icons/fi';
 import { getStudentHomeRoute } from '@/libs/session';
@@ -75,6 +76,24 @@ import { applySubstitutability, toExerciseLog } from '@/libs/exerciseLog';
 import { isOverdueBlockError } from '@/libs/overdueBlock';
 import OverdueBlockNotice from '@/components/features/OverdueBlockNotice';
 import { labelPartsOf, trainingDisplayLabel } from '@/libs/trainingLabel';
+import dynamic from 'next/dynamic';
+import {
+    detectNewRecords,
+    exerciseKeyFor,
+    formatKg,
+    type LoadHistoryResponse,
+    type NewRecord,
+} from '@/libs/loadHistory';
+import {
+    getCachedLoadHistorySummary,
+    getLoadHistorySummary,
+} from '@/libs/loadHistoryService';
+
+// Só abre quando o aluno toca em "Histórico de carga": fora do bundle da tela.
+const ExerciseLoadHistoryModal = dynamic(
+    () => import('@/components/features/load-history/ExerciseLoadHistoryModal'),
+    { ssr: false },
+);
 
 /** Bloco agrupado no formato do cronômetro de circuito (libs/circuitPlan.ts). */
 function toCircuit(group: ExerciseLog[]): CircuitExercise[] {
@@ -187,6 +206,13 @@ export default function MeusTreinosExercisesPage({
     const [loadHistoryByExercise, setLoadHistoryByExercise] = useState<
         Record<string, LoadHistoryEntry[]>
     >({});
+    // Histórico de carga completo (resumo por exercício): "ver histórico" do
+    // card e o aviso de recorde ao finalizar. Vem do cache offline quando não
+    // há rede — é exatamente na academia sem sinal que ele mais serve.
+    const [loadHistory, setLoadHistory] = useState<LoadHistoryResponse | null>(null);
+    const [historyFor, setHistoryFor] = useState<{ key: string; name: string } | null>(null);
+    const [newRecords, setNewRecords] = useState<NewRecord[]>([]);
+    const [recordShareOpen, setRecordShareOpen] = useState(false);
 
     const [readinessScore, setReadinessScore] = useState<number>(6);
     const [sleepHours, setSleepHours] = useState<number>(7);
@@ -424,13 +450,23 @@ export default function MeusTreinosExercisesPage({
         getMyWorkoutLogsInRange(fromISO, toISO)
             .then((logs) => {
                 if (cancelled) return;
+                // Indexado pela chave estável quando o registro já a tem
+                // (sobrevive à troca de ciclo, que muda o exercise_id); os
+                // registros antigos, sem carimbo, ficam pelo exercise_id.
+                // Cada série entra em UM índice só — ver a leitura em
+                // loadSuggestions, que soma os dois sem duplicar.
                 const byExercise: Record<string, LoadHistoryEntry[]> = {};
                 for (const log of logs) {
                     if (log.status !== 'completed') continue;
                     const date = log.completed_date ?? log.planned_date;
                     for (const ep of log.exercises) {
-                        if (!ep.exercise_id) continue;
-                        (byExercise[ep.exercise_id] ??= []).push({
+                        const index = ep.exercise_key
+                            ? `key:${ep.exercise_key}`
+                            : ep.exercise_id
+                              ? `id:${ep.exercise_id}`
+                              : null;
+                        if (!index) continue;
+                        (byExercise[index] ??= []).push({
                             date,
                             loadKg: ep.load_kg,
                             reps: ep.reps,
@@ -443,6 +479,17 @@ export default function MeusTreinosExercisesPage({
             .catch(() => {
                 // Sem histórico (offline ou sem logs ainda): sugestão de carga
                 // cai para "só prescrição" ou "sem base", conforme o caso.
+            });
+
+        // Resumo do histórico de carga: getLoadHistorySummary já cai no cache
+        // offline sozinho quando não há rede.
+        getLoadHistorySummary()
+            .then((r) => {
+                if (!cancelled) setLoadHistory(r.data);
+            })
+            .catch(() => {
+                // Sem histórico e sem cache: o card só não mostra o atalho
+                // com dados, e o aviso de recorde não aparece — nada quebra.
             });
 
         return () => {
@@ -644,7 +691,10 @@ export default function MeusTreinosExercisesPage({
             map[exercise.id] = computeLoadSuggestion({
                 prescribedKg: exercise.plannedWeight,
                 prescribedAt: exercise.loadPrescribedAt,
-                history: loadHistoryByExercise[exercise.id] ?? [],
+                history: [
+                    ...(loadHistoryByExercise[`key:${exerciseKeyFor(exercise)}`] ?? []),
+                    ...(loadHistoryByExercise[`id:${exercise.id}`] ?? []),
+                ],
                 targetRPE,
                 // Topo da faixa de reps prescrita (dupla progressão): só
                 // conta como sessão qualificada se também bateu as reps.
@@ -1230,6 +1280,20 @@ export default function MeusTreinosExercisesPage({
                                   }
                                 : undefined
                         }
+                        onShowHistory={() =>
+                            setHistoryFor({
+                                key: exerciseKeyFor(selectedExercise),
+                                name: selectedExercise.name,
+                            })
+                        }
+                    />
+                )}
+                {historyFor && (
+                    <ExerciseLoadHistoryModal
+                        open={!!historyFor}
+                        onClose={() => setHistoryFor(null)}
+                        exerciseKey={historyFor.key}
+                        exerciseName={historyFor.name}
                     />
                 )}
                 {substitutionFor && (
@@ -1275,6 +1339,35 @@ export default function MeusTreinosExercisesPage({
                             <FiShare2 /> Compartilhar treino
                         </button>
                     )}
+                    {newRecords.length > 0 && (
+                        <div className={styles.recordNotice} role="status">
+                            <p>
+                                <FiAward aria-hidden="true" />{' '}
+                                {newRecords.length === 1
+                                    ? 'Novo recorde!'
+                                    : `${newRecords.length} novos recordes!`}
+                            </p>
+                            <ul>
+                                {newRecords.map((r) => (
+                                    <li key={r.key}>
+                                        <strong>{r.name}</strong>:{' '}
+                                        {r.kind === 'reps'
+                                            ? `${r.current} repetições (antes ${r.previous})`
+                                            : r.kind === 'load'
+                                              ? `${formatKg(r.topLoadKg)} kg × ${r.topReps} (antes ${formatKg(r.previous)} kg)`
+                                              : `${formatKg(r.topLoadKg)} kg × ${r.topReps} — 1RM estimado ${formatKg(r.current)} kg`}
+                                    </li>
+                                ))}
+                            </ul>
+                            <button
+                                type="button"
+                                className={styles.compartilharBtn}
+                                onClick={() => setRecordShareOpen(true)}
+                            >
+                                <FiShare2 /> Compartilhar recorde
+                            </button>
+                        </div>
+                    )}
                     {photoDiscardedWarning && (
                         <p className={styles.finalizarWarning}>
                             <FiAlertTriangle /> O treino foi salvo, mas a foto do
@@ -1319,6 +1412,17 @@ export default function MeusTreinosExercisesPage({
                         setShowWorkoutLogger(false);
                         setSendStatus('queued');
                         if (info?.photoDiscarded) setPhotoDiscardedWarning(true);
+                        // Recorde contra o histórico que a tela já tem (ou o
+                        // do cache): o treino acabou de entrar na fila e
+                        // talvez nem sincronize agora — o aluno não precisa
+                        // esperar a rede para saber que bateu a marca.
+                        if (info?.performed?.length) {
+                            const performed = info.performed;
+                            void (async () => {
+                                const history = loadHistory ?? (await getCachedLoadHistorySummary());
+                                setNewRecords(detectNewRecords(performed, history));
+                            })();
+                        }
                         if (info?.share) {
                             setShareData(info.share);
                             // Abre sozinho SÓ quando há foto: aí o convite é
@@ -1352,8 +1456,48 @@ export default function MeusTreinosExercisesPage({
                     ]}
                 />
             )}
+            {newRecords.length > 0 && (
+                <ShareAchievementModal
+                    open={recordShareOpen}
+                    onClose={() => setRecordShareOpen(false)}
+                    title="Compartilhar recorde"
+                    card={{
+                        // Mesma foto do check-in, quando houver: é o dia do recorde.
+                        photo: shareData?.photo ?? null,
+                        headline:
+                            newRecords.length === 1
+                                ? `Novo recorde no ${newRecords[0].name}`
+                                : `${newRecords.length} recordes hoje`,
+                        subline: new Date().toLocaleDateString('pt-BR'),
+                        stats: recordShareStats(newRecords),
+                        callToAction: 'Minha evolução de carga, registrada no',
+                    }}
+                    captionLines={newRecords.map((r) =>
+                        r.kind === 'reps'
+                            ? `Novo recorde no ${r.name}: ${r.current} repetições.`
+                            : `Novo recorde no ${r.name}: ${formatKg(r.topLoadKg)} kg × ${r.topReps}.`,
+                    )}
+                />
+            )}
         </>
     );
+}
+
+/** Números do card de recorde: com um recorde, a marca dele; com vários, um
+ * por exercício (o card aceita até três). */
+function recordShareStats(records: NewRecord[]) {
+    if (records.length === 1) {
+        const r = records[0];
+        if (r.kind === 'reps') return [{ label: 'repetições', value: String(r.current) }];
+        return [
+            { label: 'kg', value: formatKg(r.topLoadKg) },
+            { label: 'repetições', value: String(r.topReps) },
+        ];
+    }
+    return records.slice(0, 3).map((r) => ({
+        label: r.name,
+        value: r.kind === 'reps' ? `${r.current} reps` : `${formatKg(r.topLoadKg)} kg`,
+    }));
 }
 
 /** Números que entram no card do treino. Cada um só aparece quando existe de

@@ -2,8 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FiTrendingUp, FiArrowLeft } from 'react-icons/fi';
-import EvolutionTimeline from '@/components/features/EvolutionTimeline';
-import TrainingZonesCalculator from '@/components/features/TrainingZonesCalculator';
+import EvolutionTabs from '@/components/features/EvolutionTabs';
 import s from '../agendamentos/agendamentos.module.css';
 
 interface UserData {
@@ -43,8 +42,8 @@ export default function MyEvolutionPage() {
                     <div>
                         <h1 className={s.headerTitle}><FiTrendingUp /> Evolução</h1>
                         <p className={s.headerSub}>
-                            Fotos e avaliação física ao longo do tempo — você
-                            ou seu personal podem registrar
+                            Avaliação física e evolução de carga ao longo do
+                            tempo
                         </p>
                     </div>
                     <button
@@ -59,8 +58,7 @@ export default function MyEvolutionPage() {
                     </button>
                 </div>
 
-                <TrainingZonesCalculator />
-                <EvolutionTimeline />
+                <EvolutionTabs />
             </div>
         </div>
     );

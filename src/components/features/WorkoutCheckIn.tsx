@@ -167,7 +167,7 @@ const WorkoutCheckIn: React.FC<WorkoutCheckInProps> = ({
             </h3>
             <p className={s.subtitle}>
                 {assisted
-                    ? `O treino entra no histórico ${studentName ? `de ${studentName}` : 'do aluno'} — conta na aderência, na evolução e no desafio — marcado como registrado por você no atendimento.`
+                    ? `O treino entra no histórico ${studentName ? `de ${studentName}` : 'do aluno'} — conta na aderência e no desafio — marcado como registrado por você no atendimento.`
                     : photoEnabled
                       ? 'Isso registra o treino como feito. A foto é opcional — pular não atrasa nem bloqueia o registro.'
                       : 'Isso registra o treino como feito.'}

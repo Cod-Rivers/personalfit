@@ -215,8 +215,8 @@ export default function MealPlanEditor({ studentId }: Props) {
         return (
             <div className={s.proBanner}>
                 <p>
-                    <strong>Plano alimentar e evolução</strong> são
-                    funcionalidades exclusivas do Plano Pro.
+                    O <strong>plano alimentar</strong> é uma funcionalidade
+                    exclusiva do Plano Pro.
                 </p>
                 <p>Assine o Plano Pro para liberar o acesso.</p>
             </div>

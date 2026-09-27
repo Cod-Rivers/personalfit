@@ -13,6 +13,8 @@ import {
 } from '@/libs/evolutionService';
 import Modal from '@/components/system/Modal';
 import { isOverdueBlockError } from '@/libs/overdueBlock';
+import { usePersonalProPlan } from '@/hooks/usePersonalProPlan';
+import Link from 'next/link';
 import OverdueBlockNotice from './OverdueBlockNotice';
 import s from './EvolutionTimeline.module.css';
 
@@ -31,29 +33,54 @@ interface Props {
     studentId?: string;
 }
 
-const MEASUREMENT_FIELDS: { key: string; label: string }[] = [
-    // Circunferências (morfológica)
-    { key: 'cintura', label: 'Cintura (cm)' },
-    { key: 'quadril', label: 'Quadril (cm)' },
-    { key: 'peito', label: 'Peito (cm)' },
-    { key: 'braco_direito', label: 'Braço direito (cm)' },
-    { key: 'braco_esquerdo', label: 'Braço esquerdo (cm)' },
-    { key: 'coxa_direita', label: 'Coxa direita (cm)' },
-    { key: 'coxa_esquerda', label: 'Coxa esquerda (cm)' },
-    { key: 'panturrilha', label: 'Panturrilha (cm)' },
-    { key: 'abdomen', label: 'Abdômen (cm)' },
-    // Neuromotores (força/flexibilidade/potência) — opcionais
-    { key: 'rm_supino', label: '1RM supino (kg)' },
-    { key: 'rm_agachamento', label: '1RM agachamento (kg)' },
-    { key: 'rm_terra', label: '1RM terra (kg)' },
-    { key: 'wells', label: 'Flexibilidade — Wells (cm)' },
-    { key: 'salto_vertical', label: 'Salto vertical (cm)' },
-    { key: 'abdominais_1min', label: 'Abdominais (1 min)' },
-    // Cardio — opcionais (alimentam o cálculo de zonas de FC)
-    { key: 'fc_repouso', label: 'FC repouso (bpm)' },
-    { key: 'fc_maxima', label: 'FC máxima (bpm)' },
-    { key: 'vo2max', label: 'VO₂máx (ml/kg/min)' },
+type MeasurementGroup = 'circ' | 'neuro' | 'cardio';
+
+interface MeasurementField {
+    key: string;
+    name: string;
+    unit: string;
+    group: MeasurementGroup;
+}
+
+// Cada medida carrega a própria unidade — antes o detalhe mostrava tudo em
+// "cm" (1RM em kg e FC em bpm apareciam como centímetros).
+const MEASUREMENT_FIELDS: MeasurementField[] = [
+    { key: 'cintura', name: 'Cintura', unit: 'cm', group: 'circ' },
+    { key: 'quadril', name: 'Quadril', unit: 'cm', group: 'circ' },
+    { key: 'peito', name: 'Peito', unit: 'cm', group: 'circ' },
+    { key: 'braco_direito', name: 'Braço direito', unit: 'cm', group: 'circ' },
+    { key: 'braco_esquerdo', name: 'Braço esquerdo', unit: 'cm', group: 'circ' },
+    { key: 'coxa_direita', name: 'Coxa direita', unit: 'cm', group: 'circ' },
+    { key: 'coxa_esquerda', name: 'Coxa esquerda', unit: 'cm', group: 'circ' },
+    { key: 'panturrilha', name: 'Panturrilha', unit: 'cm', group: 'circ' },
+    { key: 'abdomen', name: 'Abdômen', unit: 'cm', group: 'circ' },
+    { key: 'rm_supino', name: '1RM supino', unit: 'kg', group: 'neuro' },
+    { key: 'rm_agachamento', name: '1RM agachamento', unit: 'kg', group: 'neuro' },
+    { key: 'rm_terra', name: '1RM terra', unit: 'kg', group: 'neuro' },
+    { key: 'wells', name: 'Flexibilidade (Wells)', unit: 'cm', group: 'neuro' },
+    { key: 'salto_vertical', name: 'Salto vertical', unit: 'cm', group: 'neuro' },
+    { key: 'abdominais_1min', name: 'Abdominais em 1 min', unit: 'rep.', group: 'neuro' },
+    // Alimentam o cálculo de zonas de FC (TrainingZonesCalculator).
+    { key: 'fc_repouso', name: 'FC de repouso', unit: 'bpm', group: 'cardio' },
+    { key: 'fc_maxima', name: 'FC máxima', unit: 'bpm', group: 'cardio' },
+    { key: 'vo2max', name: 'VO₂máx', unit: 'ml/kg/min', group: 'cardio' },
 ];
+
+const MEASUREMENT_GROUPS: { id: MeasurementGroup; title: string }[] = [
+    { id: 'circ', title: 'Circunferências' },
+    { id: 'neuro', title: 'Força, flexibilidade e potência' },
+    { id: 'cardio', title: 'Cardio' },
+];
+
+const fieldLabel = (f: MeasurementField) => `${f.name} (${f.unit})`;
+
+/** "82 cm", "100 kg", "60 bpm" — chave fora da lista vira o nome cru, sem unidade. */
+function formatMeasurement(key: string, value: number) {
+    const f = MEASUREMENT_FIELDS.find((m) => m.key === key);
+    return f
+        ? { name: f.name, value: `${value} ${f.unit}` }
+        : { name: key.replace(/_/g, ' '), value: String(value) };
+}
 
 function extractErrorMessage(err: unknown, fallback: string): string {
     const data = (
@@ -62,8 +89,16 @@ function extractErrorMessage(err: unknown, fallback: string): string {
     return data?.error || data?.message || fallback;
 }
 
+/** Data LOCAL de hoje — toISOString() é UTC e, a partir das 21h no Brasil, já devolvia o dia seguinte. */
 function todayISO() {
-    return new Date().toISOString().slice(0, 10);
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+function errorCode(err: unknown): string | undefined {
+    return (err as { response?: { data?: { code?: string } } })?.response
+        ?.data?.code;
 }
 
 function formatDate(iso: string) {
@@ -74,8 +109,18 @@ export default function EvolutionTimeline({ studentId }: Props) {
     const [entries, setEntries] = useState<EvolutionEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [proBlocked, setProBlocked] = useState(false);
     const [overdueBlocked, setOverdueBlocked] = useState(false);
+    // Modelo híbrido: medidas/gráficos livres; ENVIAR foto pelo personal
+    // exige Pro. O aluno sempre envia. O backend é quem garante — isto só
+    // evita o personal free montar o formulário e levar o 403 no fim. Sem a
+    // resposta do plano (null), deixa liberado: o backend recusa se for o caso.
+    const personalIsPro = usePersonalProPlan(!!studentId);
+    const [photosRefused, setPhotosRefused] = useState(false);
+    const photosAllowed = !photosRefused && personalIsPro !== false;
+    const isStudentView = !studentId;
+    // Avaliação lançada pelo personal: o aluno vê, mas só o personal altera.
+    const canChange = (entry: EvolutionEntry) =>
+        !isStudentView || entry.created_by_role !== 'personal';
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [selectedEntry, setSelectedEntry] = useState<EvolutionEntry | null>(
         null,
@@ -139,7 +184,7 @@ export default function EvolutionTimeline({ studentId }: Props) {
     const compareMeasurementRows = useMemo(
         () =>
             compareMeasurementFields.map((f) => ({
-                label: f.label,
+                label: fieldLabel(f),
                 antes: entryA?.measurements?.[f.key],
                 depois: entryB?.measurements?.[f.key],
             })),
@@ -160,20 +205,13 @@ export default function EvolutionTimeline({ studentId }: Props) {
     const load = useCallback(async () => {
         setLoading(true);
         setError('');
-        setProBlocked(false);
         setOverdueBlocked(false);
         try {
             const data = await listEvolutionEntries(studentId);
             setEntries(data);
         } catch (err) {
-            const status = (err as { response?: { status?: number } })
-                ?.response?.status;
-            // Antes do 403 genérico: senão o aluno bloqueado por mensalidade
-            // vencida recebia a oferta de assinar o Pro.
             if (isOverdueBlockError(err)) {
                 setOverdueBlocked(true);
-            } else if (status === 403) {
-                setProBlocked(true);
             } else {
                 setError(extractErrorMessage(err, 'Erro ao carregar evolução.'));
             }
@@ -197,10 +235,9 @@ export default function EvolutionTimeline({ studentId }: Props) {
         setPhotos([]);
     };
 
-    // Repositório de evolução é append-only (sem update) — "editar" aqui
-    // reabre o formulário pré-preenchido; ao salvar, cria uma entrada nova e
-    // apaga a antiga. Fotos não são copiadas (a API não expõe as photo_keys
-    // originais, só URLs assinadas), por isso o aviso no formulário.
+    // "Editar" reabre o formulário pré-preenchido e salva via PATCH: fotos
+    // novas são SOMADAS às existentes (a API só expõe URLs assinadas, não as
+    // photo_keys originais), por isso o aviso no formulário.
     const startEdit = (entry: EvolutionEntry) => {
         setEditingEntry(entry);
         setDate(entry.date);
@@ -278,7 +315,15 @@ export default function EvolutionTimeline({ studentId }: Props) {
             setShowForm(false);
             await load();
         } catch (err) {
-            setError(extractErrorMessage(err, 'Erro ao salvar entrada.'));
+            if (errorCode(err) === 'evolution_photos_require_pro') {
+                setPhotosRefused(true);
+                setPhotos([]);
+                setError(
+                    'Enviar fotos requer o plano Pro. As fotos foram removidas — salve de novo para registrar só as medidas.',
+                );
+            } else {
+                setError(extractErrorMessage(err, 'Erro ao salvar entrada.'));
+            }
         } finally {
             setSaving(false);
         }
@@ -291,8 +336,8 @@ export default function EvolutionTimeline({ studentId }: Props) {
             await deleteEvolutionEntry(id, studentId);
             setEntries((prev) => prev.filter((e) => e.id !== id));
             setSelectedEntry((prev) => (prev?.id === id ? null : prev));
-        } catch {
-            setError('Erro ao excluir registro.');
+        } catch (err) {
+            setError(extractErrorMessage(err, 'Erro ao excluir registro.'));
         } finally {
             setDeletingId(null);
         }
@@ -300,18 +345,6 @@ export default function EvolutionTimeline({ studentId }: Props) {
 
     if (overdueBlocked) {
         return <OverdueBlockNotice what="à sua evolução" />;
-    }
-
-    if (proBlocked) {
-        return (
-            <div className={s.proBanner}>
-                <p>
-                    <strong>Plano alimentar e evolução</strong> são
-                    funcionalidades exclusivas do Plano Pro.
-                </p>
-                <p>Assine o Plano Pro para liberar o acesso.</p>
-            </div>
-        );
     }
 
     if (loading) {
@@ -364,7 +397,7 @@ export default function EvolutionTimeline({ studentId }: Props) {
                                 <option value="">Também exibir…</option>
                                 {availableMeasurementFields.map((f) => (
                                     <option key={f.key} value={f.key}>
-                                        {f.label}
+                                        {fieldLabel(f)}
                                     </option>
                                 ))}
                             </select>
@@ -373,11 +406,12 @@ export default function EvolutionTimeline({ studentId }: Props) {
                     <EvolutionChart
                         entries={sortedEntries}
                         extraMeasurementKey={extraMeasurementKey || undefined}
-                        extraMeasurementLabel={
-                            availableMeasurementFields.find(
-                                (f) => f.key === extraMeasurementKey,
-                            )?.label
-                        }
+                        extraMeasurementLabel={(() => {
+                            const f = availableMeasurementFields.find(
+                                (m) => m.key === extraMeasurementKey,
+                            );
+                            return f ? fieldLabel(f) : undefined;
+                        })()}
                     />
                 </div>
             )}
@@ -482,7 +516,7 @@ export default function EvolutionTimeline({ studentId }: Props) {
                                 const b = entryB?.measurements?.[f.key];
                                 return (
                                     <tr key={f.key}>
-                                        <td>{f.label}</td>
+                                        <td>{fieldLabel(f)}</td>
                                         <td>{a != null ? a : '—'}</td>
                                         <td>{b != null ? b : '—'}</td>
                                         <td>
@@ -584,38 +618,57 @@ export default function EvolutionTimeline({ studentId }: Props) {
                         </div>
                     </div>
 
-                    <label className={s.formLabel}>Medidas (cm)</label>
-                    <div className={s.measurementsInputGrid}>
-                        {MEASUREMENT_FIELDS.map((f) => (
-                            <input
-                                key={f.key}
-                                type="number"
-                                step="0.1"
-                                placeholder={f.label}
-                                className={s.formInput}
-                                value={measurements[f.key] ?? ''}
-                                onChange={(e) =>
-                                    setMeasurements((prev) => ({
-                                        ...prev,
-                                        [f.key]: e.target.value,
-                                    }))
-                                }
-                            />
-                        ))}
-                    </div>
+                    {MEASUREMENT_GROUPS.map((g) => (
+                        <div key={g.id}>
+                            <label className={s.formLabel}>{g.title}</label>
+                            <div className={s.measurementsInputGrid}>
+                                {MEASUREMENT_FIELDS.filter(
+                                    (f) => f.group === g.id,
+                                ).map((f) => (
+                                    <input
+                                        key={f.key}
+                                        type="number"
+                                        step="0.1"
+                                        placeholder={fieldLabel(f)}
+                                        aria-label={fieldLabel(f)}
+                                        className={s.formInput}
+                                        value={measurements[f.key] ?? ''}
+                                        onChange={(e) =>
+                                            setMeasurements((prev) => ({
+                                                ...prev,
+                                                [f.key]: e.target.value,
+                                            }))
+                                        }
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    ))}
 
                     <div className={s.formGroup}>
                         <label className={s.formLabel}>
                             {editingEntry ? 'Adicionar fotos' : 'Fotos'}
                         </label>
-                        <input
-                            type="file"
-                            accept="image/jpeg,image/png,image/webp"
-                            multiple
-                            onChange={(e) =>
-                                setPhotos(Array.from(e.target.files ?? []))
-                            }
-                        />
+                        {photosAllowed ? (
+                            <input
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                multiple
+                                onChange={(e) =>
+                                    setPhotos(Array.from(e.target.files ?? []))
+                                }
+                            />
+                        ) : (
+                            <p className={s.photoLocked}>
+                                Enviar fotos é um recurso do{' '}
+                                <Link href="/pagamento?produto=pro">
+                                    plano Pro
+                                </Link>
+                                . Peso, medidas, gráfico e comparação continuam
+                                liberados — e as fotos que o próprio aluno envia
+                                aparecem aqui normalmente.
+                            </p>
+                        )}
                     </div>
 
                     <div className={s.formGroup}>
@@ -714,7 +767,13 @@ export default function EvolutionTimeline({ studentId }: Props) {
                 onClose={() => setSelectedEntry(null)}
                 title={selectedEntry ? formatDate(selectedEntry.date) : ''}
                 footer={
-                    selectedEntry && (
+                    selectedEntry &&
+                    (!canChange(selectedEntry) ? (
+                        <p className={s.ownedNotice}>
+                            Avaliação registrada pelo seu personal — só ele
+                            pode editar ou excluir.
+                        </p>
+                    ) : (
                         <div className={s.modalActions}>
                             <button
                                 type="button"
@@ -738,7 +797,7 @@ export default function EvolutionTimeline({ studentId }: Props) {
                                     : 'Excluir'}
                             </button>
                         </div>
-                    )
+                    ))
                 }
             >
                 {selectedEntry && (
@@ -786,13 +845,20 @@ export default function EvolutionTimeline({ studentId }: Props) {
                             Object.keys(selectedEntry.measurements).length >
                                 0 && (
                                 <div className={s.measurementsGrid}>
-                                    {Object.entries(
-                                        selectedEntry.measurements,
-                                    ).map(([k, v]) => (
-                                        <span key={k}>
-                                            {k.replace(/_/g, ' ')}: {v}cm
-                                        </span>
-                                    ))}
+                                    {Object.entries(selectedEntry.measurements)
+                                        .sort(([a], [b]) => {
+                                            const ia = MEASUREMENT_FIELDS.findIndex((f) => f.key === a);
+                                            const ib = MEASUREMENT_FIELDS.findIndex((f) => f.key === b);
+                                            return (ia < 0 ? Infinity : ia) - (ib < 0 ? Infinity : ib);
+                                        })
+                                        .map(([k, v]) => {
+                                            const m = formatMeasurement(k, v);
+                                            return (
+                                                <span key={k}>
+                                                    {m.name}: {m.value}
+                                                </span>
+                                            );
+                                        })}
                                 </div>
                             )}
 

@@ -44,6 +44,10 @@ export interface ExercisePerformanceResponse {
     /** Bissérie/trissérie/superssérie a que este exercício pertencia no
      * plano (espelha ExerciseResponse.group_id). Ausente = avulso. */
     group_id?: string;
+    /** Identidade estável do exercício, carimbada pelo servidor na conclusão
+     * ("lib:<id>" ou "name:<nome>", ver libs/loadHistory.ts). Ausente em
+     * registro antigo que o backfill ainda não alcançou. */
+    exercise_key?: string;
 }
 
 export interface NewWorkoutLogResponse {

@@ -543,3 +543,35 @@ a:hover { color: var(--mint-text-dim); }
         display: block;
     }
 }
+
+/* ── Relatório de carga (aba Cargas da Evolução, LoadHistoryReportModal) ──
+   A cópia impressa é montada direto no body só enquanto imprime; na tela ela
+   não aparece. Mesmo motivo do Gantt para a regra ser global. O Modal trava o
+   scroll do body (overflow: hidden), e sem liberar isso aqui a impressão
+   sairia cortada na primeira página. */
+.load-report-print-copy {
+    display: none;
+}
+@media print {
+    html,
+    body {
+        overflow: visible !important;
+        height: auto !important;
+    }
+    .load-report-print-copy {
+        display: block;
+    }
+    .load-report-print-target,
+    .load-report-print-target * {
+        visibility: visible;
+    }
+    .load-report-print-target {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        padding: 16px;
+        background: #fff;
+        color: #000;
+    }
+}

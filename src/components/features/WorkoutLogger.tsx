@@ -39,6 +39,7 @@ import {
 } from '@/libs/workoutLogSummary';
 import HelpTooltip from '@/components/atoms/HelpTooltip';
 import { getGlossaryTerm } from '@/libs/glossaryContent';
+import type { PerformedExercise } from '@/libs/loadHistory';
 import s from './WorkoutLogger.module.css';
 
 // Só se aplica ao "Pular Treino" (handleSkip): o endpoint novo de sessão
@@ -97,6 +98,10 @@ interface WorkoutLoggerProps {
          * do R2, e reconstituí-la para o card custaria uma volta de rede que
          * nem sempre existe (o check-in offline é o caso de uso). */
         share?: WorkoutShareData;
+        /** As séries registradas, por exercício — para a tela detectar
+         * recorde contra o histórico de carga (detectNewRecords) antes de a
+         * sessão sincronizar. */
+        performed?: PerformedExercise[];
     }) => void;
     autoregulation?: AutoregulationHint;
     /** Acompanhamento presencial: quem está com o app na mão é o PERSONAL,
@@ -132,6 +137,8 @@ export interface WorkoutShareData {
 interface ExerciseLog {
     exerciseId: string;
     name: string;
+    /** Vínculo com a biblioteca — chave estável do histórico de carga. */
+    exerciseLibraryId?: string;
     /** Bissérie/trissérie/superssérie a que este exercício pertence no
      * plano (ExerciseResponse.group_id) — repassado ao registrar o treino
      * para o histórico poder exibir as séries executadas agrupadas. */
@@ -183,6 +190,7 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
             return {
                 exerciseId: ex.id,
                 name: ex.name,
+                exerciseLibraryId: ex.exercise_library_id,
                 groupId: ex.group_id,
                 groupTechnique: ex.group_technique,
                 timed: !!ex.timed,
@@ -480,6 +488,16 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                         durationMinutes: duration ?? null,
                         volumeKg: Math.round(volumeKg),
                     },
+                    performed: logs.map((ex) => ({
+                        exerciseId: ex.exerciseId,
+                        name: ex.name,
+                        exerciseLibraryId: ex.exerciseLibraryId,
+                        timed: ex.timed,
+                        sets: ex.series.map((sr) => ({
+                            reps: sr.reps,
+                            loadKg: sr.loadKg,
+                        })),
+                    })),
                 });
             } catch (err) {
                 // Só chega aqui se a própria escrita no IndexedDB falhar (quota,
@@ -639,7 +657,14 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
     const seriesGridHeader = (timed: boolean) => (
         <div className={s.gridHeader}>
             <span className={s.gridHeaderLabel}>{timed ? 'Seg' : 'Reps'}</span>
-            <span className={s.gridHeaderLabel}>Kg</span>
+            <span className={s.gridHeaderLabel}>
+                Kg
+                <HelpTooltip
+                    text="Anote a carga como está na anilha ou no halter. Halteres e máquinas de um lado só: a carga de UM lado (por halter), não a soma."
+                    href="/ajuda#glossario-carga"
+                    label="Como anotar a carga"
+                />
+            </span>
             <span className={s.gridHeaderLabel}>
                 RPE
                 <HelpTooltip

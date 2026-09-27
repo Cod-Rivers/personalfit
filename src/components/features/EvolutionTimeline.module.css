@@ -427,14 +427,23 @@
     color: var(--text-muted);
 }
 
-.proBanner {
-    text-align: center;
-    padding: 50px 24px;
-    background: var(--surface-1);
+.photoLocked {
+    margin: 0;
+    padding: 10px 14px;
     border: 1px dashed var(--amber);
-    border-radius: 12px;
+    border-radius: 8px;
+    font-size: 0.85rem;
     color: var(--text-muted);
 }
-.proBanner strong {
+.photoLocked a {
     color: var(--amber);
+    font-weight: 700;
+}
+
+.ownedNotice {
+    margin: 0;
+    width: 100%;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    text-align: right;
 }

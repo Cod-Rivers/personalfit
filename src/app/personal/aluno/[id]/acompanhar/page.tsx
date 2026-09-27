@@ -130,8 +130,24 @@ import {
     type CircuitExercise,
 } from '@/libs/circuitPlan';
 import { GroupRecoverySelect } from '@/app/personal/_shared/periodizacao/components/GroupingControls';
+import dynamic from 'next/dynamic';
+import {
+    detectNewRecords,
+    exerciseKeyFor,
+    formatDateBR,
+    formatKg,
+    resolveExerciseKey,
+    type LoadHistoryResponse,
+} from '@/libs/loadHistory';
+import { getLoadHistorySummary } from '@/libs/loadHistoryService';
 import StudentExerciseRow, { type WeekRecord } from './StudentExerciseRow';
 import s from './acompanhar.module.css';
+
+// Só abre quando o personal toca em "Histórico": fora do bundle da tela.
+const ExerciseLoadHistoryModal = dynamic(
+    () => import('@/components/features/load-history/ExerciseLoadHistoryModal'),
+    { ssr: false },
+);
 
 interface StudentRow {
     id: string;
@@ -201,6 +217,10 @@ export default function AcompanharTreinoPage() {
     const [pageError, setPageError] = useState('');
     const [isOfflineData, setIsOfflineData] = useState(false);
     const [loggerOpen, setLoggerOpen] = useState(false);
+    /** Histórico de carga do aluno (resumo): "última vez" de cada exercício,
+     * atalho para o histórico e o recorde ao concluir no atendimento. */
+    const [loadHistory, setLoadHistory] = useState<LoadHistoryResponse | null>(null);
+    const [historyFor, setHistoryFor] = useState<{ key: string; name: string } | null>(null);
     /** Exercício aberto no card do aluno (ajuste rápido). Só o ID: o card é
      * derivado do macrociclo atual, então uma gravação aparece nele na hora. */
     const [openExerciseId, setOpenExerciseId] = useState<string | null>(null);
@@ -379,16 +399,32 @@ export default function AcompanharTreinoPage() {
         void loadLogs();
     }, [loadLogs]);
 
+    // Histórico de carga do aluno (resumo) — cai no cache offline sozinho.
+    // Falha não bloqueia nada: só some a "última vez" e o aviso de recorde.
+    const loadHistorySummary = useCallback(async () => {
+        try {
+            const r = await getLoadHistorySummary(studentId);
+            setLoadHistory(r.data);
+        } catch {
+            /* ver comentário acima */
+        }
+    }, [studentId]);
+
+    useEffect(() => {
+        void loadHistorySummary();
+    }, [loadHistorySummary]);
+
     // Rede de volta: recarrega plano e registros, para a tela sair da cópia
     // local e já refletir o que a fila offline acabou de sincronizar.
     useEffect(() => {
         const onOnline = () => {
             void loadPlan();
             void loadLogs();
+            void loadHistorySummary();
         };
         window.addEventListener('online', onOnline);
         return () => window.removeEventListener('online', onOnline);
-    }, [loadPlan, loadLogs]);
+    }, [loadPlan, loadLogs, loadHistorySummary]);
 
     /* ── Ordem (arrastar e soltar) ──
      * Espelho local da ordem enquanto a gravação não volta: o plano desta tela
@@ -433,9 +469,9 @@ export default function AcompanharTreinoPage() {
     }, [trainings, selectedTrainingId, logs]);
 
     /** Última carga registrada por exercício, na semana corrente. Casa por
-     * exercise_id e, quando ele muda entre reedições do plano, pelo nome — é
-     * a mesma dupla de chaves que o motor de sugestão de carga do aluno usa
-     * (loadSuggestion.ts). */
+     * exercise_id, pela chave estável carimbada pelo servidor (sobrevive à
+     * troca de ciclo e à reedição — ver libs/loadHistory.ts) e, só para
+     * registro antigo sem carimbo, pelo nome. */
     const lastLoadByExercise = useMemo(() => {
         const byKey = new Map<string, number>();
         for (const log of logs) {
@@ -443,11 +479,30 @@ export default function AcompanharTreinoPage() {
             for (const perf of log.exercises ?? []) {
                 if (perf.load_kg <= 0) continue;
                 byKey.set(perf.exercise_id, perf.load_kg);
+                if (perf.exercise_key) byKey.set(`key:${perf.exercise_key}`, perf.load_kg);
                 if (perf.name) byKey.set(perf.name.toLowerCase(), perf.load_kg);
             }
         }
         return byKey;
     }, [logs]);
+
+    /** "Última vez" de cada exercício no histórico INTEIRO do aluno (não só
+     * nesta semana), pela chave estável. */
+    const lastEverFor = useCallback(
+        (ex: ExerciseResponse): string | undefined => {
+            if (!loadHistory || ex.timed) return undefined;
+            const key = resolveExerciseKey(exerciseKeyFor(ex), loadHistory.aliases);
+            const found = loadHistory.exercises.find((e) => e.exercise_key === key);
+            const last = found?.summary.last;
+            if (!found || !last) return undefined;
+            const value =
+                found.metric === 'reps'
+                    ? `${last.max_reps} reps`
+                    : `${formatKg(last.top_load_kg)} kg × ${last.top_reps}`;
+            return `${value} · ${formatDateBR(last.date)}`;
+        },
+        [loadHistory],
+    );
 
     const completedRefs = useMemo(
         () =>
@@ -1195,6 +1250,9 @@ export default function AcompanharTreinoPage() {
                                             const kg =
                                                 lastLoadByExercise.get(ex.id) ??
                                                 lastLoadByExercise.get(
+                                                    `key:${exerciseKeyFor(ex)}`,
+                                                ) ??
+                                                lastLoadByExercise.get(
                                                     ex.name.toLowerCase(),
                                                 );
                                             const record: WeekRecord =
@@ -1210,6 +1268,16 @@ export default function AcompanharTreinoPage() {
                                                     key={ex.id}
                                                     exercise={ex}
                                                     record={record}
+                                                    lastEver={lastEverFor(ex)}
+                                                    onShowHistory={
+                                                        ex.timed
+                                                            ? undefined
+                                                            : () =>
+                                                                  setHistoryFor({
+                                                                      key: exerciseKeyFor(ex),
+                                                                      name: ex.name,
+                                                                  })
+                                                    }
                                                     showRestTimer={
                                                         i ===
                                                             block.length - 1 &&
@@ -1549,6 +1617,22 @@ export default function AcompanharTreinoPage() {
                                       exerciseId: openExerciseView.raw.id,
                                   })
                     }
+                    onShowHistory={() =>
+                        setHistoryFor({
+                            key: exerciseKeyFor(openExerciseView.raw),
+                            name: openExerciseView.raw.name,
+                        })
+                    }
+                />
+            )}
+
+            {historyFor && (
+                <ExerciseLoadHistoryModal
+                    open={!!historyFor}
+                    onClose={() => setHistoryFor(null)}
+                    exerciseKey={historyFor.key}
+                    exerciseName={historyFor.name}
+                    studentId={studentId}
                 />
             )}
 
@@ -1649,14 +1733,26 @@ export default function AcompanharTreinoPage() {
                         showSuccess('Treino registrado no histórico do aluno.');
                         void loadLogs();
                     }}
-                    onQueued={() => {
+                    onQueued={(info) => {
                         setLoggerOpen(false);
+                        // Recorde do aluno no atendimento, contra o histórico
+                        // que a tela já carregou — sem esperar a sincronização.
+                        const records = detectNewRecords(info?.performed ?? [], loadHistory);
+                        const recordText = records.length
+                            ? ` Novo recorde${records.length > 1 ? 's' : ''}: ${records
+                                  .map((r) =>
+                                      r.kind === 'reps'
+                                          ? `${r.name} (${r.current} reps)`
+                                          : `${r.name} (${formatKg(r.topLoadKg)} kg × ${r.topReps})`,
+                                  )
+                                  .join(', ')}.`
+                            : '';
                         // Sem rede o registro não some: fica na fila local e
                         // sai sozinho quando a internet voltar. Dizer isso é o
                         // que impede o personal de registrar de novo "porque
                         // não apareceu".
                         showSuccess(
-                            'Treino guardado neste aparelho — será enviado ao histórico do aluno assim que houver internet.',
+                            `Treino guardado neste aparelho — será enviado ao histórico do aluno assim que houver internet.${recordText}`,
                         );
                     }}
                 />

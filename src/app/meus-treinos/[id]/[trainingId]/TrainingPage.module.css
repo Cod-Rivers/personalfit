@@ -215,3 +215,27 @@
 .compartilharBtn:active {
     transform: scale(0.98);
 }
+
+/* Recorde detectado ao finalizar (histórico de carga, detectNewRecords). */
+.recordNotice {
+    margin-top: 0.75rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid rgba(240, 165, 0, 0.45);
+    border-radius: 0.75rem;
+    background: rgba(240, 165, 0, 0.08);
+    text-align: left;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+}
+.recordNotice p {
+    margin: 0 0 0.35rem;
+    font-weight: 800;
+    color: var(--amber);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+.recordNotice ul {
+    margin: 0;
+    padding-left: 1.1rem;
+}
