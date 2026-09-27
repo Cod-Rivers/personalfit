@@ -61,7 +61,7 @@ declare global {
     }
 }
 
-type BridgeName = 'auth' | 'share' | 'billing';
+type BridgeName = 'auth' | 'share' | 'billing' | 'screen';
 
 interface NativeReply {
     id?: unknown;
@@ -308,4 +308,25 @@ export function nativeBillingPurchase(
         throw new Error('Google Play Billing indisponível neste dispositivo');
     }
     legacy.purchase(productId, productType, accountId);
+}
+
+// ─── Tela acesa (ScreenBridge.kt) ───
+
+/**
+ * Pede ao app que mantenha a tela acesa (ou libere). A WebView recusa a
+ * Screen Wake Lock API com NotAllowedError, então dentro do app é esta ponte
+ * que funciona — ver hooks/useWakeLock.ts.
+ *
+ * true = o pedido foi entregue ao app. Só pelo canal restrito: versões do app
+ * sem a rota ignoram a mensagem (ação desconhecida) e a tela apaga como antes.
+ */
+export function nativeKeepScreenOn(on: boolean): boolean {
+    try {
+        const port = hardenedPort();
+        if (!port) return false;
+        send(port, 'screen', 'keepOn', { on });
+        return true;
+    } catch {
+        return false;
+    }
 }

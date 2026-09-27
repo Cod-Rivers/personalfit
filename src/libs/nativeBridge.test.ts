@@ -8,6 +8,7 @@ import {
     nativeAuthSave,
     nativeBillingAvailable,
     nativeBillingPurchase,
+    nativeKeepScreenOn,
     nativeShareImage,
     nativeShareText,
 } from './nativeBridge';
@@ -195,5 +196,21 @@ describe('Google Play Billing', () => {
         expect(() => nativeBillingPurchase('pro', 'subs', 'u')).toThrow(
             /indisponível/,
         );
+    });
+});
+
+describe('tela acesa', () => {
+    it('manda screen.keepOn pelo canal restrito, no formato do NativeBridge.kt', () => {
+        const { sent } = installPort();
+        expect(nativeKeepScreenOn(true)).toBe(true);
+        expect(nativeKeepScreenOn(false)).toBe(true);
+        expect(sent).toEqual([
+            { bridge: 'screen', action: 'keepOn', on: true },
+            { bridge: 'screen', action: 'keepOn', on: false },
+        ]);
+    });
+
+    it('fora do app (ou app sem o canal) devolve false', () => {
+        expect(nativeKeepScreenOn(true)).toBe(false);
     });
 });
