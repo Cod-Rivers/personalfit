@@ -114,6 +114,7 @@ import Modal from '@/components/system/Modal';
 import { SortableItem, SortableList } from '@/components/system/SortableList';
 import { useToast } from '@/components/system/Toast';
 import { markWorkoutStartIfNeeded } from '@/libs/workoutSessionTimer';
+import Button from '@/components/atoms/Button';
 import CircuitTimer, {
     type CircuitTimerHandle,
 } from '@/components/molecules/CircuitTimer';
@@ -223,6 +224,23 @@ export default function AcompanharTreinoPage() {
             }
             return next;
         });
+    };
+    /** Circuitos concluídos no cronômetro, pelo id do 1º exercício do bloco:
+     * entram como conferidos no registro (ver WorkoutLogger). */
+    const [circuitDoneKeys, setCircuitDoneKeys] = useState<
+        ReadonlySet<string>
+    >(() => new Set());
+    /** Fim do circuito = o bloco foi aplicado: marca (sem desmarcar, ao
+     * contrário do ✓) e conta para o registro. */
+    const markCircuitDone = (ids: string[]) => {
+        setCompletedExerciseIds((prev) =>
+            ids.every((id) => prev.has(id))
+                ? prev
+                : new Set([...prev, ...ids]),
+        );
+        setCircuitDoneKeys((prev) =>
+            prev.has(ids[0]) ? prev : new Set(prev).add(ids[0]),
+        );
     };
     /** Variante escolhida na barra "Agrupar como" ('' = sem variante). */
     const [groupTechnique, setGroupTechnique] = useState('');
@@ -883,6 +901,7 @@ export default function AcompanharTreinoPage() {
     // não fazem sentido aqui.
     useEffect(() => {
         setCompletedExerciseIds(new Set());
+        setCircuitDoneKeys(new Set());
         setGroupTechnique('');
     }, [selectedTraining?.id]);
 
@@ -1310,6 +1329,34 @@ export default function AcompanharTreinoPage() {
                                                                 recoverySeconds={blockRecoverySeconds(
                                                                     block,
                                                                 )}
+                                                                storageKey={`${studentId}:${cycle?.micro.id ?? ''}:${selectedTraining.id}:${blockId(block)}`}
+                                                                onComplete={() =>
+                                                                    markCircuitDone(
+                                                                        block.map(
+                                                                            (
+                                                                                e,
+                                                                            ) =>
+                                                                                e.id,
+                                                                        ),
+                                                                    )
+                                                                }
+                                                                doneAction={
+                                                                    <Button
+                                                                        variant="primary"
+                                                                        fullWidth
+                                                                        leftIcon={
+                                                                            <FiCheck />
+                                                                        }
+                                                                        onClick={() =>
+                                                                            setLoggerOpen(
+                                                                                true,
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        Registrar
+                                                                        treino
+                                                                    </Button>
+                                                                }
                                                             />
                                                         )}
                                                         {rows}
@@ -1568,6 +1615,7 @@ export default function AcompanharTreinoPage() {
                     mesocycle={cycle.meso}
                     microcycle={cycle.micro}
                     training={selectedTraining}
+                    circuitDoneBlockKeys={circuitDoneKeys}
                     assisted
                     studentName={studentName || undefined}
                     onClose={() => setLoggerOpen(false)}

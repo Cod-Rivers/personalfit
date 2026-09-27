@@ -25,6 +25,7 @@ import {
     pickActiveMicrocycle,
 } from '@/libs/planningService';
 import { ExerciseLog } from '../../../../components/features/types';
+import Button from '@/components/atoms/Button';
 import CircuitTimer, {
     type CircuitTimerHandle,
 } from '@/components/molecules/CircuitTimer';
@@ -471,12 +472,31 @@ export default function MeusTreinosExercisesPage({
         };
     }, [sendStatus, currentMicro, currentTraining]);
 
-    const handleExerciseClick = (exercise: ExerciseLog) => {
+    const markSessionStart = () => {
         if (currentMicro) {
             markWorkoutStartIfNeeded(currentMicro.id, trainingRef);
         }
+    };
+
+    const handleExerciseClick = (exercise: ExerciseLog) => {
+        markSessionStart();
         setSelectedExercise(exercise);
     };
+
+    const openWorkoutLogger = () => {
+        setPhotoDiscardedWarning(false);
+        setShowWorkoutLogger(true);
+    };
+
+    /** Circuitos concluídos, pelo id do 1º exercício do bloco: entram como
+     * conferidos no registro do treino (ver WorkoutLogger). */
+    const [circuitDoneKeys, setCircuitDoneKeys] = useState<
+        ReadonlySet<string>
+    >(() => new Set());
+    const markCircuitDone = (key: string) =>
+        setCircuitDoneKeys((prev) =>
+            prev.has(key) ? prev : new Set(prev).add(key),
+        );
 
     const handleCloseDetailCard = () => {
         setSelectedExercise(null);
@@ -1135,6 +1155,26 @@ export default function MeusTreinosExercisesPage({
                                             recoverySeconds={blockRecoverySeconds(
                                                 group,
                                             )}
+                                            storageKey={`${currentMicro?.id ?? macrocycleId}:${trainingId}:${circuitKey}`}
+                                            onStart={markSessionStart}
+                                            onComplete={() =>
+                                                markCircuitDone(circuitKey)
+                                            }
+                                            doneAction={
+                                                sendStatus === 'idle' ||
+                                                sendStatus === 'error' ? (
+                                                    <Button
+                                                        variant="primary"
+                                                        fullWidth
+                                                        leftIcon={<FiCheck />}
+                                                        onClick={
+                                                            openWorkoutLogger
+                                                        }
+                                                    >
+                                                        Registrar treino
+                                                    </Button>
+                                                ) : undefined
+                                            }
                                         />
                                     )}
                                     <div className={styles.exerciseGroupItems}>
@@ -1205,10 +1245,7 @@ export default function MeusTreinosExercisesPage({
                     ) : (
                         <button
                             className={styles.finalizarBtn}
-                            onClick={() => {
-                                setPhotoDiscardedWarning(false);
-                                setShowWorkoutLogger(true);
-                            }}
+                            onClick={openWorkoutLogger}
                             disabled={exercises.length === 0}
                         >
                             Finalizar Treino
@@ -1245,6 +1282,7 @@ export default function MeusTreinosExercisesPage({
                     mesocycle={currentMeso}
                     microcycle={currentMicro}
                     training={currentTraining}
+                    circuitDoneBlockKeys={circuitDoneKeys}
                     autoregulation={{
                         targetRPE: Math.max(
                             1,

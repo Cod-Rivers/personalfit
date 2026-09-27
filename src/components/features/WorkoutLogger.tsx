@@ -107,6 +107,11 @@ interface WorkoutLoggerProps {
     assisted?: boolean;
     /** Nome do aluno, para os textos do modo assistido. */
     studentName?: string;
+    /** Blocos feitos no cronômetro de circuito, pelo id do 1º exercício do
+     * bloco (a mesma chave de `blockKey` aqui dentro). Entram já como
+     * conferidos: as séries nascem com a prescrição, que é exatamente o que
+     * o circuito executou. */
+    circuitDoneBlockKeys?: ReadonlySet<string>;
 }
 
 /** O que a tela de compartilhamento precisa saber sobre o treino recém
@@ -158,6 +163,7 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
     autoregulation,
     assisted = false,
     studentName,
+    circuitDoneBlockKeys,
 }) => {
     const [logs, setLogs] = useState<ExerciseLog[]>(
         training.exercises.map((ex) => {
@@ -232,9 +238,14 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
     /** Exercícios que o aluno já abriu. Alimenta o contador de progresso — que
      * NÃO pode ser medido por campo preenchido, já que as séries nascem com a
      * prescrição dentro (ver reviewProgress). */
-    const [visited, setVisited] = useState<ReadonlySet<string>>(
-        () => new Set(),
-    );
+    const [visited, setVisited] = useState<ReadonlySet<string>>(() => {
+        // Só chaves de bloco que existem neste treino: reviewProgress conta
+        // pelo tamanho do conjunto.
+        const keys = new Set(training.exercises.map((ex) => ex.id));
+        return new Set(
+            [...(circuitDoneBlockKeys ?? [])].filter((k) => keys.has(k)),
+        );
+    });
     const [checkInDraft, setCheckInDraft] = useState<{
         plannedDate: string;
     } | null>(null);
