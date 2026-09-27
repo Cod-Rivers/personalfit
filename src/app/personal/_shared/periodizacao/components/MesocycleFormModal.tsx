@@ -59,6 +59,11 @@ import ExerciseCard from './cards/ExerciseCard';
 import BulkPrescriptionCard from './cards/BulkPrescriptionCard';
 import { WeeksListCard, WeekCard } from './cards/WeekCards';
 import { trainingFullLabel } from './fields/PrescriptionFields';
+import {
+    relabelsByPosition,
+    showsWeekday,
+    type TrainingLabelPart,
+} from '@/libs/trainingLabel';
 import type { BulkPrescriptionFields } from './fields/PrescriptionFields';
 import { mergeIntoGroup } from '@/libs/trainingTechniques';
 import { applyBulkPrescription } from '../lib/bulkPrescription';
@@ -127,8 +132,12 @@ interface Props {
     onPersist: (req: MesocycleRequest) => Promise<MesocycleResponse | null>;
     /** Modo simples: esconde nome/fase/duração/metodologia e usa valores fixos (SIMPLE_MODE_DEFAULTS). */
     simpleMode?: boolean;
-    /** "weekday" (padrão) ou "number" — só relevante quando simpleMode=true. */
-    dayLabelStyle?: 'weekday' | 'number';
+    /** Partes do nome do treino (ver libs/trainingLabel.ts). Ausente = o
+     * padrão do modo: dia da semana no simples, letra na periodização. */
+    labelParts?: TrainingLabelPart[];
+    /** Troca as partes do nome no PLANO (não na fase). Sem ele, o seletor de
+     * partes não aparece na lista de treinos. */
+    onChangeLabelParts?: (parts: TrainingLabelPart[]) => Promise<void>;
     /** Repassados ao card do exercício e daí ao campo de vídeo. O aluno que
      * monta o próprio treino usa endpoint e regra de plano próprios (ver
      * resolveMyVideoLink); ausentes, valem os do personal. */
@@ -162,13 +171,17 @@ export default function MesocycleFormModal({
     onClose,
     onPersist,
     simpleMode,
-    dayLabelStyle,
+    labelParts: labelPartsProp,
+    onChangeLabelParts,
     resolveVideoLink,
     videoPlanHint,
     focus,
     guideAudience = 'personal',
 }: Props) {
-    const isNumbered = simpleMode && dayLabelStyle === 'number';
+    const labelParts = useMemo<TrainingLabelPart[]>(
+        () => labelPartsProp ?? (simpleMode ? ['weekday'] : ['letter']),
+        [labelPartsProp, simpleMode],
+    );
 
     const [localTrainings, setLocalTrainings] = useState<LocalTraining[]>(() =>
         meso ? responseToLocal(meso.trainings) : [],
@@ -423,10 +436,11 @@ export default function MesocycleFormModal({
     );
 
     /* ── Training CRUD ── */
-    // No modo por dia da semana o dia faz o papel do A/B/C: cada treino novo
-    // já nasce rotulado (Seg, Ter…), senão todos ficariam iguais até o
-    // personal escolher o dia um a um.
-    const autoWeekday = Boolean(simpleMode) && dayLabelStyle !== 'number';
+    // Com o dia da semana no nome, cada treino novo já nasce no próximo dia
+    // livre (Seg, Ter…), senão todos ficariam sem dia até o personal escolher
+    // um a um.
+    const autoWeekday = showsWeekday(labelParts);
+    const relabel = relabelsByPosition(labelParts);
 
     const addTraining = useCallback(() => {
         const newId = genId();
@@ -456,13 +470,13 @@ export default function MesocycleFormModal({
         (tid: string) => {
             setLocalTrainings((prev) => {
                 const rest = prev.filter((t) => t._id !== tid);
-                // Por dia da semana o rótulo que vale é o dia (ver
-                // relabelByPosition).
-                return autoWeekday ? rest : relabelByPosition(rest);
+                // Quando só o dia identifica o treino, a letra não precisa
+                // acompanhar a posição (ver relabelsByPosition).
+                return relabel ? relabelByPosition(rest) : rest;
             });
             requestSave();
         },
-        [autoWeekday, requestSave],
+        [relabel, requestSave],
     );
 
     const duplicateTraining = useCallback(
@@ -489,6 +503,9 @@ export default function MesocycleFormModal({
                         weekday: autoWeekday
                             ? nextFreeWeekday(prev.map((t) => t.weekday))
                             : source.weekday,
+                        // O nome vem junto: duplicar costuma ser para variar
+                        // um treino parecido, e o personal renomeia no card.
+                        name: source.name,
                         exercises: source.exercises.map((ex) => ({
                             ...ex,
                             _id: genId(),
@@ -506,6 +523,14 @@ export default function MesocycleFormModal({
         (tid: string, ref: string) =>
             setLocalTrainings((prev) =>
                 prev.map((t) => (t._id === tid ? { ...t, reference: ref } : t)),
+            ),
+        [],
+    );
+
+    const updateTrainingName = useCallback(
+        (tid: string, name: string) =>
+            setLocalTrainings((prev) =>
+                prev.map((t) => (t._id === tid ? { ...t, name } : t)),
             ),
         [],
     );
@@ -728,11 +753,11 @@ export default function MesocycleFormModal({
                 const ordered = order
                     .map((id) => byId.get(id))
                     .filter((t): t is LocalTraining => Boolean(t));
-                return autoWeekday ? ordered : relabelByPosition(ordered);
+                return relabel ? relabelByPosition(ordered) : ordered;
             });
             requestSave();
         },
-        [autoWeekday, requestSave],
+        [relabel, requestSave],
     );
 
     const reorderExercises = useCallback(
@@ -885,8 +910,7 @@ export default function MesocycleFormModal({
                     ? trainingFullLabel(
                           activeTraining,
                           activeTrainingIndex,
-                          simpleMode,
-                          isNumbered,
+                          labelParts,
                       )
                     : 'Treino';
             case 'exercise':
@@ -932,7 +956,8 @@ export default function MesocycleFormModal({
                     <TrainingsListCard
                         trainings={localTrainings}
                         simpleMode={simpleMode}
-                        isNumbered={isNumbered}
+                        labelParts={labelParts}
+                        onChangeLabelParts={onChangeLabelParts}
                         onOpenTraining={(trainingId) =>
                             stack.push({ card: 'training', trainingId })
                         }
@@ -949,10 +974,12 @@ export default function MesocycleFormModal({
                     <TrainingCard
                         training={activeTraining}
                         index={activeTrainingIndex}
-                        simpleMode={simpleMode}
-                        isNumbered={isNumbered}
+                        labelParts={labelParts}
                         onUpdateRef={(ref) =>
                             updateTrainingRef(activeTraining._id, ref)
+                        }
+                        onUpdateName={(name) =>
+                            updateTrainingName(activeTraining._id, name)
                         }
                         onUpdateWeekday={(weekday) =>
                             updateTrainingWeekday(activeTraining._id, weekday)
@@ -1247,7 +1274,7 @@ export default function MesocycleFormModal({
      * Fora do modo `focus`: ali o editor abre direto num treino para um
      * ajuste pontual, e as etapas de montagem seriam só ruído. */
     const guideTrainings = localTrainings.map((t, i) => ({
-        label: trainingFullLabel(t, i, simpleMode, isNumbered),
+        label: trainingFullLabel(t, i, labelParts),
         exerciseCount: t.exercises.length,
     }));
     const phaseValid =

@@ -15,7 +15,12 @@ import type {
     MesocycleRequest,
     MesocycleResponse,
 } from '@/libs/planningService';
-import { formatDate, weekdayLabel } from '../lib/mesocycleTransforms';
+import { formatDate } from '../lib/mesocycleTransforms';
+import {
+    relabelsByPosition,
+    trainingDisplayLabel,
+    type TrainingLabelPart,
+} from '@/libs/trainingLabel';
 import { saveExercisePatch } from '../lib/exercisePatch';
 import {
     groupExercisesInTraining,
@@ -86,10 +91,10 @@ interface Props {
     onDelete: () => void;
     /** Ausente no modo simples — o mesociclo único e oculto não faz sentido duplicar. */
     onDuplicate?: () => void;
-    /** Mostra o dia da semana (ou número) no lugar de "Treino {reference}". */
+    /** Esconde fase/ordem: o modo simples tem uma fase só, oculta. */
     simpleMode?: boolean;
-    /** "weekday" (padrão) ou "number" — só relevante quando simpleMode=true. */
-    dayLabelStyle?: 'weekday' | 'number';
+    /** Partes do nome do treino no plano (ver libs/trainingLabel.ts). */
+    labelParts: TrainingLabelPart[];
     /** Grava esta fase com uma alteração pontual de prescrição feita direto no
      * card do exercício (séries/carga), sem abrir o editor — é o que permite
      * ao personal ajustar o treino enquanto acompanha o aluno.
@@ -124,13 +129,12 @@ export default function MesocycleSection({
     onDelete,
     onDuplicate,
     simpleMode,
-    dayLabelStyle,
+    labelParts,
     onPersistMeso,
     onPrescriptionQueued,
     studentId,
     planningId,
 }: Props) {
-    const isNumbered = simpleMode && dayLabelStyle === 'number';
     const [open, setOpen] = useState(false);
     // Um treino aberto por vez. Com todos abertos, uma fase de 4 treinos x 6
     // exercícios enchia a tela de periodização com 24 cards e obrigava a rolar
@@ -237,8 +241,9 @@ export default function MesocycleSection({
                     {
                         meso: current,
                         persist,
-                        // Por dia da semana o aluno vê o dia, não a letra.
-                        relabel: !(simpleMode && dayLabelStyle !== 'number'),
+                        // Quando só o dia identifica o treino, a letra não
+                        // acompanha a posição (ver relabelsByPosition).
+                        relabel: relabelsByPosition(labelParts),
                     },
                     ids,
                 ),
@@ -525,12 +530,11 @@ export default function MesocycleSection({
                             onReorder={reorderTrainings}
                         >
                             {orderedTrainings.map((t, index) => {
-                                const trainingLabel = isNumbered
-                                    ? `Treino ${index + 1}`
-                                    : simpleMode
-                                      ? (weekdayLabel(t.weekday) ??
-                                        'Sem dia definido')
-                                      : `Treino ${t.reference}`;
+                                const trainingLabel = trainingDisplayLabel(
+                                    t,
+                                    index,
+                                    labelParts,
+                                );
                                 return (
                                     <SortableItem
                                         key={t.id}

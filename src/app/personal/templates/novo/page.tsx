@@ -1,5 +1,7 @@
 'use client';
 import { useState } from 'react';
+import type { TrainingLabelPart } from '@/libs/trainingLabel';
+import TrainingLabelPartsPicker from '@/app/personal/_shared/periodizacao/components/TrainingLabelPartsPicker';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -15,7 +17,6 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 type PlanningMode = 'periodized' | 'simple';
-type DayLabelStyle = 'weekday' | 'number';
 
 export default function NovoTemplatePage() {
     const router = useRouter();
@@ -23,7 +24,12 @@ export default function NovoTemplatePage() {
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
     const [planningMode, setPlanningMode] = useState<PlanningMode>('periodized');
-    const [dayLabelStyle, setDayLabelStyle] = useState<DayLabelStyle>('weekday');
+    /** null = ainda não mexeu: segue o padrão do modo. */
+    const [chosenParts, setChosenParts] = useState<TrainingLabelPart[] | null>(
+        null,
+    );
+    const labelParts: TrainingLabelPart[] =
+        chosenParts ?? (planningMode === 'simple' ? ['weekday'] : ['letter']);
 
     const {
         register,
@@ -40,8 +46,10 @@ export default function NovoTemplatePage() {
                 goal: values.goal,
                 is_public: false,
                 planning_mode: planningMode,
-                simple_day_label:
-                    planningMode === 'simple' ? dayLabelStyle : undefined,
+                simple_day_label: labelParts.includes('number')
+                    ? 'number'
+                    : 'weekday',
+                training_label_parts: labelParts,
             });
             router.push(`/personal/templates/${created.id}`);
         } catch (e: unknown) {
@@ -172,78 +180,12 @@ export default function NovoTemplatePage() {
                         </div>
                     </div>
 
-                    {planningMode === 'simple' && (
-                        <div className={s.section}>
-                            <label className={s.formLabel}>
-                                Como identificar os dias?
-                            </label>
-                            <div
-                                style={{
-                                    display: 'grid',
-                                    gridTemplateColumns: '1fr 1fr',
-                                    gap: 12,
-                                    marginTop: 6,
-                                }}
-                            >
-                                {(
-                                    [
-                                        {
-                                            style: 'weekday' as const,
-                                            title: 'Dias da semana',
-                                            desc: 'Ex: Segunda, Quarta, Sexta.',
-                                        },
-                                        {
-                                            style: 'number' as const,
-                                            title: 'Números',
-                                            desc: 'Ex: Treino 1, Treino 2, Treino 3 — pela ordem que você adicionar os treinos.',
-                                        },
-                                    ] as const
-                                ).map((opt) => {
-                                    const active = dayLabelStyle === opt.style;
-                                    return (
-                                        <button
-                                            key={opt.style}
-                                            type="button"
-                                            onClick={() =>
-                                                setDayLabelStyle(opt.style)
-                                            }
-                                            style={{
-                                                textAlign: 'left',
-                                                padding: '12px 14px',
-                                                borderRadius: 10,
-                                                cursor: 'pointer',
-                                                border: active
-                                                    ? '1.5px solid var(--mint, #2ecc71)'
-                                                    : '1px solid var(--border-subtle)',
-                                                background: active
-                                                    ? 'var(--surface-2, rgba(46,204,113,0.08))'
-                                                    : 'transparent',
-                                            }}
-                                        >
-                                            <p
-                                                style={{
-                                                    margin: '0 0 4px',
-                                                    fontWeight: 700,
-                                                    fontSize: '0.9rem',
-                                                }}
-                                            >
-                                                {opt.title}
-                                            </p>
-                                            <p
-                                                style={{
-                                                    margin: 0,
-                                                    fontSize: '0.78rem',
-                                                    color: 'var(--text-muted)',
-                                                }}
-                                            >
-                                                {opt.desc}
-                                            </p>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    )}
+                    <div className={s.section}>
+                        <TrainingLabelPartsPicker
+                            value={labelParts}
+                            onChange={setChosenParts}
+                        />
+                    </div>
 
                     <button
                         type="submit"

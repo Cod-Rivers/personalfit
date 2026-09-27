@@ -28,6 +28,10 @@ import NavRow, {
     navRowSummarySecondary,
 } from '@/components/molecules/NavRow';
 import { SortableItem, SortableList } from '@/components/system/SortableList';
+import {
+    MAX_TRAINING_NAME_LENGTH,
+    type TrainingLabelPart,
+} from '@/libs/trainingLabel';
 import s from '../../builder.module.css';
 
 /**
@@ -46,9 +50,9 @@ import s from '../../builder.module.css';
 export default function TrainingCard({
     training,
     index,
-    simpleMode,
-    isNumbered,
+    labelParts,
     onUpdateRef,
+    onUpdateName,
     onUpdateWeekday,
     onOpenExercise,
     onOpenPicker,
@@ -66,9 +70,11 @@ export default function TrainingCard({
 }: {
     training: LocalTraining;
     index: number;
-    simpleMode?: boolean;
-    isNumbered?: boolean;
+    /** Partes do nome do treino no plano: decidem quais campos de
+     * identidade aparecem (dia, letra, nome). */
+    labelParts: TrainingLabelPart[];
     onUpdateRef: (reference: string) => void;
+    onUpdateName: (name: string) => void;
     onUpdateWeekday: (weekday: number | undefined) => void;
     onOpenExercise: (exerciseId: string) => void;
     onOpenPicker: () => void;
@@ -229,37 +235,51 @@ export default function TrainingCard({
     return (
         <>
             <div className={s.trainingCardHeader}>
-                {isNumbered ? (
-                    <span className={s.refStatic}>Treino {index + 1}</span>
-                ) : simpleMode ? (
-                    <select
-                        value={training.weekday ?? ''}
-                        onChange={(e) =>
-                            onUpdateWeekday(
-                                e.target.value === ''
-                                    ? undefined
-                                    : Number(e.target.value),
-                            )
-                        }
-                        className={s.weekdaySelectNarrow}
-                        aria-label="Dia da semana do treino"
-                    >
-                        <option value="">Sem dia definido</option>
-                        {WEEKDAYS.map((w) => (
-                            <option key={w.value} value={w.value}>
-                                {w.label}
-                            </option>
-                        ))}
-                    </select>
-                ) : (
-                    <input
-                        value={training.reference}
-                        onChange={(e) => onUpdateRef(e.target.value)}
-                        placeholder="Ref (A, B…)"
-                        className={s.refInput}
-                        aria-label="Referência do treino"
-                    />
-                )}
+                <div className={s.trainingIdentity}>
+                    {labelParts.includes('weekday') && (
+                        <select
+                            value={training.weekday ?? ''}
+                            onChange={(e) =>
+                                onUpdateWeekday(
+                                    e.target.value === ''
+                                        ? undefined
+                                        : Number(e.target.value),
+                                )
+                            }
+                            className={s.weekdaySelectNarrow}
+                            aria-label="Dia da semana do treino"
+                        >
+                            <option value="">Sem dia definido</option>
+                            {WEEKDAYS.map((w) => (
+                                <option key={w.value} value={w.value}>
+                                    {w.label}
+                                </option>
+                            ))}
+                        </select>
+                    )}
+                    {labelParts.includes('letter') && (
+                        <input
+                            value={training.reference}
+                            onChange={(e) => onUpdateRef(e.target.value)}
+                            placeholder="Ref (A, B…)"
+                            className={s.refInput}
+                            aria-label="Letra do treino"
+                        />
+                    )}
+                    {labelParts.includes('number') && (
+                        <span className={s.refStatic}>Treino {index + 1}</span>
+                    )}
+                    {labelParts.includes('name') && (
+                        <input
+                            value={training.name ?? ''}
+                            onChange={(e) => onUpdateName(e.target.value)}
+                            maxLength={MAX_TRAINING_NAME_LENGTH}
+                            placeholder="Nome (ex.: Peito e Tríceps)"
+                            className={s.trainingNameInput}
+                            aria-label="Nome do treino"
+                        />
+                    )}
+                </div>
                 <span className={s.trainingCardMeta}>
                     {training.exercises.length} exercício
                     {training.exercises.length === 1 ? '' : 's'}

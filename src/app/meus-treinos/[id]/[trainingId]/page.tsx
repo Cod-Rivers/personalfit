@@ -74,6 +74,7 @@ import {
 import { applySubstitutability, toExerciseLog } from '@/libs/exerciseLog';
 import { isOverdueBlockError } from '@/libs/overdueBlock';
 import OverdueBlockNotice from '@/components/features/OverdueBlockNotice';
+import { labelPartsOf, trainingDisplayLabel } from '@/libs/trainingLabel';
 
 /** Bloco agrupado no formato do cronômetro de circuito (libs/circuitPlan.ts). */
 function toCircuit(group: ExerciseLog[]): CircuitExercise[] {
@@ -140,6 +141,8 @@ export default function MeusTreinosExercisesPage({
 
     const [exercises, setExercises] = useState<ExerciseLog[]>([]);
     const [trainingRef, setTrainingRef] = useState(trainingId);
+    /** Nome do treino como na lista (dia, letra/número, nome livre). */
+    const [trainingLabel, setTrainingLabel] = useState('');
     const [selectedExercise, setSelectedExercise] =
         useState<ExerciseLog | null>(null);
     const [substitutionFor, setSubstitutionFor] = useState<ExerciseLog | null>(
@@ -231,6 +234,13 @@ export default function MeusTreinosExercisesPage({
                     const enriched = await enrichWithLibraryVideos(logs);
                     setExercises(enriched);
                     setTrainingRef(t.reference);
+                    setTrainingLabel(
+                        trainingDisplayLabel(
+                            t,
+                            (meso.trainings ?? []).indexOf(t),
+                            labelPartsOf(macro),
+                        ),
+                    );
                     setCurrentTraining(t);
 
                     const selectedMicro = pickActiveMicrocycle(meso.microcycles);
@@ -744,7 +754,7 @@ export default function MeusTreinosExercisesPage({
                         >
                             Meus treinos de{' '}
                             <span style={{ color: 'var(--mint)' }}>
-                                {trainingRef.toUpperCase()}
+                                {trainingLabel || trainingRef.toUpperCase()}
                             </span>
                         </h1>
                     </div>

@@ -12,6 +12,7 @@ import {
     updateMyMesocycle,
     deleteMyPlanning,
     resolveMyVideoLink,
+    updateMyTrainingLabels,
     type MacrocycleResponse,
     type MesocycleRequest,
 } from '@/libs/planningService';
@@ -26,6 +27,12 @@ import {
     selfMadeStep,
 } from '@/app/personal/_shared/periodizacao/lib/flowGuide';
 import HelpTooltip from '@/components/atoms/HelpTooltip';
+import TrainingLabelPartsPicker from '@/app/personal/_shared/periodizacao/components/TrainingLabelPartsPicker';
+import {
+    labelPartsOf,
+    trainingDisplayLabel,
+    type TrainingLabelPart,
+} from '@/libs/trainingLabel';
 import GoogleAdSlot from '@/components/molecules/GoogleAdSlot';
 import { useToast } from '@/components/system/Toast';
 import s from '@/app/personal/_shared/periodizacao/builder.module.css';
@@ -34,22 +41,6 @@ import s from '@/app/personal/_shared/periodizacao/builder.module.css';
  * servidor (ver ResolveMyVideoLink no backend); aqui é só explicação. */
 const VIDEO_PLAN_HINT =
     'No plano gratuito valem YouTube e Vimeo — Instagram e TikTok requerem plano Pro.';
-
-type DayLabelStyle = 'weekday' | 'number';
-
-const DAY_LABEL_OPTIONS: { style: DayLabelStyle; title: string; desc: string }[] =
-    [
-        {
-            style: 'weekday',
-            title: 'Dias da semana',
-            desc: 'Ex: Segunda, Quarta, Sexta.',
-        },
-        {
-            style: 'number',
-            title: 'Números',
-            desc: 'Ex: Treino 1, Treino 2 — pela ordem que você adicionar.',
-        },
-    ];
 
 /**
  * Montagem do treino pelo PRÓPRIO aluno.
@@ -75,7 +66,9 @@ export default function MontarTreinoPage() {
     /* Formulário de criação */
     const [name, setName] = useState('');
     const [goal, setGoal] = useState('');
-    const [dayLabelStyle, setDayLabelStyle] = useState<DayLabelStyle>('weekday');
+    const [newLabelParts, setNewLabelParts] = useState<TrainingLabelPart[]>([
+        'weekday',
+    ]);
     const [waiverAccepted, setWaiverAccepted] = useState(false);
     const [creating, setCreating] = useState(false);
 
@@ -121,7 +114,10 @@ export default function MontarTreinoPage() {
             const created = await createMySelfMadePlan({
                 name: name.trim(),
                 goal: goal.trim() || undefined,
-                simple_day_label: dayLabelStyle,
+                simple_day_label: newLabelParts.includes('number')
+                    ? 'number'
+                    : 'weekday',
+                training_label_parts: newLabelParts,
                 waiver_accepted: true,
             });
             setMacro(created);
@@ -134,7 +130,7 @@ export default function MontarTreinoPage() {
         } finally {
             setCreating(false);
         }
-    }, [name, goal, dayLabelStyle, waiverAccepted, showSuccess, showError]);
+    }, [name, goal, newLabelParts, waiverAccepted, showSuccess, showError]);
 
     /** Salvamento por card do editor: grava UMA fase e devolve o macrociclo já
      * atualizado, para o modal adotar os IDs que o servidor atribuiu (sem
@@ -148,6 +144,16 @@ export default function MontarTreinoPage() {
                 : await createMyMesocycle(macro.id, req);
             setMacro(updated);
             return pickSavedMesocycle(updated, req.id);
+        },
+        [macro],
+    );
+
+    /** Troca as partes do nome dos treinos do plano (dia, letra/número,
+     * nome livre). Só muda a exibição; nada gravado nos treinos se perde. */
+    const changeLabelParts = useCallback(
+        async (parts: TrainingLabelPart[]) => {
+            if (!macro) return;
+            setMacro(await updateMyTrainingLabels(macro.id, parts));
         },
         [macro],
     );
@@ -186,12 +192,11 @@ export default function MontarTreinoPage() {
     }
 
     const simpleMeso = (macro?.mesocycles ?? [])[0];
-    const macroDayLabel: DayLabelStyle =
-        macro?.simple_day_label === 'number' ? 'number' : 'weekday';
+    const labelParts = labelPartsOf(macro);
     const flow = selfMadeStep(
         !!macro,
-        (simpleMeso?.trainings ?? []).map((t) => ({
-            label: t.reference,
+        (simpleMeso?.trainings ?? []).map((t, i) => ({
+            label: trainingDisplayLabel(t, i, labelParts),
             exerciseCount: t.exercises?.length ?? 0,
         })),
     );
@@ -270,31 +275,21 @@ export default function MontarTreinoPage() {
                             />
                         </div>
 
-                        <p className={s.cardIntro} style={{ marginTop: 18 }}>
-                            Como identificar os dias?{' '}
+                        <TrainingLabelPartsPicker
+                            value={newLabelParts}
+                            onChange={setNewLabelParts}
+                            title="Como identificar cada treino?"
+                        />
+                        <p className={s.fieldHint}>
+                            Combine como quiser: por exemplo, dia da semana
+                            com o grupo muscular (Segunda · Peito e Tríceps).
+                            Dá para mudar depois, na lista de treinos.{' '}
                             <HelpTooltip
-                                text="Dias da semana: cada treino fica num dia fixo (Segunda, Quarta…). Números: Treino 1, 2, 3 em sequência, para quem não treina em dias fixos. Dá para mudar o dia de cada treino depois."
+                                text="Dia da semana: cada treino num dia fixo. Letra (A, B, C) ou número (1, 2, 3): sequência, para quem não treina em dias fixos. Nome livre: o que o treino trabalha. O dia e o nome você escolhe em cada treino."
                                 href={helpHref}
-                                label="Ajuda sobre como identificar os dias"
+                                label="Ajuda sobre o nome dos treinos"
                             />
                         </p>
-                        <div className={s.choiceGrid}>
-                            {DAY_LABEL_OPTIONS.map((opt) => (
-                                <button
-                                    key={opt.style}
-                                    type="button"
-                                    onClick={() => setDayLabelStyle(opt.style)}
-                                    className={
-                                        dayLabelStyle === opt.style
-                                            ? s.choiceCardActive
-                                            : s.choiceCard
-                                    }
-                                >
-                                    <p className={s.choiceTitle}>{opt.title}</p>
-                                    <p className={s.choiceDesc}>{opt.desc}</p>
-                                </button>
-                            ))}
-                        </div>
 
                         {/* Termo de responsabilidade: o app hospeda e registra
                             um treino que ele não prescreveu nem revisou. O
@@ -373,7 +368,7 @@ export default function MontarTreinoPage() {
                                 onEdit={() => setEditorOpen(true)}
                                 onDelete={handleDeletePlan}
                                 simpleMode
-                                dayLabelStyle={macroDayLabel}
+                                labelParts={labelParts}
                             />
                         )}
 
@@ -403,7 +398,8 @@ export default function MontarTreinoPage() {
                     onClose={() => setEditorOpen(false)}
                     onPersist={onPersistMeso}
                     simpleMode
-                    dayLabelStyle={macroDayLabel}
+                    labelParts={labelParts}
+                    onChangeLabelParts={changeLabelParts}
                     resolveVideoLink={resolveMyVideoLink}
                     videoPlanHint={VIDEO_PLAN_HINT}
                     guideAudience="student"

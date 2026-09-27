@@ -12,17 +12,11 @@ import AdBanner from '@/components/molecules/AdBanner';
 import GoogleAdSlot from '@/components/molecules/GoogleAdSlot';
 import PersonalTrainerCard from '@/components/molecules/PersonalTrainerCard';
 import { TrainingCardProps } from '../../components/features/types';
-
-// Dia da semana (0=domingo..6=sábado), mesma convenção usada no modo simples de periodização.
-const WEEKDAY_LABELS: Record<number, string> = {
-    0: 'Domingo',
-    1: 'Segunda',
-    2: 'Terça',
-    3: 'Quarta',
-    4: 'Quinta',
-    5: 'Sexta',
-    6: 'Sábado',
-};
+import {
+    labelPartsOf,
+    showsWeekday,
+    trainingDisplayLabel,
+} from '@/libs/trainingLabel';
 
 interface MesoGroup {
     mesoId: string;
@@ -80,8 +74,10 @@ async function buildMesoGroups(
     detail: MacrocycleResponse,
     studentId: string,
 ): Promise<MesoGroup[]> {
-    const isSimple = detail.planning_mode === 'simple';
-    const isNumbered = detail.simple_day_label === 'number';
+    // Mesmas partes (dia, letra/número, nome) que o personal escolheu no
+    // plano — ver libs/trainingLabel.ts.
+    const labelParts = labelPartsOf(detail);
+    const withWeekday = showsWeekday(labelParts);
     const todayWeekday = new Date().getDay();
 
     return Promise.all(
@@ -121,12 +117,7 @@ async function buildMesoGroups(
                     const log = logsByRef.get(tr.reference);
                     return {
                         id: tr.id,
-                        label: isNumbered
-                            ? `Treino ${i + 1}`
-                            : isSimple
-                              ? (WEEKDAY_LABELS[tr.weekday ?? -1] ??
-                                'Sem dia definido')
-                              : `Treino ${tr.reference}`,
+                        label: trainingDisplayLabel(tr, i, labelParts),
                         focusLabel: summary.focusLabel,
                         accent: summary.accent,
                         exerciseCount: summary.exerciseCount,
@@ -135,9 +126,7 @@ async function buildMesoGroups(
                         status: log?.status,
                         completedDate: log?.completed_date,
                         scheduledToday:
-                            isSimple &&
-                            !isNumbered &&
-                            tr.weekday === todayWeekday,
+                            withWeekday && tr.weekday === todayWeekday,
                     };
                 }),
             };

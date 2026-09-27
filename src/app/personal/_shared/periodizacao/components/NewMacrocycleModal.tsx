@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -10,6 +10,8 @@ import {
 } from '@/libs/planningService';
 import Modal from '@/components/system/Modal';
 import { useCardStack } from '@/hooks/useCardStack';
+import type { TrainingLabelPart } from '@/libs/trainingLabel';
+import TrainingLabelPartsPicker from './TrainingLabelPartsPicker';
 import s from '../builder.module.css';
 
 const schema = z
@@ -32,7 +34,6 @@ const schema = z
 type FormValues = z.infer<typeof schema>;
 
 type PlanningMode = 'periodized' | 'simple';
-type DayLabelStyle = 'weekday' | 'number';
 type Step = 'mode' | 'details';
 
 const MODE_OPTIONS = [
@@ -48,18 +49,6 @@ const MODE_OPTIONS = [
     },
 ];
 
-const DAY_LABEL_OPTIONS = [
-    {
-        style: 'weekday' as const,
-        title: 'Dias da semana',
-        desc: 'Ex: Segunda, Quarta, Sexta.',
-    },
-    {
-        style: 'number' as const,
-        title: 'Números',
-        desc: 'Ex: Treino 1, Treino 2, Treino 3 — pela ordem que você adicionar os treinos.',
-    },
-];
 
 /**
  * Criação de macrociclo em dois cards: primeiro a decisão de COMO planejar,
@@ -84,8 +73,17 @@ export default function NewMacrocycleModal({
     const [error, setError] = useState('');
     const [planningMode, setPlanningMode] =
         useState<PlanningMode>('periodized');
-    const [dayLabelStyle, setDayLabelStyle] =
-        useState<DayLabelStyle>('weekday');
+    /** null = ainda não mexeu: segue o padrão do modo (dia da semana no
+     * simples, letra na periodização) quando o modo muda. */
+    const [chosenParts, setChosenParts] = useState<TrainingLabelPart[] | null>(
+        null,
+    );
+    const labelParts = useMemo<TrainingLabelPart[]>(
+        () =>
+            chosenParts ??
+            (planningMode === 'simple' ? ['weekday'] : ['letter']),
+        [chosenParts, planningMode],
+    );
 
     const {
         register,
@@ -104,8 +102,10 @@ export default function NewMacrocycleModal({
                     start_date: values.start_date || undefined,
                     end_date: values.end_date || undefined,
                     planning_mode: planningMode,
-                    simple_day_label:
-                        planningMode === 'simple' ? dayLabelStyle : undefined,
+                    simple_day_label: labelParts.includes('number')
+                        ? 'number'
+                        : 'weekday',
+                    training_label_parts: labelParts,
                     mesocycles: [],
                 });
                 onCreated(macro);
@@ -115,7 +115,7 @@ export default function NewMacrocycleModal({
                 setSubmitting(false);
             }
         },
-        [studentId, planningMode, dayLabelStyle, onCreated],
+        [studentId, planningMode, labelParts, onCreated],
     );
 
     const isMode = stack.current === 'mode';
@@ -169,36 +169,10 @@ export default function NewMacrocycleModal({
                         ))}
                     </div>
 
-                    {planningMode === 'simple' && (
-                        <>
-                            <p className={s.cardIntro} style={{ marginTop: 18 }}>
-                                Como identificar os dias?
-                            </p>
-                            <div className={s.choiceGrid}>
-                                {DAY_LABEL_OPTIONS.map((opt) => (
-                                    <button
-                                        key={opt.style}
-                                        type="button"
-                                        onClick={() =>
-                                            setDayLabelStyle(opt.style)
-                                        }
-                                        className={
-                                            dayLabelStyle === opt.style
-                                                ? s.choiceCardActive
-                                                : s.choiceCard
-                                        }
-                                    >
-                                        <p className={s.choiceTitle}>
-                                            {opt.title}
-                                        </p>
-                                        <p className={s.choiceDesc}>
-                                            {opt.desc}
-                                        </p>
-                                    </button>
-                                ))}
-                            </div>
-                        </>
-                    )}
+                    <TrainingLabelPartsPicker
+                        value={labelParts}
+                        onChange={setChosenParts}
+                    />
                 </>
             ) : (
                 <form

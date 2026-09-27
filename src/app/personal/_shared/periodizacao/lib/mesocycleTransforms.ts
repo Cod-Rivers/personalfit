@@ -180,8 +180,11 @@ export interface LocalTraining {
     _id: string;
     reference: string;
     exercises: LocalExercise[];
-    /** Dia da semana (0=domingo..6=sábado) — usado no modo simples. */
+    /** Dia da semana (0=domingo..6=sábado). Entra no nome do treino quando
+     * o plano inclui 'weekday' nas partes do rótulo. */
     weekday?: number;
+    /** Nome livre do treino ("Peito e Tríceps"). Ver libs/trainingLabel.ts. */
+    name?: string;
 }
 
 export interface LocalMicrocycle {
@@ -481,6 +484,7 @@ export function responseToLocal(trainings: TrainingResponse[]): LocalTraining[] 
         id: t.id,
         reference: t.reference,
         weekday: t.weekday,
+        name: t.name,
         exercises: t.exercises.map(exerciseToLocal),
     }));
 }
@@ -536,6 +540,7 @@ export function localToMesoRequest(
             id: t.id,
             reference: t.reference,
             weekday: t.weekday,
+            name: t.name?.trim() || undefined,
             exercises: t.exercises.map(localExerciseToRequest),
         })),
     };
@@ -641,6 +646,7 @@ export function mesoToRequest(meso: MesocycleResponse): MesocycleRequest {
             id: t.id,
             reference: t.reference,
             weekday: t.weekday,
+            name: t.name?.trim() || undefined,
             exercises: t.exercises.map((ex) => ({
                 id: ex.id,
                 exercise_library_id: ex.exercise_library_id,

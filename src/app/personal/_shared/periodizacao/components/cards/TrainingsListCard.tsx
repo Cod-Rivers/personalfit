@@ -1,6 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import { FiCopy, FiX } from 'react-icons/fi';
+import {
+    labelPartsPreview,
+    type TrainingLabelPart,
+} from '@/libs/trainingLabel';
+import TrainingLabelPartsPicker from '../TrainingLabelPartsPicker';
 import type { LocalTraining } from '../../lib/mesocycleTransforms';
 import { trainingFullLabel } from '../fields/PrescriptionFields';
 import NavRow from '@/components/molecules/NavRow';
@@ -17,7 +23,8 @@ import s from '../../builder.module.css';
 export default function TrainingsListCard({
     trainings,
     simpleMode,
-    isNumbered,
+    labelParts,
+    onChangeLabelParts,
     onOpenTraining,
     onAddTraining,
     onDuplicateTraining,
@@ -26,15 +33,67 @@ export default function TrainingsListCard({
 }: {
     trainings: LocalTraining[];
     simpleMode?: boolean;
-    isNumbered?: boolean;
+    labelParts: TrainingLabelPart[];
+    /** Grava as partes no plano. Sem ele, só se vê o formato atual. */
+    onChangeLabelParts?: (parts: TrainingLabelPart[]) => Promise<void>;
     onOpenTraining: (trainingId: string) => void;
     onAddTraining: () => void;
     onDuplicateTraining: (trainingId: string) => void;
     onRemoveTraining: (trainingId: string) => void;
     onReorderTrainings?: (order: string[]) => void;
 }) {
+    const [editingParts, setEditingParts] = useState(false);
+    const [savingParts, setSavingParts] = useState(false);
+    const [partsError, setPartsError] = useState(false);
+
+    const changeParts = async (parts: TrainingLabelPart[]) => {
+        if (!onChangeLabelParts) return;
+        setSavingParts(true);
+        setPartsError(false);
+        try {
+            await onChangeLabelParts(parts);
+        } catch {
+            setPartsError(true);
+        } finally {
+            setSavingParts(false);
+        }
+    };
+
     return (
         <>
+            {/* O formato vale para o plano inteiro, não só para esta fase —
+                por isso fica recolhido: é uma escolha rara, e a lista de
+                treinos é o que se usa todo dia. */}
+            <div className={s.labelPartsSummary}>
+                <span>
+                    Nome dos treinos:{' '}
+                    <strong>{labelPartsPreview(labelParts)}</strong>
+                </span>
+                {onChangeLabelParts && (
+                    <button
+                        type="button"
+                        className={s.linkBtn}
+                        aria-expanded={editingParts}
+                        onClick={() => setEditingParts((v) => !v)}
+                    >
+                        {editingParts ? 'Pronto' : 'Alterar'}
+                    </button>
+                )}
+            </div>
+            {editingParts && onChangeLabelParts && (
+                <TrainingLabelPartsPicker
+                    value={labelParts}
+                    onChange={changeParts}
+                    disabled={savingParts}
+                    title="Mostrar no nome de cada treino"
+                />
+            )}
+            {partsError && (
+                <p className={s.fieldError} role="alert">
+                    Não foi possível alterar o nome dos treinos. Tente de novo.
+                </p>
+            )}
+
             <div className={s.sectionHeaderRow}>
                 <p>
                     {trainings.length} treino
@@ -54,12 +113,7 @@ export default function TrainingsListCard({
                     className={s.sortableGroup}
                 >
                     {trainings.map((t, i) => {
-                        const label = trainingFullLabel(
-                            t,
-                            i,
-                            simpleMode,
-                            isNumbered,
-                        );
+                        const label = trainingFullLabel(t, i, labelParts);
                         return (
                             <SortableItem
                                 key={t._id}

@@ -1131,7 +1131,15 @@ const personalSections: HelpSection[] = [
                         <strong>Treinos:</strong>{' '}
                         <strong>+ Adicionar treino</strong> cria um dia de
                         academia. O ícone de copiar duplica um treino, e a
-                        alça <strong>⠿</strong> muda a ordem.
+                        alça <strong>⠿</strong> muda a ordem. Em{' '}
+                        <strong>Nome dos treinos → Alterar</strong> você
+                        escolhe o que o aluno lê em cada um: dia da semana,
+                        letra ou número e um nome livre, em qualquer
+                        combinação (por exemplo,{' '}
+                        <em>Segunda · Treino A · Peito e Tríceps</em>). O dia e
+                        o nome você preenche dentro de cada treino. Trocar o
+                        formato não apaga nada: dias, letras e nomes já
+                        preenchidos voltam se você ligar a opção de novo.
                     </li>
                     <li>
                         <strong>Exercícios:</strong>{' '}

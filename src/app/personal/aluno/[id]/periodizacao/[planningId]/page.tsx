@@ -1,5 +1,9 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
+import {
+    labelPartsOf,
+    type TrainingLabelPart,
+} from '@/libs/trainingLabel';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { FiActivity, FiArrowLeft, FiWifiOff } from 'react-icons/fi';
 import {
@@ -267,6 +271,20 @@ export default function PeriodizacaoDetalhePage() {
         [studentId, planningId],
     );
 
+    /* ── Nome dos treinos (dia, letra/número, nome livre) ──
+     * Vale para o plano inteiro. Só muda a exibição: letras, dias e nomes já
+     * gravados nos treinos continuam lá, então dá para voltar atrás. */
+    const changeLabelParts = useCallback(
+        async (parts: TrainingLabelPart[]) => {
+            const updated = await updateMacrocycle(studentId, planningId, {
+                training_label_parts: parts,
+            });
+            setMacro(updated);
+            void cachePersonalMacrocycle(studentId, updated);
+        },
+        [studentId, planningId],
+    );
+
     /* ── Eco local de uma edição que foi para a fila offline ──
      * Sem isto, a edição era gravada no IndexedDB (prescriptionQueue) e o card
      * mostrava "salvo neste dispositivo" — mas o valor na tela voltava ao
@@ -348,8 +366,7 @@ export default function PeriodizacaoDetalhePage() {
               ? s.badgeCompleted
               : s.badgeDraft;
     const simpleMeso = isSimpleMode ? (macro.mesocycles ?? [])[0] : undefined;
-    const dayLabelStyle =
-        macro.simple_day_label === 'number' ? 'number' : 'weekday';
+    const labelParts = labelPartsOf(macro);
 
     return (
         <div className={s.page}>
@@ -506,7 +523,7 @@ export default function PeriodizacaoDetalhePage() {
                             onEdit={() => openEditModal(simpleMeso)}
                             onDelete={() => deleteMeso(simpleMeso.id)}
                             simpleMode
-                            dayLabelStyle={dayLabelStyle}
+                            labelParts={labelParts}
                             onPersistMeso={onPersistMeso}
                             onPrescriptionQueued={applyQueuedPrescription}
                             studentId={studentId}
@@ -527,6 +544,7 @@ export default function PeriodizacaoDetalhePage() {
                                 onEdit={() => openEditModal(meso)}
                                 onDelete={() => deleteMeso(meso.id)}
                                 onDuplicate={() => duplicateMeso(meso)}
+                                labelParts={labelParts}
                                 // Ajuste de série/carga direto no card do
                                 // exercício, sem abrir o editor de fase — é o
                                 // fluxo de quem está acompanhando o treino.
@@ -552,7 +570,8 @@ export default function PeriodizacaoDetalhePage() {
                     onClose={closeModal}
                     onPersist={onPersistMeso}
                     simpleMode={isSimpleMode}
-                    dayLabelStyle={dayLabelStyle}
+                    labelParts={labelParts}
+                    onChangeLabelParts={changeLabelParts}
                 />
             )}
         </div>

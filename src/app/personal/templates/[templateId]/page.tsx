@@ -3,6 +3,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { FiArrowLeft } from 'react-icons/fi';
 import {
+    labelPartsOf,
+    type TrainingLabelPart,
+} from '@/libs/trainingLabel';
+import {
     getTemplate,
     updateTemplate,
     createTemplateMesocycle,
@@ -145,6 +149,18 @@ export default function TemplateDetalhePage() {
         [templateId],
     );
 
+    /* Nome dos treinos: vale para o template inteiro e é copiado para o
+     * aluno quando o template é aplicado. */
+    const changeLabelParts = useCallback(
+        async (parts: TrainingLabelPart[]) => {
+            const updated = await updateTemplate(templateId, {
+                training_label_parts: parts,
+            });
+            setMacro(updated);
+        },
+        [templateId],
+    );
+
     /* ── Loading / error states ── */
     if (loading) {
         return (
@@ -180,8 +196,7 @@ export default function TemplateDetalhePage() {
               ? s.badgeCompleted
               : s.badgeDraft;
     const simpleMeso = isSimpleMode ? (macro.mesocycles ?? [])[0] : undefined;
-    const dayLabelStyle =
-        macro.simple_day_label === 'number' ? 'number' : 'weekday';
+    const labelParts = labelPartsOf(macro);
 
     return (
         <div className={s.page}>
@@ -277,7 +292,7 @@ export default function TemplateDetalhePage() {
                             onEdit={() => openEditModal(simpleMeso)}
                             onDelete={() => deleteMeso(simpleMeso.id)}
                             simpleMode
-                            dayLabelStyle={dayLabelStyle}
+                            labelParts={labelParts}
                         />
                     )
                 ) : (macro.mesocycles?.length ?? 0) === 0 ? (
@@ -294,6 +309,7 @@ export default function TemplateDetalhePage() {
                                 onEdit={() => openEditModal(meso)}
                                 onDelete={() => deleteMeso(meso.id)}
                                 onDuplicate={() => duplicateMeso(meso)}
+                                labelParts={labelParts}
                             />
                         ))
                 )}
@@ -312,7 +328,8 @@ export default function TemplateDetalhePage() {
                     onClose={closeModal}
                     onPersist={onPersistMeso}
                     simpleMode={isSimpleMode}
-                    dayLabelStyle={dayLabelStyle}
+                    labelParts={labelParts}
+                    onChangeLabelParts={changeLabelParts}
                 />
             )}
         </div>

@@ -88,6 +88,12 @@ import PersonalAnamnesisQuickView from '@/components/features/PersonalAnamnesisQ
 import { toExerciseLog } from '@/libs/exerciseLog';
 import { pickSavedMesocycle } from '@/app/personal/_shared/periodizacao/lib/mesocycleTransforms';
 import {
+    labelPartsOf,
+    relabelsByPosition,
+    showsWeekday,
+    trainingDisplayLabel,
+} from '@/libs/trainingLabel';
+import {
     applyExercisePatch,
     saveExercisePatch,
 } from '@/app/personal/_shared/periodizacao/lib/exercisePatch';
@@ -453,12 +459,22 @@ export default function AcompanharTreinoPage() {
         [logs],
     );
 
-    /** Modo por dia da semana: o rótulo que o aluno vê é o dia. Aí o treino
-     * novo nasce no próximo dia livre e a letra NÃO acompanha a posição (ver
-     * relabelByPosition). */
-    const autoWeekday =
-        macro?.planning_mode === 'simple' &&
-        macro.simple_day_label !== 'number';
+    /** Partes do nome do treino no plano: o personal vê aqui o mesmo nome
+     * que o aluno vê. Com o dia no nome, o treino novo nasce no próximo dia
+     * livre; a letra só acompanha a posição quando identifica o treino (ver
+     * relabelsByPosition). */
+    const labelParts = useMemo(() => labelPartsOf(macro), [macro]);
+    const autoWeekday = showsWeekday(labelParts);
+    const relabel = relabelsByPosition(labelParts);
+    const labelOf = (t: TrainingResponse) =>
+        trainingDisplayLabel(
+            t,
+            Math.max(
+                0,
+                trainings.findIndex((x) => x.id === t.id),
+            ),
+            labelParts,
+        );
 
     /* ── Gravação ──
      * Mesmo contrato da periodização: a fase inteira vai ao servidor e a
@@ -538,7 +554,7 @@ export default function AcompanharTreinoPage() {
         try {
             await serialized((meso) =>
                 saveTrainingOrder(
-                    { meso, persist: onPersistMeso, relabel: !autoWeekday },
+                    { meso, persist: onPersistMeso, relabel },
                     ids,
                 ),
             );
@@ -658,7 +674,7 @@ export default function AcompanharTreinoPage() {
             if (created) setSelectedTrainingId(created.id);
             showSuccess(
                 created
-                    ? `Treino ${created.reference} criado. Adicione os exercícios.`
+                    ? `${trainingDisplayLabel(created, position, labelParts)} criado. Adicione os exercícios.`
                     : 'Treino criado.',
             );
         } catch (e) {
@@ -674,7 +690,7 @@ export default function AcompanharTreinoPage() {
             if (target.kind === 'training') {
                 await editTraining((req) =>
                     removeTrainingFromMeso(req, target.id, {
-                        relabel: !autoWeekday,
+                        relabel,
                     }),
                 );
                 // O treino escolhido (ou o exercício aberto dele) deixou de
@@ -1041,14 +1057,19 @@ export default function AcompanharTreinoPage() {
                             layout="grid"
                             className={s.sortableSpacing}
                         >
-                            {trainings.map((t) => {
+                            {trainings.map((t, i) => {
                                 const done = completedRefs.has(t.reference);
+                                const label = trainingDisplayLabel(
+                                    t,
+                                    i,
+                                    labelParts,
+                                );
                                 const active = selectedTraining?.id === t.id;
                                 return (
                                     <SortableItem
                                         key={t.id}
                                         id={t.id}
-                                        label={`Treino ${t.reference}`}
+                                        label={label}
                                         disabled={
                                             isOfflineData ||
                                             trainings.length < 2
@@ -1064,7 +1085,7 @@ export default function AcompanharTreinoPage() {
                                                 aria-pressed={active}
                                             >
                                                 <span className={s.trainingRef}>
-                                                    Treino {t.reference}
+                                                    {label}
                                                 </span>
                                                 <span
                                                     className={s.trainingMeta}
@@ -1095,11 +1116,11 @@ export default function AcompanharTreinoPage() {
                                                             setPendingDelete({
                                                                 kind: 'training',
                                                                 id: t.id,
-                                                                name: `Treino ${t.reference}`,
+                                                                name: label,
                                                             })
                                                         }
                                                         disabled={busy}
-                                                        aria-label={`Excluir treino ${t.reference}`}
+                                                        aria-label={`Excluir ${label}`}
                                                         title="Excluir este treino"
                                                     >
                                                         <FiX />
@@ -1115,8 +1136,8 @@ export default function AcompanharTreinoPage() {
                             <>
                                 <div className={s.sectionHeader}>
                                     <h2 className={s.sectionTitle}>
-                                        Exercícios do Treino{' '}
-                                        {selectedTraining.reference}
+                                        Exercícios do treino “
+                                        {labelOf(selectedTraining)}”
                                     </h2>
                                     {!isOfflineData && (
                                         <div className={s.headerActions}>
@@ -1460,7 +1481,7 @@ export default function AcompanharTreinoPage() {
                                         className={s.empty}
                                         style={{ marginTop: 'var(--space-2)' }}
                                     >
-                                        O treino {selectedTraining.reference} já
+                                        O treino “{labelOf(selectedTraining)}” já
                                         consta como feito nesta semana. Um novo
                                         registro para a mesma data é recusado
                                         pelo servidor — use outro dia ou outro
@@ -1537,7 +1558,7 @@ export default function AcompanharTreinoPage() {
                     onClose={() => setPicker(null)}
                     title={
                         picker.mode === 'add'
-                            ? `Adicionar ao treino ${selectedTraining?.reference ?? ''}`
+                            ? `Adicionar ao treino “${selectedTraining ? labelOf(selectedTraining) : ''}”`
                             : 'Trocar exercício'
                     }
                 >
@@ -1598,7 +1619,11 @@ export default function AcompanharTreinoPage() {
                         ) : (
                             <>
                                 <strong>{pendingDelete.name}</strong> sai do
-                                treino {selectedTraining?.reference} do aluno.
+                                treino “
+                                {selectedTraining
+                                    ? labelOf(selectedTraining)
+                                    : ''}
+                                ” do aluno.
                                 As cargas que ele já registrou continuam no
                                 histórico, mas o exercício deixa de aparecer no
                                 treino.

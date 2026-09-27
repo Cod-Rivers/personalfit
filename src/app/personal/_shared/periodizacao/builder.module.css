@@ -1712,3 +1712,99 @@
     max-width: 260px;
     min-width: 0;
 }
+
+/* Seletor das partes do nome do treino (TrainingLabelPartsPicker). */
+.labelParts {
+    margin: 18px 0 12px;
+}
+.labelPartsTitle {
+    margin: 0 0 10px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+}
+.labelPartsChips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.labelPartChip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 2.75rem;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border-subtle);
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+.labelPartChip:focus-visible {
+    outline: 2px solid var(--mint);
+    outline-offset: 2px;
+}
+.labelPartChip:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+.labelPartChipOn {
+    composes: labelPartChip;
+    border: 1.5px solid var(--mint);
+    background: var(--surface-2);
+    font-weight: 600;
+}
+.labelPartsPreview {
+    margin: 12px 0 0;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    overflow-wrap: anywhere;
+}
+.labelPartsPreview strong {
+    color: var(--text-primary);
+}
+
+/* Campos de identidade do treino no card do treino: dia, letra e nome
+   lado a lado, quebrando em linhas no celular. */
+.trainingIdentity {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.trainingNameInput {
+    composes: formInput;
+    flex: 1 1 12rem;
+    min-width: 0;
+}
+
+/* Linha "Nome dos treinos: …  Alterar" no topo da lista de treinos. */
+.labelPartsSummary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+}
+.labelPartsSummary > span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.labelPartsSummary strong {
+    color: var(--text-primary);
+}
+
+.fieldError {
+    margin: 8px 0 0;
+    font-size: 0.78rem;
+    color: var(--coral, #e74c3c);
+}

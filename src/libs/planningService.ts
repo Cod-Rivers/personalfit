@@ -1,5 +1,6 @@
 ﻿import axios from 'axios';
 import { Api } from '@/libs/api';
+import type { TrainingLabelPart } from '@/libs/trainingLabel';
 import { GanttPhase } from '@/components/features/GanttPlanning';
 
 /* ── Response types ── */
@@ -61,8 +62,11 @@ export interface TrainingResponse {
     id: string;
     reference: string;
     exercises: ExerciseResponse[];
-    /** Dia da semana (0=domingo..6=sábado), usado no modo simples. */
+    /** Dia da semana (0=domingo..6=sábado). Aparece no nome do treino quando
+     * o plano inclui 'weekday' em training_label_parts. */
     weekday?: number;
+    /** Nome livre do treino ("Peito e Tríceps"). Ver training_label_parts. */
+    name?: string;
 }
 
 export interface MicrocycleResponse {
@@ -121,6 +125,9 @@ export interface MacrocycleResponse {
     planning_mode?: 'periodized' | 'simple';
     /** "weekday" (padrão) ou "number" — só relevante quando planning_mode=simple. */
     simple_day_label?: 'weekday' | 'number';
+    /** Partes do nome do treino que o aluno vê. O backend devolve sempre as
+     * efetivas, inclusive nos planos antigos (ver libs/trainingLabel.ts). */
+    training_label_parts?: TrainingLabelPart[];
     is_template?: boolean;
     is_public?: boolean;
     /** Status de revisão da equipe Venafit — só relevante quando is_public=true.
@@ -191,6 +198,7 @@ export interface TrainingRequest {
     reference: string;
     exercises: ExerciseRequest[];
     weekday?: number;
+    name?: string;
 }
 
 export interface MesocycleRequest {
@@ -213,6 +221,7 @@ export interface CreateMacrocycleRequest {
     end_date?: string;
     planning_mode?: 'periodized' | 'simple';
     simple_day_label?: 'weekday' | 'number';
+    training_label_parts?: TrainingLabelPart[];
     mesocycles: MesocycleRequest[];
 }
 
@@ -223,6 +232,8 @@ export interface UpdateMacrocycleRequest {
     start_date?: string | null;
     end_date?: string | null;
     mesocycles?: MesocycleRequest[];
+    /** Troca só a exibição: letras, dias e nomes gravados nos treinos ficam. */
+    training_label_parts?: TrainingLabelPart[];
 }
 
 /** Seleciona o microciclo "atual" de um mesociclo: em andamento, senão o
@@ -689,6 +700,7 @@ export async function createNewTemplate(
         is_public?: boolean;
         planning_mode?: 'periodized' | 'simple';
         simple_day_label?: 'weekday' | 'number';
+        training_label_parts?: TrainingLabelPart[];
     },
 ): Promise<MacrocycleResponse> {
     const { data } = await Api.post<MacrocycleResponse>(
@@ -820,6 +832,7 @@ export interface CreateSelfMadePlanRequest {
     name: string;
     goal?: string;
     simple_day_label?: 'weekday' | 'number';
+    training_label_parts?: TrainingLabelPart[];
     /** Aceite do termo de responsabilidade: o app não prescreve nem revisa o
      * treino que o aluno monta. O backend recusa a criação sem isto. */
     waiver_accepted: boolean;
@@ -832,6 +845,19 @@ export async function createMySelfMadePlan(
     const { data } = await Api.post<MacrocycleResponse>(
         '/my-planning/self-made',
         body,
+    );
+    return data;
+}
+
+/** PATCH /my-planning/:planningId/training-labels — troca as partes do nome
+ * dos treinos do plano que o próprio aluno montou. */
+export async function updateMyTrainingLabels(
+    planningId: string,
+    parts: TrainingLabelPart[],
+): Promise<MacrocycleResponse> {
+    const { data } = await Api.patch<MacrocycleResponse>(
+        `/my-planning/${planningId}/training-labels`,
+        { training_label_parts: parts },
     );
     return data;
 }

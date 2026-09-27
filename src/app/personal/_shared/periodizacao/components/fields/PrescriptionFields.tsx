@@ -14,7 +14,10 @@ import HelpTooltip from '@/components/atoms/HelpTooltip';
 import TechniqueHelpTooltip from '@/components/molecules/TechniqueHelpTooltip';
 import { getGlossaryTerm } from '@/libs/glossaryContent';
 import {
-    weekdayLabel,
+    trainingDisplayLabel,
+    type TrainingLabelPart,
+} from '@/libs/trainingLabel';
+import {
     type LocalExercise,
     type LocalTraining,
 } from '../../lib/mesocycleTransforms';
@@ -369,29 +372,12 @@ export function seriesSummary(ex: LocalExercise): string {
     return parts.length > 0 ? parts.join(' · ') : 'Séries não definidas';
 }
 
-/** Rótulo curto do treino. Os três modos caem no mesmo fallback (`T1`, `T2`…)
- * quando não há rótulo próprio, para que nenhum treino fique sem identidade. */
-export function trainingTabLabel(
-    t: LocalTraining,
-    index: number,
-    simpleMode?: boolean,
-    isNumbered?: boolean,
-): string {
-    if (isNumbered) return `T${index + 1}`;
-    if (simpleMode)
-        return weekdayLabel(t.weekday)?.slice(0, 3) ?? `T${index + 1}`;
-    return t.reference || `T${index + 1}`;
-}
-
-/** Rótulo por extenso — usado nos títulos de card e no aria-label. */
+/** Rótulo por extenso — usado nos títulos de card e no aria-label. Delegado
+ * a trainingDisplayLabel, o mesmo que a tela do aluno usa. */
 export function trainingFullLabel(
     t: LocalTraining,
     index: number,
-    simpleMode?: boolean,
-    isNumbered?: boolean,
+    parts: readonly TrainingLabelPart[],
 ): string {
-    if (isNumbered) return `Treino ${index + 1}`;
-    if (simpleMode)
-        return weekdayLabel(t.weekday) ?? `Treino ${index + 1} (sem dia)`;
-    return `Treino ${t.reference || index + 1}`;
+    return trainingDisplayLabel(t, index, parts);
 }
