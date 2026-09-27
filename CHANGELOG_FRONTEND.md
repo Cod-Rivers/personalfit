@@ -695,3 +695,17 @@
 ## 2026-09-24 13:47 — River (via Claude Code)
 **Resumo:** Enviado. O código já estava commitado e enviado (`d5384cd` e `f5c853f`), então só faltavam os changelogs, que agora também foram para o GitHub. | Repositório | Commit | |---|---| | personalfit | `7979ad1` | | Personal-fit-Back | `8b21384` | | VenafitApp | `908c531` | Os três repositórios estão sem pendências e sincronizados com o GitHub.
 **Commits:** docs: atualiza changelog
+
+## 2026-09-24 23:12 — River (via Claude Code)
+**Resumo:** Agora o "Iniciar circuito" aparece sem a aluna precisar rolar a tela. Tipos, lint e os testes do cronômetro passam (7/7, um deles novo). Ainda não testei no celular e nada foi commitado. **O que causava o problema:** o cronômetro do circuito ficava depois de todos os exercícios do bloco. Para achar o botão, era preciso rolar até o fim do bloco. **O que mudou** (tela do treino do aluno e a tela `/acompanhar` do personal): 1. **Cronômetro no topo do bloco.** Ele agora vem logo abaixo do título ("Circuito…") e antes dos exercícios. O botão "Iniciar circuito" ficou maior, ocupa a largura toda e te…
+**Arquivos:** CircuitTimer.test.tsx, ExerciseDetailCard.module.css, ExerciseDetailCard.tsx, index.tsx, page.tsx, styles.module.css
+**Commits:** feat(tecnicas): passo a passo de execução no "?" da técnica avançada | docs: atualiza changelog | fix(periodizacao): avisa ao sair da Prescrição geral sem aplicar | feat(circuito): cronômetro de rodadas para blocos agrupados por tempo | feat(periodizacao): descanso entre séries na Prescrição geral | feat(circuito): modo tabata com recuperação entre exercícios e sons (Howler) | feat(circuito): recuperação do tabata prescrita pelo personal, gravada no bloco
+
+## 2026-09-26 23:00 — River (via Claude Code)
+**Resumo:** Implementei os seis pontos, organizados no padrão atomic do projeto. Tipos, lint e a suíte inteira de testes passam (410, incluindo 23 novos). Ainda não testei no celular e nada foi commitado. **Como ficou organizado** - **Lógica pura em `libs/`, com testes:** - [circuitRunner.ts](personalfit/src/libs/circuitRunner.ts) guarda toda a lógica do circuito: começar, pausar, retomar, pular, voltar, refazer o passo e reabrir. - [circuitProgress.ts](personalfit/src/libs/circuitProgress.ts) salva e lê o andamento no aparelho, no mesmo molde do `circuitSettings.ts`. - **Hook em `hooks/`:** [useWakeLock.…
+**Arquivos:** CHANGELOG_FRONTEND.md, WorkoutLogger.tsx, circuitProgress.test.ts, circuitProgress.ts, circuitRunner.test.ts, circuitRunner.ts, useWakeLock.ts
+**Commits:** feat(circuito): botão Iniciar circuito visível (topo do bloco + atalho no card do exercício)
+
+## 2026-09-26 23:12 — River (via Claude Code)
+**Resumo:** O WebView do app não aceita: a tela continuaria apagando dentro do app. Já implementei a ponte nativa. Os testes do web passam (29) e o app Android compila, mas ainda não testei num aparelho. Para funcionar, falta publicar uma nova versão do app na Play Store. **O que a verificação mostrou** - **A tabela do MDN engana.** Para o app Android, ela diz "mirror" do Chrome. Isso é uma cópia automática dos dados do Chrome, não um teste real no WebView. - **Na prática o pedido é recusado.** O WebView oferece o recurso, mas recusa todo pedido para manter a tela acesa com o erro `NotAllowedError: Access…
+**Arquivos:** nativeBridge.test.ts, nativeBridge.ts
