@@ -1713,6 +1713,16 @@
     min-width: 0;
 }
 
+/* Meta semanal da prescrição (WeeklyTargetPicker) — reaproveita os chips do
+   seletor de nome do treino logo abaixo. */
+.weeklyTarget {
+    margin: 0 0 20px;
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    background: var(--surface-1);
+}
+
 /* Seletor das partes do nome do treino (TrainingLabelPartsPicker). */
 .labelParts {
     margin: 18px 0 12px;

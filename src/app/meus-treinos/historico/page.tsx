@@ -9,6 +9,7 @@ import {
     getMyWorkoutLogsInRange,
     NewWorkoutLogResponse,
 } from '@/libs/workoutLogService';
+import { performedAt } from '@/libs/currentWeek';
 import styles from './historico.module.css';
 
 const WEEKDAY_SHORT = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
@@ -29,8 +30,12 @@ function toISODate(date: Date): string {
 /**
  * Agrega logs por dia civil: completed > skipped > sem marca. Um dia com
  * qualquer log `completed` fica verde mesmo que tenha outros `skipped`; usa
- * completed_date (dia real de execução) para concluídos e planned_date (dia
- * que era pra acontecer) para pulados.
+ * o dia LOCAL em que o treino foi feito (performedAt) para concluídos e
+ * planned_date (dia que era pra acontecer) para pulados.
+ *
+ * completed_date sozinho não serve: é a hora do servidor em UTC — o treino
+ * das 22h aparecia no dia seguinte, e o feito offline, no dia em que
+ * sincronizou.
  */
 function aggregateByDay(
     logs: NewWorkoutLogResponse[],
@@ -38,8 +43,8 @@ function aggregateByDay(
     const byDay = new Map<string, DayStatus>();
     for (const log of logs) {
         if (log.status === 'completed') {
-            const key = log.completed_date?.slice(0, 10);
-            if (key) byDay.set(key, 'completed');
+            const at = performedAt(log);
+            if (at) byDay.set(toISODate(at), 'completed');
         } else if (log.status === 'skipped') {
             const key = log.planned_date?.slice(0, 10);
             if (key && byDay.get(key) !== 'completed') {

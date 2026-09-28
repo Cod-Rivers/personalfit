@@ -74,6 +74,13 @@
     color: var(--text-secondary);
 }
 
+/* Meta semanal da prescrição atingida. */
+.chipDone {
+    border-color: var(--mint);
+    color: var(--mint-text);
+    font-weight: 600;
+}
+
 .notice {
     display: flex;
     align-items: flex-start;

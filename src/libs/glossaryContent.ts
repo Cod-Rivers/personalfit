@@ -199,6 +199,12 @@ const trainingScienceTerms: GlossaryTerm[] = [
 
 const productTerms: GlossaryTerm[] = [
     {
+        id: 'meta-semanal',
+        term: 'Meta semanal (semana concluída)',
+        short: 'Quantos dias de treino fecham a semana do aluno. Dois treinos no mesmo dia contam um dia; zera toda segunda-feira.',
+        long: 'A meta semanal é definida pelo personal na prescrição do treino (tela do plano, em "Prescrever Treino"): quantos dias de treino, de 1 a 7, fecham a semana do aluno. Ao atingir, o aluno vê "Semana concluída" em Meus Treinos, e a semana aparece como concluída na periodização e em "Treino do aluno". Conta dias, não treinos — dois treinos no mesmo dia valem um dia — e treino pulado não conta. A semana vai de segunda a domingo e a contagem zera toda segunda-feira. Sem meta definida ("Automático"), vale um dia por treino da fase atual.',
+    },
+    {
         id: 'plano-pro',
         term: 'PRO',
         short: 'Assinatura do personal trainer: alunos ilimitados, sem anúncios, marca própria e mais.',

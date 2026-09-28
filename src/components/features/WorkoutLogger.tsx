@@ -16,6 +16,7 @@ import {
     NewWorkoutLogResponse,
 } from '@/libs/workoutLogService';
 import { getPendingWorkoutLogId } from '@/libs/offline/downloadManager';
+import { localDateKey } from '@/libs/currentWeek';
 import { OfflineDBUnavailableError } from '@/libs/offline/db';
 import { enqueueSession, enqueueSkip } from '@/libs/offline/syncQueue';
 import { enqueuePhoto } from '@/libs/offline/mediaQueue';
@@ -346,9 +347,7 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                     // sincronização transformaria falta de rede em atraso do aluno.
                     client_completed_at: clientCompletedAtNow(),
                     training_ref: training.reference,
-                    planned_date:
-                        checkInDraft?.plannedDate ??
-                        new Date().toISOString().split('T')[0],
+                    planned_date: checkInDraft?.plannedDate ?? localDateKey(),
                     duration_minutes: duration ?? undefined,
                     notes,
                     // check_in é o que torna esta conclusão um CHECK-IN
@@ -535,9 +534,10 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
      * substitui o clique direto em "Completar Treino" de antes desta
      * sprint. `plannedDate` é calculada aqui (não antes) para refletir o
      * instante em que o aluno decidiu concluir, não o de quando abriu o
-     * formulário. */
+     * formulário. Dia LOCAL: em UTC, o treino de domingo à noite ficava
+     * datado de segunda. */
     const goToCheckIn = useCallback(() => {
-        setCheckInDraft({ plannedDate: new Date().toISOString().split('T')[0] });
+        setCheckInDraft({ plannedDate: localDateKey() });
         setStep('checkin');
     }, []);
 
@@ -594,7 +594,7 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                 mesocycle.id,
                 microcycle.id,
                 {
-                    planned_date: new Date().toISOString().split('T')[0],
+                    planned_date: localDateKey(),
                     training_ref: training.reference,
                 },
             );

@@ -30,9 +30,17 @@ import {
     getMyMacrocycle,
     deleteMyPlanning,
     macroToGanttPhases,
-    pickActiveMicrocycle,
     MacrocycleResponse,
 } from '@/libs/planningService';
+import {
+    currentCycle,
+    currentMicrocycleOf,
+    logsOfWeek,
+    performedAt,
+    weeklyProgress,
+    weeklyTargetDays,
+    type WeeklyProgress,
+} from '@/libs/currentWeek';
 import DownloadOfflineButton from '../../components/features/DownloadOfflineButton';
 import OverdueBlockNotice from '@/components/features/OverdueBlockNotice';
 import { isOverdueBlockError } from '@/libs/overdueBlock';
@@ -50,6 +58,8 @@ import GanttPlanning, {
 } from '../../components/features/GanttPlanningResponsive';
 import { useGanttToggle } from '@/hooks/useGanttToggle';
 import {
+    FiCalendar,
+    FiCheckCircle,
     FiChevronDown,
     FiStar,
     FiEdit2,
@@ -66,32 +76,44 @@ import {
 } from '@/libs/workoutLogService';
 
 /**
- * Monta os grupos de treino e enriquece cada card com o status do microciclo
- * ativo de cada mesociclo (busca best-effort — sem log, o card fica sem badge).
- * `studentId` vazio (ex.: dados offline) pula a busca de status.
+ * Monta os grupos de treino e enriquece cada card com o status da SEMANA
+ * ATUAL de cada mesociclo (busca best-effort — sem log, o card fica sem
+ * badge). `studentId` vazio (ex.: dados offline) pula a busca de status.
+ *
+ * Só contam registros desta semana (logsOfWeek): no plano simples toda
+ * semana cai no mesmo microciclo, e sem o filtro o "Concluído" de semanas
+ * atrás nunca saía do card.
  */
 async function buildMesoGroups(
     detail: MacrocycleResponse,
     studentId: string,
-): Promise<MesoGroup[]> {
+): Promise<{ groups: MesoGroup[]; week: WeeklyProgress | null }> {
     // Mesmas partes (dia, letra/número, nome) que o personal escolheu no
     // plano — ver libs/trainingLabel.ts.
     const labelParts = labelPartsOf(detail);
     const withWeekday = showsWeekday(labelParts);
-    const todayWeekday = new Date().getDay();
+    const now = new Date();
+    const todayWeekday = now.getDay();
+    const weekLogs: NewWorkoutLogResponse[] = [];
+    let logsLoaded = false;
 
-    return Promise.all(
+    const groups = await Promise.all(
         (detail.mesocycles ?? []).map(async (meso) => {
             const logsByRef = new Map<string, NewWorkoutLogResponse>();
-            const activeMicro = pickActiveMicrocycle(meso.microcycles);
-            if (studentId && activeMicro) {
+            const weekMicro = currentMicrocycleOf(detail, meso, now);
+            if (studentId && weekMicro) {
                 try {
-                    const logs = await getNewWorkoutLogs(
-                        studentId,
-                        detail.id,
-                        meso.id,
-                        activeMicro.id,
+                    const logs = logsOfWeek(
+                        await getNewWorkoutLogs(
+                            studentId,
+                            detail.id,
+                            meso.id,
+                            weekMicro.id,
+                        ),
+                        now,
                     );
+                    logsLoaded = true;
+                    weekLogs.push(...logs);
                     for (const log of logs) {
                         const existing = logsByRef.get(log.training_ref);
                         if (
@@ -124,7 +146,9 @@ async function buildMesoGroups(
                         seriesCount: summary.seriesCount,
                         estimatedMinutes: summary.estimatedMinutes,
                         status: log?.status,
-                        completedDate: log?.completed_date,
+                        completedDate: log
+                            ? performedAt(log)?.toISOString()
+                            : undefined,
                         scheduledToday:
                             withWeekday && tr.weekday === todayWeekday,
                     };
@@ -132,6 +156,13 @@ async function buildMesoGroups(
             };
         }),
     );
+
+    // Sem registros carregados (offline, falha) não dá para afirmar
+    // "0 de 3 dias" — a linha de progresso some em vez de mentir.
+    const target = weeklyTargetDays(detail, currentCycle(detail, now)?.meso);
+    const week =
+        logsLoaded && target > 0 ? weeklyProgress(weekLogs, target, now) : null;
+    return { groups, week };
 }
 
 /** Planos "simple" não têm fases reais — não faz sentido mostrar o Gantt. */
@@ -147,6 +178,11 @@ export default function MeusTreinosPage() {
     const [selectedMacro, setSelectedMacro] =
         useState<MacrocycleResponse | null>(null);
     const [mesoGroups, setMesoGroups] = useState<MesoGroup[]>([]);
+    // Dias treinados nesta semana contra a meta do personal (null = sem
+    // registros para contar, ex.: offline).
+    const [weekProgress, setWeekProgress] = useState<WeeklyProgress | null>(
+        null,
+    );
     const [ganttPhases, setGanttPhases] = useState<GanttPhase[]>([]);
     const [userRole, setUserRole] = useState<string>('');
     const [studentId, setStudentId] = useState<string>('');
@@ -219,9 +255,12 @@ export default function MeusTreinosPage() {
                 void cacheMacrocycleForOffline(detail);
                 setSelectedMacro(detail);
                 setStudentId(detail.student_id ?? '');
-                setMesoGroups(
-                    await buildMesoGroups(detail, detail.student_id ?? ''),
+                const built = await buildMesoGroups(
+                    detail,
+                    detail.student_id ?? '',
                 );
+                setMesoGroups(built.groups);
+                setWeekProgress(built.week);
                 setGanttPhases(computeGanttPhases(detail));
             } catch (e) {
                 // Sem resposta = sem conexão com a API: tentar os planos
@@ -237,7 +276,9 @@ export default function MeusTreinosPage() {
                         setSelectedMacro(detail);
                         setStudentId(detail.student_id ?? '');
                         // Offline: sem rede, então pula a busca de status (studentId '').
-                        setMesoGroups(await buildMesoGroups(detail, ''));
+                        const built = await buildMesoGroups(detail, '');
+                        setMesoGroups(built.groups);
+                        setWeekProgress(built.week);
                         setGanttPhases(computeGanttPhases(detail));
                         setLoading(false);
                         return;
@@ -270,9 +311,12 @@ export default function MeusTreinosPage() {
             setIsOfflineData(false);
             setSelectedMacro(detail);
             setStudentId(detail.student_id ?? '');
-            setMesoGroups(
-                await buildMesoGroups(detail, detail.student_id ?? ''),
+            const built = await buildMesoGroups(
+                detail,
+                detail.student_id ?? '',
             );
+            setMesoGroups(built.groups);
+            setWeekProgress(built.week);
             setGanttPhases(computeGanttPhases(detail));
         } catch (e) {
             if (axios.isAxiosError(e) && !e.response) {
@@ -284,7 +328,9 @@ export default function MeusTreinosPage() {
                     setSelectedMacro(stored.data);
                     setStudentId(stored.data.student_id ?? '');
                     // Offline: sem rede, então pula a busca de status (studentId '').
-                    setMesoGroups(await buildMesoGroups(stored.data, ''));
+                    const built = await buildMesoGroups(stored.data, '');
+                    setMesoGroups(built.groups);
+                    setWeekProgress(built.week);
                     setGanttPhases(computeGanttPhases(stored.data));
                     setLoading(false);
                     return;
@@ -342,6 +388,7 @@ export default function MeusTreinosPage() {
                 } else {
                     setSelectedMacro(null);
                     setMesoGroups([]);
+                    setWeekProgress(null);
                     setGanttPhases([]);
                 }
             }
@@ -453,6 +500,46 @@ export default function MeusTreinosPage() {
                         <FiWifiOff size={14} style={{ flexShrink: 0 }} />
                         Exibindo plano salvo offline (sem conexão no
                         momento).
+                    </div>
+                )}
+                {/* Dias treinados nesta semana contra a meta que o personal
+                    definiu na prescrição (ou o número de treinos da fase).
+                    Zera na segunda-feira, junto com os "Concluído" dos cards. */}
+                {weekProgress && (
+                    <div
+                        role="status"
+                        className="d-flex align-items-center gap-2"
+                        style={{
+                            margin: '0 5% 12px',
+                            padding: '8px 12px',
+                            borderRadius: 10,
+                            fontSize: '0.85rem',
+                            fontWeight: 600,
+                            background: 'var(--surface-1)',
+                            border: `1px solid ${
+                                weekProgress.completed
+                                    ? 'var(--mint)'
+                                    : 'var(--border-subtle)'
+                            }`,
+                            color: weekProgress.completed
+                                ? 'var(--mint-text)'
+                                : 'var(--text-secondary)',
+                        }}
+                    >
+                        {weekProgress.completed ? (
+                            <FiCheckCircle size={16} style={{ flexShrink: 0 }} />
+                        ) : (
+                            <FiCalendar size={16} style={{ flexShrink: 0 }} />
+                        )}
+                        {weekProgress.completed
+                            ? `Semana concluída · ${weekProgress.done} ${
+                                  weekProgress.done === 1 ? 'dia' : 'dias'
+                              } de treino`
+                            : `Esta semana: ${weekProgress.done} de ${
+                                  weekProgress.target
+                              } ${
+                                  weekProgress.target === 1 ? 'dia' : 'dias'
+                              } de treino`}
                     </div>
                 )}
                 {/* Trainings list agrupada por mesociclo — vem primeiro na

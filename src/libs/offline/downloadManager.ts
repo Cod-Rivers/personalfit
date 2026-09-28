@@ -1,9 +1,5 @@
-import {
-    MacrocycleResponse,
-    MesocycleResponse,
-    MicrocycleResponse,
-    getMyActiveMacrocycle,
-} from '@/libs/planningService';
+import { MacrocycleResponse, getMyActiveMacrocycle } from '@/libs/planningService';
+import { currentCycle, localDateKey, logsOfWeek } from '@/libs/currentWeek';
 import {
     NewWorkoutLogResponse,
     createNewWorkoutLog,
@@ -39,29 +35,10 @@ function collectMediaUrls(macro: MacrocycleResponse): string[] {
     return [...urls];
 }
 
-/** Mesma heurística usada na tela de treino para achar o microciclo "atual". */
-function pickCurrentMicrocycle(meso: MesocycleResponse): MicrocycleResponse | null {
-    return (
-        meso.microcycles?.find((m) => m.status === 'in_progress') ??
-        meso.microcycles?.find((m) => m.status === 'pending') ??
-        meso.microcycles?.[meso.microcycles.length - 1] ??
-        null
-    );
-}
-
-function pickCurrentMesocycle(macro: MacrocycleResponse): MesocycleResponse | null {
-    const mesos = macro.mesocycles ?? [];
-    if (mesos.length === 0) return null;
-    return (
-        mesos.find((m) => m.microcycles?.some((mc) => mc.status === 'in_progress')) ??
-        mesos.find((m) => m.microcycles?.some((mc) => mc.status === 'pending')) ??
-        mesos[mesos.length - 1]
-    );
-}
-
 /**
- * Garante que exista um workout-log "pending" para cada treino (A/B/C/D) do
- * microciclo atual, criando-o online se necessário. Isso permite que
+ * Garante que exista um workout-log "pending" para cada treino (A/B/C/D) da
+ * semana de hoje (currentCycle — a mesma régua da tela de treino, que é onde
+ * o registro é concluído), criando-o online se necessário. Isso permite que
  * WorkoutLogger complete/pule o treino offline mais tarde só com um PATCH
  * contra um ID já conhecido, sem precisar criar (POST) sem conexão — ver
  * plano de implementação para o racional completo. Best-effort: falhas aqui
@@ -72,13 +49,18 @@ async function ensurePendingWorkoutLogs(
     studentId: string,
     macro: MacrocycleResponse,
 ): Promise<void> {
-    const meso = pickCurrentMesocycle(macro);
-    const micro = meso ? pickCurrentMicrocycle(meso) : null;
-    if (!meso || !micro) return;
+    const cycle = currentCycle(macro);
+    if (!cycle) return;
+    const { meso, micro } = cycle;
 
     let existing: NewWorkoutLogResponse[] = [];
     try {
-        existing = await getNewWorkoutLogs(studentId, macro.id, meso.id, micro.id);
+        // Só pendentes desta semana: no plano simples toda semana cai no
+        // mesmo microciclo, e reaproveitar um pendente de semanas atrás
+        // concluiria o treino de hoje com a data planejada antiga.
+        existing = logsOfWeek(
+            await getNewWorkoutLogs(studentId, macro.id, meso.id, micro.id),
+        );
     } catch {
         return;
     }
@@ -103,7 +85,7 @@ async function ensurePendingWorkoutLogs(
 
         try {
             const created = await createNewWorkoutLog(studentId, macro.id, meso.id, micro.id, {
-                planned_date: new Date().toISOString().split('T')[0],
+                planned_date: localDateKey(),
                 training_ref: training.reference,
             });
             await db.put('pendingWorkoutLogIds', {

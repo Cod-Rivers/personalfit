@@ -59,7 +59,12 @@ export interface NewWorkoutLogResponse {
     training_ref: string;
     status: 'pending' | 'completed' | 'skipped';
     planned_date: string;
+    /** Hora do SERVIDOR ao receber, em UTC e sem fuso ("2026-09-28 01:00:00").
+     * Para saber o dia/semana do treino, use performedAt (libs/currentWeek). */
     completed_date?: string;
+    /** Hora do aparelho ao concluir (RFC3339 com fuso). Ausente em registro
+     * anterior à janela de registro. */
+    client_completed_at?: string;
     duration_minutes?: number;
     exercises: ExercisePerformanceResponse[];
     notes?: string;

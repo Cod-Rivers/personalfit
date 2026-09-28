@@ -52,7 +52,6 @@ import {
     createMesocycle,
     getMacrocycle,
     getStudentPlannings,
-    pickActiveMicrocycle,
     updateMesocycle,
     type ExerciseLibraryItem,
     type ExerciseRequest,
@@ -60,9 +59,14 @@ import {
     type MacrocycleResponse,
     type MesocycleRequest,
     type MesocycleResponse,
-    type MicrocycleResponse,
     type TrainingResponse,
 } from '@/libs/planningService';
+import {
+    currentCycle,
+    logsOfWeek,
+    weeklyProgress,
+    weeklyTargetDays,
+} from '@/libs/currentWeek';
 import {
     getStudentMicrocycleWorkoutLogs,
     type NewWorkoutLogResponse,
@@ -152,30 +156,6 @@ const ExerciseLoadHistoryModal = dynamic(
 interface StudentRow {
     id: string;
     name: string;
-}
-
-/** Mesociclo + microciclo que estão valendo hoje. `pickActiveMicrocycle` já
- * resolve a semana dentro de UM mesociclo; aqui falta decidir qual mesociclo
- * — o primeiro que tem semana ativa, e não simplesmente o primeiro da lista
- * (um plano de quatro fases abriria sempre na fase 1, mesmo em dezembro). */
-function pickCurrentCycle(macro: MacrocycleResponse): {
-    meso: MesocycleResponse;
-    micro: MicrocycleResponse;
-} | null {
-    const mesos = [...(macro.mesocycles ?? [])].sort(
-        (a, b) => a.order - b.order,
-    );
-    for (const meso of mesos) {
-        const micro = pickActiveMicrocycle(meso.microcycles);
-        if (micro) return { meso, micro };
-    }
-    // Plano sem nenhuma semana marcada como ativa: cai na primeira fase que
-    // ao menos tenha treinos, para a tela não morrer vazia com o aluno
-    // esperando.
-    const withTrainings = mesos.find((m) => (m.trainings ?? []).length > 0);
-    const micro = withTrainings?.microcycles?.[0];
-    if (withTrainings && micro) return { meso: withTrainings, micro };
-    return null;
 }
 
 /** Id do BLOCO para o arrastar e soltar: um bi-set anda inteiro, então quem
@@ -369,15 +349,16 @@ export default function AcompanharTreinoPage() {
         void loadPlan();
     }, [loadPlan]);
 
-    const cycle = useMemo(
-        () => (macro ? pickCurrentCycle(macro) : null),
-        [macro],
-    );
+    /* Fase + semana de hoje pelo calendário (libs/currentWeek.ts). Pelo
+     * status, a semana "ativa" avançava a cada treino registrado e o personal
+     * via o aluno numa semana que não era a de hoje. */
+    const cycle = useMemo(() => (macro ? currentCycle(macro) : null), [macro]);
 
     /* ── O que o aluno já registrou nesta semana ──
      * É daqui que sai tanto o "já feito" no seletor de treino quanto a última
      * carga por exercício. Falha não bloqueia: sem esses números a tela ainda
-     * mostra a prescrição e finaliza o treino. */
+     * mostra a prescrição e finaliza o treino. Só entram registros desta
+     * semana: no plano simples toda semana cai no mesmo microciclo. */
     const loadLogs = useCallback(async () => {
         if (!macro || !cycle) return;
         try {
@@ -387,7 +368,7 @@ export default function AcompanharTreinoPage() {
                 cycle.meso.id,
                 cycle.micro.id,
             );
-            setLogs(data);
+            setLogs(logsOfWeek(data));
             setLogsFailed(false);
         } catch {
             setLogs([]);
@@ -514,6 +495,13 @@ export default function AcompanharTreinoPage() {
         [logs],
     );
 
+    /** Dias treinados nesta semana contra a meta da prescrição. */
+    const weekProgress = useMemo(() => {
+        if (!macro || !cycle) return null;
+        const target = weeklyTargetDays(macro, cycle.meso);
+        return target > 0 ? weeklyProgress(logs, target) : null;
+    }, [macro, cycle, logs]);
+
     /** Partes do nome do treino no plano: o personal vê aqui o mesmo nome
      * que o aluno vê. Com o dia no nome, o treino novo nasce no próximo dia
      * livre; a letra só acompanha a posição quando identifica o treino (ver
@@ -564,7 +552,7 @@ export default function AcompanharTreinoPage() {
         <T,>(job: (meso: MesocycleResponse) => Promise<T>): Promise<T> => {
             const run = saveChainRef.current.then(() => {
                 const current = macroRef.current
-                    ? pickCurrentCycle(macroRef.current)
+                    ? currentCycle(macroRef.current)
                     : null;
                 if (!current) {
                     throw new Error('Plano não carregado. Recarregue a página.');
@@ -1067,10 +1055,19 @@ export default function AcompanharTreinoPage() {
                             ) : null}
                         </>
                     )}
-                    <span className={s.chip}>
-                        {completedRefs.size} de {trainings.length} treinos
-                        feitos nesta semana
-                    </span>
+                    {/* Dias treinados contra a meta semanal da prescrição
+                        (ou o número de treinos da fase). Sem os registros não
+                        dá para afirmar "0 de 3". */}
+                    {weekProgress && !logsFailed && (
+                        <span
+                            className={`${s.chip}${weekProgress.completed ? ` ${s.chipDone}` : ''}`}
+                        >
+                            {weekProgress.completed && 'Semana concluída · '}
+                            {weekProgress.done} de {weekProgress.target}{' '}
+                            {weekProgress.target === 1 ? 'dia' : 'dias'} de
+                            treino nesta semana
+                        </span>
+                    )}
                 </div>
 
                 {isOfflineData && (

@@ -128,6 +128,10 @@ export interface MacrocycleResponse {
     /** Partes do nome do treino que o aluno vê. O backend devolve sempre as
      * efetivas, inclusive nos planos antigos (ver libs/trainingLabel.ts). */
     training_label_parts?: TrainingLabelPart[];
+    /** Meta semanal definida pelo personal na prescrição: quantos DIAS de
+     * treino fecham a semana do aluno (1–7). 0/ausente = automático, o número
+     * de treinos da fase — ver weeklyTargetDays em libs/currentWeek.ts. */
+    weekly_target_days?: number;
     is_template?: boolean;
     is_public?: boolean;
     /** Status de revisão da equipe Venafit — só relevante quando is_public=true.
@@ -234,10 +238,15 @@ export interface UpdateMacrocycleRequest {
     mesocycles?: MesocycleRequest[];
     /** Troca só a exibição: letras, dias e nomes gravados nos treinos ficam. */
     training_label_parts?: TrainingLabelPart[];
+    /** Meta semanal: 0 = automático (número de treinos da fase), 1–7 = fixa.
+     * 0 e não null: o PUT não distingue null de campo ausente. */
+    weekly_target_days?: number;
 }
 
-/** Seleciona o microciclo "atual" de um mesociclo: em andamento, senão o
- * próximo pendente, senão o último cadastrado (fase já concluída). */
+/** Heurística por STATUS: em andamento, senão o próximo pendente, senão o
+ * último cadastrado. NÃO é a semana de hoje — para isso use currentCycle /
+ * currentMicrocycleOf (libs/currentWeek.ts), que só caem aqui quando o plano
+ * não tem data nenhuma. Continua servindo ao tooltip do Gantt. */
 export function pickActiveMicrocycle(
     microcycles: MicrocycleResponse[] = [],
 ): MicrocycleResponse | null {
@@ -647,6 +656,8 @@ export interface PeriodizedWorkoutLogResponse {
     status: 'pending' | 'completed' | 'skipped';
     planned_date: string;
     completed_date?: string;
+    /** Hora do aparelho ao concluir (RFC3339 com fuso) — ver performedAt. */
+    client_completed_at?: string;
 }
 
 /**

@@ -36,6 +36,8 @@ import {
 import MesocycleSection from '@/app/personal/_shared/periodizacao/components/MesocycleSection';
 import MesocycleFormModal from '@/app/personal/_shared/periodizacao/components/MesocycleFormModal';
 import PlanningNextStep from '@/app/personal/_shared/periodizacao/components/PlanningNextStep';
+import WeeklyTargetPicker from '@/app/personal/_shared/periodizacao/components/WeeklyTargetPicker';
+import { currentCycle, weeklyTargetDays } from '@/libs/currentWeek';
 import HelpTooltip from '@/components/atoms/HelpTooltip';
 import { getGlossaryTerm } from '@/libs/glossaryContent';
 import { useToast } from '@/components/system/Toast';
@@ -285,6 +287,33 @@ export default function PeriodizacaoDetalhePage() {
         [studentId, planningId],
     );
 
+    /* ── Meta semanal (dias de treino que fecham a semana) ──
+     * Vale para o plano inteiro: "Semana concluída" do aluno, o chip de
+     * "Treino do aluno" e o status das semanas (recalculado pelo servidor a
+     * cada registro). 0 = automático. */
+    const changeWeeklyTarget = useCallback(
+        async (days: number) => {
+            try {
+                const updated = await updateMacrocycle(studentId, planningId, {
+                    weekly_target_days: days,
+                });
+                setMacro(updated);
+                void cachePersonalMacrocycle(studentId, updated);
+                showSuccess(
+                    days === 0
+                        ? 'Meta semanal: automático.'
+                        : `Meta semanal: ${days} ${days === 1 ? 'dia' : 'dias'} de treino.`,
+                );
+            } catch (e: unknown) {
+                const msg = (
+                    e as { response?: { data?: { message?: string } } }
+                )?.response?.data?.message;
+                showError(msg || 'Erro ao salvar a meta semanal.');
+            }
+        },
+        [studentId, planningId, showSuccess, showError],
+    );
+
     /* ── Eco local de uma edição que foi para a fila offline ──
      * Sem isto, a edição era gravada no IndexedDB (prescriptionQueue) e o card
      * mostrava "salvo neste dispositivo" — mas o valor na tela voltava ao
@@ -419,6 +448,18 @@ export default function PeriodizacaoDetalhePage() {
                             : `mesociclo${(macro.mesocycles?.length ?? 0) === 1 ? '' : 's'}`}
                     </span>
                 </div>
+
+                <WeeklyTargetPicker
+                    value={macro.weekly_target_days ?? 0}
+                    automaticDays={weeklyTargetDays(
+                        { ...macro, weekly_target_days: 0 },
+                        currentCycle(macro)?.meso,
+                    )}
+                    // O PUT do plano não tem fila offline (só a prescrição
+                    // de série/carga tem): offline, a escolha se perderia.
+                    disabled={isOfflineData}
+                    onChange={changeWeeklyTarget}
+                />
 
                 {/* Plano servido do cache local. Fica acima do badge de
                     pendências porque é o contexto dele: o personal precisa

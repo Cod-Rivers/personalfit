@@ -23,8 +23,8 @@ import {
     MicrocycleResponse,
     TrainingResponse,
     searchExercises,
-    pickActiveMicrocycle,
 } from '@/libs/planningService';
+import { currentMicrocycleOf, logsOfWeek } from '@/libs/currentWeek';
 import { ExerciseLog } from '../../../../components/features/types';
 import Button from '@/components/atoms/Button';
 import CircuitTimer, {
@@ -269,7 +269,10 @@ export default function MeusTreinosExercisesPage({
                     );
                     setCurrentTraining(t);
 
-                    const selectedMicro = pickActiveMicrocycle(meso.microcycles);
+                    // Semana pelo calendário, não pelo status: é neste
+                    // microciclo que o registro de hoje é gravado (ver
+                    // libs/currentWeek.ts).
+                    const selectedMicro = currentMicrocycleOf(macro, meso);
                     setCurrentMeso(meso);
                     setCurrentMicro(selectedMicro);
 
@@ -281,7 +284,7 @@ export default function MeusTreinosExercisesPage({
                                 meso.id,
                                 selectedMicro.id,
                             );
-                            setMicroLogsCount(currentLogs.length);
+                            setMicroLogsCount(logsOfWeek(currentLogs).length);
 
                             const prevMicro = meso.microcycles?.find(
                                 (m) => m.week_number === selectedMicro.week_number - 1,
