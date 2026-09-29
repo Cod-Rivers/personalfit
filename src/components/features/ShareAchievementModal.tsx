@@ -13,6 +13,7 @@ import Modal from '@/components/system/Modal';
 import { buildShareCard, type ShareCardInput } from '@/libs/shareCard';
 import { useBranding } from '@/context/BrandingContext';
 import { getUser } from '@/libs/session';
+import { trackShareCard } from '@/libs/analytics';
 import {
     buildCaption,
     copyToClipboard,
@@ -118,8 +119,12 @@ export default function ShareAchievementModal({
     const handleShare = useCallback(async () => {
         const file = fileRef.current;
         if (!file) return;
-        setOutcome(await shareImage(file, caption));
-    }, [caption]);
+        const result = await shareImage(file, caption);
+        setOutcome(result);
+        // 'shared' = a folha de compartilhamento abriu — não dá para saber
+        // se a pessoa concluiu o post depois disso, só que o convite saiu.
+        if (result === 'shared') trackShareCard(title);
+    }, [caption, title]);
 
     const handleCopyCaption = useCallback(async () => {
         setCopied(await copyToClipboard(caption));

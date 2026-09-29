@@ -185,7 +185,10 @@ describe('buildCaption', () => {
         // A assinatura é o ponto da legenda: sem ela, o post não leva ninguém
         // de volta ao app.
         expect(caption).toContain('Treine com o Venafit');
-        expect(caption).toContain(window.location.host);
+        // Aponta para a página de apresentação (hub), com o canal de
+        // aquisição do clique — não para o host cru do app.
+        expect(caption).toContain('codriverslabs.com/apps/venafit');
+        expect(caption).toContain('ref=share_card');
     });
 });
 

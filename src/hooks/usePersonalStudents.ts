@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Api } from '@/libs/api';
+import { trackStudentAdded } from '@/libs/analytics';
 import { isValidCpfChecksum } from '@/libs/validation/authSchemas';
 import {
     cachePersonalStudents,
@@ -235,6 +236,7 @@ export function usePersonalStudents(enabled: boolean) {
                 linkRequested: !!data.link_requested,
                 tempPassword: data.temp_password,
             });
+            trackStudentAdded(!!data.link_requested);
             await fetchStudents();
         } catch (err: unknown) {
             setError(extractErrorMessage(err, 'Erro ao cadastrar aluno.'));

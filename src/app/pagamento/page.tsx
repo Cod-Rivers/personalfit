@@ -33,6 +33,7 @@ import {
     getActiveReferralPartners,
 } from '@/libs/referralPartnerService';
 import { getStudentHomeRoute, getUser, updateSessionPlanType } from '@/libs/session';
+import { trackTrialStarted } from '@/libs/analytics';
 
 // Valor fixo para "sem indicação" — usado tanto aqui quanto interpretado no
 // backend/estatísticas (ver ReferralPartnerController.GetIndicationStats).
@@ -275,6 +276,7 @@ function PaymentPageInner() {
             const res = await startProTrial();
             updateSessionPlanType(res.plan_type);
             setTrialStarted(res);
+            trackTrialStarted();
         } catch (err: unknown) {
             setError(extractApiError(err, 'Não foi possível começar o teste. Tente novamente.'));
         } finally {

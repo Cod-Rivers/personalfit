@@ -20,6 +20,7 @@ import { getPendingWorkoutLogId } from '@/libs/offline/downloadManager';
 import { localDateKey } from '@/libs/currentWeek';
 import { OfflineDBUnavailableError } from '@/libs/offline/db';
 import { enqueueSession, enqueueSkip } from '@/libs/offline/syncQueue';
+import { trackWorkoutCompleted } from '@/libs/analytics';
 import { enqueuePhoto } from '@/libs/offline/mediaQueue';
 import Modal from '@/components/system/Modal';
 import WorkoutCheckIn from './WorkoutCheckIn';
@@ -434,6 +435,9 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                     // tarde, e o /me daquele momento é sempre o personal.
                     asPersonal: assisted || undefined,
                 });
+                // Aqui, e não no sync: conta uma vez por conclusão, mesmo
+                // offline, e nunca de novo nos reenvios da fila.
+                trackWorkoutCompleted(Boolean(assisted));
 
                 // Foto é OPCIONAL e NUNCA bloqueia (RN-20/22, US-03
                 // critérios 2 e 4): o check-in acima já está enfileirado e

@@ -61,7 +61,7 @@ declare global {
     }
 }
 
-type BridgeName = 'auth' | 'share' | 'billing' | 'screen';
+type BridgeName = 'auth' | 'share' | 'billing' | 'screen' | 'analytics';
 
 interface NativeReply {
     id?: unknown;
@@ -328,5 +328,31 @@ export function nativeKeepScreenOn(on: boolean): boolean {
         return true;
     } catch {
         return false;
+    }
+}
+
+// ─── Medição do funil (AnalyticsBridge.kt) ───
+
+/**
+ * Evento do funil de marketing (Todo/PLANO_MARKETING_ADMOB.md, fase 0),
+ * registrado no Firebase Analytics do lado nativo — o app já tem o
+ * google-services.json, o web não tem GA4 configurado ainda. Sem resposta
+ * de propósito (`send`, não `request`): medição nunca deve travar nem
+ * atrasar a ação que o usuário está fazendo.
+ *
+ * Fora do app (navegador, PWA), não faz nada — não é um "TODO esquecido",
+ * é o estado atual: cobrir web/PWA é o próximo passo do plano (GA4 via
+ * Firebase JS SDK), fora do escopo desta ponte nativa.
+ */
+export function nativeLogEvent(
+    name: string,
+    params: Record<string, string | number | boolean> = {},
+): void {
+    try {
+        const port = hardenedPort();
+        if (!port) return;
+        send(port, 'analytics', 'logEvent', { name, params });
+    } catch {
+        /* medição nunca pode quebrar o fluxo do usuário */
     }
 }

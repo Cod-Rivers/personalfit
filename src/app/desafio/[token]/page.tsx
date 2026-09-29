@@ -7,6 +7,7 @@ import {
     joinChallenge,
     type PublicChallenge,
 } from '@/libs/challengeService';
+import { trackChallengeJoin } from '@/libs/analytics';
 import s from './desafio.module.css';
 
 function fmt(d: string) {
@@ -57,6 +58,7 @@ export default function PublicChallengePage() {
                 phone: phone.trim() || undefined,
             });
             setDone(true);
+            trackChallengeJoin();
         } catch {
             setError(
                 'Não foi possível concluir a inscrição. As inscrições podem estar encerradas.',

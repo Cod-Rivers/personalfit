@@ -184,15 +184,24 @@ export async function copyToClipboard(text: string): Promise<boolean> {
     }
 }
 
+/** Página de destino do link no compartilhamento: a apresentação do Venafit
+ *  no hub institucional, não o host cru do app (que cai direto num
+ *  formulário de login — ruim para quem nunca ouviu falar do Venafit) e não
+ *  a raiz do hub (que fala de todos os produtos da Codrivers Labs, não só
+ *  deste). `ref=share_card` é o canal de aquisição desse clique (ver
+ *  libs/acquisition.ts) — a página repassa para "Abrir o app"/Google Play. */
+const SHARE_LANDING_URL = 'https://codriverslabs.com/apps/venafit/?ref=share_card';
+
 /** Legenda sugerida, já com as marcações que levam de volta ao app.
  *  Fica AQUI e não na tela porque a mesma legenda é usada no compartilhamento
  *  nativo (que a manda junto do arquivo) e no botão de copiar. */
 export function buildCaption(lines: string[]): string {
-    const host =
-        typeof window !== 'undefined'
-            ? window.location.host.replace(/^www\./, '')
-            : 'venafit.codriverslabs.com';
-    return [...lines.filter(Boolean), '', `Treine com o Venafit — ${host}`, '#venafit #treino']
+    return [
+        ...lines.filter(Boolean),
+        '',
+        `Treine com o Venafit — ${SHARE_LANDING_URL}`,
+        '#venafit #treino',
+    ]
         .join('\n')
         .trim();
 }

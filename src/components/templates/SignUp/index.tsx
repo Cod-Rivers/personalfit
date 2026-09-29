@@ -13,6 +13,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { signUpSchema, SignUpFormData } from '@/libs/validation/authSchemas';
 import { formatCpfInput } from '@/libs/formatters';
+import { readAcquisitionRef } from '@/libs/acquisition';
+import { trackSignUp } from '@/libs/analytics';
 
 const TSignUp: FC = () => {
     const t = useTranslations('SignUpPage');
@@ -44,10 +46,12 @@ const TSignUp: FC = () => {
             cpf: form.cpf,
             password: form.password,
             role,
+            ref: readAcquisitionRef() || undefined,
         };
 
         try {
             await Api.post('/users', payload);
+            trackSignUp(role);
             window.location.href = '/';
         } catch (error: unknown) {
             const responseData = (

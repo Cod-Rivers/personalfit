@@ -73,6 +73,17 @@ export default function PoliticaPrivacidadePage() {
                         identificadores de sessão, usados para operar e proteger
                         o serviço.
                     </li>
+                    <li>
+                        <strong>Uso do aplicativo e origem do cadastro:</strong>{' '}
+                        no app Android, registramos eventos de uso (cadastro,
+                        treino concluído, aluno adicionado, início do teste
+                        grátis, inscrição em desafio e compartilhamento) pelo
+                        Google Firebase Analytics, e guardamos o código do link
+                        pelo qual você chegou ao Venafit, quando houver. Esses
+                        eventos não incluem dados de saúde, cargas nem conteúdo
+                        dos treinos, e o identificador de publicidade do
+                        aparelho não é coletado.
+                    </li>
                 </ul>
                 <p>
                     O aplicativo Android solicita apenas as permissões de
@@ -129,6 +140,11 @@ export default function PoliticaPrivacidadePage() {
                     <li>
                         <strong>Google Firebase Cloud Messaging:</strong> envio
                         de notificações push.
+                    </li>
+                    <li>
+                        <strong>Google Firebase Analytics:</strong> medição de
+                        uso do aplicativo Android, sem o identificador de
+                        publicidade.
                     </li>
                     <li>
                         <strong>Google Cloud Platform:</strong> hospedagem da

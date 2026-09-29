@@ -10,6 +10,7 @@ import Footer from '@/components/organism/Footer';
 import HeaderCondicional from '@/components/organism/HeaderCondicional';
 import FCMProvider from '@/components/FCMProvider';
 import ServiceWorkerRegistrar from '@/components/system/ServiceWorkerRegistrar';
+import AcquisitionCapture from '@/components/system/AcquisitionCapture';
 import InstallPwaPrompt from '@/components/system/InstallPwaPrompt';
 import GoogleAdsense from '@/components/system/GoogleAdsense';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -80,6 +81,7 @@ export default async function RootLayout({
             <body className={`main_back`}>
                 <NextIntlClientProvider>
                     <ServiceWorkerRegistrar />
+                    <AcquisitionCapture />
                     <InstallPwaPrompt />
                     <ThemeProvider>
                         <BrandingProvider>
