@@ -1738,8 +1738,14 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                     </div>
             </Modal>
 
-            {/* Modal do Player de Vídeo */}
-            <Modal open={isVideoPlayerOpen} onClose={handleCloseVideoPlayer}>
+            {/* Modal do Player de Vídeo. O title é o que desenha o header com o
+                X: sem ele, no celular (folha em tela cheia, sem fundo para
+                tocar) o player não tinha como ser fechado. */}
+            <Modal
+                open={isVideoPlayerOpen}
+                onClose={handleCloseVideoPlayer}
+                title={exercise.name}
+            >
                 {renderVideoModalContent()}
             </Modal>
         </>

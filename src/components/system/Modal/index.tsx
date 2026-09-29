@@ -2,6 +2,7 @@
 import React, { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { FiArrowLeft, FiX } from 'react-icons/fi';
+import { useCloseOnBack } from '@/hooks/useCloseOnBack';
 import styles from './Modal.module.css';
 
 interface ModalProps {
@@ -78,6 +79,17 @@ export default function Modal({
             window.removeEventListener('keydown', handleKeyDown);
         };
     }, [open]);
+
+    // Botão voltar do Android/navegador faz o mesmo que o Escape: sem isto ele
+    // saía da página com o modal aberto (aluno no vídeo do exercício caía no
+    // menu inicial). O histórico já garante que só o modal do topo responde.
+    useCloseOnBack(open, () => {
+        if (onBackRef.current) {
+            onBackRef.current();
+            return;
+        }
+        onCloseRef.current();
+    });
 
     // No Safari iOS, elementos com position:fixed são posicionados contra o
     // layout viewport, que não encolhe quando o teclado abre — só o visual
