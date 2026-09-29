@@ -13,7 +13,10 @@ import {
     landingRouteFor,
     saveSession,
 } from '@/libs/session';
-import { isValidCpfChecksum } from '@/libs/validation/authSchemas';
+import {
+    isValidCpfChecksum,
+    strongPassword,
+} from '@/libs/validation/authSchemas';
 
 // CPF só entra no formulário quando a conta ainda não tem um (ver
 // CreateStudentHandler: o personal pode deixar em branco no pré-cadastro) —
@@ -22,7 +25,7 @@ function buildSchema(needsCpf: boolean) {
     return z
         .object({
             current_password: z.string().min(1, 'Informe a senha temporária'),
-            new_password: z.string().min(6, 'Mínimo de 6 caracteres'),
+            new_password: strongPassword,
             confirm_password: z.string(),
             cpf: z.string().optional(),
         })
@@ -84,13 +87,19 @@ export default function TrocarSenhaTemporariaPage() {
         setError('');
         const cpfDigits = form.cpf?.replace(/\D/g, '');
         try {
-            await Api.post('/change-password', {
+            const { data } = await Api.post<{
+                token?: string;
+                refresh_token?: string;
+            }>('/change-password', {
                 current_password: form.current_password,
                 new_password: form.new_password,
                 cpf: needsCpf ? cpfDigits : undefined,
             });
 
-            const token = getToken();
+            // A troca de senha derruba todas as sessões da conta; o servidor
+            // devolve um par novo para esta. Sem guardá-lo, o próximo pedido
+            // (token antigo) voltaria 401.
+            const token = data?.token ?? getToken();
             const user = getUser();
             if (token && user) {
                 const updatedUser = {
@@ -101,7 +110,7 @@ export default function TrocarSenhaTemporariaPage() {
                 saveSession(
                     token,
                     updatedUser,
-                    getRefreshToken() ?? undefined,
+                    data?.refresh_token ?? getRefreshToken() ?? undefined,
                 );
                 router.replace(landingRouteFor(updatedUser));
             } else {

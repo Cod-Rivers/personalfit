@@ -35,8 +35,9 @@ export type LoginFormData = z.infer<typeof loginSchema>;
 
 // Política de senha do cadastro: mínimo 8 caracteres com ao menos uma letra e um
 // número. Aplicada de forma consistente para todo novo cadastro (dados de saúde
-// sensíveis justificam um mínimo mais forte).
-const strongPassword = z
+// sensíveis justificam um mínimo mais forte). O servidor aplica a mesma regra
+// (user.ValidatePasswordPolicy) no cadastro, na troca e na redefinição.
+export const strongPassword = z
     .string()
     .min(8, 'Senha deve ter pelo menos 8 caracteres')
     .refine((v) => /[A-Za-z]/.test(v) && /\d/.test(v), {

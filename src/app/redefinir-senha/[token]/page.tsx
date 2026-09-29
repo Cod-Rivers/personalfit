@@ -6,10 +6,11 @@ import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { strongPassword } from '@/libs/validation/authSchemas';
 
 const schema = z
     .object({
-        new_password: z.string().min(6, 'Mínimo de 6 caracteres'),
+        new_password: strongPassword,
         confirm_password: z.string(),
     })
     .refine((d) => d.new_password === d.confirm_password, {
@@ -46,7 +47,8 @@ export default function RedefinirSenhaPage() {
             const msg =
                 (err as { response?: { data?: { error?: string } } })?.response
                     ?.data?.error ?? 'Link inválido ou expirado.';
-            setError(msg);
+            // O servidor prefixa erros de validação com "erro de validação:".
+            setError(msg.replace(/^erro de validação:\s*/i, ''));
         } finally {
             setLoading(false);
         }

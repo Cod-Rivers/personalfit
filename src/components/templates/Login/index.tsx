@@ -51,8 +51,18 @@ const TLogin: FC = () => {
                     ? '/trocar-senha-temporaria'
                     : redirectTarget || landingRouteFor(data.user);
             }
-        } catch {
-            setError('Erro ao realizar login');
+        } catch (err: unknown) {
+            const response = (
+                err as
+                    | { response?: { status?: number; data?: { error?: string } } }
+                    | undefined
+            )?.response;
+            // 429: muitas tentativas para este e-mail (ou deste IP).
+            setError(
+                response?.status === 429
+                    ? 'Muitas tentativas de login. Aguarde 15 minutos ou use "Esqueci minha senha".'
+                    : 'Erro ao realizar login',
+            );
         } finally {
             setLoading(false);
         }

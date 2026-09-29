@@ -29,6 +29,13 @@ export default function MinhaContaPage() {
     const [saving, setSaving] = useState(false);
     const [editError, setEditError] = useState('');
     const [editForm, setEditForm] = useState({ name: '', email: '', phone: '' });
+    // Trocar o e-mail exige a senha atual: com o e-mail na mão, quem pegasse
+    // uma sessão aberta pedia a redefinição de senha e ficava com a conta.
+    const [currentPassword, setCurrentPassword] = useState('');
+    const emailChanged =
+        editing &&
+        editForm.email.trim().toLowerCase() !==
+            (user.email || '').trim().toLowerCase();
 
     useEffect(() => {
         const stored = localStorage.getItem('user');
@@ -60,10 +67,15 @@ export default function MinhaContaPage() {
             phone: user.phone || '',
         });
         setEditError('');
+        setCurrentPassword('');
         setEditing(true);
     };
 
     const handleSaveProfile = async () => {
+        if (emailChanged && !currentPassword) {
+            setEditError('Informe sua senha atual para trocar o e-mail.');
+            return;
+        }
         setSaving(true);
         setEditError('');
         try {
@@ -71,17 +83,27 @@ export default function MinhaContaPage() {
                 name: editForm.name,
                 email: editForm.email,
                 phone: editForm.phone,
+                ...(emailChanged ? { current_password: currentPassword } : {}),
             });
             const updatedUser = { ...user, ...res.data };
             setUser(updatedUser);
             localStorage.setItem('user', JSON.stringify(updatedUser));
+            setCurrentPassword('');
             setEditing(false);
         } catch (err: unknown) {
-            const status = (
-                err as { response?: { status?: number } } | undefined
-            )?.response?.status;
+            const response = (
+                err as
+                    | { response?: { status?: number; data?: { error?: string } } }
+                    | undefined
+            )?.response;
+            const status = response?.status;
             if (status === 409) {
                 setEditError('Este e-mail já está em uso por outra conta.');
+            } else if (
+                status === 400 &&
+                response?.data?.error?.includes('senha atual')
+            ) {
+                setEditError('Senha atual incorreta.');
             } else if (status === 400) {
                 setEditError('Dados inválidos. Verifique os campos e tente novamente.');
             } else {
@@ -210,6 +232,33 @@ export default function MinhaContaPage() {
                                     disabled={saving}
                                 />
                             </div>
+                            {emailChanged && (
+                                <div className="mb-3">
+                                    <label
+                                        htmlFor="edit-current-password"
+                                        className="form-label text-secondary"
+                                    >
+                                        Senha atual
+                                    </label>
+                                    <input
+                                        id="edit-current-password"
+                                        type="password"
+                                        autoComplete="current-password"
+                                        className="form-control"
+                                        value={currentPassword}
+                                        onChange={(e) =>
+                                            setCurrentPassword(e.target.value)
+                                        }
+                                        disabled={saving}
+                                    />
+                                    <div
+                                        className="form-text"
+                                        style={{ fontSize: '0.8rem' }}
+                                    >
+                                        Para trocar o e-mail, confirme que é você.
+                                    </div>
+                                </div>
+                            )}
                             <div className="mb-3">
                                 <label
                                     htmlFor="edit-phone"
