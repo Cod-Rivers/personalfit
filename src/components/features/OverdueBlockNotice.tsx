@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { FiLock } from 'react-icons/fi';
 import s from './OverdueBlockNotice.module.css';
 
@@ -10,7 +11,8 @@ interface OverdueBlockNoticeProps {
  * Aviso mostrado no lugar do conteúdo quando o personal pausou o acesso do
  * aluno por mensalidade vencida (403 student_blocked_overdue, ver
  * libs/overdueBlock.ts). Explica o que aconteceu e como sai disso, em vez de
- * um erro genérico de carregamento.
+ * um erro genérico de carregamento. O caminho de saída é a tela
+ * "Mensalidades", onde o aluno avisa que pagou.
  */
 export default function OverdueBlockNotice({ what }: OverdueBlockNoticeProps) {
     return (
@@ -21,7 +23,9 @@ export default function OverdueBlockNotice({ what }: OverdueBlockNoticeProps) {
                 <p className={s.text}>
                     Seu personal trainer pausou o acesso {what} porque há uma
                     mensalidade vencida. Assim que ele registrar o pagamento, o
-                    acesso volta sozinho. Se você já pagou, fale com ele.
+                    acesso volta sozinho. Já pagou? Avise em{' '}
+                    <Link href="/mensalidades">Mensalidades</Link>, no botão
+                    “Já paguei”.
                 </p>
             </div>
         </div>

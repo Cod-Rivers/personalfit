@@ -1,0 +1,576 @@
+/* Estilos compartilhados do financeiro (personal e aluno). Tokens de
+ * src/app/css/constants.css; rem para tipografia, px só em bordas finas. */
+
+.page {
+    min-height: 100%;
+}
+
+.container {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: var(--space-6) var(--space-4) var(--space-9);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+}
+
+.containerWide {
+    composes: container;
+    max-width: 980px;
+}
+
+.header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+}
+
+.headerTitle {
+    font-size: var(--font-2xl);
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.headerSub {
+    margin: var(--space-1) 0 0;
+    color: var(--text-secondary);
+    font-size: var(--font-sm);
+}
+
+.headerActions {
+    display: flex;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+/* ── Botões ─────────────────────────────────────────────────────────────── */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 2.5rem;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-mid);
+    background: var(--surface-1);
+    color: var(--text-primary);
+    font-size: var(--font-sm);
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.btnPrimary {
+    composes: btn;
+    background: var(--grad-mint);
+    border-color: transparent;
+    color: var(--btn-text);
+}
+
+.btnDanger {
+    composes: btn;
+    color: var(--coral-dim);
+    border-color: var(--coral);
+}
+
+.btnWhatsapp {
+    composes: btn;
+    color: #128c4a;
+    border-color: #25d366;
+}
+
+.btnGhost {
+    composes: btn;
+    background: transparent;
+}
+
+/* ── Avisos ─────────────────────────────────────────────────────────────── */
+
+.note {
+    background: var(--surface-2);
+    color: var(--text-secondary);
+    border-radius: var(--radius-lg);
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--font-sm);
+    display: flex;
+    gap: var(--space-2);
+    align-items: flex-start;
+}
+
+.note svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.proBanner {
+    composes: note;
+    background: rgba(240, 165, 0, 0.12);
+    border: 1px solid var(--amber);
+    color: var(--text-primary);
+    flex-wrap: wrap;
+}
+
+.proBanner a {
+    font-weight: 700;
+}
+
+.alertDanger {
+    composes: note;
+    background: rgba(255, 107, 107, 0.1);
+    border: 1px solid var(--coral);
+    color: var(--text-primary);
+}
+
+/* ── Indicadores ────────────────────────────────────────────────────────── */
+
+.tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+    gap: var(--space-3);
+}
+
+.tile {
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    min-width: 0;
+}
+
+.tileValue {
+    font-size: var(--font-xl);
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+}
+
+.tileLabel {
+    font-size: var(--font-xs);
+    color: var(--text-secondary);
+}
+
+.valueOverdue {
+    color: var(--coral-dim);
+}
+
+.valuePaid {
+    color: var(--mint-text);
+}
+
+.valueWarn {
+    color: var(--amber-text);
+}
+
+/* ── Seções / cartões ───────────────────────────────────────────────────── */
+
+.section {
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.sectionHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+}
+
+.sectionTitle {
+    margin: 0;
+    font-size: var(--font-lg);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.sectionHint {
+    margin: 0;
+    font-size: var(--font-sm);
+    color: var(--text-secondary);
+}
+
+.muted {
+    color: var(--text-muted);
+    font-size: var(--font-sm);
+}
+
+/* ── Lista de cobranças ─────────────────────────────────────────────────── */
+
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.row {
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: var(--space-3) var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    min-width: 0;
+}
+
+.rowOverdue {
+    border-left: 4px solid var(--coral);
+}
+
+.rowAwaiting {
+    border-left: 4px solid var(--amber);
+}
+
+.rowPaid {
+    opacity: 0.85;
+}
+
+.rowTop {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+}
+
+.rowInfo {
+    min-width: 0;
+    flex: 1 1 12rem;
+}
+
+.amount {
+    font-size: var(--font-lg);
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+}
+
+.rowMeta {
+    font-size: var(--font-sm);
+    color: var(--text-secondary);
+    overflow-wrap: anywhere;
+}
+
+.rowStudent {
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.reportBox {
+    background: rgba(240, 165, 0, 0.1);
+    border-radius: var(--radius-md);
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--font-sm);
+    overflow-wrap: anywhere;
+}
+
+.actions {
+    display: flex;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 10px;
+    border-radius: var(--radius-full);
+    font-size: var(--font-xs);
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.badgeOpen {
+    composes: badge;
+    background: var(--surface-3);
+    color: var(--text-secondary);
+}
+
+.badgePaid {
+    composes: badge;
+    background: var(--mint-glow);
+    color: var(--mint-text);
+}
+
+.badgeOverdue {
+    composes: badge;
+    background: rgba(255, 107, 107, 0.15);
+    color: var(--coral-dim);
+}
+
+.badgeAwaiting {
+    composes: badge;
+    background: rgba(240, 165, 0, 0.16);
+    color: var(--amber-text);
+}
+
+.badgePlan {
+    composes: badge;
+    background: rgba(139, 92, 246, 0.12);
+    color: var(--violet-text);
+}
+
+.empty {
+    text-align: center;
+    color: var(--text-muted);
+    padding: var(--space-6) var(--space-3);
+    font-size: var(--font-sm);
+}
+
+/* ── Formulários ────────────────────────────────────────────────────────── */
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.formRow {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    gap: var(--space-3);
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    min-width: 0;
+}
+
+.label {
+    font-size: var(--font-sm);
+    font-weight: 600;
+}
+
+.input {
+    width: 100%;
+    min-height: 2.75rem;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-mid);
+    background: var(--surface-1);
+    color: var(--text-primary);
+    /* 16px evita o zoom do iOS ao focar */
+    font-size: 1rem;
+}
+
+.fieldHint {
+    font-size: var(--font-xs);
+    color: var(--text-muted);
+}
+
+.error {
+    color: var(--coral-dim);
+    font-size: var(--font-sm);
+    margin: 0;
+}
+
+.modalFooter {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+/* ── Interruptor ────────────────────────────────────────────────────────── */
+
+.toggleRow {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.toggleRow:last-child {
+    border-bottom: none;
+}
+
+.toggleText {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.toggleTitle {
+    font-weight: 600;
+    font-size: var(--font-base);
+}
+
+.toggleDesc {
+    font-size: var(--font-sm);
+    color: var(--text-secondary);
+}
+
+.switchOn,
+.switchOff {
+    position: relative;
+    flex-shrink: 0;
+    width: 44px;
+    height: 24px;
+    margin-top: 2px;
+    border-radius: var(--radius-full);
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.switchOff {
+    background: var(--border-mid);
+}
+
+.switchOn {
+    background: var(--mint-dim);
+}
+
+.switchOn:disabled,
+.switchOff:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.switchKnob {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.2s;
+}
+
+.switchOn .switchKnob {
+    transform: translateX(20px);
+}
+
+.inlineSelect {
+    min-height: 2.25rem;
+    padding: 0 var(--space-2);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-mid);
+    background: var(--surface-1);
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+/* ── Gráfico (barras previsto × recebido) ───────────────────────────────── */
+
+.chart {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    align-items: end;
+    gap: var(--space-1);
+    height: 10rem;
+    padding-top: var(--space-2);
+}
+
+.chartCol {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    height: 100%;
+    min-width: 0;
+}
+
+.chartBars {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 2px;
+}
+
+.barExpected,
+.barReceived {
+    width: 42%;
+    max-width: 14px;
+    border-radius: 3px 3px 0 0;
+    min-height: 2px;
+}
+
+.barExpected {
+    background: var(--surface-3);
+    border: 1px solid var(--border-mid);
+}
+
+.barReceived {
+    background: var(--mint-dim);
+}
+
+.chartLabel {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.legend {
+    display: flex;
+    gap: var(--space-4);
+    font-size: var(--font-xs);
+    color: var(--text-secondary);
+    flex-wrap: wrap;
+}
+
+.legendDot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    margin-right: 6px;
+    vertical-align: middle;
+}
+
+/* ── Plano recorrente ───────────────────────────────────────────────────── */
+
+.planSummary {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+.planAmount {
+    font-size: var(--font-xl);
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 480px) {
+    .actions > * {
+        flex: 1 1 auto;
+    }
+
+    .chartLabel {
+        font-size: 0.55rem;
+    }
+}

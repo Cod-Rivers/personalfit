@@ -152,7 +152,9 @@ export default function ExcluirContaPage() {
                     <li>
                         <strong>Personal trainer:</strong> vitrine, marca,
                         biografia, redes sociais e depoimentos publicados,
-                        inclusive fotos e nomes de alunos que apareciam nela.
+                        inclusive fotos e nomes de alunos que apareciam nela,
+                        e o financeiro (cobranças lançadas, mensalidades
+                        automáticas e preferências de aviso).
                     </li>
                 </ul>
                 <p className="mb-0">
@@ -206,7 +208,9 @@ export default function ExcluirContaPage() {
                                     Fazem parte da agenda e do controle
                                     financeiro do personal trainer. Ficam
                                     ligados a um cadastro que não tem mais nome,
-                                    e-mail, CPF nem telefone.
+                                    e-mail, CPF nem telefone. Os recados que
+                                    você deixou nas faturas (“Já paguei”) são
+                                    apagados.
                                 </td>
                             </tr>
                             <tr>

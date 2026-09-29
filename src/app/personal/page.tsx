@@ -17,6 +17,7 @@ import {
     FiRefreshCw,
     FiMessageCircle,
     FiFileText,
+    FiDollarSign,
 } from 'react-icons/fi';
 
 import { usePersonalStudents } from '@/hooks/usePersonalStudents';
@@ -215,6 +216,22 @@ export default function PersonalDashboard() {
                             text="O que os alunos disseram no fim do treino, com o resumo do treino. Reaja ou responda; o aluno recebe o aviso."
                             href="/ajuda#comentarios-personal"
                             label="Ajuda sobre Comentários"
+                        />
+                    </span>
+                    <span className={s.tabSlot}>
+                        <button
+                            className={s.tab}
+                            onClick={() => router.push('/personal/financeiro')}
+                            title={planType === 'pro' ? undefined : 'Recurso do plano PRO'}
+                        >
+                            <FiDollarSign className={s.tabIcon} />
+                            Financeiro
+                            {planType !== 'pro' && <FiLock className={s.tabLock} />}
+                        </button>
+                        <HelpTooltip
+                            text="Quanto entrou, quem está devendo, mensalidade automática, lembretes para os alunos e exportação para o Carnê-Leão. Recurso PRO."
+                            href="/ajuda#financeiro-personal"
+                            label="Ajuda sobre o Financeiro"
                         />
                     </span>
                     <span className={s.tabSlot}>

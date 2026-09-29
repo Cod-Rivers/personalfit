@@ -84,6 +84,7 @@ const Header: React.FC = () => {
         pathname.startsWith('/meus-treinos') ||
         pathname.startsWith('/agendamentos') ||
         pathname.startsWith('/meus-comentarios') ||
+        pathname.startsWith('/mensalidades') ||
         pathname.startsWith('/anamnese');
     const showProfileSwitcher =
         linkStatus === 'active' && user.role !== 'student';
@@ -386,6 +387,21 @@ const Header: React.FC = () => {
                                     text="O que você disse ao seu personal no fim do treino, com o “visto” e as respostas."
                                     href="/ajuda#comentario-treino"
                                     label="Ajuda sobre Comentários"
+                                />
+                            </li>
+                        )}
+                        {user.role === 'student' && user.has_personal && (
+                            <li className="nav-item header-nav-item">
+                                <Link
+                                    className={`nav-link${pathname.startsWith('/mensalidades') ? ' nav-link-active' : ''}`}
+                                    href="/mensalidades"
+                                >
+                                    Mensalidades
+                                </Link>
+                                <HelpTooltip
+                                    text="As mensalidades que o seu personal lançou, o prazo de cada uma e o botão “Já paguei”."
+                                    href="/ajuda#mensalidades"
+                                    label="Ajuda sobre Mensalidades"
                                 />
                             </li>
                         )}

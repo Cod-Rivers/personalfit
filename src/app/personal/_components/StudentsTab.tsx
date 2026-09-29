@@ -15,6 +15,7 @@ import {
     FiFileText,
     FiCheck,
     FiWifiOff,
+    FiLock,
 } from 'react-icons/fi';
 import AvatarUpload from '@/components/molecules/AvatarUpload';
 import CountBadge from '@/components/atoms/CountBadge';
@@ -27,6 +28,11 @@ import {
     getPersonalAnamnesisSummary,
     type PersonalAnamnesisSummaryItem,
 } from '@/libs/personalAnamnesisService';
+import {
+    getFinanceStudentsStatus,
+    type FinanceStudentStatus,
+} from '@/libs/studentInvoiceService';
+import { BRL, fmtDate } from '@/libs/financeFormat';
 import s from '../personal.module.css';
 
 type StudentsState = ReturnType<typeof usePersonalStudents>;
@@ -83,6 +89,27 @@ export default function StudentsTab({ state, unreadComments }: Props) {
         getPersonalAnamnesisSummary()
             .then((summary) => {
                 if (!cancelled) setAnamnesisSummary(summary);
+            })
+            .catch(() => {});
+        return () => {
+            cancelled = true;
+        };
+    }, [students.length]);
+
+    // Selo financeiro em cada aluno (em dia, vence em breve, atrasado,
+    // "Já paguei" para confirmar): também uma chamada só. Falha esconde.
+    const [financeStatus, setFinanceStatus] = useState<
+        Record<string, FinanceStudentStatus>
+    >({});
+    const [financeLocked, setFinanceLocked] = useState(false);
+    useEffect(() => {
+        if (students.length === 0) return;
+        let cancelled = false;
+        getFinanceStudentsStatus()
+            .then(({ students: list, can_edit }) => {
+                if (cancelled) return;
+                setFinanceStatus(Object.fromEntries(list.map((x) => [x.student_id, x])));
+                setFinanceLocked(!can_edit);
             })
             .catch(() => {});
         return () => {
@@ -202,6 +229,8 @@ export default function StudentsTab({ state, unreadComments }: Props) {
                                         {st.email} · {st.cpf}
                                         {st.phone ? ` · ${st.phone}` : ''}
                                     </p>
+                                    <FinanceChip status={financeStatus[st.id]} />
+
                                 </div>
                                 <button
                                     type="button"
@@ -336,6 +365,12 @@ export default function StudentsTab({ state, unreadComments }: Props) {
                                         }}
                                     >
                                         <FiDollarSign /> Financeiro
+                                        {financeLocked && (
+                                            <FiLock
+                                                aria-label="Recurso PRO"
+                                                style={{ marginLeft: 6 }}
+                                            />
+                                        )}
                                     </button>
                                     <button
                                         onClick={() =>
@@ -766,5 +801,49 @@ export default function StudentsTab({ state, unreadComments }: Props) {
                 />
             )}
         </>
+    );
+}
+
+/** Selo financeiro do aluno no card: só aparece quando há algo a dizer
+ * (sem cobrança nenhuma, fica quieto). */
+function FinanceChip({ status }: { status?: FinanceStudentStatus }) {
+    if (!status || status.state === 'none') return null;
+    const chip = (() => {
+        switch (status.state) {
+            case 'overdue':
+                return {
+                    text: `Atrasado há ${status.overdue_days ?? 0} dia${status.overdue_days === 1 ? '' : 's'} · ${BRL(status.overdue_amount ?? 0)}`,
+                    bg: 'rgba(255, 107, 107, 0.15)',
+                    color: 'var(--coral-dim)',
+                };
+            case 'awaiting':
+                return { text: 'Informou pagamento · confirmar', bg: 'rgba(240, 165, 0, 0.16)', color: 'var(--amber-text)' };
+            case 'due_today':
+                return { text: `Vence hoje · ${BRL(status.next_amount ?? 0)}`, bg: 'rgba(240, 165, 0, 0.16)', color: 'var(--amber-text)' };
+            case 'due_soon':
+                return {
+                    text: `Vence ${fmtDate(status.next_due_date)} · ${BRL(status.next_amount ?? 0)}`,
+                    bg: 'var(--surface-3)',
+                    color: 'var(--text-secondary)',
+                };
+            default:
+                return { text: 'Mensalidade em dia', bg: 'var(--mint-glow)', color: 'var(--mint-text)' };
+        }
+    })();
+    return (
+        <span
+            style={{
+                display: 'inline-block',
+                marginTop: 4,
+                padding: '2px 10px',
+                borderRadius: 999,
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                background: chip.bg,
+                color: chip.color,
+            }}
+        >
+            💵 {chip.text}
+        </span>
     );
 }

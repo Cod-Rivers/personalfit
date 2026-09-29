@@ -123,6 +123,36 @@ const studentSections: HelpSection[] = [
         ),
     },
     {
+        id: 'mensalidades',
+        title: 'Mensalidades',
+        body: (
+            <>
+                <p>
+                    Se o seu personal controla as mensalidades pelo app, elas
+                    aparecem em <Link href="/mensalidades">Mensalidades</Link>:
+                    o valor, o vencimento de cada uma e o que já foi pago. Você
+                    recebe lembretes perto do vencimento e a confirmação quando
+                    ele registrar o pagamento.
+                </p>
+                <p>
+                    Pagou? Toque em <strong>Já paguei</strong> (dá para deixar
+                    um recado, como “paguei hoje de manhã”). Seu personal é
+                    avisado na hora para conferir, e os lembretes daquela
+                    mensalidade param. Se ele não identificar o pagamento, você
+                    recebe um aviso para falar com ele.
+                </p>
+                <p className="mb-0">
+                    A Venafit não recebe pagamentos nem mostra dados bancários:
+                    a forma de pagamento você combina direto com o seu
+                    personal. Desconfie de qualquer mensagem que peça pagamento
+                    em nome da Venafit. Se o seu personal usa o bloqueio por
+                    atraso, uma mensalidade vencida pausa o acesso ao treino
+                    até o pagamento ser confirmado.
+                </p>
+            </>
+        ),
+    },
+    {
         id: 'comentario-treino',
         title: 'Comentário para o seu personal',
         body: (
@@ -1041,32 +1071,114 @@ const personalSections: HelpSection[] = [
     },
     {
         id: 'financeiro-personal',
-        title: 'Financeiro do aluno',
+        title: 'Financeiro (PRO)',
         body: (
             <>
                 <p>
-                    Pelo cartão do aluno em <strong>Financeiro</strong> você
-                    lança cobranças (mensalidade, pacote de sessões etc.),
-                    marca como pagas, reabre ou exclui um lançamento — um
-                    controle simples de cobrança por aluno, sem meio de
-                    pagamento integrado.
+                    O financeiro controla as mensalidades dos seus alunos:
+                    quanto cada um paga, quando vence, quem já pagou e quem
+                    está atrasado. É um controle seu. A Venafit não recebe,
+                    não processa e não mostra dados de pagamento; a forma de
+                    pagamento você combina direto com o aluno.
                 </p>
                 <p>
-                    Na mesma tela dá para ligar o{' '}
-                    <strong>bloqueio de inadimplentes</strong>, que vale para
-                    todos os seus alunos. Quando uma cobrança passa do dia do
-                    vencimento sem ser marcada como paga, o aluno perde o
-                    acesso ao plano de treino, ao plano alimentar e à evolução
-                    até você registrar o pagamento. Ele continua entrando no
-                    app, recebendo notificações e registrando os treinos que já
-                    tinha baixado no aparelho.
+                    <strong>Mensalidade automática.</strong> No{' '}
+                    <strong>Financeiro</strong> do cartão do aluno, defina uma
+                    vez o valor, a periodicidade (mensal, trimestral,
+                    semestral ou anual) e o primeiro vencimento. O app lança
+                    cada cobrança sozinho, cerca de um mês antes do
+                    vencimento. Dia 31 cai no último dia dos meses mais
+                    curtos. Dá para pausar, alterar ou encerrar quando
+                    quiser. Para o que não se repete (pacote de aulas,
+                    avaliação), use a <strong>cobrança avulsa</strong>.
+                </p>
+                <p>
+                    <strong>Registrar o pagamento.</strong> Em{' '}
+                    <strong>Confirmar pagamento</strong>, informe a data real,
+                    a forma (PIX, dinheiro, cartão, transferência) e o valor
+                    recebido, se foi diferente. O aluno recebe a confirmação
+                    no app. Quando o aluno toca em{' '}
+                    <strong>Já paguei</strong>, você é avisado na hora e a
+                    cobrança aparece em destaque: confirme, ou toque em{' '}
+                    <strong>Não identifiquei</strong> para ele ser avisado.
+                </p>
+                <p>
+                    <strong>Painel financeiro.</strong> Na aba{' '}
+                    <Link href="/personal/financeiro">Financeiro</Link> da área
+                    do personal: recebido e a receber no mês, total em atraso,
+                    receita recorrente, previsão de 30 dias, inadimplência, o
+                    gráfico dos últimos 12 meses e a lista{' '}
+                    <strong>Cobrar agora</strong>, com os botões de lembrar
+                    pelo app e de WhatsApp (mensagem pronta, enviada do seu
+                    número). Em <strong>Meus Alunos</strong>, cada cartão
+                    mostra um selo com a situação do aluno.
+                </p>
+                <p>
+                    <strong>Exportar.</strong> O painel gera uma planilha (CSV)
+                    com os pagamentos de um período (data, aluno, valor e
+                    forma), base para o Carnê-Leão ou para o seu contador. No
+                    app Android, a planilha é enviada pelo compartilhamento
+                    (e-mail, Drive).
+                </p>
+                <p>
+                    <strong>Bloqueio por atraso.</strong> Ligado no painel, o
+                    aluno com mensalidade vencida perde o acesso ao plano de
+                    treino, ao plano alimentar e à evolução até você confirmar
+                    o pagamento. Você escolhe a tolerância (dias depois do
+                    vencimento) e pode isentar alunos específicos. Enquanto um
+                    “Já paguei” espera a sua confirmação, aquela cobrança não
+                    bloqueia. O aluno continua entrando no app, recebendo
+                    notificações e registrando os treinos já baixados.
                 </p>
                 <p className="mb-0">
-                    O lançamento das cobranças é grátis. O bloqueio automático
-                    faz parte do <Link href="#plano-pro">plano PRO</Link> a
-                    partir de 27/11/2026 — até lá funciona em qualquer plano.
-                    Fora do PRO, o interruptor fica guardado, mas não bloqueia
-                    ninguém.
+                    O financeiro faz parte do{' '}
+                    <Link href="#plano-pro">plano PRO</Link> a partir de
+                    27/11/2026 (até lá, funciona em qualquer plano). Sem o PRO,
+                    o histórico continua visível e exportável, mas não dá para
+                    lançar cobranças, registrar pagamentos nem enviar
+                    lembretes.
+                </p>
+            </>
+        ),
+    },
+    {
+        id: 'financeiro-avisos',
+        title: 'Avisos do financeiro',
+        body: (
+            <>
+                <p>
+                    Os avisos saem pelo app (notificação e sino) entre 8h e 21h,
+                    horário de Brasília, e você escolhe quais ficam ligados em{' '}
+                    <Link href="/personal/financeiro#avisos">
+                        Financeiro → Avisos automáticos
+                    </Link>
+                    .
+                </p>
+                <ul>
+                    <li>
+                        <strong>Para o aluno:</strong> lembrete antes do
+                        vencimento (1 a 10 dias), no dia e depois, se não
+                        pagou (1 a 15 dias de atraso); aviso de cobrança nova;
+                        confirmação do pagamento; aviso de acesso pausado e de
+                        acesso liberado. Os lembretes podem ir também por
+                        e-mail.
+                    </li>
+                    <li>
+                        <strong>Para você:</strong> o “Já paguei” do aluno, na
+                        hora, e um resumo por dia quando há o que fazer
+                        (pagamentos para confirmar, cobranças vencendo hoje ou
+                        que venceram ontem).
+                    </li>
+                </ul>
+                <p className="mb-0">
+                    Cada lembrete sai uma vez só por cobrança, e todos param
+                    quando o aluno toca em “Já paguei” ou você confirma o
+                    pagamento. O botão <strong>Lembrar pelo app</strong> manda
+                    um lembrete na hora (um por cobrança por dia). Nenhum
+                    aviso traz chave PIX ou dado bancário. No Android, os
+                    avisos ficam no canal <strong>Mensalidades</strong>, que
+                    pode ser silenciado separadamente nas configurações do
+                    aparelho.
                 </p>
             </>
         ),
@@ -3224,10 +3336,11 @@ const personalSections: HelpSection[] = [
                         , com recorrências e remarcações.
                     </li>
                     <li>
-                        <Link href="#financeiro-personal">
-                            Bloqueio automático de inadimplentes
-                        </Link>{' '}
-                        e a lista completa do painel de{' '}
+                        O <Link href="#financeiro-personal">financeiro</Link>{' '}
+                        completo: mensalidade automática, painel com o que
+                        entra e quem deve, lembretes e avisos para os alunos,
+                        bloqueio de inadimplentes e exportação para o
+                        Carnê-Leão, além da lista completa do painel de{' '}
                         <Link href="#retencao">retenção</Link> (a partir de
                         27/11/2026; até lá, liberados para todos).
                     </li>

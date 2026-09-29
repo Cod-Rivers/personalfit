@@ -53,7 +53,7 @@ const CYCLE_LABELS: Record<string, string> = {
 const PRO_BENEFITS = [
     'Alunos ilimitados (o plano gratuito vai até 3)',
     'Agenda com controle de presença, recorrências e remarcações',
-    'Bloqueio automático do aluno com mensalidade vencida',
+    'Financeiro: mensalidade automática, lembretes aos alunos e bloqueio de quem atrasar',
     'Painel de retenção completo: quem está parando de treinar e há quanto tempo',
     'Sua marca (logo e identidade) no app dos seus alunos',
     'Monte e gerencie o plano alimentar dos seus alunos',
