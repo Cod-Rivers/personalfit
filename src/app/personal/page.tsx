@@ -15,6 +15,8 @@ import {
     FiGlobe,
     FiLock,
     FiRefreshCw,
+    FiMessageCircle,
+    FiFileText,
 } from 'react-icons/fi';
 
 import { usePersonalStudents } from '@/hooks/usePersonalStudents';
@@ -31,6 +33,8 @@ import CiclosTab from './_components/CiclosTab';
 import RetentionTab from './_components/RetentionTab';
 import { type ProTrialStatus, daysUntil, getProTrialStatus } from '@/libs/paymentService';
 import { updateSessionPlanType } from '@/libs/session';
+import CountBadge from '@/components/atoms/CountBadge';
+import { getUnreadCommentCounts, type UnreadCommentCounts } from '@/libs/workoutCommentService';
 
 interface UserData {
     id: string;
@@ -91,6 +95,15 @@ export default function PersonalDashboard() {
     // Compartilhado entre a aba "Meus Alunos" e a aba "Ciclos" (select de
     // aluno no modal de aplicar ciclo).
     const studentsState = usePersonalStudents(!!user);
+
+    // Comentários pós-treino não lidos: selo no atalho e em cada aluno.
+    const [unreadComments, setUnreadComments] = useState<UnreadCommentCounts | null>(null);
+    useEffect(() => {
+        if (!user) return;
+        getUnreadCommentCounts()
+            .then(setUnreadComments)
+            .catch(() => {});
+    }, [user]);
 
     if (!user) return null;
 
@@ -184,6 +197,40 @@ export default function PersonalDashboard() {
                             text="Mostra quem está treinando pouco ou parou de registrar, para você agir antes de perder o aluno."
                             href="/ajuda#retencao"
                             label="Ajuda sobre Retenção"
+                        />
+                    </span>
+                    <span className={s.tabSlot}>
+                        <button
+                            className={s.tab}
+                            onClick={() => router.push('/personal/comentarios')}
+                        >
+                            <FiMessageCircle className={s.tabIcon} />
+                            Comentários
+                            <CountBadge
+                                count={unreadComments?.total ?? 0}
+                                label={`${unreadComments?.total ?? 0} comentário(s) não lido(s)`}
+                            />
+                        </button>
+                        <HelpTooltip
+                            text="O que os alunos disseram no fim do treino, com o resumo do treino. Reaja ou responda; o aluno recebe o aviso."
+                            href="/ajuda#comentarios-personal"
+                            label="Ajuda sobre Comentários"
+                        />
+                    </span>
+                    <span className={s.tabSlot}>
+                        <button
+                            className={s.tab}
+                            onClick={() => router.push('/personal/relatorios')}
+                            title={planType === 'pro' ? undefined : 'Recurso do plano PRO'}
+                        >
+                            <FiFileText className={s.tabIcon} />
+                            Relatórios
+                            {planType !== 'pro' && <FiLock className={s.tabLock} />}
+                        </button>
+                        <HelpTooltip
+                            text="Relatório mensal ou bimestral de cada aluno: números, leitura por IA dos comentários e as decisões que você registrou. Recurso PRO."
+                            href="/ajuda#relatorio-acompanhamento"
+                            label="Ajuda sobre Relatórios"
                         />
                     </span>
                     <span className={s.tabSlot}>
@@ -365,7 +412,7 @@ export default function PersonalDashboard() {
                 </div>
 
                 {tab === 'students' && (
-                    <StudentsTab state={studentsState} />
+                    <StudentsTab state={studentsState} unreadComments={unreadComments?.by_student} />
                 )}
 
                 {tab === 'retention' && <RetentionTab />}

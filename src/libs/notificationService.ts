@@ -8,7 +8,17 @@ export interface Notification {
     message: string;
     type: string;
     read: boolean;
+    /** Rota interna aberta ao tocar (ex.: "/personal/comentarios?c=…").
+     * Ausente nas notificações sem destino. */
+    link?: string;
     created_at: string;
+}
+
+/** Só segue link interno ("/..."): o texto vem do servidor, mas um link
+ * externo aqui abriria sem o usuário saber para onde. */
+export function safeNotificationLink(link?: string): string | null {
+    if (!link || !link.startsWith('/') || link.startsWith('//')) return null;
+    return link;
 }
 
 export async function getMyNotifications(): Promise<Notification[]> {

@@ -214,7 +214,13 @@ async function rewriteSessionAsCreateThenComplete(
 
     const completeBody: CompleteWorkoutLogRequest = {
         duration_minutes: body.duration_minutes,
-        notes: body.notes,
+        // O /complete antigo não conhece o comentário ao personal: o texto
+        // vira nota do treino para não se perder (mesma regra do servidor
+        // quando o comentário não tem destinatário).
+        notes:
+            [body.notes, body.comment?.text]
+                .filter((t): t is string => !!t && t.trim() !== '')
+                .join('\n\n') || undefined,
         // client_completed_at é obrigatório em WorkoutSessionRequest, então
         // sempre existe aqui — preserva a verdade temporal original do
         // aluno mesmo depois da reescrita (RN-11/RN-14: tempo na fila, e

@@ -272,6 +272,18 @@ export interface WorkoutSessionRequest {
     notes?: string;
     check_in?: WorkoutSessionCheckInRequest;
     exercises: WorkoutSessionExerciseRequest[];
+    /** Comentário do aluno ao personal (Todo/PLANO_COMENTARIO_POS_TREINO.md).
+     * Vai no mesmo corpo para viajar pela fila offline com a mesma chave de
+     * idempotência; o servidor normaliza em vez de recusar, então um
+     * comentário estranho nunca derruba o registro do treino. */
+    comment?: WorkoutSessionCommentRequest;
+}
+
+export interface WorkoutSessionCommentRequest {
+    text?: string;
+    feeling?: number;
+    tags?: string[];
+    pain_regions?: string[];
 }
 
 /** Cria-ou-conclui a sessão numa chamada só (POST idempotente por

@@ -1,6 +1,6 @@
 ﻿'use client';
 import React, { useEffect, useState, useCallback } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { FiBell, FiHelpCircle, FiMoon, FiSun, FiArrowLeft } from 'react-icons/fi';
 
 import './styles.css';
@@ -19,6 +19,7 @@ const Header: React.FC = () => {
     const { theme, toggleTheme } = useTheme();
     const { branding } = useBranding();
     const pathname = usePathname();
+    const router = useRouter();
     const [user, setUser] = useState<IUser>({});
     const [notifications, setNotifications] = useState<
         notifService.Notification[]
@@ -82,6 +83,7 @@ const Header: React.FC = () => {
         pathname.startsWith('/app') ||
         pathname.startsWith('/meus-treinos') ||
         pathname.startsWith('/agendamentos') ||
+        pathname.startsWith('/meus-comentarios') ||
         pathname.startsWith('/anamnese');
     const showProfileSwitcher =
         linkStatus === 'active' && user.role !== 'student';
@@ -125,6 +127,16 @@ const Header: React.FC = () => {
             );
         } catch {
             /* silent */
+        }
+    };
+
+    // Notificação com link (comentário, relatório…) leva direto à tela certa.
+    const handleOpenNotification = (n: notifService.Notification) => {
+        if (!n.read) void handleMarkRead(n.id);
+        const link = notifService.safeNotificationLink(n.link);
+        if (link) {
+            setShowNotif(false);
+            router.push(link);
         }
     };
 
@@ -362,6 +374,21 @@ const Header: React.FC = () => {
                                 />
                             </li>
                         )}
+                        {user.role === 'student' && user.has_personal && (
+                            <li className="nav-item header-nav-item">
+                                <Link
+                                    className={`nav-link${pathname.startsWith('/meus-comentarios') ? ' nav-link-active' : ''}`}
+                                    href="/meus-comentarios"
+                                >
+                                    Comentários
+                                </Link>
+                                <HelpTooltip
+                                    text="O que você disse ao seu personal no fim do treino, com o “visto” e as respostas."
+                                    href="/ajuda#comentario-treino"
+                                    label="Ajuda sobre Comentários"
+                                />
+                            </li>
+                        )}
                         {user.role === 'student' && (
                             <li className="nav-item header-nav-item">
                                 <Link
@@ -489,13 +516,28 @@ const Header: React.FC = () => {
                                                             />
                                                         </label>
                                                         <div
-                                                            className="notif-item-body"
+                                                            className={`notif-item-body${n.link ? ' notif-item-link' : ''}`}
+                                                            role={n.link ? 'link' : undefined}
+                                                            tabIndex={n.link ? 0 : undefined}
                                                             onClick={() =>
-                                                                !n.read &&
-                                                                handleMarkRead(
-                                                                    n.id,
+                                                                handleOpenNotification(
+                                                                    n,
                                                                 )
                                                             }
+                                                            onKeyDown={(e) => {
+                                                                if (
+                                                                    n.link &&
+                                                                    (e.key ===
+                                                                        'Enter' ||
+                                                                        e.key ===
+                                                                            ' ')
+                                                                ) {
+                                                                    e.preventDefault();
+                                                                    handleOpenNotification(
+                                                                        n,
+                                                                    );
+                                                                }
+                                                            }}
                                                         >
                                                             <strong className="notif-item-title">
                                                                 {n.title}

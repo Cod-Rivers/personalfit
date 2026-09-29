@@ -555,12 +555,39 @@ const studentChallengeTerms: GlossaryTerm[] = [
     },
 ];
 
+// Acompanhamento (Todo/PLANO_COMENTARIO_POS_TREINO.md): comentário pós-treino
+// e relatório de acompanhamento.
+const followUpTerms: GlossaryTerm[] = [
+    {
+        id: 'comentario-treino',
+        term: 'Comentário do treino',
+        short: 'Mensagem que o aluno deixa para o personal ao concluir o treino, guardada por 60 dias.',
+        long: 'Na tela de concluir o treino, o aluno com personal pode dizer como foi: uma escala de sensação (de "muito cansativo" a "ótimo"), marcadores de um toque ("Senti dor", "Carga leve", "Aparelho ocupado"…) e um texto livre. Um toque já vale; nada disso é obrigatório para concluir. O personal recebe o aviso no app e no navegador, vê o comentário com o resumo do treino e pode reagir ou responder, e o aluno vê o "visto" e a resposta. Dor na mesma região pela terceira vez em três semanas vira um alerta destacado. O comentário fica guardado por 60 dias e depois é apagado; o que fica é o relatório de acompanhamento, que guarda só a data, o treino e os marcadores.',
+        seeAlso: { id: 'comentarios-personal', label: 'Comentários dos alunos', audience: 'personal' },
+    },
+    {
+        id: 'relatorio-acompanhamento',
+        term: 'Relatório de acompanhamento',
+        short: 'Resumo mensal ou bimestral de cada aluno, com números, leitura por IA e as decisões do personal (PRO).',
+        long: 'Recurso do plano PRO. No fechamento do mês (a partir do dia 3) ou do bimestre, o app monta um relatório por aluno com quatro partes: os números do período, calculados sem IA (aderência, sensação média, RPE, dores por região, recordes e cargas paradas); a leitura da IA sobre os comentários, em que cada ponto de atenção cita os comentários ou números que o sustentam (o que não tem evidência é descartado); uma pauta de decisões com atalho para agir no app; e o registro do que o personal decidiu. O relatório seguinte avalia se a decisão funcionou. Antes de ir para a IA, o texto perde nome, telefone, e-mail, documentos e links, e o aluno pode pedir para ficar só com os números. O relatório fica na ficha do aluno por até 24 meses, enquanto houver vínculo.',
+        seeAlso: { id: 'relatorio-acompanhamento', label: 'Relatório de acompanhamento', audience: 'personal' },
+    },
+    {
+        id: 'nota-de-atencao',
+        term: 'Nota de atenção',
+        short: 'Pontuação fixa, sem IA, que ordena os alunos no painel de relatórios por quem pede mais cuidado.',
+        long: 'É a regra que coloca no topo do painel os alunos que merecem olhar primeiro: dor relatada duas vezes ou mais (3 pontos), sensação média caindo um ponto ou mais em relação ao período anterior (2), aderência abaixo de 60% ou com queda de 20 pontos (2), aluno que comentava e parou (1), três ou mais treinos registrados fora do prazo (1) e exercício principal sem progressão há três semanas (1). É uma conta fixa, sem IA, para ser previsível: o personal sabe por que cada aluno está onde está.',
+        seeAlso: { id: 'relatorio-acompanhamento', label: 'Relatório de acompanhamento', audience: 'personal' },
+    },
+];
+
 export const glossaryTerms: GlossaryTerm[] = [
     ...microcycleDerivedTerms,
     ...trainingScienceTerms,
     ...trainingFieldTerms,
     ...productTerms,
     ...studentChallengeTerms,
+    ...followUpTerms,
 ];
 
 export function getGlossaryTerm(id: string): GlossaryTerm {

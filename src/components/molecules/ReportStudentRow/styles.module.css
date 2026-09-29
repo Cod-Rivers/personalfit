@@ -1,0 +1,124 @@
+.row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    width: 100%;
+    text-align: left;
+    padding: var(--space-3) var(--space-4);
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    color: inherit;
+    cursor: pointer;
+    transition: border-color 0.15s;
+}
+
+.row:hover {
+    border-color: var(--mint);
+}
+
+.row:focus-visible {
+    outline: 2px solid var(--mint);
+    outline-offset: 2px;
+}
+
+.main {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    min-width: 0;
+    flex: 1;
+}
+
+.head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+.name {
+    font-weight: 700;
+    font-size: var(--font-md);
+    color: var(--text-primary);
+    overflow-wrap: anywhere;
+}
+
+.state {
+    font-size: var(--font-xs);
+    font-weight: 700;
+    padding: 2px var(--space-2);
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border-subtle);
+    white-space: nowrap;
+}
+
+.fresh {
+    border-color: var(--mint);
+    color: var(--mint-text);
+}
+
+.reviewed {
+    color: var(--text-secondary);
+}
+
+.decided {
+    background: var(--mint-dim);
+    border-color: var(--mint);
+    color: var(--mint-text);
+}
+
+.pending {
+    color: var(--amber-text);
+    border-color: var(--amber-dim);
+}
+
+.signals {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+}
+
+.signalIcon {
+    color: var(--coral);
+    flex-shrink: 0;
+}
+
+.signal {
+    font-size: var(--font-xs);
+    font-weight: 700;
+    color: var(--coral);
+    background: var(--coral-dim);
+    border-radius: var(--radius-sm);
+    padding: 1px var(--space-2);
+}
+
+.numbers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-3);
+    font-size: var(--font-xs);
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+
+.pain {
+    color: var(--coral);
+    font-weight: 700;
+}
+
+.summary {
+    font-size: var(--font-sm);
+    color: var(--text-secondary);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.chevron {
+    flex-shrink: 0;
+    color: var(--text-muted);
+}

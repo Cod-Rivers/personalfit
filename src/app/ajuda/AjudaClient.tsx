@@ -123,6 +123,43 @@ const studentSections: HelpSection[] = [
         ),
     },
     {
+        id: 'comentario-treino',
+        title: 'Comentário para o seu personal',
+        body: (
+            <>
+                <p className="mb-2">
+                    Ao concluir o treino, a tela de confirmação mostra{' '}
+                    <strong>Mensagem para</strong> o seu personal. Diga como
+                    foi: toque num emoji de sensação, num dos marcadores
+                    (&quot;Senti dor&quot;, &quot;Carga leve&quot;,
+                    &quot;Aparelho ocupado&quot;…) ou escreva. Um toque já
+                    basta, e nada disso é obrigatório para concluir. Ao marcar
+                    dor, escolha onde doeu.
+                </p>
+                <p className="mb-2">
+                    O comentário vai junto com o treino, inclusive sem
+                    internet. Em <Link href="/meus-comentarios">Meus
+                    comentários</Link> você vê o ✓ (enviado), o ✓✓ (visto) e a
+                    reação ou a resposta do personal. Só o seu personal lê, e
+                    o comentário é apagado depois de 60 dias.
+                </p>
+                <p className="mb-0">
+                    Se o seu personal usa o{' '}
+                    <GlossaryLink id="relatorio-acompanhamento">
+                        relatório de acompanhamento
+                    </GlossaryLink>
+                    , seus comentários podem ser resumidos por IA para ele,
+                    sem seu nome, telefone ou e-mail. Você pode pedir para ficar
+                    fora da leitura por IA em{' '}
+                    <Link href="/meus-comentarios#privacidade">
+                        Meus comentários
+                    </Link>
+                    .
+                </p>
+            </>
+        ),
+    },
+    {
         id: 'offline',
         title: 'Treinar offline e check-in com foto',
         body: (
@@ -1047,6 +1084,91 @@ const personalSections: HelpSection[] = [
                 (satisfação e RPE), para calibrar os próximos ciclos com base
                 na experiência real dele.
             </p>
+        ),
+    },
+    {
+        id: 'comentarios-personal',
+        title: 'Comentários dos alunos',
+        body: (
+            <>
+                <p className="mb-2">
+                    Ao concluir o treino, o aluno pode deixar um{' '}
+                    <GlossaryLink id="comentario-treino">comentário</GlossaryLink>{' '}
+                    para você: sensação, marcadores de um toque e texto. Você
+                    recebe o aviso no app e no navegador, e tocar no aviso abre
+                    o comentário. Relato de dor na mesma região pela terceira
+                    vez em três semanas chega como alerta destacado.
+                </p>
+                <p className="mb-2">
+                    Em <Link href="/personal/comentarios">Comentários</Link>{' '}
+                    (atalho no painel, com o número de não lidos), filtre por{' '}
+                    <strong>Não lidos</strong>, <strong>Dor</strong> ou{' '}
+                    <strong>Todos</strong>. Cada card traz o resumo do treino
+                    (duração, volume, RPE, foto do check-in e as anotações das
+                    séries). Reaja com um toque ou responda em até 500
+                    caracteres: o aluno recebe o aviso e vê a resposta.
+                </p>
+                <p className="mb-0">
+                    O comentário fica 60 dias e depois é apagado. Os
+                    comentários também aparecem no Feedback de cada aluno e no
+                    topo do Acompanhar. Se o aluno se desvincular, os
+                    comentários dele para você são apagados.
+                </p>
+            </>
+        ),
+    },
+    {
+        id: 'relatorio-acompanhamento',
+        title: 'Relatório de acompanhamento',
+        pro: true,
+        body: (
+            <>
+                <p className="mb-2">
+                    Todo mês (a partir do dia 3) ou a cada dois meses, o app
+                    monta um relatório por aluno em{' '}
+                    <Link href="/personal/relatorios">Relatórios</Link>. A
+                    frequência se escolhe na própria tela.
+                </p>
+                <ul className="mb-2">
+                    <li>
+                        <strong>Números do período</strong>, calculados sem IA:
+                        aderência à meta semanal, sensação média, RPE, dores por
+                        região, recordes e exercícios sem progressão.
+                    </li>
+                    <li>
+                        <strong>Leitura dos comentários</strong> pela IA: resumo,
+                        pontos de atenção e sinais positivos. Cada ponto mostra
+                        de onde veio (a data e o treino do comentário, ou o
+                        número); o que não tem evidência é descartado. A IA não
+                        faz diagnóstico.
+                    </li>
+                    <li>
+                        <strong>Pauta para decidir</strong>, com{' '}
+                        <strong>Aplicar</strong> (leva ao editor, à evolução ou
+                        ao feedback) e <strong>Registrar decisão</strong>.
+                    </li>
+                    <li>
+                        <strong>Decisões</strong>: o que você decidiu fica na
+                        ficha do aluno, e o relatório seguinte diz se funcionou.
+                    </li>
+                </ul>
+                <p className="mb-2">
+                    O painel ordena a carteira pela{' '}
+                    <GlossaryLink id="nota-de-atencao">nota de atenção</GlossaryLink>
+                    . Com menos de 3 comentários no período, o relatório sai só
+                    com números. Na ficha do aluno (Feedback), &quot;Gerar
+                    relatório agora&quot; lê os últimos 30 dias, útil antes de
+                    uma reavaliação (5 por mês; 1 no teste grátis).
+                </p>
+                <p className="mb-0">
+                    Privacidade: antes de ir para a IA, o texto perde nome,
+                    telefone, e-mail, documentos e links; o relatório guarda
+                    só a data, o treino e os marcadores de cada comentário. O
+                    aluno pode pedir para ficar só com os números. O relatório
+                    fica até 24 meses enquanto houver vínculo; quem sai do PRO
+                    continua lendo os antigos.
+                </p>
+            </>
         ),
     },
     {

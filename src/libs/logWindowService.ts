@@ -10,6 +10,16 @@ export interface LogWindowResponse {
     /** Foto de check-in ligada no servidor (ADHERENCE_PHOTO_ENABLED). Só vem
      * no GET /me/log-window; ausente em backend anterior ao campo. */
     photo_enabled?: boolean;
+    /** Comentário pós-treino ligado no servidor (WORKOUT_COMMENTS_ENABLED).
+     * Ausente em backend anterior ao campo — o check-in trata como ligado. */
+    comments_enabled?: boolean;
+    /** O personal do aluno usa o relatório de acompanhamento com IA e o aluno
+     * não saiu dele: o check-in avisa que o comentário pode entrar na
+     * leitura por IA (D10). */
+    ai_report_enabled?: boolean;
+    /** Primeiro nome do personal com vínculo ativo, para "Mensagem para Ana"
+     * funcionar offline. */
+    personal_name?: string;
 }
 
 /**
@@ -63,6 +73,10 @@ export interface CachedMyLogWindow {
     is_default: boolean;
     /** Ver LogWindowResponse.photo_enabled. */
     photo_enabled?: boolean;
+    /** Ver LogWindowResponse (comentário pós-treino). */
+    comments_enabled?: boolean;
+    ai_report_enabled?: boolean;
+    personal_name?: string;
     fetchedAt: string;
 }
 
@@ -76,6 +90,14 @@ export function isCheckInPhotoEnabled(
     return cached?.photo_enabled !== false;
 }
 
+/** O comentário pós-treino some só quando o servidor disse EXPLICITAMENTE que
+ * está desligado — mesma regra da foto. */
+export function isCheckInCommentEnabled(
+    cached: Pick<CachedMyLogWindow, 'comments_enabled'> | null,
+): boolean {
+    return cached?.comments_enabled !== false;
+}
+
 function cacheMyLogWindow(data: LogWindowResponse): void {
     if (typeof window === 'undefined') return;
     try {
@@ -83,6 +105,9 @@ function cacheMyLogWindow(data: LogWindowResponse): void {
             log_window: data.log_window,
             is_default: data.is_default,
             photo_enabled: data.photo_enabled,
+            comments_enabled: data.comments_enabled,
+            ai_report_enabled: data.ai_report_enabled,
+            personal_name: data.personal_name,
             fetchedAt: new Date().toISOString(),
         };
         window.localStorage.setItem(

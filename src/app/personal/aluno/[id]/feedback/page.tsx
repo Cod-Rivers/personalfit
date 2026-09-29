@@ -6,6 +6,7 @@ import {
     getStudentFeedback,
     type StudentFeedback,
 } from '@/libs/feedbackService';
+import StudentFollowUpSection from '@/components/organism/StudentFollowUpSection';
 import s from './feedback.module.css';
 
 const TARGET_LABEL: Record<string, string> = {
@@ -73,6 +74,12 @@ export default function StudentFeedbackPage() {
                         <FiArrowLeft /> Voltar
                     </button>
                 </div>
+
+                {/* Comentários pós-treino e relatórios de acompanhamento
+                    (Todo/PLANO_COMENTARIO_POS_TREINO.md) — o mais recente e
+                    acionável vem primeiro; o retorno antigo (RPE, notas,
+                    avaliações de ciclo) continua logo abaixo. */}
+                <StudentFollowUpSection studentId={studentId} />
 
                 {loading && <div className={s.loading}>Carregando…</div>}
                 {error && <div className={s.empty}>{error}</div>}

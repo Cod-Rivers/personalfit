@@ -14,8 +14,10 @@ import {
     FiAlertTriangle,
     FiAward,
     FiShare2,
+    FiMessageCircle,
 } from 'react-icons/fi';
 import { getStudentHomeRoute } from '@/libs/session';
+import { getCachedMyLogWindow } from '@/libs/logWindowService';
 import {
     getMyMacrocycle,
     MacrocycleResponse,
@@ -180,6 +182,9 @@ export default function MeusTreinosExercisesPage({
     // precisa sobreviver à promoção 'queued' -> 'success' abaixo (pendência
     // -19 — sem isto, o aluno nunca saberia que a foto não foi salva).
     const [photoDiscardedWarning, setPhotoDiscardedWarning] = useState(false);
+    // Nome do personal a quem o aluno acabou de mandar comentário no check-in
+    // ("" = sem nome no cache; null = não houve comentário).
+    const [commentSentTo, setCommentSentTo] = useState<string | null>(null);
     const [showWorkoutLogger, setShowWorkoutLogger] = useState(false);
     // Material do card de compartilhamento do treino recém-concluído. Fica
     // NESTA página, e não dentro do WorkoutLogger, porque o diálogo de
@@ -1333,6 +1338,16 @@ export default function MeusTreinosExercisesPage({
                             Erro ao finalizar. Tente novamente.
                         </p>
                     )}
+                    {commentSentTo !== null && sendStatus !== 'error' && (
+                        <p className={styles.finalizarSuccess} role="status">
+                            <FiMessageCircle /> Comentário enviado para{' '}
+                            {commentSentTo || 'seu personal'}
+                            {sendStatus === 'queued'
+                                ? ' — vai junto com o treino, assim que tiver internet.'
+                                : '.'}{' '}
+                            <Link href="/meus-comentarios">Ver respostas</Link>
+                        </p>
+                    )}
                     {shareData && !shareOpen && (
                         <button
                             type="button"
@@ -1411,9 +1426,13 @@ export default function MeusTreinosExercisesPage({
                         setShowWorkoutLogger(false);
                         setSendStatus('success');
                     }}
+                    loadHistory={loadHistory}
                     onQueued={(info) => {
                         setShowWorkoutLogger(false);
                         setSendStatus('queued');
+                        if (info?.commented) {
+                            setCommentSentTo(getCachedMyLogWindow()?.personal_name ?? '');
+                        }
                         if (info?.photoDiscarded) setPhotoDiscardedWarning(true);
                         // Recorde contra o histórico que a tela já tem (ou o
                         // do cache): o treino acabou de entrar na fila e

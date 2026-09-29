@@ -1,0 +1,26 @@
+.status {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--font-xs);
+    font-weight: 700;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.double {
+    display: inline-flex;
+}
+
+.double > svg + svg {
+    margin-left: -0.45em;
+}
+
+.seen,
+.reply_seen {
+    color: var(--mint-text);
+}
+
+.replied {
+    color: var(--violet-text);
+}

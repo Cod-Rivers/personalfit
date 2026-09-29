@@ -143,7 +143,8 @@ export default function PoliticaPrivacidadePage() {
                     </li>
                     <li>
                         <strong>Google Gemini:</strong> sugestão de substituição
-                        de exercícios, conforme a seção 6.
+                        de exercícios e leitura dos comentários de treino no
+                        relatório de acompanhamento, conforme a seção 6.
                     </li>
                     <li>
                         <strong>Google AdSense:</strong> exibição de anúncios no
@@ -198,6 +199,20 @@ export default function PoliticaPrivacidadePage() {
                         {CONTATO_PRIVACIDADE}
                     </a>
                     .
+                </p>
+                <p>
+                    <strong>Relatório de acompanhamento.</strong> Quando o seu
+                    personal trainer usa o relatório de acompanhamento (plano
+                    PRO), os comentários que você deixou ao concluir os treinos
+                    no período podem ser lidos pelo Google Gemini para gerar um
+                    resumo para ele. Antes do envio, o texto perde seu nome, o
+                    nome do personal, telefone, e-mail, documentos, links e
+                    perfis de redes sociais; o prompt não leva nenhum
+                    identificador seu. O resumo não faz diagnóstico: aponta o
+                    que merece atenção e cita os comentários e números que o
+                    sustentam. Você pode pedir para seus comentários ficarem
+                    fora da leitura por IA em &quot;Meus comentários&quot;; nesse
+                    caso o relatório usa só os números do treino.
                 </p>
             </section>
 
@@ -319,6 +334,16 @@ export default function PoliticaPrivacidadePage() {
                     conforme o Art. 15 do Marco Civil da Internet. A lista
                     completa do que é retido, e por quê, está em{' '}
                     <Link href="/excluir-conta">Excluir conta e dados</Link>.
+                </p>
+                <p>
+                    Mesmo sem excluir a conta: o comentário que você deixa ao
+                    concluir um treino é apagado automaticamente 60 dias depois
+                    de enviado. O relatório de acompanhamento, que guarda os
+                    números do período, a leitura resumida e as decisões do
+                    personal (mas não o texto dos comentários), fica até 24
+                    meses enquanto houver vínculo com o personal. Ao encerrar o
+                    vínculo, comentários e relatórios daquele personal são
+                    apagados.
                 </p>
             </section>
 

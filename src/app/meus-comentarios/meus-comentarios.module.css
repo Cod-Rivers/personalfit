@@ -1,0 +1,115 @@
+.list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-4);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-subtle);
+    background: var(--surface-1);
+    scroll-margin-top: 5rem;
+}
+
+.highlighted {
+    box-shadow: 0 0 0 2px var(--mint);
+}
+
+.head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+.when {
+    font-size: var(--font-sm);
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.facts {
+    margin: 0;
+    font-size: var(--font-sm);
+    color: var(--text-secondary);
+}
+
+.text {
+    margin: 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    line-height: 1.45;
+}
+
+.reply {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    background: var(--violet-dim);
+    color: var(--text-primary);
+    font-size: var(--font-sm);
+}
+
+.empty {
+    margin: 0;
+    padding: var(--space-5);
+    text-align: center;
+    color: var(--text-muted);
+    border: 1px dashed var(--border-subtle);
+    border-radius: var(--radius-lg);
+}
+
+.privacy {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-4);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-subtle);
+    background: var(--surface-2);
+    font-size: var(--font-sm);
+    color: var(--text-secondary);
+    scroll-margin-top: 5rem;
+}
+
+.privacy p {
+    margin: 0;
+    line-height: 1.5;
+}
+
+.privacyTitle {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--font-md);
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+.toggle {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    margin: 0;
+    color: var(--text-primary);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.toggle input {
+    margin-top: 3px;
+    width: 1.1rem;
+    height: 1.1rem;
+    flex-shrink: 0;
+}

@@ -17,6 +17,7 @@ import {
     FiWifiOff,
 } from 'react-icons/fi';
 import AvatarUpload from '@/components/molecules/AvatarUpload';
+import CountBadge from '@/components/atoms/CountBadge';
 import Modal from '@/components/system/Modal';
 import TrainingPdfUploadModal from '@/components/features/TrainingPdfUploadModal';
 import LogWindowSettings from '@/components/features/LogWindowSettings';
@@ -32,9 +33,11 @@ type StudentsState = ReturnType<typeof usePersonalStudents>;
 
 interface Props {
     state: StudentsState;
+    /** Comentários pós-treino não lidos, por aluno (selo "💬 2"). */
+    unreadComments?: Record<string, number>;
 }
 
-export default function StudentsTab({ state }: Props) {
+export default function StudentsTab({ state, unreadComments }: Props) {
     const router = useRouter();
     const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
     const [pdfImportStudent, setPdfImportStudent] = useState<{
@@ -400,6 +403,24 @@ export default function StudentsTab({ state }: Props) {
                                     >
                                         <FiMessageCircle /> Feedback
                                     </button>
+                                    {(unreadComments?.[st.id] ?? 0) > 0 && (
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                router.push(
+                                                    `/personal/comentarios?aluno=${st.id}`,
+                                                )
+                                            }
+                                            className={s.footLink}
+                                            aria-label={`${unreadComments?.[st.id]} comentário(s) não lido(s)`}
+                                        >
+                                            <CountBadge
+                                                count={unreadComments?.[st.id] ?? 0}
+                                                label={`${unreadComments?.[st.id]} comentário(s) não lido(s)`}
+                                                icon={<FiMessageCircle aria-hidden />}
+                                            />
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         </div>

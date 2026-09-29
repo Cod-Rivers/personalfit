@@ -17,10 +17,28 @@ import {
 import {
     getCachedMyLogWindow,
     getMyLogWindow,
+    isCheckInCommentEnabled,
     isCheckInPhotoEnabled,
 } from '@/libs/logWindowService';
-import { clientCompletedAtNow } from '@/libs/workoutLogService';
+import {
+    clientCompletedAtNow,
+    type WorkoutSessionCommentRequest,
+} from '@/libs/workoutLogService';
+import {
+    EMPTY_COMMENT_DRAFT,
+    isCommentDraftEmpty,
+    markNudged,
+    readNudgeState,
+    recordCommentOutcome,
+    shouldNudge,
+    toCommentRequest,
+    workoutCommentPrompt,
+    type CommentPromptContext,
+    type WorkoutCommentDraft,
+} from '@/libs/workoutComment';
+import { getUser } from '@/libs/session';
 import { usePoseOfDay } from '@/hooks/usePoseOfDay';
+import WorkoutCommentComposer from '@/components/organism/WorkoutCommentComposer';
 import PoseCapture from './PoseCapture';
 import s from './WorkoutCheckIn.module.css';
 
@@ -42,8 +60,17 @@ interface WorkoutCheckInProps {
          * conferir depois. */
         poseChallengeId?: string;
         poseId?: string;
+        /** Comentário ao personal. Ausente quando o aluno não escreveu nada,
+         * não tem personal, ou no modo assistido. */
+        comment?: WorkoutSessionCommentRequest;
     }) => void;
     onCancel: () => void;
+    /** O que o aparelho sabe do treino para a pergunta do comentário
+     * (recorde, RPE, pausa, exercício novo). Sem ele, vale a pergunta padrão. */
+    commentContext?: Omit<CommentPromptContext, 'late' | 'personalName'>;
+    /** Texto que o aluno já escreveu nas observações do formulário: vira o
+     * começo do comentário, para não escrever duas vezes (D2). */
+    initialCommentText?: string;
     /** Acompanhamento presencial: quem está confirmando é o PERSONAL, com o
      * aluno ao lado. Muda três coisas, todas pelo mesmo motivo — nada aqui
      * pode falar de /me, porque /me agora é o personal:
@@ -82,8 +109,29 @@ const WorkoutCheckIn: React.FC<WorkoutCheckInProps> = ({
     onCancel,
     assisted = false,
     studentName,
+    commentContext,
+    initialCommentText,
 }) => {
     const [photoFile, setPhotoFile] = useState<File | null>(null);
+    // Comentário ao personal (Todo/PLANO_COMENTARIO_POS_TREINO.md, Parte A).
+    // Tudo lido do cache offline da janela de registro: o aluno pode estar
+    // sem sinal justamente agora. Some sem personal, no modo assistido (quem
+    // está com o aparelho é o personal) e com a feature desligada.
+    const [commentDraft, setCommentDraft] = useState<WorkoutCommentDraft>(
+        () => ({ ...EMPTY_COMMENT_DRAFT, text: initialCommentText?.trim() ?? '' }),
+    );
+    const [commentConfig, setCommentConfig] = useState(() => {
+        const cached = getCachedMyLogWindow();
+        return {
+            enabled:
+                !assisted &&
+                !!getUser()?.has_personal &&
+                isCheckInCommentEnabled(cached),
+            personalName: cached?.personal_name ?? null,
+            aiReport: !!cached?.ai_report_enabled,
+        };
+    });
+    const [nudging, setNudging] = useState(false);
     const [capturing, setCapturing] = useState(false);
     // A pose do dia é buscada aqui, e não recebida por prop: o fluxo de
     // treino não sabe nada de desafio, e descer isso por três telas não
@@ -135,7 +183,21 @@ const WorkoutCheckIn: React.FC<WorkoutCheckInProps> = ({
         // de propósito: é exatamente o cenário que este aviso existe para
         // cobrir.
         getMyLogWindow()
-            .then((res) => setPhotoEnabled(isCheckInPhotoEnabled(res)))
+            .then((res) => {
+                setPhotoEnabled(isCheckInPhotoEnabled(res));
+                setCommentConfig((prev) => ({
+                    enabled:
+                        prev.enabled &&
+                        isCheckInCommentEnabled(res) &&
+                        // O servidor é quem sabe do vínculo: sem nome, sem
+                        // personal ativo agora (o cache da sessão pode estar
+                        // velho). Backend antigo, sem os campos, mantém.
+                        (res.comments_enabled === undefined ||
+                            !!res.personal_name),
+                    personalName: res.personal_name ?? prev.personalName,
+                    aiReport: !!res.ai_report_enabled,
+                }));
+            })
             .catch(() => {});
     }, [plannedDate, assisted]);
 
@@ -149,14 +211,47 @@ const WorkoutCheckIn: React.FC<WorkoutCheckInProps> = ({
         return () => URL.revokeObjectURL(url);
     }, [photoFile]);
 
+    const commentEmpty = isCommentDraftEmpty(commentDraft);
+
     const handleConfirm = () => {
+        // Lembrete leve (seção 5.2): no máximo um por semana, depois de 3
+        // treinos sem comentário. O primeiro toque só mostra a linha; o
+        // segundo conclui. Nunca bloqueia.
+        if (commentConfig.enabled && commentEmpty && !nudging && shouldNudge(readNudgeState())) {
+            setNudging(true);
+            markNudged();
+            return;
+        }
+        if (commentConfig.enabled) recordCommentOutcome(!commentEmpty);
         onConfirm({
             confirmedAt: clientCompletedAtNow(),
             photoFile: photoEnabled ? photoFile : null,
             poseChallengeId: photoEnabled ? pose?.challengeId : undefined,
             poseId: photoEnabled ? pose?.pose.pose_id : undefined,
+            comment: commentConfig.enabled
+                ? toCommentRequest(commentDraft)
+                : undefined,
         });
     };
+
+    const commentPrompt = workoutCommentPrompt({
+        personalName: commentConfig.personalName,
+        recordExercise: commentContext?.recordExercise ?? null,
+        avgRpe: commentContext?.avgRpe ?? null,
+        daysSinceLastWorkout: commentContext?.daysSinceLastWorkout ?? null,
+        firstTimeExercise: commentContext?.firstTimeExercise ?? null,
+        late: !!lateWarning,
+    });
+
+    const confirmLabel = assisted
+        ? 'Confirmar'
+        : !commentConfig.enabled
+          ? 'Confirmar'
+          : !commentEmpty
+            ? 'Enviar e concluir'
+            : nudging
+              ? 'Concluir sem comentário'
+              : 'Concluir';
 
     return (
         <div className={s.container}>
@@ -183,6 +278,23 @@ const WorkoutCheckIn: React.FC<WorkoutCheckInProps> = ({
                 <div className={s.lateBanner}>
                     <FiAlertTriangle /> {lateWarning}
                 </div>
+            )}
+
+            {/* O comentário vem ANTES da foto: é o que muda a relação com o
+                personal; a foto é prova para o desafio. */}
+            {commentConfig.enabled && (
+                <WorkoutCommentComposer
+                    personalName={commentConfig.personalName}
+                    draft={commentDraft}
+                    onChange={(d) => {
+                        setCommentDraft(d);
+                        if (nudging && !isCommentDraftEmpty(d)) setNudging(false);
+                    }}
+                    prompt={commentPrompt}
+                    aiReportEnabled={commentConfig.aiReport}
+                    nudge={nudging}
+                    disabled={loading}
+                />
             )}
 
             {photoEnabled && pose && !previewUrl && (
@@ -269,7 +381,7 @@ const WorkoutCheckIn: React.FC<WorkoutCheckInProps> = ({
                     disabled={loading}
                 >
                     {loading ? <FiLoader className={s.spin} /> : <FiCheck />}{' '}
-                    Confirmar
+                    {confirmLabel}
                 </button>
             </div>
         </div>

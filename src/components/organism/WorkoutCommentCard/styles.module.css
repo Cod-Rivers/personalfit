@@ -1,0 +1,166 @@
+.card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-4);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-subtle);
+    background: var(--surface-1);
+    scroll-margin-top: 5rem;
+}
+
+.unread {
+    border-left: 4px solid var(--mint);
+}
+
+.painCard.unread {
+    border-left-color: var(--coral);
+}
+
+.highlighted {
+    box-shadow: 0 0 0 2px var(--mint);
+}
+
+.head {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    flex-wrap: wrap;
+}
+
+.student {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-weight: 800;
+    color: var(--text-primary);
+    text-decoration: none;
+    overflow-wrap: anywhere;
+}
+
+.student:hover {
+    color: var(--mint-text);
+}
+
+.when {
+    font-size: var(--font-xs);
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+
+.newTag {
+    margin-left: auto;
+    font-size: var(--font-xs);
+    font-weight: 800;
+    color: var(--mint-text);
+}
+
+.painLine {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    color: var(--coral);
+    font-weight: 700;
+    font-size: var(--font-sm);
+}
+
+.facts {
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-3);
+    font-size: var(--font-sm);
+    color: var(--text-secondary);
+}
+
+.feeling {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.text {
+    margin: 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    color: var(--text-primary);
+    line-height: 1.45;
+}
+
+.workout {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    background: var(--surface-2);
+}
+
+.photo {
+    width: 4.5rem;
+    height: 4.5rem;
+    object-fit: cover;
+    border-radius: var(--radius-md);
+    flex-shrink: 0;
+}
+
+.stats {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: var(--space-1) var(--space-3);
+    font-size: var(--font-xs);
+    color: var(--text-secondary);
+    flex: 1;
+    min-width: 10rem;
+}
+
+.warn {
+    color: var(--amber-text);
+    font-weight: 700;
+}
+
+.notes {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    width: 100%;
+    font-size: var(--font-xs);
+    color: var(--text-secondary);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.reply {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    font-size: var(--font-sm);
+    color: var(--text-secondary);
+    padding-left: var(--space-2);
+    border-left: 2px solid var(--border-mid);
+}
+
+.seen {
+    color: var(--mint-text);
+}
+
+.footer {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    flex-wrap: wrap;
+}
+
+.expires {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--font-xs);
+    color: var(--text-muted);
+}

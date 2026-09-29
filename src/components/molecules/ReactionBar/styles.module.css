@@ -1,0 +1,42 @@
+.bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+}
+
+.reaction {
+    width: 2.5rem;
+    height: 2.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border-subtle);
+    background: var(--surface-2);
+    font-size: 1.15rem;
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.1s, background 0.15s;
+}
+
+.reaction:hover:not(:disabled) {
+    border-color: var(--mint);
+}
+
+.reaction:active:not(:disabled) {
+    transform: scale(0.92);
+}
+
+.reaction:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.reaction:focus-visible {
+    outline: 2px solid var(--mint);
+    outline-offset: 2px;
+}
+
+.selected {
+    border-color: var(--mint);
+    background: var(--mint-dim);
+}

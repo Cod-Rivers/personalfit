@@ -206,12 +206,41 @@ if (firebaseConfig.apiKey) {
     const messaging = firebase.messaging();
 
     messaging.onBackgroundMessage((payload) => {
-        const { title, body } = payload.notification || {};
-        if (title) {
-            self.registration.showNotification(title, {
-                body: body || '',
+        // Mensagem com bloco "notification" (todas as que o backend manda) já
+        // é exibida pelo próprio SDK do Firebase, que abre
+        // webpush.fcm_options.link no clique. Exibir de novo aqui mostrava a
+        // mesma notificação duas vezes — e a nossa cópia não abria nada.
+        if (payload.notification) return;
+        const data = payload.data || {};
+        if (data.title) {
+            self.registration.showNotification(data.title, {
+                body: data.body || '',
                 icon: '/favicon.ico',
+                tag: data.tag || undefined,
+                data: { deep_link: data.deep_link },
             });
         }
     });
 }
+
+// Clique numa notificação exibida por NÓS (mensagem só de dados, acima): foca
+// a aba do app e navega para o deep link, ou abre uma nova. As exibidas pelo
+// SDK (data.FCM_MSG) têm o tratamento do próprio Firebase. Só rota interna.
+self.addEventListener('notificationclick', (event) => {
+    const data = (event.notification && event.notification.data) || {};
+    if (data.FCM_MSG) return;
+    const link = typeof data.deep_link === 'string' ? data.deep_link : '';
+    if (!link.startsWith('/') || link.startsWith('//')) return;
+    event.notification.close();
+    const url = new URL(link, self.location.origin).href;
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+            for (const client of list) {
+                if (client.url.startsWith(self.location.origin) && 'focus' in client) {
+                    return client.navigate(url).then((c) => (c || client).focus());
+                }
+            }
+            return clients.openWindow(url);
+        }),
+    );
+});

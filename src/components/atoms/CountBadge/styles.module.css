@@ -1,0 +1,21 @@
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    min-width: 1.35rem;
+    height: 1.35rem;
+    padding: 0 var(--space-2);
+    border-radius: var(--radius-full);
+    background: var(--mint);
+    color: var(--btn-text);
+    font-size: var(--font-xs);
+    font-weight: 800;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.coral {
+    background: var(--coral);
+    color: #fff;
+}

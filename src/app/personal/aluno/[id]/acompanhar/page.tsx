@@ -89,6 +89,7 @@ import WorkoutLogger from '@/components/features/WorkoutLogger';
 import ExerciseDetailCard from '@/components/features/ExerciseDetailCard';
 import type { ExerciseLog } from '@/components/features/types';
 import PersonalAnamnesisQuickView from '@/components/features/PersonalAnamnesisQuickView';
+import LastCommentBanner from '@/components/molecules/LastCommentBanner';
 import { toExerciseLog } from '@/libs/exerciseLog';
 import { pickSavedMesocycle } from '@/app/personal/_shared/periodizacao/lib/mesocycleTransforms';
 import {
@@ -1039,6 +1040,8 @@ export default function AcompanharTreinoPage() {
                         </button>
                     </div>
                 </div>
+
+                <LastCommentBanner studentId={studentId} />
 
                 <div className={s.chips}>
                     {cycle && (

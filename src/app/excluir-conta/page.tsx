@@ -127,6 +127,14 @@ export default function ExcluirContaPage() {
                         treinos.
                     </li>
                     <li>
+                        <strong>Comentários e relatórios:</strong> os
+                        comentários que você deixou ao concluir os treinos (e
+                        as respostas do personal), e os relatórios de
+                        acompanhamento feitos sobre você. Se você é personal
+                        trainer, os comentários recebidos dos seus alunos e os
+                        relatórios que você guardava sobre eles.
+                    </li>
+                    <li>
                         <strong>Inteligência artificial:</strong> as
                         substituições de exercício sugeridas para você, com o
                         nível e as restrições usados para escolhê-las.

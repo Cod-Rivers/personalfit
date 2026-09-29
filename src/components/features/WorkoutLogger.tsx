@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { FiX, FiCheck, FiAlertCircle, FiLoader, FiLink } from 'react-icons/fi';
 import {
@@ -14,6 +14,7 @@ import {
     skipNewWorkoutLog,
     WorkoutSessionRequest,
     NewWorkoutLogResponse,
+    type WorkoutSessionCommentRequest,
 } from '@/libs/workoutLogService';
 import { getPendingWorkoutLogId } from '@/libs/offline/downloadManager';
 import { localDateKey } from '@/libs/currentWeek';
@@ -40,7 +41,10 @@ import {
 } from '@/libs/workoutLogSummary';
 import HelpTooltip from '@/components/atoms/HelpTooltip';
 import { getGlossaryTerm } from '@/libs/glossaryContent';
-import type { PerformedExercise } from '@/libs/loadHistory';
+import type { LoadHistoryResponse, PerformedExercise } from '@/libs/loadHistory';
+import { buildCommentPromptContext } from '@/libs/workoutComment';
+import { getCachedMyLogWindow, isCheckInCommentEnabled } from '@/libs/logWindowService';
+import { getUser } from '@/libs/session';
 import s from './WorkoutLogger.module.css';
 
 // Só se aplica ao "Pular Treino" (handleSkip): o endpoint novo de sessão
@@ -103,6 +107,9 @@ interface WorkoutLoggerProps {
          * recorde contra o histórico de carga (detectNewRecords) antes de a
          * sessão sincronizar. */
         performed?: PerformedExercise[];
+        /** O aluno deixou comentário para o personal (a tela confirma
+         * "Comentário enviado"). */
+        commented?: boolean;
     }) => void;
     autoregulation?: AutoregulationHint;
     /** Acompanhamento presencial: quem está com o app na mão é o PERSONAL,
@@ -118,6 +125,9 @@ interface WorkoutLoggerProps {
      * conferidos: as séries nascem com a prescrição, que é exatamente o que
      * o circuito executou. */
     circuitDoneBlockKeys?: ReadonlySet<string>;
+    /** Histórico de carga que a tela já carregou (ou o do cache). Alimenta
+     * a pergunta do comentário ao personal: recorde, exercício novo, pausa. */
+    loadHistory?: LoadHistoryResponse | null;
 }
 
 /** O que a tela de compartilhamento precisa saber sobre o treino recém
@@ -172,7 +182,19 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
     assisted = false,
     studentName,
     circuitDoneBlockKeys,
+    loadHistory,
 }) => {
+    // Comentário ao personal no check-in (Todo/PLANO_COMENTARIO_POS_TREINO.md,
+    // D2): com ele ativo, as "Notas Gerais" do formulário viram o texto
+    // inicial do comentário e deixam de ir para as notas do treino (lá
+    // ficariam para sempre; o comentário vive 60 dias). Sem personal, ou no
+    // modo assistido, tudo continua como antes.
+    const [commentsActive] = useState(
+        () =>
+            !assisted &&
+            !!getUser()?.has_personal &&
+            isCheckInCommentEnabled(getCachedMyLogWindow()),
+    );
     const [logs, setLogs] = useState<ExerciseLog[]>(
         training.exercises.map((ex) => {
             // Pré-preenche RPE alvo e ajuste de carga sugeridos pelo painel
@@ -325,6 +347,7 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
             photoFile: File | null;
             poseChallengeId?: string;
             poseId?: string;
+            comment?: WorkoutSessionCommentRequest;
         }) => {
             try {
                 setLoading(true);
@@ -349,7 +372,10 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                     training_ref: training.reference,
                     planned_date: checkInDraft?.plannedDate ?? localDateKey(),
                     duration_minutes: duration ?? undefined,
-                    notes,
+                    notes: commentsActive ? undefined : notes,
+                    // Comentário ao personal: mesmo corpo, mesma chave de
+                    // idempotência, mesma fila offline do registro.
+                    comment: checkIn.comment,
                     // check_in é o que torna esta conclusão um CHECK-IN
                     // explícito (US-03 critério 1) — `confirmed_at` é o
                     // instante em que o aluno apertou "Confirmar" na tela
@@ -477,6 +503,7 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
 
                 onQueued({
                     photoDiscarded: photoDiscarded || undefined,
+                    commented: !!checkIn.comment || undefined,
                     share: {
                         // A foto descartada (cota estourada) não vira card:
                         // prometer uma imagem que não temos seria pior que
@@ -527,6 +554,7 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
             checkInDraft,
             onQueued,
             assisted,
+            commentsActive,
         ],
     );
 
@@ -536,6 +564,21 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
      * instante em que o aluno decidiu concluir, não o de quando abriu o
      * formulário. Dia LOCAL: em UTC, o treino de domingo à noite ficava
      * datado de segunda. */
+    // Contexto da pergunta do comentário (recorde, RPE, pausa, exercício
+    // novo): calculado só ao entrar no check-in, com o que o aparelho já tem.
+    const commentContext = useMemo(() => {
+        if (step !== 'checkin' || !commentsActive) return undefined;
+        const performed = logs.map((ex) => ({
+            exerciseId: ex.exerciseId,
+            name: ex.name,
+            exerciseLibraryId: ex.exerciseLibraryId,
+            timed: ex.timed,
+            sets: ex.series.map((sr) => ({ reps: sr.reps, loadKg: sr.loadKg })),
+        }));
+        const rpes = logs.flatMap((ex) => ex.series.map((sr) => sr.rpe));
+        return buildCommentPromptContext(performed, rpes, loadHistory, null);
+    }, [step, commentsActive, logs, loadHistory]);
+
     const goToCheckIn = useCallback(() => {
         setCheckInDraft({ plannedDate: localDateKey() });
         setStep('checkin');
@@ -942,7 +985,13 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                     )}
                 </label>
                 <label>
-                    Notas Gerais:
+                    {commentsActive ? 'Observações:' : 'Notas Gerais:'}
+                    {commentsActive && (
+                        <span className={s.durationHint}>
+                            Ao concluir, você revisa isto no comentário para o
+                            seu personal. Se pular o treino, vira o motivo.
+                        </span>
+                    )}
                     <textarea
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
@@ -1042,6 +1091,8 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                         onCancel={backToForm}
                         assisted={assisted}
                         studentName={studentName}
+                        commentContext={commentContext}
+                        initialCommentText={commentsActive ? notes : undefined}
                     />
                 </div>
             ) : activeBlock ? (

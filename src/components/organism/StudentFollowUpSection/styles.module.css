@@ -1,0 +1,50 @@
+.section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+.title {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+.link {
+    font-size: var(--font-sm);
+    font-weight: 700;
+    color: var(--mint-text);
+}
+
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.muted {
+    margin: 0;
+    font-size: var(--font-xs);
+    color: var(--text-muted);
+}
+
+.empty {
+    margin: 0;
+    padding: var(--space-4);
+    text-align: center;
+    color: var(--text-muted);
+    border: 1px dashed var(--border-subtle);
+    border-radius: var(--radius-lg);
+    font-size: var(--font-sm);
+}
