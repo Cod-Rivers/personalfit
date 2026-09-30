@@ -313,29 +313,6 @@ const studentSections: HelpSection[] = [
         ),
     },
     {
-        id: 'anamnese',
-        title: 'Triagem automática',
-        body: (
-            <>
-                <p className="mb-2">
-                    É o questionário de saúde e dores (tornozelo, lombar, joelho,
-                    quadril, ombro etc.) que monta um treino pronto quando você
-                    não tem personal. Ninguém lê essas respostas: elas só servem
-                    para escolher o plano. Se você já tem personal, é ele quem
-                    monta seu treino, e ele pode pedir a{' '}
-                    <Link href="#anamnese-do-personal">Anamnese do personal</Link>.
-                </p>
-                <p className="mb-0">
-                    No momento, a geração automática do treino está pausada:
-                    suas respostas ficam registradas, e você pode refazer a
-                    triagem quando quiser, de graça, para manter seus dados de
-                    saúde em dia. Enquanto isso, monte o seu próprio treino em{' '}
-                    <Link href="#montar-meu-treino">Montar meu treino</Link>.
-                </p>
-            </>
-        ),
-    },
-    {
         id: 'anamnese-do-personal',
         title: 'Anamnese do personal',
         body: (
@@ -988,8 +965,8 @@ const personalSections: HelpSection[] = [
                     <strong>Desvincular</strong> ficam no menu{' '}
                     <strong>⋯</strong> do cartão. Desvincular não apaga a
                     conta do aluno — remove só o vínculo com você. Sem um
-                    personal, ele passa a poder gerar o próprio treino pela
-                    anamnese automática. No plano gratuito você mantém{' '}
+                    personal, ele passa a montar o próprio treino. No plano
+                    gratuito você mantém{' '}
                     <strong>até 3 alunos</strong>; com o{' '}
                     <Link href="#plano-pro">PRO</Link> os alunos são
                     ilimitados.
@@ -1302,9 +1279,8 @@ const personalSections: HelpSection[] = [
                     preferências), com a triagem de segurança (PAR-Q)
                     destacada quando sinaliza risco. No editor de treinos, o
                     botão <strong>Ver anamnese</strong> abre as respostas sem
-                    você sair da tela. Diferente da{' '}
-                    <GlossaryLink id="anamnese">triagem automática</GlossaryLink>,
-                    ela nunca gera treino sozinha.
+                    você sair da tela. Ela nunca gera treino sozinha: é você
+                    quem monta as séries.
                 </p>
             </>
         ),
@@ -1368,7 +1344,7 @@ const personalSections: HelpSection[] = [
                     usar o equipamento prescrito recebe de 2 a 3 alternativas
                     na hora, respeitando o grupo muscular, o objetivo do
                     treino, o nível dele e as restrições da{' '}
-                    <GlossaryLink id="anamnese">anamnese</GlossaryLink>.
+                    <GlossaryLink id="anamnese-do-personal">anamnese do personal</GlossaryLink>.
                 </p>
                 <p className="mb-2">
                     Para conter o custo da IA há dois tetos mensais: até{' '}

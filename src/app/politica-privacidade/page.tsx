@@ -283,7 +283,7 @@ export default function PoliticaPrivacidadePage() {
                         consentimento para o tratamento dos dados de saúde da
                         anamnese pode ser revogado a qualquer momento pelo
                         e-mail acima. A revogação apaga suas respostas de
-                        anamnese e interrompe a adaptação automática dos treinos
+                        anamnese e interrompe a adaptação dos treinos
                         às suas restrições, o que significa que o serviço passa
                         a funcionar de forma limitada. Excluir a conta revoga
                         todos os consentimentos de uma vez.

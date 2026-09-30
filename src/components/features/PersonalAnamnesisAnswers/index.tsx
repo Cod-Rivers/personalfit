@@ -3,7 +3,6 @@
 import { FiAlertTriangle } from 'react-icons/fi';
 import {
     formatAnamnesisDate,
-    type LegacyAnamnesisView,
     type PersonalAnamnesisView,
 } from '@/libs/personalAnamnesisService';
 import s from './PersonalAnamnesisAnswers.module.css';
@@ -93,42 +92,6 @@ export default function PersonalAnamnesisAnswers({
                     </section>
                 );
             })}
-        </div>
-    );
-}
-
-/** Anamneses do formato antigo, só leitura, recolhidas por padrão. */
-export function LegacyAnamnesisList({ items }: { items: LegacyAnamnesisView[] }) {
-    if (items.length === 0) return null;
-    return (
-        <div className={s.legacy}>
-            {items.map((item, index) => (
-                <details key={`${item.completed_at}-${index}`} className={s.legacyItem}>
-                    <summary className={s.legacySummary}>
-                        {formatAnamnesisDate(item.completed_at) || 'Sem data'} ·{' '}
-                        {item.filled_by === 'personal'
-                            ? 'preenchida pelo personal'
-                            : 'preenchida pelo aluno'}
-                        {item.flagged && (
-                            <span className={s.legacyFlag}> · PAR-Q sinalizou risco</span>
-                        )}
-                    </summary>
-                    {item.answers.length === 0 ? (
-                        <p className={s.safeLine}>
-                            As perguntas deste formato não estão mais disponíveis para exibição.
-                        </p>
-                    ) : (
-                        <dl className={s.list}>
-                            {item.answers.map((answer, i) => (
-                                <div key={i} className={s.item}>
-                                    <dt className={s.question}>{answer.question}</dt>
-                                    <dd className={s.answer}>{answer.answer}</dd>
-                                </div>
-                            ))}
-                        </dl>
-                    )}
-                </details>
-            ))}
         </div>
     );
 }

@@ -30,8 +30,7 @@ const TEXT_MAX_LENGTH = 2000;
 /**
  * Formulário da Anamnese do personal: uma etapa por seção do catálogo e uma
  * etapa final de envio. Suporta escolha única, múltipla (com opção exclusiva,
- * ex.: "Nenhuma") e texto livre — o QuestionsRenderer da Triagem automática
- * só faz escolha única.
+ * ex.: "Nenhuma") e texto livre.
  *
  * A validação aqui é só de conveniência (obrigatórias por etapa); quem manda
  * é o backend, que confere tudo contra o catálogo.

@@ -67,11 +67,6 @@ export default function PersonalAnamnesisQuickView({ studentId, className }: Pro
                                     ? 'O aluno ainda não respondeu a anamnese que você pediu.'
                                     : 'Este aluno ainda não respondeu a Anamnese do personal.'}
                             </p>
-                            {history.legacy.length > 0 && (
-                                <p className={s.muted}>
-                                    Há respostas no formato antigo na página da anamnese.
-                                </p>
-                            )}
                             <Link href={pagePath} className={s.link}>
                                 {history.pending ? 'Abrir página da anamnese' : 'Pedir ao aluno ou preencher agora'}
                             </Link>

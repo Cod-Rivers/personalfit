@@ -124,18 +124,6 @@ export function clientCompletedAtNow(date: Date = new Date()): string {
 }
 
 
-/* ── Legacy API ── */
-export async function saveWorkoutLog(
-    _studentId: string,
-    data: CreateWorkoutLogRequest,
-): Promise<WorkoutLogResponse> {
-    const res = await Api.post<WorkoutLogResponse>(
-        `/my-workout-logs`,
-        data,
-    );
-    return res.data;
-}
-
 /* ── New API ──
  * As rotas abaixo usam /me/planning/... (o aluno logado registrando o
  * próprio treino), não /students/:id/planning/... (essa é exclusiva do

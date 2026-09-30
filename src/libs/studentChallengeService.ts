@@ -234,11 +234,6 @@ export interface AcceptStudentChallengeInvitePayload {
  * colegas da mesma carteira e ao personal organizador. */
 export const STUDENT_CHALLENGE_CONSENT_V1 = 'v1';
 
-/** Consentimento para desafio MULTI-PERSONAL: além do escopo de `v1`, os
- * mesmos dados ficam visíveis a alunos de outras carteiras e aos demais
- * personais participantes, listados nominalmente no modal. */
-export const STUDENT_CHALLENGE_CONSENT_V2 = 'v2';
-
 /** Versão de consentimento que este desafio exige agora. Tolera o campo
  * ausente (documento antigo / resposta de backend anterior à feature). */
 export function requiredConsentVersion(challenge: StudentChallenge): string {
@@ -288,20 +283,6 @@ export function participantsCount(challenge: StudentChallenge): number {
     return challenge.participants_count ?? challenge.participants.length;
 }
 
-export function myRole(challenge: StudentChallenge): StudentChallengeMyRole {
-    return challenge.my_role || '';
-}
-
-/** Organizador. Desafio antigo não traz `my_role`: quem lista pela rota do
- * personal e é o `personal_id` do documento é o dono, como sempre foi. */
-export function isOwner(
-    challenge: StudentChallenge,
-    personalId?: string | null,
-): boolean {
-    if (challenge.my_role) return challenge.my_role === 'owner';
-    return !!personalId && challenge.personal_id === personalId;
-}
-
 /** Rótulo de exibição de uma equipe: apelido escolhido pelo personal, ou o
  * nome dele, ou um genérico — nunca o ObjectID cru. */
 export function teamLabel(team: {
@@ -348,15 +329,6 @@ export async function createStudentChallenge(
 
 export async function listStudentChallenges(): Promise<StudentChallenge[]> {
     const { data } = await Api.get<StudentChallenge[]>('/student-challenges');
-    return data;
-}
-
-export async function getStudentChallenge(
-    id: string,
-): Promise<StudentChallenge> {
-    const { data } = await Api.get<StudentChallenge>(
-        `/student-challenges/${id}`,
-    );
     return data;
 }
 

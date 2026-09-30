@@ -23,8 +23,7 @@ const CONSENT_VERSION = '2026-09-12';
 type Step = 'loading' | 'error' | 'none' | 'intro' | 'form' | 'done';
 
 /**
- * Anamnese do personal, do lado do aluno. Só existe quando o personal pediu
- * (a Triagem automática, para quem não tem personal, fica em /anamnese).
+ * Anamnese do personal, do lado do aluno. Só existe quando o personal pediu.
  * Chega aqui pelo push/notificação ou pelo aviso em /meus-treinos.
  */
 export default function PersonalAnamnesisStudentPage() {

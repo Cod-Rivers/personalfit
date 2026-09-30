@@ -31,7 +31,6 @@ import {
     FiUsers,
     FiSpeaker,
     FiShare2,
-    FiLayers,
     FiTrendingUp,
     FiHeart,
     FiDownload,
@@ -58,10 +57,6 @@ const AdminReferralPartners = dynamic(
     () => import('@/components/organism/AdminReferralPartners'),
     { ssr: false, loading: () => <div className="text-center py-4">Carregando…</div> },
 );
-const AdminProtocols = dynamic(
-    () => import('@/components/organism/AdminProtocols'),
-    { ssr: false, loading: () => <div className="text-center py-4">Carregando…</div> },
-);
 const AdminSubscriptionChart = dynamic(
     () => import('./_components/AdminSubscriptionChart'),
     { ssr: false, loading: () => <div style={{ height: 260 }} /> },
@@ -77,7 +72,6 @@ type Section =
     | 'users'
     | 'ads'
     | 'referral-partners'
-    | 'protocols'
     | 'poses'
     | 'relatorios'
     | 'diagnostics';
@@ -151,12 +145,6 @@ export default function AdminDashboard() {
             key: 'referral-partners',
             label: 'Parceiros de Indicação',
             icon: FiShare2,
-            fullAdminOnly: true,
-        },
-        {
-            key: 'protocols',
-            label: 'Protocolos de Treino',
-            icon: FiLayers,
             fullAdminOnly: true,
         },
         {
@@ -252,7 +240,6 @@ export default function AdminDashboard() {
                 {section === 'referral-partners' && (
                     <AdminReferralPartners />
                 )}
-                {section === 'protocols' && <AdminProtocols />}
                 {section === 'relatorios' && <RelatoriosSection />}
                 {section === 'diagnostics' && <DiagnosticsSection />}
             </main>
@@ -848,7 +835,9 @@ function RatingsSection() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        Promise.all([adminService.getRatings(), adminService.getTopRated()])
+        // O ranking agrupa por modelo da biblioteca: somam-se as notas de
+        // todos os alunos que aplicaram o mesmo modelo.
+        Promise.all([adminService.getRatings(), adminService.getTopRated('template')])
             .then(([r, t]) => {
                 setRatings(r);
                 setTopRated(t);
@@ -858,15 +847,6 @@ function RatingsSection() {
     }, []);
 
     const renderStars = (n: number) => '★'.repeat(n) + '☆'.repeat(5 - n);
-
-    const handlePromote = async (id: string) => {
-        try {
-            await adminService.promoteToTemplate(id);
-            alert('Macrociclo promovido a template!');
-        } catch {
-            alert('Erro ao promover.');
-        }
-    };
 
     if (loading) return <p className={s.loading}>Carregando...</p>;
 
@@ -881,7 +861,7 @@ function RatingsSection() {
             {topRated.length > 0 && (
                 <>
                     <h2 style={{ fontSize: '1.1rem', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <FiAward /> Mais Bem Avaliados
+                        <FiAward /> Modelos mais bem avaliados
                     </h2>
                     <div className={s.statsGrid}>
                         {topRated.map((t) => (
@@ -890,15 +870,11 @@ function RatingsSection() {
                                     {t.avg_stars.toFixed(1)} ★
                                 </p>
                                 <p className={s.statLabel}>
-                                    {t.count} avaliações
+                                    {t.target_name || 'Modelo removido'}
                                 </p>
-                                <button
-                                    onClick={() => handlePromote(t.target_id)}
-                                    className={`${s.btnOutline} ${s.btnSmall}`}
-                                    style={{ marginTop: 8 }}
-                                >
-                                    Promover a Template
-                                </button>
+                                <p className={s.statLabel}>
+                                    {t.count} {t.count === 1 ? 'avaliação' : 'avaliações'}
+                                </p>
                             </div>
                         ))}
                     </div>
@@ -922,7 +898,7 @@ function RatingsSection() {
                     <thead>
                         <tr>
                             <th>Estrelas</th>
-                            <th>Tipo</th>
+                            <th>Origem do plano</th>
                             <th>Comentário</th>
                             <th>Data</th>
                         </tr>
@@ -935,7 +911,7 @@ function RatingsSection() {
                                         {renderStars(r.stars)}
                                     </span>
                                 </td>
-                                <td>{r.target_type}</td>
+                                <td>{r.template_id ? 'Modelo da biblioteca' : 'Plano do personal'}</td>
                                 <td>{r.comment || '—'}</td>
                                 <td>
                                     {new Date(r.created_at).toLocaleDateString(

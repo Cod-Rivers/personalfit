@@ -1,146 +1,138 @@
 'use client';
 import React, { useState } from 'react';
-import { FiCheckCircle, FiStar } from 'react-icons/fi';
+import { FiStar } from 'react-icons/fi';
 
 interface StarRatingProps {
     initialValue?: number;
+    initialComment?: string;
+    label?: string;
+    submitLabel?: string;
     onSubmit: (stars: number, comment: string) => Promise<void>;
+    onCancel?: () => void;
     disabled?: boolean;
 }
 
+/** Estrelas de 1 a 5 + comentário opcional. Quem chama decide o que fazer
+ *  depois de enviar (onSubmit rejeita em erro; a mensagem é de quem chama). */
 export default function StarRating({
     initialValue = 0,
+    initialComment = '',
+    label = 'Avalie este treino:',
+    submitLabel = 'Enviar avaliação',
     onSubmit,
+    onCancel,
     disabled = false,
 }: StarRatingProps) {
     const [stars, setStars] = useState(initialValue);
     const [hover, setHover] = useState(0);
-    const [comment, setComment] = useState('');
+    const [comment, setComment] = useState(initialComment);
     const [submitting, setSubmitting] = useState(false);
-    const [submitted, setSubmitted] = useState(false);
 
     const handleSubmit = async () => {
         if (stars === 0 || submitting) return;
         setSubmitting(true);
         try {
-            await onSubmit(stars, comment);
-            setSubmitted(true);
+            await onSubmit(stars, comment.trim());
         } catch {
-            /* parent handles */
+            /* quem chama mostra o erro */
         } finally {
             setSubmitting(false);
         }
     };
 
-    if (submitted) {
-        return (
-            <div style={styles.container}>
-                <p style={{ ...styles.thanks, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <FiCheckCircle /> Avaliação enviada! Obrigado.
-                </p>
-            </div>
-        );
-    }
+    const blocked = disabled || submitting;
 
     return (
-        <div style={styles.container}>
-            <p style={styles.label}>Avalie este treino:</p>
-            <div style={styles.starsRow}>
-                {[1, 2, 3, 4, 5].map((n) => (
-                    <span
-                        key={n}
-                        style={{
-                            ...styles.star,
-                            color:
-                                n <= (hover || stars) ? '#f1c40f' : '#4a5568',
-                            cursor: disabled ? 'default' : 'pointer',
-                            display: 'inline-flex',
-                        }}
-                        onClick={() => !disabled && setStars(n)}
-                        onMouseEnter={() => !disabled && setHover(n)}
-                        onMouseLeave={() => !disabled && setHover(0)}
-                    >
-                        <FiStar
+        <div>
+            <p style={styles.label}>{label}</p>
+            <div style={styles.starsRow} role="radiogroup" aria-label="Nota de 1 a 5 estrelas">
+                {[1, 2, 3, 4, 5].map((n) => {
+                    const lit = n <= (hover || stars);
+                    return (
+                        <button
+                            key={n}
+                            type="button"
+                            role="radio"
+                            aria-checked={stars === n}
+                            aria-label={`${n} ${n === 1 ? 'estrela' : 'estrelas'}`}
+                            disabled={blocked}
+                            onClick={() => setStars(n)}
+                            onMouseEnter={() => setHover(n)}
+                            onMouseLeave={() => setHover(0)}
                             style={{
-                                fill:
-                                    n <= (hover || stars)
-                                        ? 'currentColor'
-                                        : 'none',
+                                ...styles.star,
+                                color: lit ? 'var(--amber)' : 'var(--text-muted)',
                             }}
-                        />
-                    </span>
-                ))}
+                        >
+                            <FiStar style={{ fill: lit ? 'currentColor' : 'none' }} />
+                        </button>
+                    );
+                })}
             </div>
             <textarea
                 style={styles.textarea}
                 placeholder="Comentário (opcional)"
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
-                disabled={disabled}
+                disabled={blocked}
+                maxLength={500}
                 rows={2}
             />
-            <button
-                style={{
-                    ...styles.btn,
-                    opacity: stars === 0 || submitting ? 0.5 : 1,
-                    cursor:
-                        stars === 0 || submitting ? 'not-allowed' : 'pointer',
-                }}
-                onClick={handleSubmit}
-                disabled={stars === 0 || submitting || disabled}
-            >
-                {submitting ? 'Enviando...' : 'Enviar Avaliação'}
-            </button>
+            <div className="d-flex gap-2 flex-wrap">
+                <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    onClick={handleSubmit}
+                    disabled={stars === 0 || blocked}
+                >
+                    {submitting ? 'Enviando...' : submitLabel}
+                </button>
+                {onCancel && (
+                    <button
+                        type="button"
+                        className="btn btn-outline-secondary btn-sm"
+                        onClick={onCancel}
+                        disabled={submitting}
+                    >
+                        Cancelar
+                    </button>
+                )}
+            </div>
         </div>
     );
 }
 
 const styles: Record<string, React.CSSProperties> = {
-    container: {
-        background: '#1a1a2e',
-        border: '1px solid #2a2a4a',
-        borderRadius: 10,
-        padding: 16,
-        marginTop: 16,
-    },
     label: {
-        margin: '0 0 8px',
+        margin: '0 0 6px',
         fontSize: '0.9rem',
-        color: '#c8d6e5',
+        color: 'var(--text-secondary)',
     },
     starsRow: {
         display: 'flex',
-        gap: 4,
+        gap: 2,
         marginBottom: 10,
     },
     star: {
+        background: 'transparent',
+        border: 'none',
+        padding: 4,
         fontSize: '1.6rem',
+        lineHeight: 1,
+        display: 'inline-flex',
+        cursor: 'pointer',
         transition: 'color 0.15s',
     },
     textarea: {
         width: '100%',
-        background: '#0f0f23',
-        border: '1px solid #2a2a4a',
+        background: 'var(--surface-2)',
+        border: '1px solid var(--border-mid)',
         borderRadius: 6,
-        color: '#fff',
+        color: 'var(--text-primary)',
         padding: '8px 10px',
         fontSize: '1rem',
-        resize: 'vertical' as const,
+        resize: 'vertical',
         marginBottom: 10,
-        boxSizing: 'border-box' as const,
-    },
-    btn: {
-        background: '#5bc0be',
-        color: '#0b132b',
-        border: 'none',
-        padding: '8px 18px',
-        borderRadius: 6,
-        fontWeight: 600,
-        fontSize: '0.85rem',
-    },
-    thanks: {
-        margin: 0,
-        color: '#2ecc71',
-        fontSize: '0.9rem',
+        boxSizing: 'border-box',
     },
 };

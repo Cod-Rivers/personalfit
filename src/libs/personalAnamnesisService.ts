@@ -2,9 +2,8 @@ import { Api } from '@/libs/api';
 
 /**
  * Anamnese do personal — questionário que o aluno VINCULADO responde para
- * orientar o personal na montagem das séries. Separada da Triagem automática
- * (/anamnese, POST /user/anamnesis), que escolhe um treino pronto para quem
- * não tem personal e nunca é vista por ninguém.
+ * orientar o personal na montagem das séries. É também de onde a
+ * Substituição Inteligente lê nível, objetivo, PAR-Q e dores.
  *
  * Espelha internal/application/user/dtos/personal-anamnesis.go e
  * internal/domain/user/personal-anamnesis-questionnaire.go do backend.
@@ -78,19 +77,9 @@ export interface PersonalAnamnesisView {
     sections: PersonalAnamnesisSectionView[];
 }
 
-/** Anamnese do formato antigo, anterior à Anamnese do personal. */
-export interface LegacyAnamnesisView {
-    completed_at: string;
-    filled_by: 'student' | 'personal';
-    flagged: boolean;
-    flag_reasons?: string[];
-    answers: { question: string; answer: string }[];
-}
-
 export interface PersonalAnamnesisHistory {
     pending: PersonalAnamnesisView | null;
     submitted: PersonalAnamnesisView[];
-    legacy: LegacyAnamnesisView[];
 }
 
 export interface MyPendingPersonalAnamnesis {

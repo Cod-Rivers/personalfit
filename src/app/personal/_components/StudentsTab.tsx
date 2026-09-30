@@ -750,8 +750,8 @@ export default function StudentsTab({ state, unreadComments }: Props) {
                 </p>
                 <p className={s.confirmText}>
                     A conta do aluno não é excluída — apenas o vínculo
-                    com você. Sem um personal, o aluno passa a poder
-                    gerar um treino próprio pela anamnese automática.
+                    com você. Sem um personal, o aluno passa a montar o
+                    próprio treino.
                 </p>
             </Modal>
 

@@ -15,6 +15,22 @@ import { clearSession } from '@/libs/session';
 import { useVisiblePolling } from '@/hooks/useVisiblePolling';
 import HelpTooltip from '@/components/atoms/HelpTooltip';
 
+// Telas da área do aluno: nelas, o personal que também é aluno de alguém está
+// no modo "Ver como Aluno". Uma lista só para o botão do header e a guarda do
+// voltar não divergirem.
+const STUDENT_AREA_PREFIXES = [
+    '/app',
+    '/meus-treinos',
+    '/agendamentos',
+    '/meus-comentarios',
+    '/mensalidades',
+    '/anamnese-do-personal',
+];
+
+function isStudentAreaPath(path: string): boolean {
+    return STUDENT_AREA_PREFIXES.some((prefix) => path.startsWith(prefix));
+}
+
 const Header: React.FC = () => {
     const { theme, toggleTheme } = useTheme();
     const { branding } = useBranding();
@@ -79,13 +95,7 @@ const Header: React.FC = () => {
     // também ter um vínculo de aluno na mesma conta.
     useVisiblePolling(fetchLinkStatus, 30000, !!user.name);
 
-    const isOnStudentArea =
-        pathname.startsWith('/app') ||
-        pathname.startsWith('/meus-treinos') ||
-        pathname.startsWith('/agendamentos') ||
-        pathname.startsWith('/meus-comentarios') ||
-        pathname.startsWith('/mensalidades') ||
-        pathname.startsWith('/anamnese');
+    const isOnStudentArea = isStudentAreaPath(pathname);
     const showProfileSwitcher =
         linkStatus === 'active' && user.role !== 'student';
 
@@ -174,12 +184,7 @@ const Header: React.FC = () => {
             // checamos o destino real: se ainda está na área do aluno (ex:
             // voltando de um treino específico para a lista), é navegação
             // normal dentro da área — não é "sair", não interrompe.
-            const stillInStudentArea =
-                window.location.pathname.startsWith('/app') ||
-                window.location.pathname.startsWith('/meus-treinos') ||
-                window.location.pathname.startsWith('/agendamentos') ||
-                window.location.pathname.startsWith('/anamnese');
-            if (stillInStudentArea) return;
+            if (isStudentAreaPath(window.location.pathname)) return;
 
             const leave = window.confirm(
                 'Você está visualizando como aluno. Deseja realmente sair desta área?',
@@ -203,7 +208,6 @@ const Header: React.FC = () => {
         };
     }, [isOnStudentArea, showProfileSwitcher]);
 
-    const anamineseLinkClass = `nav-link dropdown-toggle${pathname.startsWith('/anamnese') ? ' nav-link-active' : ''}`;
     const agendaLinkClass = `nav-link${pathname.startsWith('/personal/agenda') ? ' nav-link-active' : ''}`;
     const agendamentosLinkClass = `nav-link${pathname.startsWith('/agendamentos') ? ' nav-link-active' : ''}`;
 
@@ -302,34 +306,6 @@ const Header: React.FC = () => {
                     id="navbarSupportedContent"
                 >
                     <ul className="navbar-nav me-auto mb-2 mb-lg-0">
-                        {!user.has_personal && (
-                            <li className="nav-item dropdown header-nav-item">
-                                <a
-                                    className={anamineseLinkClass}
-                                    href="#"
-                                    role="button"
-                                    data-bs-toggle="dropdown"
-                                    aria-expanded="false"
-                                >
-                                    Triagem automática
-                                </a>
-                                <ul className="dropdown-menu">
-                                    <li>
-                                        <Link
-                                            className="dropdown-item"
-                                            href="/anamnese"
-                                        >
-                                            Refazer triagem
-                                        </Link>
-                                    </li>
-                                </ul>
-                                <HelpTooltip
-                                    text="Questionário de saúde e dores que monta um treino pronto para quem não tem personal. Refaça quando algo mudar."
-                                    href="/ajuda#glossario-anamnese"
-                                    label="Ajuda sobre a triagem automática"
-                                />
-                            </li>
-                        )}
                         {user.role === 'personal' && (
                             <li className="nav-item header-nav-item">
                                 <Link

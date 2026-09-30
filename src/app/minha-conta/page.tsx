@@ -7,6 +7,7 @@ import { Api } from '@/libs/api';
 import { useRouter } from 'next/navigation';
 import Modal from '@/components/system/Modal';
 import StudentPlusCard from '@/components/features/StudentPlusCard';
+import ProPlanCard from '@/components/features/ProPlanCard';
 
 interface UserData {
     id?: string;
@@ -313,6 +314,7 @@ export default function MinhaContaPage() {
                 </div>
 
                 {user.role === 'student' && <StudentPlusCard />}
+                {user.role === 'personal' && <ProPlanCard />}
 
                 {/* Portabilidade de dados (Art. 18, V LGPD) */}
                 <div className="card mb-4">

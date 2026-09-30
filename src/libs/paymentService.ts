@@ -7,7 +7,7 @@ import { Api } from '@/libs/api';
 
 /**
  * Serviço de pagamentos: catálogo de planos, assinatura Pro via Asaas
- * (PIX/cartão), compra de nova anamnese (PIX) e verificação de compras do
+ * (PIX/cartão), compras avulsas e verificação de compras do
  * Google Play (fluxo nativo via ponte do app Android — ver libs/nativeBridge.ts).
  *
  * Os PREÇOS vêm sempre do backend (GET /plans) — o cliente nunca envia valor.
@@ -17,14 +17,10 @@ export interface PlanCatalogItem {
     cycle?: string;
     value: number;
     play_product_id: string;
-    /** false = fora de venda agora (hoje só a nova anamnese, enquanto o
-     *  treino automático está pausado). Ausente = à venda. */
-    available?: boolean;
 }
 
 export interface PlanCatalog {
     pro: PlanCatalogItem[];
-    early_anamnesis: PlanCatalogItem;
     library_plan: PlanCatalogItem;
     student_plus: PlanCatalogItem;
 }
@@ -91,8 +87,37 @@ export async function subscribeProCard(
     return res.data;
 }
 
-export async function cancelSubscription(): Promise<void> {
-    await Api.post('/user/cancel-subscribe');
+/** Cancela o PRO no cartão. As cobranças param na hora; `access_until`
+ *  (ISO) é até quando o período já pago continua valendo. */
+export async function cancelSubscription(): Promise<{ access_until?: string }> {
+    const { data } = await Api.post<{ access_until?: string }>('/user/cancel-subscribe');
+    return data ?? {};
+}
+
+/** Situação do PRO do personal, lida de GET /me. */
+export interface ProPlanStatus {
+    plan_type?: string;
+    has_active_subscription?: boolean;
+    subscription_cycle?: string;
+    /** ISO: PRO cancelado que ainda vale até esta data. */
+    pro_access_until?: string;
+}
+
+export async function getProPlanStatus(): Promise<ProPlanStatus> {
+    const { data } = await Api.get<ProPlanStatus>('/me');
+    return data;
+}
+
+/** O PRO que acabou de ser comprado já foi pago? Olhar só `plan_type` não
+ *  basta: quem compra pode já estar no PRO — no período pago de um
+ *  cancelamento (`pro_access_until`) ou no teste grátis —, e o polling
+ *  confirmaria antes de o PIX ser pago. O pagamento desfaz o cancelamento e
+ *  converte o teste, então é isso que se espera. */
+export async function isProPaymentConfirmed(wasOnTrial: boolean): Promise<boolean> {
+    const status = await getProPlanStatus();
+    if (status.plan_type !== 'pro' || status.pro_access_until) return false;
+    if (!wasOnTrial) return true;
+    return !(await getProTrialStatus()).pro_trial_active;
 }
 
 /* ── Aluno Plus: assinatura do aluno sem personal ──
@@ -154,25 +179,6 @@ export function daysUntil(endsAt: string | undefined, now = Date.now()): number 
     if (!endsAt) return 0;
     const ms = new Date(endsAt).getTime() - now;
     return ms > 0 ? Math.ceil(ms / 86_400_000) : 0;
-}
-
-/* ── Nova anamnese (aluno free) via PIX ── */
-
-export interface EarlyAnamnesisPixResponse {
-    success: boolean;
-    message: string;
-    payment_id?: string;
-    qr_image_url?: string;
-    qr_code_payload?: string;
-    expires_at?: string;
-    value?: number;
-}
-
-export async function purchaseEarlyAnamnesisPix(): Promise<EarlyAnamnesisPixResponse> {
-    const res = await Api.post<EarlyAnamnesisPixResponse>('/user/anamnesis/purchase-early', {
-        payment_method: 'PIX',
-    });
-    return res.data;
 }
 
 /* ── Compra avulsa de um plano da biblioteca "estilo-famosos" ── */

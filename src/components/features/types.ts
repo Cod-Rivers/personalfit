@@ -13,11 +13,10 @@ export interface ExerciseLog {
     restTime?: number;
     /** Carga planejada pelo personal (ExerciseResponse.load_kg), usada como
      * base para a sugestão de carga do painel de autorregulação do
-     * microciclo. Ausente no fluxo legado (/app/treino). */
+     * microciclo. */
     plannedWeight?: number;
     /** ISO da última vez que plannedWeight mudou (ExerciseResponse.
-     * load_prescribed_at) — ver libs/loadSuggestion.ts. Ausente no fluxo
-     * legado, igual a plannedWeight. */
+     * load_prescribed_at) — ver libs/loadSuggestion.ts. */
     loadPrescribedAt?: string;
     /** Intensidade prescrita pelo personal, mostrada ao aluno no card. Só
      * informativos: o app não guarda o 1RM do aluno, então a % não vira kg. */
@@ -44,7 +43,7 @@ export interface ExerciseLog {
      * Exercícios consecutivos com o mesmo group_id formam um bloco. */
     group_id?: string;
     /** Grupo muscular alvo (ExerciseResponse.muscle_group). Necessário para a
-     * substituição por equipamento indisponível. Ausente no fluxo legado. */
+     * substituição por equipamento indisponível. */
     muscle_group?: string;
     /** Vínculo com a biblioteca (ExerciseResponse.exercise_library_id) — é o
      * que dá ao card a chave estável do histórico de carga (exerciseKeyFor). */
@@ -65,67 +64,6 @@ export interface ExerciseLog {
     // Adicione outros campos se existirem
 }
 
-export interface ApiTrainingProgress {
-    id: string; // ID do registro de progresso (ex: "tp1")
-    user_id: string;
-    training_id: string; // ID do modelo de treino (ex: "t1")
-    reference: string; // "A", "B", "C" - para o label do card
-    exercise_logs: ExerciseLog[];
-    // Outros campos relevantes para o progresso do treino, se houver
-}
-
-export interface UserTrainingDataResponse {
-    user: User;
-    trainings_progress: ApiTrainingProgress[];
-}
-
-// Props para a lista de cards
-export interface TrainingProtocolListProps {
-    protocolId: string; // ID do protocolo vindo da URL
-    protocolNumber: number;
-    trainings: TrainingCardProps[]; // Lista simplificada para os cards
-    basePath?: string; // Base path for links (default: '/treinamento')
-    // Se quiser passar todos os dados de 'trainings_progress' para evitar refetch,
-    // pode mudar 'trainings' para ser do tipo TrainingProgress[]
-    // allTrainingProgress: TrainingProgress[];
-}
-
-export interface TrainingProtocolProps {
-    protocolId: string; // ID do protocolo vindo da URL
-    protocolNumber: number;
-    trainings: TrainingCardProps[]; // Lista simplificada para os cards
-    // Se quiser passar todos os dados de 'trainings_progress' para evitar refetch,
-    // pode mudar 'trainings' para ser do tipo TrainingProgress[]
-    // allTrainingProgress: TrainingProgress[];
-}
-
-// Props para a página de detalhes do exercício
-export interface ExerciseDetailPageProps {
-    params: {
-        id: string; // ID do Protocolo
-        trainingId: string; // ID do Treino (training_id da API)
-    };
-}
-export interface ProtocolListPageParams {
-    id: string;
-}
-export interface ProtocolPageParams {
-    id: string;
-}
-
-export interface PageProps {
-    params: {
-        protocolId: string;
-        trainingId: string;
-    };
-}
-export interface LocalApiResponse {
-    user: { id: string; name: string }; // Ou importe UserType de types.ts
-    trainings_progress: ApiTrainingProgress[];
-}
-// src/components/types.ts
-
-// Log de Exercício (usado em ApiTrainingProgress e na página de exercícios)
 // Props para o card de treino individual
 export interface TrainingCardProps {
     id: string; // ID do treino (ex: "t1", "t2")
@@ -142,36 +80,3 @@ export interface TrainingCardProps {
     /** Só é preenchido em planos "simple" com dia da semana fixo. */
     scheduledToday?: boolean;
 }
-
-// Parâmetros da página de listagem de protocolos (para a rota /treinamento/[id])
-export interface ProtocolListPageParams {
-    id: string; // Representa o protocolId da URL
-}
-
-// Progresso de Treino da API (mock)
-export interface ApiTrainingProgress {
-    id: string; // ID do registro de progresso (ex: "tp1")
-    user_id: string;
-    training_id: string; // ID do modelo de treino (ex: "t1") que corresponde a TrainingCardProps.id
-    reference: string; // "A", "B", "C" - para o label do card (TrainingCardProps.label)
-    exercise_logs: ExerciseLog[]; // Logs detalhados dos exercícios, se aplicável aqui
-}
-
-// Usuário da API (mock)
-export interface User {
-    id: string;
-    name: string;
-}
-
-// Resposta da API (mock para a página de protocolo)
-export interface ApiResponse {
-    user: User;
-    trainings_progress: ApiTrainingProgress[];
-}
-
-export interface ProtocolListItem {
-    id: string; // Este deve ser o ID real do protocolo (ex: "1", "outroProtocolo")
-    label: string;
-}
-
-// Props para o componente TrainingProtocolList

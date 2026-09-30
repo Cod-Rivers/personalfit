@@ -303,18 +303,6 @@ export interface OverdueBlockSettings {
     pro_grace_until?: string;
 }
 
-export async function getOverdueBlock(): Promise<OverdueBlockSettings> {
-    const { data } = await Api.get<OverdueBlockSettings>('/personal/overdue-block');
-    return data;
-}
-
-export async function setOverdueBlock(enabled: boolean): Promise<OverdueBlockSettings> {
-    const { data } = await Api.put<OverdueBlockSettings>('/personal/overdue-block', {
-        enabled,
-    });
-    return data;
-}
-
 // ── Aluno ───────────────────────────────────────────────────────────────────
 
 export interface MyInvoices {

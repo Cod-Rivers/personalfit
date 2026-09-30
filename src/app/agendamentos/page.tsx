@@ -25,6 +25,7 @@ import {
 import Modal from '@/components/system/Modal';
 import { useToast } from '@/components/system/Toast';
 import SlotPicker from '@/components/agenda/SlotPicker';
+import MyRecurrencesSection from '@/components/agenda/MyRecurrencesSection';
 import ExternalLink from '@/components/atoms/ExternalLink';
 import s from './agendamentos.module.css';
 
@@ -463,6 +464,9 @@ export default function AgendamentosPage() {
                         ))}
                     </div>
                 )}
+
+                {/* Aulas fixas: pedir falta ou remarcação de uma data. */}
+                <MyRecurrencesSection />
             </div>
 
             {/* Modal: Solicitar Agendamento */}

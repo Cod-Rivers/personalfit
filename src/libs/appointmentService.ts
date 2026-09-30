@@ -121,11 +121,6 @@ export async function listStudentAppointments(studentId: string, from?: string, 
     return res.data;
 }
 
-export async function updateAppointment(id: string, data: UpdateAppointmentRequest): Promise<AppointmentResponse> {
-    const res = await Api.patch<AppointmentResponse>(`/appointments/${id}`, data);
-    return res.data;
-}
-
 export async function updateAppointmentStatus(id: string, status: AppointmentStatus): Promise<void> {
     await Api.patch(`/appointments/${id}/status`, { status });
 }
@@ -136,11 +131,6 @@ export async function deleteAppointment(id: string): Promise<void> {
 
 export async function createRecurrence(studentId: string, data: CreateRecurrenceRequest): Promise<RecurrenceResponse> {
     const res = await Api.post<RecurrenceResponse>(`/students/${studentId}/recurrences`, data);
-    return res.data;
-}
-
-export async function listStudentRecurrences(studentId: string): Promise<RecurrenceResponse[]> {
-    const res = await Api.get<RecurrenceResponse[]>(`/students/${studentId}/recurrences`);
     return res.data;
 }
 
@@ -171,6 +161,12 @@ export async function acceptException(excId: string): Promise<void> {
 
 export async function rejectException(excId: string): Promise<void> {
     await Api.patch(`/recurrences/exceptions/${excId}/reject`, {});
+}
+
+/** Aulas fixas (recorrências) do aluno com o personal do vínculo ativo. */
+export async function listMyRecurrences(): Promise<RecurrenceResponse[]> {
+    const res = await Api.get<RecurrenceResponse[]>('/my-recurrences');
+    return res.data ?? [];
 }
 
 export async function requestException(recurrenceId: string, data: CreateRecurrenceExceptionRequest): Promise<RecurrenceExceptionResponse> {

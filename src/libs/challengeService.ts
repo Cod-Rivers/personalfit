@@ -63,11 +63,6 @@ export async function createChallenge(
     return data;
 }
 
-export async function getChallenge(id: string): Promise<Challenge> {
-    const { data } = await Api.get<Challenge>(`/challenges/${id}`);
-    return data;
-}
-
 export async function deleteChallenge(id: string): Promise<void> {
     await Api.delete(`/challenges/${id}`);
 }

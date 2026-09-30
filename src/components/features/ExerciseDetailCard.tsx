@@ -69,7 +69,7 @@ interface ExerciseDetailCardProps {
     /** Ajuste intrassessão de carga (%) sugerido pelo painel de autorregulação
      * do microciclo (ver microcycleAutoregulation.ts). Usado como fallback
      * simples (% sobre a carga prescrita) quando loadSuggestion não está
-     * disponível — ex: treino sem periodização (fluxo legado /app/treino). */
+     * disponível. */
     loadAdjustPct?: number;
     /** Sugestão completa do motor de carga (ver libs/loadSuggestion.ts),
      * combinando prescrição do personal com o histórico do aluno. Tem
@@ -83,8 +83,7 @@ interface ExerciseDetailCardProps {
     /** Abre outro exercício no lugar deste (usado pelo atalho do bloco). */
     onSelectExercise?: (exercise: ExerciseLog) => void;
     /** Abre o fluxo de Substituição Inteligente de Exercícios para este
-     * exercício. Opcional: o fluxo legado (/app/treino) também renderiza este
-     * componente e não deve ganhar o botão. */
+     * exercício. Opcional: sem ele, o botão não aparece. */
     onEquipmentUnavailable?: (exercise: ExerciseLog) => void;
     /** Modo de visualização do personal (ex: "ver treino" do aluno): oculta
      * edição de carga e anotações — essas telas são "/me/..." (escopadas no

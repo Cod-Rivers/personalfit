@@ -112,16 +112,6 @@ export async function createTrainingPdfImport(
     return data;
 }
 
-export async function getTrainingPdfImport(
-    importId: string,
-    studentId?: string,
-): Promise<TrainingPdfImport> {
-    const { data } = await Api.get<TrainingPdfImport>(
-        `${basePath(studentId)}/${importId}`,
-    );
-    return data;
-}
-
 /** Salva a revisão manual (correções, resolução de exercícios sem match). */
 export async function updateTrainingPdfImport(
     importId: string,
@@ -156,9 +146,3 @@ export async function confirmMyTrainingPdfImport(importId: string) {
     return data;
 }
 
-/** Só o aluno descarta um rascunho não confirmado. */
-export async function deleteMyTrainingPdfImport(
-    importId: string,
-): Promise<void> {
-    await Api.delete(`/my-training-pdf-imports/${importId}`);
-}

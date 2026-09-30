@@ -29,12 +29,3 @@ export async function getMyNotifications(): Promise<Notification[]> {
 export async function markAsRead(id: string): Promise<void> {
     await Api.put(`/notifications/${id}/read`, {});
 }
-
-export async function submitRating(body: {
-    target_id: string;
-    target_type: string;
-    stars: number;
-    comment?: string;
-}): Promise<void> {
-    await Api.post('/ratings', body);
-}

@@ -8,7 +8,6 @@ import './styles.css';
 import { Api } from '@/libs/api';
 import {
     CardSubscriptionForm,
-    EarlyAnamnesisPixResponse,
     PlanCatalog,
     ProTrialStatus,
     StudentPlusStatus,
@@ -18,8 +17,8 @@ import {
     getProTrialStatus,
     getStudentPlusStatus,
     isGooglePlayBillingAvailable,
+    isProPaymentConfirmed,
     launchGooglePlayPurchase,
-    purchaseEarlyAnamnesisPix,
     purchaseLibraryPlanCard,
     purchaseLibraryPlanPix,
     startProTrial,
@@ -39,7 +38,7 @@ import { trackTrialStarted } from '@/libs/analytics';
 // backend/estatísticas (ver ReferralPartnerController.GetIndicationStats).
 const INDICATION_NONE = 'none';
 
-type Produto = 'pro' | 'anamnese' | 'plano' | 'plus';
+type Produto = 'pro' | 'plano' | 'plus';
 type Metodo = 'pix' | 'card' | 'google';
 
 const CYCLE_LABELS: Record<string, string> = {
@@ -63,15 +62,6 @@ const PRO_BENEFITS = [
     'Evolução de carga: comparar exercícios, cruzar com a avaliação e relatório para o aluno',
     'Seus ciclos de treino ficam privados (fora da biblioteca pública)',
     'Sem anúncios para você e para seus alunos',
-];
-
-// Benefícios da compra avulsa de um novo plano de treino (nova anamnese +
-// treino gerado na hora). Fora de venda enquanto o treino automático está
-// pausado — o catálogo avisa com early_anamnesis.available=false.
-const ANAMNESE_BENEFITS = [
-    'Nova anamnese completa para atualizar seu perfil',
-    'Um treino novo, gerado automaticamente para você',
-    'Liberado na hora — sem esperar os 2 meses do plano gratuito',
 ];
 
 // Benefícios da compra avulsa de um plano da biblioteca "estilo-famosos".
@@ -104,7 +94,7 @@ function formatDate(iso?: string): string {
  *  pagamentos da loja exige o Play Billing nesse caso. */
 function methodsFor(produto: Produto, googleAvailable: boolean): Metodo[] {
     if (produto === 'plus') return googleAvailable ? ['google'] : ['card'];
-    const methods: Metodo[] = produto === 'anamnese' ? ['pix'] : ['pix', 'card'];
+    const methods: Metodo[] = ['pix', 'card'];
     if (googleAvailable) methods.push('google');
     return methods;
 }
@@ -122,13 +112,11 @@ function PaymentPageInner() {
     // 'ia-substituicao' é o nome antigo do produto (links anteriores a
     // 2026-09-27): a assinatura avulsa de IA virou o Aluno Plus.
     const produto: Produto =
-        produtoParam === 'anamnese'
-            ? 'anamnese'
-            : produtoParam === 'plano'
-              ? 'plano'
-              : produtoParam === 'plus' || produtoParam === 'ia-substituicao'
-                ? 'plus'
-                : 'pro';
+        produtoParam === 'plano'
+            ? 'plano'
+            : produtoParam === 'plus' || produtoParam === 'ia-substituicao'
+              ? 'plus'
+              : 'pro';
     const templateId = searchParams.get('templateId') ?? '';
     // Guarda o macrociclo ativo ANTES da compra de um plano, para detectar a
     // troca (webhook aplica o plano comprado) durante o polling do PIX.
@@ -192,25 +180,19 @@ function PaymentPageInner() {
             ? selectedProPlan?.value
             : produto === 'plano'
               ? catalog?.library_plan.value
-              : produto === 'plus'
-                ? catalog?.student_plus.value
-                : catalog?.early_anamnesis.value;
+              : catalog?.student_plus.value;
     const productTitle =
         produto === 'pro'
             ? `Plano PRO — ${CYCLE_LABELS[cycle] ?? cycle}`
             : produto === 'plano'
               ? 'Plano de treino selecionado'
-              : produto === 'plus'
-                ? 'Aluno Plus — Mensal'
-                : 'Novo plano de treino';
+              : 'Aluno Plus — Mensal';
     const benefits =
         produto === 'pro'
             ? PRO_BENEFITS
             : produto === 'plano'
               ? PLANO_BENEFITS
-              : produto === 'plus'
-                ? PLUS_BENEFITS
-                : ANAMNESE_BENEFITS;
+              : PLUS_BENEFITS;
     const benefitsTitle =
         produto === 'pro'
             ? 'O que o PRO desbloqueia para você (personal):'
@@ -218,15 +200,13 @@ function PaymentPageInner() {
 
     // Motivo para não vender agora (produto fora de venda ou fora do perfil).
     const unavailableReason =
-        produto === 'anamnese' && catalog?.early_anamnesis.available === false
-            ? 'A compra de nova anamnese está suspensa enquanto a geração automática de treino está pausada. Enquanto isso, você pode refazer sua anamnese de graça, quando quiser.'
-            : produto === 'plus' && plusStatus?.active
-              ? 'Você já tem o Aluno Plus ativo. Para cancelar, vá em Minha conta.'
-              : produto === 'plus' && plusStatus?.own_pro
-                ? 'Sua conta já tem os benefícios do Aluno Plus.'
-                : produto === 'plus' && plusStatus && !plusStatus.eligible
-                  ? 'O Aluno Plus é para quem treina sem personal. Com personal vinculado, os recursos vêm do plano dele.'
-                  : '';
+        produto === 'plus' && plusStatus?.active
+            ? 'Você já tem o Aluno Plus ativo. Para cancelar, vá em Minha conta.'
+            : produto === 'plus' && plusStatus?.own_pro
+              ? 'Sua conta já tem os benefícios do Aluno Plus.'
+              : produto === 'plus' && plusStatus && !plusStatus.eligible
+                ? 'O Aluno Plus é para quem treina sem personal. Com personal vinculado, os recursos vêm do plano dele.'
+                : '';
 
     /** Confirma via polling se o pagamento foi processado pelo webhook. */
     const startPolling = useCallback(() => {
@@ -234,8 +214,8 @@ function PaymentPageInner() {
         pollingRef.current = setInterval(async () => {
             try {
                 if (produto === 'pro') {
-                    const { data } = await Api.get<{ plan_type?: string; active?: boolean }>('/me');
-                    if (data.plan_type === 'pro') {
+                    const wasOnTrial = !!(trial?.pro_trial_active || trialStarted?.pro_trial_active);
+                    if (await isProPaymentConfirmed(wasOnTrial)) {
                         setConfirmed(true);
                         if (pollingRef.current) clearInterval(pollingRef.current);
                         // Atualiza o cache local de usuário para refletir o plano novo
@@ -248,17 +228,9 @@ function PaymentPageInner() {
                         setConfirmed(true);
                         if (pollingRef.current) clearInterval(pollingRef.current);
                     }
-                } else if (produto === 'plus') {
+                } else {
                     const status = await getStudentPlusStatus();
                     if (status.active) {
-                        setConfirmed(true);
-                        if (pollingRef.current) clearInterval(pollingRef.current);
-                    }
-                } else {
-                    const { data } = await Api.get<{ has_early_release?: boolean; can_register?: boolean }>(
-                        '/user/anamnesis/status',
-                    );
-                    if (data.has_early_release || data.can_register) {
                         setConfirmed(true);
                         if (pollingRef.current) clearInterval(pollingRef.current);
                     }
@@ -267,7 +239,7 @@ function PaymentPageInner() {
                 // erros transitórios de polling são ignorados
             }
         }, 5000);
-    }, [produto]);
+    }, [produto, trial, trialStarted]);
 
     const handleStartTrial = async () => {
         setError('');
@@ -298,7 +270,7 @@ function PaymentPageInner() {
                     payload: res.qr_code_payload,
                     expiresAt: res.expires_at,
                 });
-            } else if (produto === 'plano') {
+            } else {
                 // Captura o plano ativo atual para detectar a troca no polling.
                 try {
                     const { data } = await Api.get<{ id?: string }>('/my-planning/active');
@@ -307,13 +279,6 @@ function PaymentPageInner() {
                     planoActiveBefore.current = null;
                 }
                 const res = await purchaseLibraryPlanPix(templateId);
-                setPix({
-                    qrImageUrl: res.qr_image_url,
-                    payload: res.qr_code_payload,
-                    expiresAt: res.expires_at,
-                });
-            } else {
-                const res: EarlyAnamnesisPixResponse = await purchaseEarlyAnamnesisPix();
                 setPix({
                     qrImageUrl: res.qr_image_url,
                     payload: res.qr_code_payload,
@@ -338,9 +303,7 @@ function PaymentPageInner() {
                     ? (selectedProPlan?.play_product_id ?? '')
                     : produto === 'plano'
                       ? (catalog?.library_plan.play_product_id ?? '')
-                      : produto === 'plus'
-                        ? (catalog?.student_plus.play_product_id ?? '')
-                        : (catalog?.early_anamnesis.play_product_id ?? '');
+                      : (catalog?.student_plus.play_product_id ?? '');
             const productType = produto === 'pro' || produto === 'plus' ? 'subs' : 'inapp';
             if (!productId) throw new Error('Produto indisponível');
 
@@ -406,27 +369,17 @@ function PaymentPageInner() {
                             ? 'Seu plano PRO está ativo. Aproveite todos os recursos.'
                             : produto === 'plano'
                               ? 'Seu novo plano de treino está ativo. Bora treinar!'
-                              : produto === 'plus'
-                                ? 'Seu Aluno Plus está ativo: sem anúncios, com a Substituição Inteligente de Exercícios e os links do Instagram e do TikTok.'
-                                : 'Sua nova anamnese foi liberada. Você já pode preenchê-la.'}
+                              : 'Seu Aluno Plus está ativo: sem anúncios, com a Substituição Inteligente de Exercícios e os links do Instagram e do TikTok.'}
                     </p>
                     <button
                         className="btn btn-gold mt-2"
                         onClick={() =>
                             router.push(
-                                produto === 'pro'
-                                    ? '/'
-                                    : produto === 'plano' || produto === 'plus'
-                                      ? '/meus-treinos'
-                                      : '/anamnese',
+                                produto === 'pro' ? '/' : '/meus-treinos',
                             )
                         }
                     >
-                        {produto === 'pro'
-                            ? 'Ir para o início'
-                            : produto === 'plano' || produto === 'plus'
-                              ? 'Ver meus treinos'
-                              : 'Fazer nova anamnese'}
+                        {produto === 'pro' ? 'Ir para o início' : 'Ver meus treinos'}
                     </button>
                 </div>
             </div>

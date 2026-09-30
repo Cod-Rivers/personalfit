@@ -117,9 +117,10 @@ export interface MacrocycleResponse {
     start_date?: string;
     end_date?: string;
     status: string;
-    /** Origem do macrociclo: "anamnesis" (gerado pela anamnese), "celebrity"
-     * (aluno aplicou da biblioteca estilo-famosos), ou vazio (montado pelo
-     * personal). Só planos "celebrity" podem ser removidos pelo aluno. */
+    /** Origem do macrociclo: "celebrity" (aluno aplicou da biblioteca
+     * estilo-famosos), "imported_pdf", "self_made", "anamnesis" (gerado pela
+     * Triagem automática, que saiu do produto em 2026-09-29 — só planos
+     * antigos) ou vazio (montado pelo personal). */
     category?: string;
     /** "periodized" (padrão) ou "simple" — definido só na criação do macrociclo. */
     planning_mode?: 'periodized' | 'simple';
@@ -784,8 +785,8 @@ export async function getMyPlannings(): Promise<MacrocycleResponse[]> {
 }
 
 /** DELETE /my-planning/:planningId — remove um plano que o aluno escolheu
- * (biblioteca estilo-famosos). Backend responde 403 para planos gerados pela
- * anamnese ou montados pelo personal. */
+ * (biblioteca estilo-famosos). Backend responde 403 para planos montados
+ * pelo personal. */
 export async function deleteMyPlanning(planningId: string): Promise<void> {
     await Api.delete(`/my-planning/${planningId}`);
 }

@@ -120,12 +120,6 @@ export async function getLinkedShowcase(): Promise<Showcase | null> {
     return res.data.showcase;
 }
 
-/** Vitrine do personal autenticado, para edição (funciona mesmo em plano free). */
-export async function getMyShowcase(): Promise<Showcase> {
-    const res = await Api.get<Showcase>('/personal/showcase');
-    return res.data;
-}
-
 /** Salva a vitrine inteira (o editor sempre envia o estado completo). */
 export async function updateMyShowcase(
     payload: ShowcasePayload,
@@ -171,39 +165,6 @@ export async function uploadShowcaseImage(
     // nova a cada troca — nem o cache do navegador nem o cache-first do service
     // worker podem devolver a imagem anterior no preview.
     return { key: data.object_key, url: data.public_url };
-}
-
-/** Estado inicial de um personal que ainda não configurou nada. */
-export function emptyShowcasePayload(): ShowcasePayload {
-    return {
-        enabled: false,
-        theme_id: 'mint-noir',
-        cover_key: '',
-        avatar_key: '',
-        tagline: '',
-        bio: '',
-        specialties: '',
-        stat_years: '',
-        instagram_url: '',
-        youtube_url: '',
-        whatsapp_url: '',
-        results: [],
-        testimonial_text: '',
-        testimonial_author: '',
-        testimonial_photo_key: '',
-        announcement_type: 'none',
-        announcement_text: '',
-        announcement_image_key: '',
-        announcement_url: '',
-        sections: {
-            bio: true,
-            specialties: true,
-            stats: true,
-            social: true,
-            results: true,
-            testimonial: true,
-        },
-    };
 }
 
 /** Converte a resposta de leitura no payload de escrita (descarta as URLs). */

@@ -18,6 +18,7 @@ import {
     getAISubstitutionAccess,
     requestExerciseSubstitutions,
 } from '@/libs/aiSubstitutionAccessService';
+import { getUser } from '@/libs/session';
 import styles from './ExerciseSubstitutionModal.module.css';
 
 interface ExerciseSubstitutionModalProps {
@@ -272,29 +273,24 @@ export default function ExerciseSubstitutionModal({
 
                 {step.kind === 'success' && (
                     <div>
+                        {/* A anamnese que a IA lê é a Anamnese do personal: quem
+                            pede é o personal, o aluno não preenche sozinho. */}
                         {step.anamnesisStatus === 'ausente' && (
                             <div className={styles.anamnesisBanner}>
                                 <p>
-                                    Você ainda não preencheu a anamnese — estas sugestões
-                                    são conservadoras por segurança. Preencher leva cerca
-                                    de 3 minutos e melhora muito a recomendação.
+                                    {getUser()?.has_personal
+                                        ? 'Sem a sua anamnese, estas sugestões são conservadoras por segurança. Peça ao seu personal para liberar a anamnese: com ela, as trocas levam em conta seu nível e suas dores.'
+                                        : 'Estas sugestões são conservadoras por segurança, já que o app não conhece seu histórico de saúde e dores.'}
                                 </p>
-                                <Button
-                                    variant="secondary"
-                                    size="sm"
-                                    onClick={() => router.push('/anamnese')}
-                                >
-                                    Preencher anamnese
-                                </Button>
                             </div>
                         )}
 
                         {step.anamnesisStatus === 'sinalizada' && (
                             <div className={styles.anamnesisBanner}>
                                 <p>
-                                    Sua triagem de saúde indicou pontos de atenção — estas
-                                    sugestões são conservadoras. Fale com seu personal antes
-                                    de aumentar a intensidade.
+                                    Sua anamnese indicou pontos de atenção na triagem de
+                                    saúde, então estas sugestões são conservadoras. Fale
+                                    com seu personal antes de aumentar a intensidade.
                                 </p>
                             </div>
                         )}

@@ -15,7 +15,6 @@ import Modal from '@/components/system/Modal';
 import { useToast } from '@/components/system/Toast';
 import PersonalAnamnesisForm from '@/components/features/PersonalAnamnesisForm';
 import PersonalAnamnesisAnswers, {
-    LegacyAnamnesisList,
 } from '@/components/features/PersonalAnamnesisAnswers';
 import {
     cancelPersonalAnamnesisRequest,
@@ -42,8 +41,7 @@ const DECLARATION_VERSION = '2026-09-12';
 /**
  * Anamnese do personal: o personal pede ao aluno (que recebe aviso e
  * responde pelo app) ou preenche em nome dele, e lê as respostas aqui para
- * montar as séries. Separada da Triagem automática (/anamnese), que é do
- * aluno sem personal e escolhe um treino pronto.
+ * montar as séries.
  */
 export default function PersonalStudentAnamnesePage() {
     const router = useRouter();
@@ -223,8 +221,7 @@ export default function PersonalStudentAnamnesePage() {
                                             </p>
                                             <p className={s.cardMeta}>
                                                 O aluno recebe um aviso e responde pelo app
-                                                dele. As respostas aparecem aqui, e nada gera
-                                                treino automático.
+                                                dele. As respostas aparecem aqui.
                                             </p>
                                         </>
                                     )}
@@ -323,20 +320,6 @@ export default function PersonalStudentAnamnesePage() {
                                         </details>
                                     ))}
                                 </div>
-                            </>
-                        )}
-
-                        {history.legacy.length > 0 && (
-                            <>
-                                <h2 className={`${s.sectionTitle} ${local.heading}`}>
-                                    Histórico (formato antigo)
-                                </h2>
-                                <p className={local.note}>
-                                    Questionários respondidos antes da Anamnese do
-                                    personal existir, incluindo a Triagem automática.
-                                    Só leitura.
-                                </p>
-                                <LegacyAnamnesisList items={history.legacy} />
                             </>
                         )}
                     </>

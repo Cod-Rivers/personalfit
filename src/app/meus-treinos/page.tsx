@@ -11,6 +11,8 @@ import { useBranding } from '@/context/BrandingContext';
 import AdBanner from '@/components/molecules/AdBanner';
 import GoogleAdSlot from '@/components/molecules/GoogleAdSlot';
 import PersonalTrainerCard from '@/components/molecules/PersonalTrainerCard';
+import PlanRatingCard from '@/components/features/PlanRatingCard';
+import { getUser } from '@/libs/session';
 import { TrainingCardProps } from '../../components/features/types';
 import {
     labelPartsOf,
@@ -666,6 +668,16 @@ export default function MeusTreinosPage() {
                             </div>
                         </div>
                     ))
+                )}
+
+                {/* Avaliação do plano: vai para o feedback do personal e,
+                    em plano de modelo da biblioteca, para o ranking do admin. */}
+                {selectedMacro && (
+                    <PlanRatingCard
+                        planId={selectedMacro.id}
+                        category={selectedMacro.category}
+                        hasPersonal={!!getUser()?.has_personal}
+                    />
                 )}
 
                 {/* Card do Personal Trainer */}

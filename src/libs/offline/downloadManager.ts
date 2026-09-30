@@ -217,10 +217,6 @@ export async function getAllOfflineMacrocycles(): Promise<StoredMacrocycle[]> {
     return db.getAll('macrocycles');
 }
 
-export async function hasOfflineMacrocycle(id: string): Promise<boolean> {
-    return Boolean(await getOfflineMacrocycle(id));
-}
-
 export function isMacrocycleStale(stored: StoredMacrocycle, remoteUpdatedAt: string): boolean {
     return stored.serverUpdatedAt !== remoteUpdatedAt;
 }

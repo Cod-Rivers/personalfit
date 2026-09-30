@@ -64,6 +64,8 @@ export interface RatingResponse {
     user_id: string;
     target_id: string;
     target_type: string;
+    /** Modelo da biblioteca de onde veio o plano avaliado; ausente em plano do personal. */
+    template_id?: string;
     stars: number;
     comment: string;
     created_at: string;
@@ -197,11 +199,6 @@ export async function getTopRated(type: string = 'macrocycle', limit: number = 1
     return data ?? [];
 }
 
-export async function promoteToTemplate(macrocycleId: string): Promise<TemplateResponse> {
-    const { data } = await Api.post<TemplateResponse>(`/admin/ratings/${macrocycleId}/promote`, {});
-    return data;
-}
-
 /* ── Exercises ── */
 
 export async function getExercises(search?: string): Promise<ExerciseLibraryItem[]> {
@@ -222,15 +219,6 @@ export async function updateExercise(id: string, body: Partial<ExerciseLibraryIt
 
 export async function deleteExercise(id: string): Promise<void> {
     await Api.delete(`/admin/exercises/${id}`);
-}
-
-export async function uploadExerciseImage(id: string, file: File): Promise<ExerciseLibraryItem> {
-    const form = new FormData();
-    form.append('image', file);
-    const { data } = await Api.post<ExerciseLibraryItem>(`/admin/exercises/${id}/image`, form, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-    });
-    return data;
 }
 
 /** Solicita PUT presigned URL para upload direto ao Cloudflare R2 (Admin). */

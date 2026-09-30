@@ -131,20 +131,6 @@ export async function getMyPersonalAvailability(
 
 export type MyDaySlotsResult = Slot[] | AvailabilityDisabled;
 
-export function isDaySlotsDisabled(r: MyDaySlotsResult): r is AvailabilityDisabled {
-    return !Array.isArray(r) && r.enabled === false;
-}
-
-export async function getMyPersonalDaySlots(
-    date: string,
-    type?: AppointmentType,
-): Promise<MyDaySlotsResult> {
-    const params: Record<string, string> = { date };
-    if (type) params.type = type;
-    const res = await Api.get<MyDaySlotsResult>('/my-personal/availability/slots', { params });
-    return res.data;
-}
-
 // ── Labels ──
 
 export const SLOT_REASON_LABEL: Record<SlotReason, string> = {
