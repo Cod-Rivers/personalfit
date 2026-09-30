@@ -208,6 +208,21 @@
     outline-offset: 2px;
 }
 
+/* "Marcar como feito" (DoneToggle) e "Trocar exercício" lado a lado; quebra
+   para duas linhas em tela estreita em vez de espremer os textos. */
+.cardActions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.cardActions .replaceBtn {
+    margin-bottom: 0;
+}
+
 /* Intensidade prescrita (% de 1RM, cadência, RPE) — uma linha por item. */
 .intensityList {
     list-style: none;

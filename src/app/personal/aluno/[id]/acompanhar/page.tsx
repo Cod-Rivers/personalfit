@@ -13,7 +13,8 @@
  *   achar o exercício → abas.
  * - Na lista: + adiciona exercícios da biblioteca, o botão de troca abre a
  *   biblioteca para substituir, × exclui (com confirmação), e a alça ⠿
- *   reordena.
+ *   reordena. O círculo ao lado da troca marca o exercício como feito
+ *   durante o atendimento (só nesta tela; não é o ✓ de seleção da alça).
  * - Nos cartões de treino: + cria um treino novo e × exclui (com
  *   confirmação). O antigo "Editar treino" (editor da fase) saiu daqui;
  *   bi-set se monta pelo "+ Exercício" (multi-seleção → "Adicionar como")
@@ -205,24 +206,33 @@ export default function AcompanharTreinoPage() {
     /** Exercício aberto no card do aluno (ajuste rápido). Só o ID: o card é
      * derivado do macrociclo atual, então uma gravação aparece nele na hora. */
     const [openExerciseId, setOpenExerciseId] = useState<string | null>(null);
-    /** Marcação visual do personal durante o atendimento presencial — "já
-     * apliquei este exercício com o aluno". Só nesta tela, só nesta sessão:
-     * não é o registro do aluno (isso é `record`/`lastLoadByExercise`, vindo
-     * do workout log) nem grava em lugar nenhum — reinicia ao trocar de
-     * treino ou recarregar a página, de propósito, para nunca ficar
-     * marcado de uma sessão presencial para a próxima.
-     *
-     * É também a SELEÇÃO do agrupamento: com 2+ marcados aparece a barra
-     * "Agrupar como" (bi-set, tri-set…), para combinar exercícios que já
-     * foram incluídos separados. Uma marcação só, dois usos — o personal
-     * não precisa de um modo de seleção à parte. */
-    const [completedExerciseIds, setCompletedExerciseIds] = useState<
+    /** SELEÇÃO do agrupamento, pelo ✓ quadrado acima da alça: com 2+
+     * marcados aparece a barra "Agrupar como" (bi-set, tri-set…), para
+     * combinar exercícios que já foram incluídos separados. Não é o "feito"
+     * (doneExerciseIds, abaixo): até 30/09 os dois eram uma marcação só, e o
+     * personal pediu uma exclusiva para conferir a execução. */
+    const [selectedExerciseIds, setSelectedExerciseIds] = useState<
         Set<string>
     >(new Set());
+    /** "Feito" do personal durante o atendimento presencial — o círculo ao
+     * lado do trocar, na lista e no card aberto. Só nesta tela, só nesta
+     * sessão: não é o registro do aluno (isso é `record`/`lastLoadByExercise`,
+     * vindo do workout log) nem grava em lugar nenhum — reinicia ao trocar de
+     * treino ou recarregar a página, de propósito, para nunca ficar marcado
+     * de uma sessão presencial para a próxima. */
+    const [doneExerciseIds, setDoneExerciseIds] = useState<
+        ReadonlySet<string>
+    >(() => new Set());
+    const toggleDone = (id: string) =>
+        setDoneExerciseIds((prev) => {
+            const next = new Set(prev);
+            if (!next.delete(id)) next.add(id);
+            return next;
+        });
     /** Marca/desmarca um bloco inteiro: exercício solto ou todos os de um
      * bi-set. Bloco parcialmente marcado conta como desmarcado → marca tudo. */
-    const toggleBlockCompleted = (ids: string[]) => {
-        setCompletedExerciseIds((prev) => {
+    const toggleBlockSelected = (ids: string[]) => {
+        setSelectedExerciseIds((prev) => {
             const next = new Set(prev);
             const allOn = ids.every((id) => next.has(id));
             for (const id of ids) {
@@ -237,10 +247,10 @@ export default function AcompanharTreinoPage() {
     const [circuitDoneKeys, setCircuitDoneKeys] = useState<
         ReadonlySet<string>
     >(() => new Set());
-    /** Fim do circuito = o bloco foi aplicado: marca (sem desmarcar, ao
-     * contrário do ✓) e conta para o registro. */
+    /** Fim do circuito = o bloco foi aplicado: marca como feito (sem
+     * desmarcar, ao contrário do círculo) e conta para o registro. */
     const markCircuitDone = (ids: string[]) => {
-        setCompletedExerciseIds((prev) =>
+        setDoneExerciseIds((prev) =>
             ids.every((id) => prev.has(id))
                 ? prev
                 : new Set([...prev, ...ids]),
@@ -763,9 +773,9 @@ export default function AcompanharTreinoPage() {
     const markedExerciseIds = useMemo(
         () =>
             selectedExercises
-                .filter((e) => completedExerciseIds.has(e.id))
+                .filter((e) => selectedExerciseIds.has(e.id))
                 .map((e) => e.id),
-        [selectedExercises, completedExerciseIds],
+        [selectedExercises, selectedExerciseIds],
     );
     const effectiveGroupTechnique =
         groupTechnique &&
@@ -787,7 +797,7 @@ export default function AcompanharTreinoPage() {
                     technique,
                 ),
             );
-            setCompletedExerciseIds((prev) => {
+            setSelectedExerciseIds((prev) => {
                 const next = new Set(prev);
                 for (const id of ids) next.delete(id);
                 return next;
@@ -847,11 +857,11 @@ export default function AcompanharTreinoPage() {
         }
     };
 
-    /** O ✓ na coluna da alça: marca o exercício (ou o bloco inteiro) como
-     * aplicado — e é a seleção da barra "Agrupar como". */
+    /** O ✓ na coluna da alça: seleciona o exercício (ou o bloco inteiro)
+     * para a barra "Agrupar como". O "feito" é o círculo ao lado do trocar. */
     const renderMarkToggle = (block: ExerciseResponse[]) => {
         const ids = block.map((e) => e.id);
-        const checked = ids.every((id) => completedExerciseIds.has(id));
+        const checked = ids.every((id) => selectedExerciseIds.has(id));
         const name =
             block.length === 1
                 ? block[0].name
@@ -864,7 +874,7 @@ export default function AcompanharTreinoPage() {
                     type="checkbox"
                     className={s.completeCheckbox}
                     checked={checked}
-                    onChange={() => toggleBlockCompleted(ids)}
+                    onChange={() => toggleBlockSelected(ids)}
                 />
                 <label
                     htmlFor={inputId}
@@ -872,13 +882,15 @@ export default function AcompanharTreinoPage() {
                     data-checked={checked || undefined}
                     title={
                         checked
-                            ? 'Desmarcar'
-                            : 'Marcar como aplicado ou para agrupar'
+                            ? 'Tirar da seleção'
+                            : 'Selecionar para agrupar'
                     }
                 >
                     <FiCheck aria-hidden />
                     <span className={s.srOnly}>
-                        {checked ? `Desmarcar ${name}` : `Marcar ${name}`}
+                        {checked
+                            ? `Tirar ${name} da seleção`
+                            : `Selecionar ${name} para agrupar`}
                     </span>
                 </label>
             </>
@@ -960,7 +972,8 @@ export default function AcompanharTreinoPage() {
     // Troca de treino (A/B/C) = novo atendimento: as marcações do anterior
     // não fazem sentido aqui.
     useEffect(() => {
-        setCompletedExerciseIds(new Set());
+        setSelectedExerciseIds(new Set());
+        setDoneExerciseIds(new Set());
         setCircuitDoneKeys(new Set());
         setGroupTechnique('');
     }, [selectedTraining?.id]);
@@ -1285,9 +1298,12 @@ export default function AcompanharTreinoPage() {
                                                     }
                                                     showActions={!isOfflineData}
                                                     busy={busy}
-                                                    completed={completedExerciseIds.has(
+                                                    done={doneExerciseIds.has(
                                                         ex.id,
                                                     )}
+                                                    onToggleDone={() =>
+                                                        toggleDone(ex.id)
+                                                    }
                                                     onOpen={() =>
                                                         setOpenExerciseId(ex.id)
                                                     }
@@ -1508,7 +1524,7 @@ export default function AcompanharTreinoPage() {
                                                     type="button"
                                                     className={s.btnBack}
                                                     onClick={() =>
-                                                        setCompletedExerciseIds(
+                                                        setSelectedExerciseIds(
                                                             new Set(),
                                                         )
                                                     }
@@ -1617,6 +1633,10 @@ export default function AcompanharTreinoPage() {
                                       exerciseId: openExerciseView.raw.id,
                                   })
                     }
+                    // Mesmo "feito" do círculo da lista: marcar aqui aparece
+                    // lá, e vice-versa.
+                    done={doneExerciseIds.has(openExerciseView.raw.id)}
+                    onToggleDone={() => toggleDone(openExerciseView.raw.id)}
                     onShowHistory={() =>
                         setHistoryFor({
                             key: exerciseKeyFor(openExerciseView.raw),

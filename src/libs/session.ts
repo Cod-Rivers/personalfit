@@ -78,6 +78,12 @@ export const EXERCISE_WEIGHT_CACHE_PREFIX = 'vf_exercise_weight:';
  */
 export const WORKOUT_START_CACHE_PREFIX = 'vf_workout_start:';
 
+/**
+ * Prefixo das marcações de "exercício feito" do aluno durante o treino (ver
+ * exerciseDoneMarks.ts). Mesma higiene do prefixo acima: limpo no logout.
+ */
+export const EXERCISE_DONE_CACHE_PREFIX = 'vf_exercise_done:';
+
 function setCookie(name: string, value: string, maxAgeSeconds: number): void {
     if (typeof document === 'undefined') return;
     const secure = window.location.protocol === 'https:' ? '; Secure' : '';
@@ -340,7 +346,8 @@ async function runClearSession(): Promise<void> {
         if (
             key?.startsWith(EXERCISE_NOTE_CACHE_PREFIX) ||
             key?.startsWith(EXERCISE_WEIGHT_CACHE_PREFIX) ||
-            key?.startsWith(WORKOUT_START_CACHE_PREFIX)
+            key?.startsWith(WORKOUT_START_CACHE_PREFIX) ||
+            key?.startsWith(EXERCISE_DONE_CACHE_PREFIX)
         ) {
             localStorage.removeItem(key);
         }

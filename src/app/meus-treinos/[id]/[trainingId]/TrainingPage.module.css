@@ -47,6 +47,41 @@
     text-align: left;
 }
 
+/* Linha do exercício: o botão que abre o card + o círculo de "feito"
+   (DoneToggle), irmão dele por cima do canto direito — um <button> não pode
+   conter outro controle. O botão abre espaço à direita para o círculo não
+   cobrir a seta nem o texto. */
+.exerciseItemRow {
+    position: relative;
+}
+
+.exerciseItemRow > .cardButton {
+    padding-right: 3.75rem;
+}
+
+/* Seletor com o pai de propósito: o .toggle do DoneToggle também define
+   position, e a ordem dos CSS Modules no bundle não é garantida. */
+.exerciseItemRow > .exerciseDone {
+    position: absolute;
+    top: 50%;
+    right: 1rem;
+    transform: translateY(-50%);
+    z-index: 1;
+    transition: transform 0.2s;
+}
+
+/* Acompanha o "levantar" do card no hover (.cardButton:hover). */
+.exerciseItemRow:hover > .exerciseDone {
+    transform: translateY(calc(-50% - 2px));
+}
+
+/* Feito: recua visualmente sem sumir — dá para reabrir e desmarcar. O
+   círculo fica fora do botão, então continua com opacidade cheia. */
+.cardButton[data-done] {
+    border-color: var(--mint);
+    opacity: 0.72;
+}
+
 .exerciseThumbnail {
     width: 60px;
     height: 60px;

@@ -59,6 +59,7 @@ import {
 } from '@/libs/seriesPrescription';
 import { PrescriptionQueuedOfflineError } from '@/libs/offline/prescriptionQueue';
 import HelpTooltip from '@/components/atoms/HelpTooltip';
+import DoneToggle from '@/components/atoms/DoneToggle';
 import TechniqueHelpTooltip from '@/components/molecules/TechniqueHelpTooltip';
 import ExternalLink from '@/components/atoms/ExternalLink';
 import { getGlossaryTerm } from '@/libs/glossaryContent';
@@ -114,6 +115,11 @@ interface ExerciseDetailCardProps {
      * aluno). Fica visível no topo, e não dentro do editor recolhido: é a
      * ação mais comum depois de séries e carga. */
     onReplace?: () => void;
+    /** "Exercício feito" durante o treino, ao lado do Trocar: o mesmo estado
+     * do círculo da lista de quem abriu o card (tela do treino do aluno, do
+     * personal e do próprio aluno). Ausente nas telas de montar o plano. */
+    done?: boolean;
+    onToggleDone?: () => void;
     /** Presente quando o exercício faz parte de um bloco que roda como
      * circuito (CircuitTimer). O cronômetro fica no bloco, na lista — quem
      * abriu o card do 1º exercício não o via sem rolar a tela. O atalho
@@ -138,6 +144,8 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
     onPrescribeSeries,
     editor,
     onReplace,
+    done = false,
+    onToggleDone,
     onStartCircuit,
     onShowHistory,
 }) => {
@@ -775,15 +783,27 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                     </button>
                                 </div>
                             )}
-                            {onReplace && (
-                                <button
-                                    type="button"
-                                    className={styles.replaceBtn}
-                                    onClick={onReplace}
-                                    title="Trocar por outro exercício da biblioteca, mantendo séries, carga e posição"
-                                >
-                                    <FiRepeat /> Trocar exercício
-                                </button>
+                            {(onToggleDone || onReplace) && (
+                                <div className={styles.cardActions}>
+                                    {onToggleDone && (
+                                        <DoneToggle
+                                            size="pill"
+                                            checked={done}
+                                            onChange={onToggleDone}
+                                            exerciseName={exercise.name}
+                                        />
+                                    )}
+                                    {onReplace && (
+                                        <button
+                                            type="button"
+                                            className={styles.replaceBtn}
+                                            onClick={onReplace}
+                                            title="Trocar por outro exercício da biblioteca, mantendo séries, carga e posição"
+                                        >
+                                            <FiRepeat /> Trocar exercício
+                                        </button>
+                                    )}
+                                </div>
                             )}
                             {exercise.non_substitutable === true && (
                                 <p

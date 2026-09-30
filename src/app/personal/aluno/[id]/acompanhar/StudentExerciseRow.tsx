@@ -2,6 +2,7 @@
 
 import { useCallback } from 'react';
 import { FiRepeat, FiTrendingUp, FiX } from 'react-icons/fi';
+import DoneToggle from '@/components/atoms/DoneToggle';
 import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
 import RestTimer from '@/components/molecules/RestTimer';
 import { formatSeriesCompact } from '@/libs/seriesPrescription';
@@ -50,10 +51,14 @@ const RECORD_TEXT: Record<Exclude<WeekRecord['kind'], 'load' | 'unknown'>, strin
  * botão com trocar/excluir. É uma div com papel de botão; os dois botões
  * reais cancelam a propagação do clique para não abrir o card junto.
  *
- * A marcação de "aplicado" (checkbox) não mora aqui — mora na coluna da
- * alça de arrastar (ver `topSlot` em SortableList, usado por page.tsx), pra
- * não abrir uma faixa nova que aumentasse o card. Este componente só recebe
- * `completed` para mudar a aparência do card quando marcado.
+ * Duas marcações diferentes, em lugares diferentes:
+ * - o círculo de "feito" (DoneToggle), no float da direita ao lado do
+ *   trocar/excluir: o personal confere o que o aluno já executou durante o
+ *   atendimento. Continua visível sem internet (é só estado da tela), quando
+ *   trocar/excluir somem. É o `done` que apaga visualmente o card.
+ * - o ✓ quadrado de SELEÇÃO para agrupar em bi-set, que não mora aqui: fica
+ *   na coluna da alça de arrastar (ver `topSlot` em SortableList, usado por
+ *   page.tsx).
  */
 export default function StudentExerciseRow({
     exercise: ex,
@@ -62,7 +67,8 @@ export default function StudentExerciseRow({
     showRestTimer,
     showActions,
     busy,
-    completed,
+    done,
+    onToggleDone,
     onOpen,
     onReplace,
     onDelete,
@@ -80,9 +86,10 @@ export default function StudentExerciseRow({
     showRestTimer: boolean;
     showActions: boolean;
     busy: boolean;
-    /** Marcado pelo personal nesta sessão presencial, via o checkbox na
-     * coluna da alça (ver doc do componente). */
-    completed: boolean;
+    /** Exercício marcado como feito nesta sessão presencial (ver doc do
+     * componente). */
+    done: boolean;
+    onToggleDone: () => void;
     onOpen: () => void;
     onReplace: () => void;
     onDelete: () => void;
@@ -100,7 +107,11 @@ export default function StudentExerciseRow({
         },
         [],
     );
+    // Só quando o foco está na própria div: Enter/Espaço num botão de
+    // dentro (trocar, excluir) subia até aqui e abria o card no lugar de
+    // acionar o botão — o preventDefault abaixo cancelava o clique dele.
     const openOnKey = (e: React.KeyboardEvent) => {
+        if (e.target !== e.currentTarget) return;
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             onOpen();
@@ -108,7 +119,7 @@ export default function StudentExerciseRow({
     };
 
     return (
-        <div className={s.exerciseRow} data-completed={completed || undefined}>
+        <div className={s.exerciseRow} data-done={done || undefined}>
             <div
                 className={s.exerciseOpen}
                 role="button"
@@ -131,30 +142,37 @@ export default function StudentExerciseRow({
 
                 <p className={s.exerciseName}>{ex.name}</p>
 
-                {showActions && (
-                    <div className={s.actionsInline}>
-                        <button
-                            type="button"
-                            className={s.iconBtn}
-                            onClick={stopAnd(onReplace)}
-                            disabled={busy}
-                            aria-label={`Trocar ${ex.name}`}
-                            title="Trocar exercício"
-                        >
-                            <FiRepeat />
-                        </button>
-                        <button
-                            type="button"
-                            className={`${s.iconBtn} ${s.iconBtnDanger}`}
-                            onClick={stopAnd(onDelete)}
-                            disabled={busy}
-                            aria-label={`Excluir ${ex.name}`}
-                            title="Excluir do treino"
-                        >
-                            <FiX />
-                        </button>
-                    </div>
-                )}
+                <div className={s.actionsInline}>
+                    <DoneToggle
+                        checked={done}
+                        onChange={onToggleDone}
+                        exerciseName={ex.name}
+                    />
+                    {showActions && (
+                        <>
+                            <button
+                                type="button"
+                                className={s.iconBtn}
+                                onClick={stopAnd(onReplace)}
+                                disabled={busy}
+                                aria-label={`Trocar ${ex.name}`}
+                                title="Trocar exercício"
+                            >
+                                <FiRepeat />
+                            </button>
+                            <button
+                                type="button"
+                                className={`${s.iconBtn} ${s.iconBtnDanger}`}
+                                onClick={stopAnd(onDelete)}
+                                disabled={busy}
+                                aria-label={`Excluir ${ex.name}`}
+                                title="Excluir do treino"
+                            >
+                                <FiX />
+                            </button>
+                        </>
+                    )}
+                </div>
 
                 <dl className={s.prescription}>
                     <div className={s.prescriptionItem}>

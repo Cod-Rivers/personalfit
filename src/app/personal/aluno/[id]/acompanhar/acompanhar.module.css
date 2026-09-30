@@ -225,10 +225,10 @@
     transition: border-color 0.15s, opacity 0.15s;
 }
 
-/* Marcado pelo checkbox na coluna da alça (ver .completeToggle, abaixo, e
-   topSlot em SortableList). Recua visualmente da lista, sem sumir — ainda
-   dá pra reabrir e desmarcar. */
-.exerciseRow[data-completed] {
+/* Marcado como feito pelo círculo ao lado do trocar (DoneToggle, em
+   StudentExerciseRow). Recua visualmente da lista, sem sumir — ainda dá pra
+   reabrir e desmarcar. O ✓ de seleção da alça (abaixo) não mexe no card. */
+.exerciseRow[data-done] {
     border-color: var(--mint);
     opacity: 0.72;
 }
@@ -242,11 +242,12 @@
     white-space: nowrap;
 }
 
-/* Checkbox de "aplicado", no topSlot da coluna da alça (ver
+/* Checkbox de SELEÇÃO para agrupar, no topSlot da coluna da alça (ver
    SortableList.module.css .handleColumn) — mesma largura do grip logo
    abaixo, então a coluna inteira lê como um trilho único. Checkbox de
    verdade, mas invisível; o visual é todo deste label (htmlFor), clicável
-   no toque e pelo teclado. */
+   no toque e pelo teclado. Quadrado e tracejado; o "feito" é o círculo
+   (DoneToggle), para as duas marcações não se confundirem. */
 .completeCheckbox {
     position: absolute;
     width: 1px;
@@ -310,14 +311,15 @@
     hyphens: auto;
 }
 
-/* Trocar e excluir: float, não item de flex — ver nota em .exerciseOpen.
-   Vem no HTML depois do nome (que assim nunca perde largura por causa
-   deles) e antes da prescrição (que ganha a largura toda de volta assim
-   que passa da altura dos botões). */
+/* Feito, trocar e excluir: float, não item de flex — ver nota em
+   .exerciseOpen. Vem no HTML depois do nome (que assim nunca perde largura
+   por causa deles) e antes da prescrição (que ganha a largura toda de volta
+   assim que passa da altura dos botões). */
 .actionsInline {
     float: right;
     display: flex;
-    gap: var(--space-1);
+    align-items: center;
+    gap: var(--space-2);
     margin: 0 0 var(--space-2) var(--space-2);
 }
 

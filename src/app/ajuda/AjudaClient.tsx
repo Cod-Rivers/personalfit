@@ -33,6 +33,14 @@ const studentSections: HelpSection[] = [
                     Toque em um exercício para ver detalhes, séries, repetições
                     e um vídeo de execução.
                 </p>
+                <p className="mb-2">
+                    Durante o treino, o círculo à direita de cada exercício (e
+                    o <strong>Marcar como feito</strong> dentro dele) marca o
+                    que você já fez, para não se perder na ficha. É só uma
+                    conferência sua, guardada neste aparelho: não substitui
+                    o registro das séries e some quando você finaliza o
+                    treino.
+                </p>
                 <p className="mb-0">
                     No topo da tela fica o{' '}
                     <Link href="#autorregulacao">
@@ -1501,7 +1509,11 @@ const personalSections: HelpSection[] = [
                     RPE, técnica, vídeo e observações. Tudo salva sozinho. Na
                     lista, <strong>+ Exercício</strong> adiciona da
                     biblioteca (dá para marcar vários e montar um bi-set) e o{' '}
-                    <strong>×</strong> exclui. Em{' '}
+                    <strong>×</strong> exclui. O círculo ao lado da troca
+                    marca o exercício como feito enquanto você acompanha o
+                    aluno (vale só nessa tela e nessa sessão); o quadrado
+                    acima da alça é outra coisa: seleciona exercícios para
+                    juntar em bi-set pelo <strong>Agrupar como</strong>. Em{' '}
                     <strong>Treinos da semana</strong>,{' '}
                     <strong>+ Treino</strong> cria um novo e o{' '}
                     <strong>×</strong> no canto do cartão exclui. Toda

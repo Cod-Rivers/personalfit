@@ -61,6 +61,12 @@ import {
 import HelpTooltip from '@/components/atoms/HelpTooltip';
 import { getMicrocycleHelpTopic } from '@/libs/microcycleHelpContent';
 import { markWorkoutStartIfNeeded } from '@/libs/workoutSessionTimer';
+import {
+    clearExerciseDoneMarks,
+    readExerciseDoneMarks,
+    writeExerciseDoneMarks,
+} from '@/libs/exerciseDoneMarks';
+import DoneToggle from '@/components/atoms/DoneToggle';
 import { getPendingMutations, onQueueChanged } from '@/libs/offline/syncQueue';
 import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
 import { resolveAutoregulationPolicy } from '@/libs/autoregulationPolicy';
@@ -562,6 +568,50 @@ export default function MeusTreinosExercisesPage({
         setCircuitDoneKeys((prev) =>
             prev.has(key) ? prev : new Set(prev).add(key),
         );
+
+    /** "Exercício feito" do aluno durante o treino — o círculo ao lado do
+     * nome, na lista e no card aberto. Lista de conferência da sessão,
+     * guardada no aparelho para sobreviver a um recarregamento no meio do
+     * treino (libs/exerciseDoneMarks.ts). Não entra no registro do treino:
+     * séries e carga continuam sendo do "Finalizar treino". */
+    const [doneIds, setDoneIds] = useState<ReadonlySet<string>>(
+        () => new Set(),
+    );
+    // Cópia sempre atual: o CircuitTimer pode chamar onComplete guardado de
+    // um render anterior, e ler `doneIds` dali apagaria as marcações feitas
+    // depois.
+    const doneRef = useRef<ReadonlySet<string>>(doneIds);
+    const microId = currentMicro?.id;
+    useEffect(() => {
+        if (!microId) return;
+        const stored = readExerciseDoneMarks(microId, trainingRef);
+        doneRef.current = stored;
+        setDoneIds(stored);
+    }, [microId, trainingRef]);
+    const saveDone = (next: Set<string>) => {
+        doneRef.current = next;
+        setDoneIds(next);
+        if (microId) writeExerciseDoneMarks(microId, trainingRef, next);
+    };
+    const toggleDone = (id: string) => {
+        // Marcar um exercício como feito também conta como início da sessão
+        // (duração automática), igual a abrir o card.
+        markSessionStart();
+        const next = new Set(doneRef.current);
+        if (!next.delete(id)) next.add(id);
+        saveDone(next);
+    };
+    /** Fim do circuito = o bloco inteiro foi feito (só marca, não desmarca). */
+    const markDone = (ids: string[]) => {
+        const current = doneRef.current;
+        if (ids.every((id) => current.has(id))) return;
+        saveDone(new Set([...current, ...ids]));
+    };
+    /** Treino finalizado: a conferência desta sessão acabou. A tela continua
+     * mostrando as marcações até o aluno sair dela. */
+    const forgetDone = () => {
+        if (microId) clearExerciseDoneMarks(microId, trainingRef);
+    };
 
     const handleCloseDetailCard = () => {
         setSelectedExercise(null);
@@ -1100,82 +1150,100 @@ export default function MeusTreinosExercisesPage({
                             const isCombo = group.length > 1;
                             const items = group.map((exercise) => {
                                 const suggestion = loadSuggestions[exercise.id];
+                                const done = doneIds.has(exercise.id);
+                                // O círculo de "feito" é irmão do botão, não
+                                // filho: um <button> não pode conter outro
+                                // controle. Fica por cima, no canto direito
+                                // (ver .exerciseItemRow).
                                 return (
-                                    <button
+                                    <div
                                         key={exercise.id}
-                                        onClick={() =>
-                                            handleExerciseClick(exercise)
-                                        }
-                                        className={`${styles.cardButton} ${styles.exerciseItemContainer}`}
+                                        className={styles.exerciseItemRow}
                                     >
-                                        <div className="flex items-center">
-                                            <ExerciseThumbnail
-                                                name={exercise.name}
-                                                videoThumb={exercise.video_thumb}
-                                                videoUrl={exercise.video_url}
-                                                className={
-                                                    styles.exerciseThumbnail
-                                                }
-                                                style={{ marginRight: 16 }}
-                                            />
-                                            <div className="flex-grow">
-                                                <span
-                                                    className="text-xl font-semibold"
-                                                    style={{
-                                                        color: 'var(--text-primary)',
-                                                        display: 'block',
-                                                    }}
-                                                >
-                                                    {exercise.name}
-                                                </span>
-                                                {suggestion?.suggestedKg != null ? (
+                                        <button
+                                            onClick={() =>
+                                                handleExerciseClick(exercise)
+                                            }
+                                            className={`${styles.cardButton} ${styles.exerciseItemContainer}`}
+                                            data-done={done || undefined}
+                                        >
+                                            <div className="flex items-center">
+                                                <ExerciseThumbnail
+                                                    name={exercise.name}
+                                                    videoThumb={exercise.video_thumb}
+                                                    videoUrl={exercise.video_url}
+                                                    className={
+                                                        styles.exerciseThumbnail
+                                                    }
+                                                    style={{ marginRight: 16 }}
+                                                />
+                                                <div className="flex-grow">
                                                     <span
-                                                        className="small"
+                                                        className="text-xl font-semibold"
                                                         style={{
-                                                            color: suggestion.abovePrescribed
-                                                                ? 'var(--coral, #ff6b6b)'
-                                                                : 'var(--mint, #3dffd0)',
+                                                            color: 'var(--text-primary)',
+                                                            display: 'block',
                                                         }}
-                                                        title={suggestion.reason}
                                                     >
-                                                        Sugerido hoje:{' '}
-                                                        {suggestion.suggestedKg} kg
-                                                        {suggestion.source === 'ambos'
-                                                            ? ' · base: você + personal'
-                                                            : suggestion.source === 'aluno'
-                                                              ? ' · base: seu histórico'
-                                                              : ' · base: personal'}
+                                                        {exercise.name}
                                                     </span>
-                                                ) : (
-                                                    exercise.plannedWeight == null && (
+                                                    {suggestion?.suggestedKg != null ? (
                                                         <span
                                                             className="small"
                                                             style={{
-                                                                color: 'var(--text-muted)',
+                                                                color: suggestion.abovePrescribed
+                                                                    ? 'var(--coral, #ff6b6b)'
+                                                                    : 'var(--mint, #3dffd0)',
                                                             }}
+                                                            title={suggestion.reason}
                                                         >
-                                                            Sem carga registrada ainda
+                                                            Sugerido hoje:{' '}
+                                                            {suggestion.suggestedKg} kg
+                                                            {suggestion.source === 'ambos'
+                                                                ? ' · base: você + personal'
+                                                                : suggestion.source === 'aluno'
+                                                                  ? ' · base: seu histórico'
+                                                                  : ' · base: personal'}
                                                         </span>
-                                                    )
-                                                )}
+                                                    ) : (
+                                                        exercise.plannedWeight == null && (
+                                                            <span
+                                                                className="small"
+                                                                style={{
+                                                                    color: 'var(--text-muted)',
+                                                                }}
+                                                            >
+                                                                Sem carga registrada ainda
+                                                            </span>
+                                                        )
+                                                    )}
+                                                </div>
                                             </div>
-                                        </div>
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            className={styles.cardIcon}
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            stroke="currentColor"
-                                            aria-hidden="true"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M9 5l7 7-7 7"
-                                            />
-                                        </svg>
-                                    </button>
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                className={styles.cardIcon}
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                stroke="currentColor"
+                                                aria-hidden="true"
+                                            >
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    strokeWidth={2}
+                                                    d="M9 5l7 7-7 7"
+                                                />
+                                            </svg>
+                                        </button>
+                                        <DoneToggle
+                                            className={styles.exerciseDone}
+                                            checked={done}
+                                            onChange={() =>
+                                                toggleDone(exercise.id)
+                                            }
+                                            exerciseName={exercise.name}
+                                        />
+                                    </div>
                                 );
                             });
 
@@ -1225,9 +1293,12 @@ export default function MeusTreinosExercisesPage({
                                             )}
                                             storageKey={`${currentMicro?.id ?? macrocycleId}:${trainingId}:${circuitKey}`}
                                             onStart={markSessionStart}
-                                            onComplete={() =>
-                                                markCircuitDone(circuitKey)
-                                            }
+                                            onComplete={() => {
+                                                markCircuitDone(circuitKey);
+                                                markDone(
+                                                    group.map((e) => e.id),
+                                                );
+                                            }}
                                             doneAction={
                                                 sendStatus === 'idle' ||
                                                 sendStatus === 'error' ? (
@@ -1294,6 +1365,8 @@ export default function MeusTreinosExercisesPage({
                                 name: selectedExercise.name,
                             })
                         }
+                        done={doneIds.has(selectedExercise.id)}
+                        onToggleDone={() => toggleDone(selectedExercise.id)}
                     />
                 )}
                 {historyFor && (
@@ -1425,11 +1498,13 @@ export default function MeusTreinosExercisesPage({
                     onComplete={() => {
                         setShowWorkoutLogger(false);
                         setSendStatus('success');
+                        forgetDone();
                     }}
                     loadHistory={loadHistory}
                     onQueued={(info) => {
                         setShowWorkoutLogger(false);
                         setSendStatus('queued');
+                        forgetDone();
                         if (info?.commented) {
                             setCommentSentTo(getCachedMyLogWindow()?.personal_name ?? '');
                         }

@@ -1,0 +1,94 @@
+.toggle {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-shrink: 0;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Visualmente escondido, mas focável e anunciado. */
+.input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    opacity: 0;
+}
+
+/* O ícone fica visível (mudo) mesmo desmarcado: é o que faz o círculo se
+   ler como caixa de marcar à primeira vista. */
+.circle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    flex-shrink: 0;
+    border: 2px solid var(--border-mid);
+    border-radius: 50%;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.toggle:hover .circle {
+    border-color: var(--mint);
+    color: var(--mint);
+}
+
+.input:focus-visible + .circle {
+    outline: 2px solid var(--mint);
+    outline-offset: 2px;
+}
+
+.toggle[data-checked] .circle {
+    background: var(--mint);
+    border-color: var(--mint);
+    color: var(--btn-text, #062019);
+}
+
+.toggle:active .circle {
+    transform: scale(0.94);
+}
+
+/* Linha da lista: área de toque de ~44px sem alargar o desenho. */
+.icon::before {
+    content: '';
+    position: absolute;
+    inset: -8px;
+}
+
+/* Card aberto: mesma altura do "Trocar exercício" ao lado. */
+.pill {
+    min-height: 2.75rem;
+    padding: 0 1rem 0 0.6rem;
+    border: 1px solid var(--border-mid);
+    border-radius: 0.5rem;
+    background: var(--surface-2);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.pill[data-checked] {
+    border-color: var(--mint);
+    color: var(--mint);
+}
+
+.pill:has(.input:focus-visible) {
+    outline: 2px solid var(--mint);
+    outline-offset: 2px;
+}
+
+.pill .input:focus-visible + .circle {
+    outline: none;
+}
+
+.text {
+    line-height: 1;
+}
