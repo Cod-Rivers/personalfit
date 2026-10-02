@@ -654,7 +654,7 @@ export interface PeriodizedWorkoutLogResponse {
     microcycle_id: string;
     student_id: string;
     training_ref: string;
-    status: 'pending' | 'completed' | 'skipped';
+    status: 'pending' | 'in_progress' | 'completed' | 'skipped';
     planned_date: string;
     completed_date?: string;
     /** Hora do aparelho ao concluir (RFC3339 com fuso) — ver performedAt. */

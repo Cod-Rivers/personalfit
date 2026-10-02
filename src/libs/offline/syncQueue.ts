@@ -4,7 +4,9 @@ import {
     skipNewWorkoutLog,
     completeWorkoutSession,
     createNewWorkoutLog,
+    logExercisePerformance,
     CompleteWorkoutLogRequest,
+    LogExercisePerformanceRequest,
 } from '@/libs/workoutLogService';
 import {
     getOfflineDB,
@@ -81,6 +83,59 @@ export function enqueueSession(
         type: 'session',
         clientMutationId,
     }).then(() => clientMutationId);
+}
+
+/** Enfileira a carga de UM exercício marcado "feito" (ou desmarcado, com
+ * `series: []`). Marcar e desmarcar várias vezes sem rede não empilha
+ * linhas: uma linha ainda não enviada do mesmo exercício recebe o estado
+ * novo, porque só o último estado importa (o servidor substitui as séries
+ * daquele exercício a cada envio). */
+export async function enqueueExercisePerformance(mutation: {
+    studentId: string;
+    planningId: string;
+    mesocycleId: string;
+    microcycleId: string;
+    exerciseBody: Omit<LogExercisePerformanceRequest, 'client_mutation_id'>;
+    asPersonal?: boolean;
+}): Promise<void> {
+    const exerciseBody: LogExercisePerformanceRequest = {
+        ...mutation.exerciseBody,
+        client_mutation_id: crypto.randomUUID(),
+    };
+    const db = await getOfflineDB();
+    const rows = await db.getAll('pendingMutations');
+    const same = rows.find(
+        (r) =>
+            r.type === 'exercise' &&
+            r.status === 'pending' &&
+            !r.nextAttemptAt &&
+            r.microcycleId === mutation.microcycleId &&
+            !!r.asPersonal === !!mutation.asPersonal &&
+            r.exerciseBody?.training_ref === exerciseBody.training_ref &&
+            r.exerciseBody?.planned_date === exerciseBody.planned_date &&
+            r.exerciseBody?.exercise_id === exerciseBody.exercise_id,
+    );
+    if (same?.id !== undefined) {
+        await db.put('pendingMutations', { ...same, exerciseBody });
+        notifyQueueChanged();
+        if (typeof navigator !== 'undefined' && navigator.onLine) {
+            void processQueue();
+        }
+        return;
+    }
+    await enqueue({
+        type: 'exercise',
+        studentId: mutation.studentId,
+        planningId: mutation.planningId,
+        mesocycleId: mutation.mesocycleId,
+        microcycleId: mutation.microcycleId,
+        workoutLogId: '',
+        trainingRef: exerciseBody.training_ref,
+        // Sem clientMutationId na linha: ele liga a foto de check-in ao log
+        // (mediaQueue.ts), coisa que só a sessão tem. Aqui vive no corpo.
+        exerciseBody,
+        asPersonal: mutation.asPersonal || undefined,
+    });
 }
 
 // RN-40: só `failed` expira (o servidor já recusou o corpo por validação —
@@ -307,6 +362,15 @@ export async function processQueue(): Promise<void> {
                     if (row.clientMutationId) {
                         await setResolvedSessionLogId(db, row.clientMutationId, synced.id);
                     }
+                } else if (row.type === 'exercise' && row.exerciseBody) {
+                    await logExercisePerformance(
+                        row.studentId,
+                        row.planningId,
+                        row.mesocycleId,
+                        row.microcycleId,
+                        row.exerciseBody,
+                        row.asPersonal ?? false,
+                    );
                 }
                 await db.delete('pendingMutations', row.id);
             } catch (err) {
@@ -332,6 +396,19 @@ export async function processQueue(): Promise<void> {
                             await setResolvedSessionLogId(db, row.clientMutationId, logId);
                         }
                     }
+                    await db.delete('pendingMutations', row.id);
+                    continue;
+                }
+
+                // Carga de exercício avulso: 404 é plano/microciclo que não
+                // existe mais. Não vale prender o aluno numa pendência que
+                // ele não tem como resolver — a finalização do treino manda
+                // as séries de novo de qualquer forma.
+                if (
+                    row.type === 'exercise' &&
+                    axios.isAxiosError(err) &&
+                    err.response?.status === 404
+                ) {
                     await db.delete('pendingMutations', row.id);
                     continue;
                 }

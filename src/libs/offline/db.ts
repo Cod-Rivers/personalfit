@@ -1,6 +1,10 @@
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
 import { ExerciseRequest, MacrocycleResponse } from '@/libs/planningService';
-import { CompleteWorkoutLogRequest, WorkoutSessionRequest } from '@/libs/workoutLogService';
+import {
+    CompleteWorkoutLogRequest,
+    LogExercisePerformanceRequest,
+    WorkoutSessionRequest,
+} from '@/libs/workoutLogService';
 
 const DB_NAME = 'venafit-offline';
 // v1 -> v2: acrescenta a store `pendingMedia` (Sprint 4 vai escrever nela;
@@ -32,7 +36,7 @@ export interface PendingWorkoutLogId {
     logId: string;
 }
 
-export type PendingMutationType = 'complete' | 'skip' | 'session';
+export type PendingMutationType = 'complete' | 'skip' | 'session' | 'exercise';
 
 export interface PendingMutation {
     id?: number;
@@ -56,6 +60,10 @@ export interface PendingMutation {
      *  Análogo a `completeBody` acima, mas para o endpoint novo que
      *  cria-ou-conclui numa chamada só (sem depender de log pré-criado). */
     sessionBody?: WorkoutSessionRequest;
+    /** Corpo de PATCH .../workout-log/exercise, para type 'exercise': as
+     *  séries de UM exercício marcado (ou desmarcado) como "feito" antes de
+     *  finalizar o treino. */
+    exerciseBody?: LogExercisePerformanceRequest;
     /** Esta linha foi enfileirada pelo PERSONAL concluindo o treino do aluno
      *  no atendimento presencial, e não pelo aluno. Precisa ser persistido
      *  junto da mutação (e não deduzido na hora de sincronizar) porque a fila

@@ -162,7 +162,7 @@ export function currentCycle(
 /** O mínimo de um registro de treino que as regras de semana precisam — vale
  * para NewWorkoutLogResponse e PeriodizedWorkoutLogResponse. */
 export interface WeekLog {
-    status: 'pending' | 'completed' | 'skipped';
+    status: 'pending' | 'in_progress' | 'completed' | 'skipped';
     completed_date?: string;
     client_completed_at?: string;
     updated_at?: string;

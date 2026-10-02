@@ -26,7 +26,7 @@ import {
     TrainingResponse,
     searchExercises,
 } from '@/libs/planningService';
-import { currentMicrocycleOf, logsOfWeek } from '@/libs/currentWeek';
+import { currentMicrocycleOf, localDateKey, logsOfWeek } from '@/libs/currentWeek';
 import { ExerciseLog } from '../../../../components/features/types';
 import Button from '@/components/atoms/Button';
 import CircuitTimer, {
@@ -66,6 +66,8 @@ import {
     readExerciseDoneMarks,
     writeExerciseDoneMarks,
 } from '@/libs/exerciseDoneMarks';
+import { recordExerciseDone, studentDoneLoadKg } from '@/libs/exerciseDoneRecord';
+import { getCachedWeight } from '@/libs/exerciseWeightService';
 import DoneToggle from '@/components/atoms/DoneToggle';
 import { getPendingMutations, onQueueChanged } from '@/libs/offline/syncQueue';
 import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
@@ -470,8 +472,16 @@ export default function MeusTreinosExercisesPage({
                 // Cada série entra em UM índice só — ver a leitura em
                 // loadSuggestions, que soma os dois sem duplicar.
                 const byExercise: Record<string, LoadHistoryEntry[]> = {};
+                const today = localDateKey();
                 for (const log of logs) {
-                    if (log.status !== 'completed') continue;
+                    // in_progress = exercícios marcados "feito" num treino
+                    // não finalizado: vale como histórico, menos o de hoje —
+                    // é a sessão em curso, e contá-la mudaria a sugestão no
+                    // meio do treino.
+                    const partialOfPast =
+                        log.status === 'in_progress' &&
+                        log.planned_date.slice(0, 10) !== today;
+                    if (log.status !== 'completed' && !partialOfPast) continue;
                     const date = log.completed_date ?? log.planned_date;
                     for (const ep of log.exercises) {
                         const index = ep.exercise_key
@@ -570,10 +580,10 @@ export default function MeusTreinosExercisesPage({
         );
 
     /** "Exercício feito" do aluno durante o treino — o círculo ao lado do
-     * nome, na lista e no card aberto. Lista de conferência da sessão,
-     * guardada no aparelho para sobreviver a um recarregamento no meio do
-     * treino (libs/exerciseDoneMarks.ts). Não entra no registro do treino:
-     * séries e carga continuam sendo do "Finalizar treino". */
+     * nome, na lista e no card aberto. A marcação fica no aparelho para
+     * sobreviver a um recarregamento no meio do treino
+     * (libs/exerciseDoneMarks.ts), e a carga do exercício vai na hora para o
+     * histórico (libs/exerciseDoneRecord.ts) — desmarcar tira de lá. */
     const [doneIds, setDoneIds] = useState<ReadonlySet<string>>(
         () => new Set(),
     );
@@ -593,19 +603,53 @@ export default function MeusTreinosExercisesPage({
         setDoneIds(next);
         if (microId) writeExerciseDoneMarks(microId, trainingRef, next);
     };
+    /** Carga que o "feito" grava e que o "Finalizar treino" abre preenchida
+     * para o exercício marcado — a mesma conta nos dois, para a finalização
+     * não desfazer o que o "feito" gravou. */
+    const doneLoadKg = (exercise: ExerciseLog) =>
+        studentDoneLoadKg({
+            registeredKg: getCachedWeight(exercise.id),
+            suggestedKg: loadSuggestions[exercise.id]?.suggestedKg,
+            plannedKg: exercise.plannedWeight,
+            loadAdjustPct: decision.intraSessionLoadAdjustPct,
+        });
+    const recordDone = (ids: string[], done: boolean) => {
+        if (!currentMeso || !currentMicro || !currentTraining) return;
+        for (const id of ids) {
+            // exercisesRef: o CircuitTimer chama com closure de um render
+            // anterior (ver doneRef).
+            const exercise = exercisesRef.current.find((e) => e.id === id);
+            if (!exercise) continue;
+            recordExerciseDone({
+                studentId,
+                planningId: macrocycleId,
+                mesocycleId: currentMeso.id,
+                microcycleId: currentMicro.id,
+                trainingRef: currentTraining.reference,
+                exercise,
+                done,
+                loadKg: doneLoadKg(exercise),
+                rpe: Math.round(sessionTargetRPE),
+            });
+        }
+    };
     const toggleDone = (id: string) => {
         // Marcar um exercício como feito também conta como início da sessão
         // (duração automática), igual a abrir o card.
         markSessionStart();
         const next = new Set(doneRef.current);
-        if (!next.delete(id)) next.add(id);
+        const done = !next.delete(id);
+        if (done) next.add(id);
         saveDone(next);
+        recordDone([id], done);
     };
     /** Fim do circuito = o bloco inteiro foi feito (só marca, não desmarca). */
     const markDone = (ids: string[]) => {
         const current = doneRef.current;
-        if (ids.every((id) => current.has(id))) return;
-        saveDone(new Set([...current, ...ids]));
+        const added = ids.filter((id) => !current.has(id));
+        if (added.length === 0) return;
+        saveDone(new Set([...current, ...added]));
+        recordDone(added, true);
     };
     /** Treino finalizado: a conferência desta sessão acabou. A tela continua
      * mostrando as marcações até o aluno sair dela. */
@@ -726,6 +770,21 @@ export default function MeusTreinosExercisesPage({
             highFatigueDays,
             policy,
         ],
+    );
+
+    /** RPE alvo de hoje: o do microciclo ajustado pela zona do dia. É o que o
+     * "Finalizar treino" pré-preenche e o que o "feito" grava. */
+    const sessionTargetRPE = Math.max(
+        1,
+        Math.min(
+            10,
+            (currentMicro?.target_rpe ?? 7) +
+                (decision.zone === 'fadiga'
+                    ? -1
+                    : decision.zone === 'supercompensacao'
+                      ? 0.5
+                      : 0),
+        ),
     );
 
     // Sugestão de carga por exercício: combina prescrição do personal com o
@@ -1477,19 +1536,13 @@ export default function MeusTreinosExercisesPage({
                     microcycle={currentMicro}
                     training={currentTraining}
                     circuitDoneBlockKeys={circuitDoneKeys}
+                    doneLoadKg={Object.fromEntries(
+                        exercises
+                            .filter((e) => doneIds.has(e.id))
+                            .map((e) => [e.id, doneLoadKg(e)]),
+                    )}
                     autoregulation={{
-                        targetRPE: Math.max(
-                            1,
-                            Math.min(
-                                10,
-                                (currentMicro.target_rpe ?? 7) +
-                                    (decision.zone === 'fadiga'
-                                        ? -1
-                                        : decision.zone === 'supercompensacao'
-                                          ? 0.5
-                                          : 0),
-                            ),
-                        ),
+                        targetRPE: sessionTargetRPE,
                         intraSessionLoadAdjustPct:
                             decision.intraSessionLoadAdjustPct,
                         message: decision.message,

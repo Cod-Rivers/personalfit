@@ -14,6 +14,14 @@ import {
     onMediaQueueChanged,
 } from '@/libs/offline/mediaQueue';
 
+function pendingLabel(workouts: number, exercises: number): string {
+    const w = `${workouts} ${workouts === 1 ? 'treino' : 'treinos'}`;
+    const e = `${exercises} ${exercises === 1 ? 'exercício' : 'exercícios'}`;
+    if (workouts > 0 && exercises > 0) return `${w} e ${e} pendentes`;
+    if (workouts > 0) return `${w} ${workouts === 1 ? 'pendente' : 'pendentes'}`;
+    return `${e} ${exercises === 1 ? 'pendente' : 'pendentes'}`;
+}
+
 /** Badge com o número de treinos concluídos offline aguardando sincronizar,
  * MAIS o status das fotos de check-in (pendência -19 — antes disso,
  * `getPendingMedia`/`discardPendingPhoto` existiam e eram testados, mas
@@ -28,6 +36,9 @@ import {
  * acontece — o aluno via o badge para sempre, sem entender por quê. */
 export default function SyncPendingBadge() {
     const [pendingCount, setPendingCount] = useState(0);
+    /** Exercícios marcados "feito" cuja carga ainda não subiu — contados à
+     * parte: um treino com 5 exercícios marcados não são 5 treinos. */
+    const [pendingExerciseCount, setPendingExerciseCount] = useState(0);
     const [failedIds, setFailedIds] = useState<number[]>([]);
     // 'waiting_workout_sync' entra aqui junto com 'pending'/'uploading' — é
     // o estado normal enquanto o treino ainda não sincronizou e a foto
@@ -40,8 +51,12 @@ export default function SyncPendingBadge() {
         const refresh = () => {
             getPendingMutations().then((rows) => {
                 if (cancelled) return;
+                const waiting = rows.filter((r) => r.status !== 'failed');
                 setPendingCount(
-                    rows.filter((r) => r.status !== 'failed').length,
+                    waiting.filter((r) => r.type !== 'exercise').length,
+                );
+                setPendingExerciseCount(
+                    waiting.filter((r) => r.type === 'exercise').length,
                 );
                 setFailedIds(
                     rows
@@ -97,16 +112,15 @@ export default function SyncPendingBadge() {
 
     return (
         <div className="d-flex align-items-center gap-2 flex-wrap">
-            {pendingCount > 0 && (
+            {pendingCount + pendingExerciseCount > 0 && (
                 <button
                     className="btn btn-sm btn-outline-warning d-flex align-items-center gap-1"
                     onClick={() => void processQueue()}
                     title="Clique para tentar sincronizar agora"
                 >
                     <FiRefreshCw />
-                    {pendingCount}{' '}
-                    {pendingCount === 1 ? 'treino pendente' : 'treinos pendentes'}{' '}
-                    de sincronizar
+                    {pendingLabel(pendingCount, pendingExerciseCount)} de
+                    sincronizar
                 </button>
             )}
             {failedIds.length > 0 && (

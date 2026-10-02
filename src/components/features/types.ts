@@ -75,7 +75,7 @@ export interface TrainingCardProps {
     seriesCount?: number;
     estimatedMinutes?: number;
     /** Status do último registro deste treino no microciclo atual. */
-    status?: 'pending' | 'completed' | 'skipped';
+    status?: 'pending' | 'in_progress' | 'completed' | 'skipped';
     completedDate?: string;
     /** Só é preenchido em planos "simple" com dia da semana fixo. */
     scheduledToday?: boolean;

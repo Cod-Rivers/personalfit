@@ -57,7 +57,10 @@ export interface NewWorkoutLogResponse {
     microcycle_id: string;
     student_id: string;
     training_ref: string;
-    status: 'pending' | 'completed' | 'skipped';
+    /** in_progress: algum exercício já foi marcado "feito" (e a carga
+     * gravada), mas o treino ainda não foi finalizado. Não conta como dia
+     * treinado — só entra no histórico de carga. */
+    status: 'pending' | 'in_progress' | 'completed' | 'skipped';
     planned_date: string;
     /** Hora do SERVIDOR ao receber, em UTC e sem fuso ("2026-09-28 01:00:00").
      * Para saber o dia/semana do treino, use performedAt (libs/currentWeek). */
@@ -299,6 +302,48 @@ export async function completeWorkoutSession(
         body,
     );
     return data;
+}
+
+export interface LogExerciseSeriesRequest {
+    series: number;
+    reps: number;
+    load_kg: number;
+    rpe: number;
+    notes?: string;
+    group_id?: string;
+}
+
+/** Séries de UM exercício marcado como "feito" antes de finalizar o treino.
+ * Substitui o que já havia daquele exercício no log do dia; `series: []`
+ * desmarca (remove). Mesma chave de sessão (training_ref + planned_date) que
+ * a finalização usa, para os dois caírem no mesmo log. */
+export interface LogExercisePerformanceRequest {
+    client_mutation_id: string;
+    training_ref: string;
+    planned_date: string; // YYYY-MM-DD
+    exercise_id: string;
+    name: string;
+    series: LogExerciseSeriesRequest[];
+}
+
+export async function logExercisePerformance(
+    studentId: string,
+    planningId: string,
+    mesocycleId: string,
+    microcycleId: string,
+    body: LogExercisePerformanceRequest,
+    /** Mesma regra de completeWorkoutSession: o personal no atendimento
+     * presencial vai pela rota /students/:id. */
+    asPersonal = false,
+): Promise<NewWorkoutLogResponse | null> {
+    const base = asPersonal
+        ? `/students/${studentId}/planning/${planningId}`
+        : `/me/planning/${planningId}`;
+    const { data } = await Api.patch<NewWorkoutLogResponse | null>(
+        `${base}/mesocycle/${mesocycleId}/microcycle/${microcycleId}/workout-log/exercise`,
+        body,
+    );
+    return data ?? null;
 }
 
 /* ── Foto de check-in (Sprint 4 / S4.3, mediaQueue.ts) — atrás da flag

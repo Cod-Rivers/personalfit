@@ -220,11 +220,17 @@ export interface LostWorkoutSummaryEntry {
  * mutação, então usamos a data de criação local como aproximação. */
 function persistLostWorkoutSummary(mutations: PendingMutation[]): void {
     try {
-        const entries: LostWorkoutSummaryEntry[] = mutations.map((m) => {
+        const all: LostWorkoutSummaryEntry[] = mutations.map((m) => {
             if (m.type === 'session' && m.sessionBody) {
                 return {
                     date: m.sessionBody.planned_date,
                     trainingRef: m.sessionBody.training_ref,
+                };
+            }
+            if (m.type === 'exercise' && m.exerciseBody) {
+                return {
+                    date: m.exerciseBody.planned_date,
+                    trainingRef: m.exerciseBody.training_ref,
                 };
             }
             return {
@@ -232,6 +238,14 @@ function persistLostWorkoutSummary(mutations: PendingMutation[]): void {
                 trainingRef: m.trainingRef ?? '?',
             };
         });
+        // Vários exercícios marcados "feito" do mesmo treino viram uma
+        // linha da fila cada — o aviso é por treino.
+        const entries = all.filter(
+            (e, i) =>
+                all.findIndex(
+                    (o) => o.date === e.date && o.trainingRef === e.trainingRef,
+                ) === i,
+        );
         localStorage.setItem(LOST_WORKOUT_SUMMARY_KEY, JSON.stringify(entries));
     } catch {
         /* melhor-esforço: localStorage cheio/indisponível não pode travar o

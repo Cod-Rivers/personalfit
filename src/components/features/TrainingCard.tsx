@@ -43,7 +43,7 @@ const TrainingCard: React.FC<TrainingCardProps> = ({
         ? { text: 'Concluído', tone: 'completed' }
         : scheduledToday
           ? { text: 'Hoje', tone: 'today' }
-          : status === 'pending'
+          : status === 'pending' || status === 'in_progress'
             ? { text: 'Em andamento', tone: 'progress' }
             : status === 'skipped'
               ? { text: 'Pulado', tone: 'skipped' }

@@ -14,7 +14,8 @@
  * - Na lista: + adiciona exercícios da biblioteca, o botão de troca abre a
  *   biblioteca para substituir, × exclui (com confirmação), e a alça ⠿
  *   reordena. O círculo ao lado da troca marca o exercício como feito
- *   durante o atendimento (só nesta tela; não é o ✓ de seleção da alça).
+ *   durante o atendimento e grava a carga dele no histórico do aluno na
+ *   hora (não é o ✓ de seleção da alça).
  * - Nos cartões de treino: + cria um treino novo e × exclui (com
  *   confirmação). O antigo "Editar treino" (editor da fase) saiu daqui;
  *   bi-set se monta pelo "+ Exercício" (multi-seleção → "Adicionar como")
@@ -92,6 +93,7 @@ import type { ExerciseLog } from '@/components/features/types';
 import PersonalAnamnesisQuickView from '@/components/features/PersonalAnamnesisQuickView';
 import LastCommentBanner from '@/components/molecules/LastCommentBanner';
 import { toExerciseLog } from '@/libs/exerciseLog';
+import { recordExerciseDone, roundToHalf } from '@/libs/exerciseDoneRecord';
 import { pickSavedMesocycle } from '@/app/personal/_shared/periodizacao/lib/mesocycleTransforms';
 import {
     labelPartsOf,
@@ -215,20 +217,49 @@ export default function AcompanharTreinoPage() {
         Set<string>
     >(new Set());
     /** "Feito" do personal durante o atendimento presencial — o círculo ao
-     * lado do trocar, na lista e no card aberto. Só nesta tela, só nesta
-     * sessão: não é o registro do aluno (isso é `record`/`lastLoadByExercise`,
-     * vindo do workout log) nem grava em lugar nenhum — reinicia ao trocar de
-     * treino ou recarregar a página, de propósito, para nunca ficar marcado
-     * de uma sessão presencial para a próxima. */
+     * lado do trocar, na lista e no card aberto. Marcar grava na hora a
+     * carga prescrita do exercício no histórico do aluno (como
+     * personal_assisted, ver libs/exerciseDoneRecord.ts); desmarcar tira. A
+     * marcação na tela reinicia ao trocar de treino ou recarregar a página,
+     * de propósito, para nunca ficar marcado de uma sessão presencial para a
+     * próxima — o que já foi gravado continua no histórico. */
     const [doneExerciseIds, setDoneExerciseIds] = useState<
         ReadonlySet<string>
     >(() => new Set());
-    const toggleDone = (id: string) =>
-        setDoneExerciseIds((prev) => {
-            const next = new Set(prev);
-            if (!next.delete(id)) next.add(id);
-            return next;
-        });
+    // Cópia sempre atual: o CircuitTimer chama markCircuitDone com a closure
+    // de um render anterior.
+    const doneIdsRef = useRef(doneExerciseIds);
+    doneIdsRef.current = doneExerciseIds;
+    /** Grava (ou tira) no histórico. Mesmos valores com que o "Finalizar
+     * treino" abre no modo assistido — carga prescrita, RPE 7 —, para a
+     * finalização não desfazer o "feito". */
+    const recordDone = (ids: string[], done: boolean) => {
+        if (!macro || !cycle || !selectedTraining) return;
+        for (const id of ids) {
+            const ex = selectedTraining.exercises.find((e) => e.id === id);
+            if (!ex) continue;
+            recordExerciseDone({
+                studentId,
+                planningId: macro.id,
+                mesocycleId: cycle.meso.id,
+                microcycleId: cycle.micro.id,
+                trainingRef: selectedTraining.reference,
+                exercise: ex,
+                done,
+                loadKg: ex.load_kg ? roundToHalf(ex.load_kg) : 0,
+                rpe: 7,
+                asPersonal: true,
+            });
+        }
+    };
+    const toggleDone = (id: string) => {
+        const next = new Set(doneIdsRef.current);
+        const done = !next.delete(id);
+        if (done) next.add(id);
+        doneIdsRef.current = next;
+        setDoneExerciseIds(next);
+        recordDone([id], done);
+    };
     /** Marca/desmarca um bloco inteiro: exercício solto ou todos os de um
      * bi-set. Bloco parcialmente marcado conta como desmarcado → marca tudo. */
     const toggleBlockSelected = (ids: string[]) => {
@@ -250,11 +281,13 @@ export default function AcompanharTreinoPage() {
     /** Fim do circuito = o bloco foi aplicado: marca como feito (sem
      * desmarcar, ao contrário do círculo) e conta para o registro. */
     const markCircuitDone = (ids: string[]) => {
-        setDoneExerciseIds((prev) =>
-            ids.every((id) => prev.has(id))
-                ? prev
-                : new Set([...prev, ...ids]),
-        );
+        const added = ids.filter((id) => !doneIdsRef.current.has(id));
+        if (added.length > 0) {
+            const next = new Set([...doneIdsRef.current, ...added]);
+            doneIdsRef.current = next;
+            setDoneExerciseIds(next);
+            recordDone(added, true);
+        }
         setCircuitDoneKeys((prev) =>
             prev.has(ids[0]) ? prev : new Set(prev).add(ids[0]),
         );
@@ -467,7 +500,9 @@ export default function AcompanharTreinoPage() {
     const lastLoadByExercise = useMemo(() => {
         const byKey = new Map<string, number>();
         for (const log of logs) {
-            if (log.status !== 'completed') continue;
+            // in_progress: exercícios já marcados "feito" num treino ainda
+            // não finalizado — a carga já é registro.
+            if (log.status !== 'completed' && log.status !== 'in_progress') continue;
             for (const perf of log.exercises ?? []) {
                 if (perf.load_kg <= 0) continue;
                 byKey.set(perf.exercise_id, perf.load_kg);

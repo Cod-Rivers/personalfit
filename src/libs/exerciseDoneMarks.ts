@@ -2,9 +2,9 @@ import { EXERCISE_DONE_CACHE_PREFIX, getUser } from '@/libs/session';
 
 /**
  * "Exercício feito" do aluno durante o treino: o checkbox ao lado do nome, na
- * lista e no card do exercício de /meus-treinos/[id]/[trainingId]. É só a
- * lista de conferência da sessão — não vai ao servidor e não entra no
- * registro do treino (séries e carga continuam sendo do WorkoutLogger).
+ * lista e no card do exercício de /meus-treinos/[id]/[trainingId]. Aqui fica
+ * só a MARCAÇÃO na tela; a carga do exercício marcado vai ao histórico por
+ * outro caminho (libs/exerciseDoneRecord.ts, fila offline).
  *
  * Fica no localStorage, por microciclo + treino (mesma chave de
  * workoutSessionTimer.ts), para sobreviver ao que interrompe um treino no

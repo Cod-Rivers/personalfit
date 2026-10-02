@@ -12,6 +12,7 @@ vi.mock('@/libs/workoutLogService', () => ({
     skipNewWorkoutLog: vi.fn(),
     completeWorkoutSession: vi.fn(),
     createNewWorkoutLog: vi.fn(),
+    logExercisePerformance: vi.fn(),
 }));
 
 import {
@@ -19,6 +20,7 @@ import {
     skipNewWorkoutLog,
     completeWorkoutSession,
     createNewWorkoutLog,
+    logExercisePerformance,
 } from '@/libs/workoutLogService';
 
 import * as syncQueue from './syncQueue';
@@ -584,6 +586,111 @@ describe('offline/syncQueue', () => {
             expect(
                 syncQueue.daysUntilExpiration(failedMutation(40, 'pending')),
             ).toBeNull();
+        });
+    });
+
+    describe('exercício marcado "feito" (type exercise)', () => {
+        const series = [
+            { series: 1, reps: 10, load_kg: 40, rpe: 7 },
+            { series: 2, reps: 10, load_kg: 40, rpe: 7 },
+        ];
+        function enqueueTestExercise(
+            exerciseId: string,
+            seriesOverride = series,
+            asPersonal?: boolean,
+        ) {
+            return syncQueue.enqueueExercisePerformance({
+                ...baseIds(),
+                exerciseBody: {
+                    training_ref: 'A',
+                    planned_date: '2026-10-02',
+                    exercise_id: exerciseId,
+                    name: 'Agachamento',
+                    series: seriesOverride,
+                },
+                asPersonal,
+            });
+        }
+
+        it('marcar e desmarcar sem rede deixa UMA linha, com o último estado', async () => {
+            await enqueueTestExercise('ex-1');
+            await enqueueTestExercise('ex-1', []);
+            await enqueueTestExercise('ex-1');
+
+            const rows = await syncQueue.getPendingMutations();
+            expect(rows).toHaveLength(1);
+            expect(rows[0].type).toBe('exercise');
+            expect(rows[0].exerciseBody?.series).toEqual(series);
+            expect(rows[0].exerciseBody?.client_mutation_id).toBeTruthy();
+        });
+
+        it('exercícios diferentes, ou aluno × personal, são linhas separadas', async () => {
+            await enqueueTestExercise('ex-1');
+            await enqueueTestExercise('ex-2');
+            await enqueueTestExercise('ex-1', series, true);
+
+            expect(await syncQueue.getPendingMutations()).toHaveLength(3);
+        });
+
+        it('não reaproveita linha que já falhou: o estado novo entra no fim da fila', async () => {
+            await enqueueTestExercise('ex-1');
+            const db = await getOfflineDB();
+            const [seed] = await db.getAll('pendingMutations');
+            await db.put('pendingMutations', { ...seed, status: 'failed' });
+
+            await enqueueTestExercise('ex-1', []);
+
+            expect(await syncQueue.getPendingMutations()).toHaveLength(2);
+        });
+
+        it('envia pela rota certa (asPersonal) e sai da fila', async () => {
+            await enqueueTestExercise('ex-1', series, true);
+            vi.mocked(logExercisePerformance).mockResolvedValue(fakeLogResponse({ status: 'in_progress' }));
+
+            setOnline(true);
+            await syncQueue.processQueue();
+
+            expect(logExercisePerformance).toHaveBeenCalledWith(
+                'student-1',
+                'planning-1',
+                'meso-1',
+                'micro-1',
+                expect.objectContaining({ exercise_id: 'ex-1', series }),
+                true,
+            );
+            expect(await syncQueue.getPendingMutations()).toHaveLength(0);
+        });
+
+        it('409 (treino já finalizado) e 404 (plano sumiu) saem da fila sem virar pendência', async () => {
+            await enqueueTestExercise('ex-1');
+            await enqueueTestExercise('ex-2');
+            vi.mocked(logExercisePerformance)
+                .mockRejectedValueOnce(axiosErr(409))
+                .mockRejectedValueOnce(axiosErr(404));
+
+            setOnline(true);
+            await syncQueue.processQueue();
+
+            expect(await syncQueue.getPendingMutations()).toHaveLength(0);
+        });
+
+        it('o "feito" enfileirado antes da finalização é enviado antes dela', async () => {
+            await enqueueTestExercise('ex-1');
+            await enqueueTestSession('A');
+            const order: string[] = [];
+            vi.mocked(logExercisePerformance).mockImplementation(async () => {
+                order.push('exercise');
+                return null;
+            });
+            vi.mocked(completeWorkoutSession).mockImplementation(async () => {
+                order.push('session');
+                return fakeLogResponse();
+            });
+
+            setOnline(true);
+            await syncQueue.processQueue();
+
+            expect(order).toEqual(['exercise', 'session']);
         });
     });
 

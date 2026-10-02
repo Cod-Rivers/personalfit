@@ -126,6 +126,11 @@ interface WorkoutLoggerProps {
      * conferidos: as séries nascem com a prescrição, que é exatamente o que
      * o circuito executou. */
     circuitDoneBlockKeys?: ReadonlySet<string>;
+    /** Carga já gravada pelo "feito" (libs/exerciseDoneRecord.ts), por
+     * exercise.id. Esses exercícios abrem com ela em vez da prescrita: a
+     * finalização substitui as séries do exercício no registro, e abrir com
+     * outro número desfaria em silêncio o que o aluno marcou. */
+    doneLoadKg?: Readonly<Record<string, number>>;
     /** Histórico de carga que a tela já carregou (ou o do cache). Alimenta
      * a pergunta do comentário ao personal: recorde, exercício novo, pausa. */
     loadHistory?: LoadHistoryResponse | null;
@@ -183,6 +188,7 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
     assisted = false,
     studentName,
     circuitDoneBlockKeys,
+    doneLoadKg,
     loadHistory,
 }) => {
     // Comentário ao personal no check-in (Todo/PLANO_COMENTARIO_POS_TREINO.md,
@@ -211,6 +217,13 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
             // Planos importados de PDF antes da correção no backend têm
             // `series: null` gravado no banco.
             const plannedSeries = ex.series ?? [];
+            const markedKg = doneLoadKg?.[ex.id];
+            const initialLoadKg =
+                markedKg != null
+                    ? markedKg
+                    : ex.load_kg
+                      ? Math.round(ex.load_kg * loadAdjust * 2) / 2
+                      : 0;
             return {
                 exerciseId: ex.id,
                 name: ex.name,
@@ -232,9 +245,7 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                     // o treino inteiro falhar ao salvar se o aluno esquecesse
                     // de preencher reps em uma única série de aquecimento.
                     reps: plannedReps || 0,
-                    loadKg: ex.load_kg
-                        ? Math.round(ex.load_kg * loadAdjust * 2) / 2
-                        : 0,
+                    loadKg: initialLoadKg,
                     rpe: suggestedRPE,
                     notes: '',
                 })),

@@ -109,9 +109,37 @@ export async function getPendingLoadSessions(
     studentId?: string,
 ): Promise<PendingSessionInput[]> {
     try {
-        const rows = await getPendingMutations();
+        const rows = (await getPendingMutations()).filter((r) =>
+            studentId ? r.asPersonal && r.studentId === studentId : !r.asPersonal,
+        );
+        // Exercícios marcados "feito" ainda na fila: uma sessão por treino do
+        // dia. Se a finalização desse treino também está na fila, ela já traz
+        // as séries — contar os dois duplicaria a sessão.
+        const finalizing = new Set(
+            rows
+                .filter((r) => r.type === 'session' && r.sessionBody)
+                .map((r) => `${r.sessionBody!.training_ref}|${r.sessionBody!.planned_date}`),
+        );
+        const partial = new Map<string, PendingSessionInput>();
+        for (const r of rows) {
+            const body = r.type === 'exercise' ? r.exerciseBody : undefined;
+            if (!body || body.series.length === 0) continue;
+            const key = `${body.training_ref}|${body.planned_date}`;
+            if (finalizing.has(key)) continue;
+            const entry = partial.get(key) ?? { completedAt: body.planned_date, exercises: [] };
+            entry.exercises.push(
+                ...body.series.map((s) => ({
+                    exercise_id: body.exercise_id,
+                    name: body.name,
+                    series: s.series,
+                    reps: s.reps,
+                    load_kg: s.load_kg,
+                    rpe: s.rpe,
+                })),
+            );
+            partial.set(key, entry);
+        }
         return rows
-            .filter((r) => (studentId ? r.asPersonal && r.studentId === studentId : !r.asPersonal))
             .flatMap((r): PendingSessionInput[] => {
                 if (r.type === 'session' && r.sessionBody) {
                     return [{ completedAt: r.sessionBody.client_completed_at, exercises: r.sessionBody.exercises }];
@@ -123,7 +151,8 @@ export async function getPendingLoadSessions(
                     }];
                 }
                 return [];
-            });
+            })
+            .concat([...partial.values()]);
     } catch {
         return [];
     }
