@@ -53,10 +53,12 @@ const studentSections: HelpSection[] = [
                     <strong>Acompanhamento em espera:</strong> o plano
                     gratuito do personal inclui até 3 alunos. Se o seu
                     personal sair do PRO com mais alunos e você não estiver
-                    entre os que ele escolheu, o aviso aparece aqui: você
-                    continua treinando o plano atual por 2 meses, mas ele não
-                    é alterado. Se o personal voltar ao PRO nesse prazo, tudo
-                    continua; senão, o vínculo com ele é encerrado.
+                    entre os que ele escolheu, o aviso aparece aqui (e chega
+                    uma notificação): você continua treinando o plano atual
+                    por 2 meses, mas ele não é alterado. Uma semana antes do
+                    fim você recebe outro aviso. Se o personal voltar ao PRO
+                    nesse prazo, tudo continua; senão, o vínculo com ele é
+                    encerrado.
                 </p>
             </>
         ),
@@ -3403,7 +3405,9 @@ const personalSections: HelpSection[] = [
                     deles, mas não altera nada. Se você assinar o PRO nesse
                     prazo, todos voltam ao normal; senão, os alunos em espera
                     são desvinculados. Se você não escolher, ficam os 3
-                    vínculos mais antigos.
+                    vínculos mais antigos. Os alunos em espera são avisados
+                    por notificação, e uma semana antes do fim do prazo você
+                    e eles recebem um lembrete.
                 </p>
                 <p className="mb-0 text-muted small">
                     Observação: os seus alunos não têm plano PRO. Eles
