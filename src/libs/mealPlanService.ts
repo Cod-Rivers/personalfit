@@ -27,6 +27,9 @@ export interface MealPlanResponse {
     current: MealPlanVersion | null;
     student_can_edit: boolean;
     can_edit: boolean;
+    /** Fora do PRO do personal: a leitura continua (o último plano enviado),
+     * mas não há edição — can_edit vem false e as escritas dão 403. */
+    locked?: boolean;
 }
 
 export interface CreateMealPlanVersionPayload {

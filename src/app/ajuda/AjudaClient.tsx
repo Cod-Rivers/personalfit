@@ -407,7 +407,11 @@ const studentSections: HelpSection[] = [
                 </p>
                 <p className="mb-0">
                     A tela é preenchida pelo personal: se estiver vazia, é
-                    porque ele ainda não montou o seu plano — fale com ele.
+                    porque ele ainda não montou o seu plano — fale com ele. O
+                    plano alimentar faz parte do plano PRO do seu personal: se
+                    ele sair do PRO, você continua vendo o último plano
+                    enviado, mas ele deixa de ser atualizado até o personal
+                    reativar.
                 </p>
             </>
         ),
@@ -2131,7 +2135,9 @@ const personalSections: HelpSection[] = [
                 anexando um PDF do plano. Este recurso é do{' '}
                 <Link href="#plano-pro">plano PRO</Link>: os alunos vinculados a
                 um personal PRO passam a enxergar o plano alimentar no app
-                deles.
+                deles. Se você voltar ao plano gratuito, você e o aluno
+                continuam vendo o último plano enviado, mas enviar uma nova
+                versão (ou liberar a edição para o aluno) volta a pedir o PRO.
             </p>
         ),
     },

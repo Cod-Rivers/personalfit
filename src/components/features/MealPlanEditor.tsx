@@ -33,6 +33,48 @@ function extractErrorMessage(err: unknown, fallback: string): string {
     return data?.error || data?.message || fallback;
 }
 
+/**
+ * Aviso do plano alimentar fora do PRO. Quem assina o PRO é o personal —
+ * aluno não tem como —, então o texto muda conforme quem está vendo. Antes o
+ * aluno recebia "Assine o Plano Pro para liberar o acesso".
+ */
+function ProNotice({
+    isPersonalView,
+    hasPlan,
+}: {
+    isPersonalView: boolean;
+    hasPlan: boolean;
+}) {
+    if (isPersonalView) {
+        return (
+            <div className={s.proBanner}>
+                <p>
+                    O <strong>plano alimentar</strong> é uma funcionalidade
+                    exclusiva do Plano Pro.
+                </p>
+                <p>
+                    {hasPlan
+                        ? 'Você continua vendo o que já foi enviado. Para enviar uma nova versão, assine o Plano Pro.'
+                        : 'Assine o Plano Pro para liberar o acesso.'}
+                </p>
+            </div>
+        );
+    }
+    return (
+        <div className={s.proBanner}>
+            <p>
+                O <strong>plano alimentar</strong> faz parte do plano PRO do
+                seu personal, e ele não está nesse plano agora.
+            </p>
+            <p>
+                {hasPlan
+                    ? 'Você continua vendo o último plano enviado. Ele volta a ser atualizado quando o seu personal reativar o PRO.'
+                    : 'Quando o seu personal ativar o PRO, o seu plano aparece aqui.'}
+            </p>
+        </div>
+    );
+}
+
 function formatDate(iso: string) {
     return new Date(iso).toLocaleString('pt-BR', {
         day: '2-digit',
@@ -212,25 +254,25 @@ export default function MealPlanEditor({ studentId }: Props) {
     }
 
     if (proBlocked) {
-        return (
-            <div className={s.proBanner}>
-                <p>
-                    O <strong>plano alimentar</strong> é uma funcionalidade
-                    exclusiva do Plano Pro.
-                </p>
-                <p>Assine o Plano Pro para liberar o acesso.</p>
-            </div>
-        );
+        return <ProNotice isPersonalView={isPersonalView} hasPlan={false} />;
     }
 
     if (loading) {
         return <p className={s.loading}>Carregando plano alimentar...</p>;
     }
 
+    // Fora do PRO do personal sem nenhum plano enviado: só o aviso.
+    if (plan?.locked && !plan.current) {
+        return <ProNotice isPersonalView={isPersonalView} hasPlan={false} />;
+    }
+
     const canEdit = plan?.can_edit ?? false;
 
     return (
         <div className={s.section}>
+            {plan?.locked && (
+                <ProNotice isPersonalView={isPersonalView} hasPlan />
+            )}
             {error && <div className={s.errorMsg}>{error}</div>}
 
             <div className={s.card}>
@@ -333,7 +375,7 @@ export default function MealPlanEditor({ studentId }: Props) {
                 )}
             </div>
 
-            {isPersonalView && (
+            {isPersonalView && !plan?.locked && (
                 <div className={s.card}>
                     <label className={s.toggleRow}>
                         <input
