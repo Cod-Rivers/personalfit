@@ -50,6 +50,7 @@ import {
     cacheMacrocycleForOffline,
     getAllOfflineMacrocycles,
     getOfflineMacrocycle,
+    pruneOfflineMacrocycles,
 } from '@/libs/offline/downloadManager';
 import PersonalAnamnesisPendingBanner from '@/components/features/PersonalAnamnesisPendingBanner';
 import ScrollHint from '@/components/atoms/ScrollHint';
@@ -239,6 +240,10 @@ export default function MeusTreinosPage() {
 
                 const macros = await getMyPlannings();
                 setMacrocycles(macros);
+                // Planos que não vêm mais do servidor (excluídos, ou o do
+                // personal bloqueado no fim da espera do plano gratuito)
+                // saem também da cópia offline do aparelho.
+                void pruneOfflineMacrocycles(macros.map((m) => m.id));
 
                 if (macros.length === 0) {
                     setLoading(false);

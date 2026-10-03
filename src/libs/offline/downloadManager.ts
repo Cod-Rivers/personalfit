@@ -207,6 +207,29 @@ export async function cacheMacrocycleForOffline(
     }
 }
 
+/**
+ * Apaga do aparelho os planos que o servidor não devolve mais para o aluno —
+ * excluídos, ou bloqueados no fim da espera do excedente de alunos do plano
+ * gratuito (o plano do personal sai do aluno). Sem isto, a cópia offline
+ * continuava abrindo sem rede. Chamar só com a lista que veio do servidor.
+ *
+ * Melhor-esforço, como cacheMacrocycleForOffline.
+ */
+export async function pruneOfflineMacrocycles(keepIds: string[]): Promise<void> {
+    try {
+        const db = await getOfflineDB();
+        const keep = new Set(keepIds);
+        const stored = await db.getAll('macrocycles');
+        await Promise.all(
+            stored
+                .filter((s) => !keep.has(s.id))
+                .map((s) => db.delete('macrocycles', s.id)),
+        );
+    } catch (err) {
+        console.warn('[offline] Falha ao limpar planos antigos do aparelho:', err);
+    }
+}
+
 export async function getOfflineMacrocycle(id: string): Promise<StoredMacrocycle | undefined> {
     const db = await getOfflineDB();
     return db.get('macrocycles', id);
