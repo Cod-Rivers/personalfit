@@ -440,8 +440,11 @@ function TemplatesSection({ canManageUsers }: { canManageUsers: boolean }) {
             setGoal('');
             setIsPublic(true);
             fetchTemplates();
-        } catch {
-            setError('Erro ao criar template.');
+        } catch (err: unknown) {
+            const serverMsg = (
+                err as { response?: { data?: { error?: string } } }
+            )?.response?.data?.error;
+            setError(serverMsg || 'Erro ao criar template.');
         } finally {
             setSubmitting(false);
         }

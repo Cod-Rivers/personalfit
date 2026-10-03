@@ -53,7 +53,11 @@ export default function NovoTemplatePage() {
             });
             router.push(`/personal/templates/${created.id}`);
         } catch (e: unknown) {
-            setError((e as Error).message ?? 'Erro ao criar ciclo');
+            // 409 = nome repetido: a mensagem do servidor diz o que corrigir.
+            const serverMsg = (
+                e as { response?: { data?: { error?: string } } }
+            )?.response?.data?.error;
+            setError(serverMsg || 'Erro ao criar ciclo');
         } finally {
             setSubmitting(false);
         }

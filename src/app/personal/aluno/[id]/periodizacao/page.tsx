@@ -226,8 +226,12 @@ export default function PeriodizacaoPage() {
             try {
                 await saveAsTemplate(studentId, macro.id, name);
                 alert('Modelo salvo com sucesso!');
-            } catch {
-                alert('Erro ao salvar modelo.');
+            } catch (err: unknown) {
+                // 409 = nome repetido entre os modelos do personal.
+                const serverMsg = (
+                    err as { response?: { data?: { error?: string } } }
+                )?.response?.data?.error;
+                alert(serverMsg || 'Erro ao salvar modelo.');
             } finally {
                 setSavingTemplate(null);
             }
