@@ -1,9 +1,16 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, {
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useState,
+} from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { FiClock, FiUsers } from 'react-icons/fi';
 import { Api } from '@/libs/api';
+import { useForegroundRefresh } from '@/hooks/useForegroundRefresh';
 import type { Student } from '@/hooks/usePersonalStudents';
 import {
     chooseStudentsToKeep,
@@ -50,12 +57,19 @@ export default function StudentOverflowGate({
     const pathname = usePathname();
     const router = useRouter();
 
-    useEffect(() => {
+    const load = useCallback(() => {
         if (!localStorage.getItem('token')) return;
         getStudentOverflow()
             .then(setStatus)
             .catch(() => {});
     }, []);
+
+    useEffect(() => {
+        load();
+    }, [load]);
+    // O ciclo muda com o painel aberto (o job abre o ciclo, o personal
+    // assina o PRO em outro aparelho): busca de novo ao voltar ao app.
+    useForegroundRefresh(load);
 
     if (status?.pending_choice) {
         return <StudentOverflowChoice status={status} onChosen={setStatus} />;

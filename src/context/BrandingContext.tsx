@@ -1,6 +1,13 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, {
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useState,
+} from 'react';
+import { useForegroundRefresh } from '@/hooks/useForegroundRefresh';
 import {
     PersonalBranding,
     getPersonalBranding,
@@ -36,8 +43,20 @@ export function useBranding() {
     return useContext(BrandingContext);
 }
 
+/** Volta as cores às do CSS (constants.css): tira o que applyBrandingVars
+ * gravou inline. */
+function clearBrandingVars() {
+    const root = document.documentElement;
+    root.style.removeProperty('--mint');
+    root.style.removeProperty('--grad-mint');
+    root.style.removeProperty('--coral');
+}
+
 function applyBrandingVars(branding: PersonalBranding | null) {
-    if (!branding) return; // sem branding: mantém as vars padrão do CSS intactas
+    // Limpa antes: sem branding (o personal saiu do PRO com o app aberto) as
+    // cores voltam ao padrão, e uma marca nova não herda cor da anterior.
+    clearBrandingVars();
+    if (!branding) return;
     const root = document.documentElement;
     if (branding?.primary_color) {
         root.style.setProperty('--mint', branding.primary_color);
@@ -64,7 +83,7 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
     const [studentOverflow, setStudentOverflow] =
         useState<StudentOverflowNotice | null>(null);
 
-    useEffect(() => {
+    const load = useCallback(() => {
         const token =
             typeof window !== 'undefined'
                 ? localStorage.getItem('token')
@@ -85,6 +104,13 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
                 // silently fail — branding is non-critical
             });
     }, []);
+
+    useEffect(() => {
+        load();
+    }, [load]);
+    // O plano do personal muda com o app aberto (PRO ↔ free, espera do
+    // excedente): busca de novo ao voltar ao app (ver useForegroundRefresh).
+    useForegroundRefresh(load);
 
     const setBranding = (b: PersonalBranding | null) => {
         setBrandingState(b);

@@ -2,12 +2,14 @@
 
 import React, {
     createContext,
+    useCallback,
     useContext,
     useEffect,
     useRef,
     useState,
 } from 'react';
 import { Advertisement, getAdsForDisplay } from '@/libs/advertisementService';
+import { useForegroundRefresh } from '@/hooks/useForegroundRefresh';
 
 interface AdContextValue {
     ads: Advertisement[];
@@ -57,13 +59,12 @@ export function AdProvider({ children }: { children: React.ReactNode }) {
     const [canShowAds, setCanShowAds] = useState(false);
     const fetchedRef = useRef(false);
 
-    useEffect(() => {
+    const load = useCallback(() => {
         const token =
             typeof window !== 'undefined'
                 ? localStorage.getItem('token')
                 : null;
-        if (!token || fetchedRef.current) return;
-        fetchedRef.current = true;
+        if (!token) return;
 
         getAdsForDisplay()
             .then((res) => {
@@ -74,6 +75,15 @@ export function AdProvider({ children }: { children: React.ReactNode }) {
                 // anúncios são não-críticos — falha silenciosa
             });
     }, []);
+
+    useEffect(() => {
+        if (fetchedRef.current) return;
+        fetchedRef.current = true;
+        load();
+    }, [load]);
+    // Sem anúncios depende do plano do personal (PRO) ou do Aluno Plus, que
+    // mudam com o app aberto: busca de novo ao voltar ao app.
+    useForegroundRefresh(load);
 
     const topAds = ads.filter((ad) => ad.placement === 'top' && ad.is_active);
     const bottomAds = ads.filter(
