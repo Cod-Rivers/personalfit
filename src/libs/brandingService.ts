@@ -42,6 +42,17 @@ export async function getMyBranding(): Promise<{ branding: PersonalBranding | nu
  * no backend): o do personal vinculado quando existe, senão o próprio plano
  * do usuário.
  */
+/**
+ * Aviso do excedente de alunos do plano gratuito para o aluno: "pending"
+ * enquanto o personal escolhe quem continua; "standby" se o aluno ficou de
+ * fora (em espera até `until`).
+ */
+export interface StudentOverflowNotice {
+    status: 'pending' | 'standby';
+    until: string;
+    limit?: number;
+}
+
 export async function getPersonalBranding(): Promise<{
     branding: PersonalBranding | null;
     personalName: string | null;
@@ -50,6 +61,7 @@ export async function getPersonalBranding(): Promise<{
     adFree: boolean;
     /** Aluno com o Aluno Plus ativo. */
     studentPlus: boolean;
+    studentOverflow: StudentOverflowNotice | null;
 }> {
     const res = await Api.get<{
         branding: PersonalBranding | null;
@@ -57,6 +69,7 @@ export async function getPersonalBranding(): Promise<{
         effective_plan_type?: string;
         ad_free?: boolean;
         student_plus?: boolean;
+        student_overflow?: StudentOverflowNotice;
     }>('/branding');
     return {
         branding: res.data.branding,
@@ -64,5 +77,6 @@ export async function getPersonalBranding(): Promise<{
         effectivePlanType: res.data.effective_plan_type ?? null,
         adFree: res.data.ad_free ?? false,
         studentPlus: res.data.student_plus ?? false,
+        studentOverflow: res.data.student_overflow ?? null,
     };
 }

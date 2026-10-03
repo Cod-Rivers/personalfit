@@ -71,6 +71,7 @@ import { getPlans } from '@/libs/paymentService';
 import { usePlanStoreHidden } from '@/hooks/usePlanStoreHidden';
 import CurrentPlanCard from './_components/CurrentPlanCard';
 import PlanShortcuts from './_components/PlanShortcuts';
+import StudentOverflowNotice from './_components/StudentOverflowNotice';
 import ownStyles from './_components/meusTreinos.module.css';
 import {
     getNewWorkoutLogs,
@@ -428,6 +429,7 @@ export default function MeusTreinosPage() {
                 {/* Aluno recém-vinculado costuma cair aqui antes do primeiro
                     treino — justamente quando o personal pede a anamnese. */}
                 <PersonalAnamnesisPendingBanner />
+                <StudentOverflowNotice />
                 <div className={ownStyles.emptyNotice} role="status">
                     <span className={ownStyles.iconTile}>
                         <FiClipboard size={20} aria-hidden="true" />
@@ -480,6 +482,7 @@ export default function MeusTreinosPage() {
                 }
             >
                 <PersonalAnamnesisPendingBanner />
+                <StudentOverflowNotice />
                 {isOfflineData && (
                     <div
                         className="alert alert-warning py-2 px-3 mb-3 d-flex align-items-center gap-2"

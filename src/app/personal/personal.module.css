@@ -870,3 +870,17 @@
     margin: 8px 0;
     line-height: 1.5;
 }
+
+/* Aluno em espera: excedente do plano gratuito (ver StudentOverflowGate). */
+.badgeStandby {
+    display: inline-block;
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-weight: 600;
+    margin-left: 8px;
+    vertical-align: middle;
+    background: var(--amber-dim);
+    color: var(--amber-text);
+    border: 1px solid var(--amber);
+}

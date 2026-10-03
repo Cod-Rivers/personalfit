@@ -1,7 +1,11 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { PersonalBranding, getPersonalBranding } from '@/libs/brandingService';
+import {
+    PersonalBranding,
+    getPersonalBranding,
+    type StudentOverflowNotice,
+} from '@/libs/brandingService';
 
 interface BrandingContextValue {
     branding: PersonalBranding | null;
@@ -12,6 +16,9 @@ interface BrandingContextValue {
     adFree: boolean;
     /** Aluno com o Aluno Plus ativo. */
     studentPlus: boolean;
+    /** Aluno de personal no excedente do plano gratuito (ver
+     * StudentOverflowNotice); null fora disso. */
+    studentOverflow: StudentOverflowNotice | null;
     setBranding: (b: PersonalBranding | null) => void;
 }
 
@@ -21,6 +28,7 @@ const BrandingContext = createContext<BrandingContextValue>({
     effectivePlanType: null,
     adFree: false,
     studentPlus: false,
+    studentOverflow: null,
     setBranding: () => {},
 });
 
@@ -53,6 +61,8 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
     );
     const [adFree, setAdFree] = useState(false);
     const [studentPlus, setStudentPlus] = useState(false);
+    const [studentOverflow, setStudentOverflow] =
+        useState<StudentOverflowNotice | null>(null);
 
     useEffect(() => {
         const token =
@@ -62,12 +72,13 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
         if (!token) return;
 
         getPersonalBranding()
-            .then(({ branding: b, personalName: name, effectivePlanType: plan, adFree: noAds, studentPlus: plus }) => {
+            .then(({ branding: b, personalName: name, effectivePlanType: plan, adFree: noAds, studentPlus: plus, studentOverflow: overflow }) => {
                 setBrandingState(b);
                 setPersonalName(name);
                 setEffectivePlanType(plan);
                 setAdFree(noAds);
                 setStudentPlus(plus);
+                setStudentOverflow(overflow);
                 applyBrandingVars(b);
             })
             .catch(() => {
@@ -82,7 +93,7 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
 
     return (
         <BrandingContext.Provider
-            value={{ branding, personalName, effectivePlanType, adFree, studentPlus, setBranding }}
+            value={{ branding, personalName, effectivePlanType, adFree, studentPlus, studentOverflow, setBranding }}
         >
             {children}
         </BrandingContext.Provider>

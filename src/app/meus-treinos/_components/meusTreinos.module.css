@@ -373,3 +373,30 @@
     font-size: var(--font-sm);
     color: var(--text-secondary);
 }
+
+/* ---------- Excedente de alunos do free (aviso ao aluno) ---------- */
+
+.overflowNotice {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    margin: 0 5% var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--amber);
+    background: var(--amber-dim);
+    color: var(--amber-text);
+}
+
+.overflowTitle {
+    margin: 0;
+    font-size: var(--font-base);
+    font-weight: 700;
+    color: var(--amber-text);
+}
+
+.overflowText {
+    margin: var(--space-1) 0 0;
+    font-size: var(--font-sm);
+    color: var(--text-secondary);
+}

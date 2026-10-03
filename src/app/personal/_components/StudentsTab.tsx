@@ -23,6 +23,7 @@ import Modal from '@/components/system/Modal';
 import TrainingPdfUploadModal from '@/components/features/TrainingPdfUploadModal';
 import LogWindowSettings from '@/components/features/LogWindowSettings';
 import { usePersonalStudents } from '@/hooks/usePersonalStudents';
+import { useStudentOverflow } from '@/components/features/StudentOverflowGate';
 import { formatCpfInput } from '@/libs/formatters';
 import {
     getPersonalAnamnesisSummary,
@@ -44,6 +45,8 @@ interface Props {
 }
 
 export default function StudentsTab({ state, unreadComments }: Props) {
+    // Excedente do free: selo "Em espera" nos alunos que ficaram de fora.
+    const overflow = useStudentOverflow();
     const router = useRouter();
     const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
     const [pdfImportStudent, setPdfImportStudent] = useState<{
@@ -224,6 +227,23 @@ export default function StudentsTab({ state, unreadComments }: Props) {
                                                   ? 'Aguardando confirmação'
                                                   : 'Inativo'}
                                         </span>
+                                        {overflow?.standby_student_ids.includes(
+                                            st.id,
+                                        ) && (
+                                            <span
+                                                className={s.badgeStandby}
+                                                title="Você vê os dados, mas não altera nada deste aluno até assinar o PRO"
+                                            >
+                                                Em espera até{' '}
+                                                {overflow.deadline
+                                                    ? new Date(
+                                                          overflow.deadline,
+                                                      ).toLocaleDateString(
+                                                          'pt-BR',
+                                                      )
+                                                    : ''}
+                                            </span>
+                                        )}
                                     </p>
                                     <p className={s.studentMeta}>
                                         {st.email} · {st.cpf}

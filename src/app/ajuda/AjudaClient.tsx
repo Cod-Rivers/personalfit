@@ -49,6 +49,15 @@ const studentSections: HelpSection[] = [
                     , que ajusta a carga do treino de acordo com sua
                     recuperação.
                 </p>
+                <p className="mb-0 mt-2">
+                    <strong>Acompanhamento em espera:</strong> o plano
+                    gratuito do personal inclui até 3 alunos. Se o seu
+                    personal sair do PRO com mais alunos e você não estiver
+                    entre os que ele escolheu, o aviso aparece aqui: você
+                    continua treinando o plano atual por 2 meses, mas ele não
+                    é alterado. Se o personal voltar ao PRO nesse prazo, tudo
+                    continua; senão, o vínculo com ele é encerrado.
+                </p>
             </>
         ),
     },
@@ -994,7 +1003,9 @@ const personalSections: HelpSection[] = [
                     gratuito você mantém{' '}
                     <strong>até 3 alunos</strong>; com o{' '}
                     <Link href="#plano-pro">PRO</Link> os alunos são
-                    ilimitados.
+                    ilimitados. Voltando ao gratuito com mais de 3, os
+                    excedentes ficam em espera (veja{' '}
+                    <Link href="#plano-pro">Plano PRO</Link>).
                 </p>
             </>
         ),
@@ -3381,9 +3392,18 @@ const personalSections: HelpSection[] = [
                     PRO por 14 dias, sem cartão, uma vez por conta. Se não
                     assinar até o fim, a conta volta ao plano gratuito sozinha;
                     o que você configurou (marca, vitrine, vídeos) fica guardado
-                    e volta a valer quando assinar. Os alunos que passaram de 3
-                    continuam vinculados, mas novos cadastros voltam a seguir o
-                    limite do plano gratuito.
+                    e volta a valer quando assinar.
+                </p>
+                <p className="mb-2">
+                    <strong>Mais de 3 alunos ao voltar ao gratuito:</strong> no
+                    fim do teste ou da assinatura, o painel pede que você
+                    escolha os 3 alunos que continuam (a escolha é definitiva).
+                    Os demais ficam <strong>em espera por 2 meses</strong>:
+                    continuam treinando o plano atual e você ainda vê os dados
+                    deles, mas não altera nada. Se você assinar o PRO nesse
+                    prazo, todos voltam ao normal; senão, os alunos em espera
+                    são desvinculados. Se você não escolher, ficam os 3
+                    vínculos mais antigos.
                 </p>
                 <p className="mb-0 text-muted small">
                     Observação: os seus alunos não têm plano PRO. Eles
