@@ -35,6 +35,7 @@ import {
 } from '@/libs/trainingLabel';
 import GoogleAdSlot from '@/components/molecules/GoogleAdSlot';
 import { useToast } from '@/components/system/Toast';
+import { getUser } from '@/libs/session';
 import s from '@/app/personal/_shared/periodizacao/builder.module.css';
 
 /** Regra de plano do link de vídeo, exibida sob o campo. Quem a aplica é o
@@ -75,6 +76,13 @@ export default function MontarTreinoPage() {
     useEffect(() => {
         if (!localStorage.getItem('token')) {
             router.replace('/');
+            return;
+        }
+        // Aluno vinculado a personal não monta o próprio treino: quem
+        // prescreve é o personal. O atalho já some em Meus treinos; isto
+        // cobre o acesso direto pela URL.
+        if (getUser()?.has_personal) {
+            router.replace('/meus-treinos');
             return;
         }
 
@@ -124,9 +132,19 @@ export default function MontarTreinoPage() {
             showSuccess('Treino criado! Agora adicione os exercícios.');
             setEditorOpen(true);
         } catch (e) {
-            const msg = (e as { response?: { data?: { message?: string } } })
-                ?.response?.data?.message;
-            showError(msg || 'Não foi possível criar o treino.');
+            // O backend responde { error } (ex.: 403 student_has_personal,
+            // quando a sessão ainda diz "sem personal" mas um personal já
+            // vinculou o aluno); { message } fica por compatibilidade.
+            const data = (
+                e as {
+                    response?: { data?: { error?: string; message?: string } };
+                }
+            )?.response?.data;
+            showError(
+                data?.error ||
+                    data?.message ||
+                    'Não foi possível criar o treino.',
+            );
         } finally {
             setCreating(false);
         }

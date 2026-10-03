@@ -11,7 +11,8 @@ import {
 } from '@/libs/planningService';
 import { getPlans } from '@/libs/paymentService';
 import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
-import { getStudentHomeRoute } from '@/libs/session';
+import { getStudentHomeRoute, getUser } from '@/libs/session';
+import { usePlanStoreHidden } from '@/hooks/usePlanStoreHidden';
 import s from './escolher-plano.module.css';
 
 /** Primeiro exercício com mídia (thumb ou vídeo) entre todos os treinos do
@@ -52,10 +53,19 @@ export default function EscolherPlanoPage() {
     const [price, setPrice] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [hasPersonal, setHasPersonal] = useState(false);
+    const storeHidden = usePlanStoreHidden(hasPersonal);
 
     useEffect(() => {
         setIsMounted(true);
+        setHasPersonal(!!getUser()?.has_personal);
     }, []);
+
+    // Aluno de personal PRO não vê a loja: o atalho já some em Meus Treinos;
+    // isto cobre o acesso direto pela URL.
+    useEffect(() => {
+        if (storeHidden === true) router.replace(getStudentHomeRoute());
+    }, [storeHidden, router]);
 
     useEffect(() => {
         if (!isMounted) return;
@@ -97,7 +107,7 @@ export default function EscolherPlanoPage() {
         router.push(`/pagamento?produto=plano&templateId=${tpl.id}`);
     }
 
-    if (!isMounted || loading) {
+    if (!isMounted || loading || storeHidden === true) {
         return <p className={s.loading}>Carregando planos...</p>;
     }
 
@@ -111,10 +121,10 @@ export default function EscolherPlanoPage() {
             </Link>
             <div className={s.header}>
                 <div>
-                    <h1 className={s.title}>Planos estilo famosos</h1>
+                    <h1 className={s.title}>Treine como os famosos</h1>
                     <p className={s.subtitle}>
-                        Escolha um plano pronto, inspirado no estilo de treino
-                        de grandes atletas, e comece agora mesmo
+                        Planos completos inspirados na rotina de grandes
+                        atletas. Pagamento único, e você começa agora mesmo
                         {price != null ? ` por ${formatBRL(price)}` : ''}.
                     </p>
                 </div>

@@ -1,0 +1,375 @@
+/* Área "Meus treinos" do aluno: cartão do plano atual (topo) e o bloco de
+   atalhos (histórico, treinar por conta própria, loja de planos). */
+
+/* ---------- Ícone em ladrilho (padrão único da tela) ---------- */
+
+.iconTile {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: var(--radius-md);
+    flex-shrink: 0;
+    background: var(--surface-2);
+    color: var(--text-secondary);
+}
+
+.iconTileMint {
+    background: var(--mint-dim);
+    color: var(--mint-text);
+}
+
+.iconTileAmber {
+    background: var(--amber-dim);
+    color: var(--amber-text);
+}
+
+/* ---------- Cartão do plano atual ---------- */
+
+.planCard {
+    position: relative;
+    margin: 0 5% var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-lg);
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+}
+
+.planRow {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-width: 0;
+}
+
+.planText {
+    flex: 1;
+    min-width: 0;
+}
+
+.eyebrow {
+    margin: 0;
+    font-size: var(--font-xs);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.planName {
+    margin: 0;
+    font-size: var(--font-lg);
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--text-primary);
+    overflow-wrap: anywhere;
+}
+
+.planOrigin {
+    margin: 0;
+    font-size: var(--font-sm);
+    color: var(--text-secondary);
+}
+
+.planTools {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-shrink: 0;
+}
+
+.switchButton {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    min-height: 2.75rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-mid);
+    background: transparent;
+    color: var(--text-primary);
+    font-size: var(--font-sm);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.switchButton:hover {
+    background: var(--surface-2);
+}
+
+.switchChevron {
+    transition: transform 0.2s;
+}
+
+.switchChevronOpen {
+    transform: rotate(180deg);
+}
+
+.planList {
+    position: absolute;
+    left: var(--space-3);
+    right: var(--space-3);
+    top: calc(100% - var(--space-2));
+    z-index: var(--z-dropdown);
+    margin: 0;
+    padding: var(--space-1);
+    list-style: none;
+    border-radius: var(--radius-md);
+    background: var(--surface-1);
+    border: 1px solid var(--border-mid);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.planOption {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.planOptionButton {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 0;
+    padding: var(--space-2);
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-primary);
+    text-align: left;
+    cursor: pointer;
+}
+
+.planOptionButton:hover {
+    background: var(--surface-2);
+}
+
+.planOptionText {
+    flex: 1;
+    min-width: 0;
+}
+
+.planOptionName {
+    display: block;
+    font-size: var(--font-base);
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.planOptionSelected .planOptionName {
+    color: var(--mint-text);
+}
+
+.planOptionOrigin {
+    display: block;
+    font-size: var(--font-xs);
+    color: var(--text-muted);
+}
+
+.planOptionCheck {
+    color: var(--mint-text);
+    flex-shrink: 0;
+}
+
+.deleteButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    flex-shrink: 0;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.deleteButton:hover {
+    color: var(--text-primary);
+    background: var(--surface-2);
+}
+
+/* ---------- Bloco de atalhos ---------- */
+
+.shortcuts {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    margin-bottom: 1.2rem;
+}
+
+.group {
+    border-radius: var(--radius-lg);
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    overflow: hidden;
+}
+
+.groupTitle {
+    margin: 0;
+    padding: var(--space-3) var(--space-4) 0;
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    width: 100%;
+    padding: var(--space-3) var(--space-4);
+    border: 0;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.row + .row {
+    border-top: 1px solid var(--border-subtle);
+}
+
+.row:hover {
+    background: var(--surface-2);
+}
+
+.rowText {
+    flex: 1;
+    min-width: 0;
+}
+
+.rowTitle {
+    display: block;
+    font-size: var(--font-base);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.rowHint {
+    display: block;
+    font-size: var(--font-sm);
+    color: var(--text-secondary);
+}
+
+.rowChevron {
+    flex-shrink: 0;
+    color: var(--text-muted);
+}
+
+/* ---------- Loja de planos (venda) ---------- */
+
+.store {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--amber);
+    background: linear-gradient(
+        135deg,
+        var(--amber-dim) 0%,
+        var(--surface-1) 70%
+    );
+}
+
+.storeHead {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+}
+
+.storeEyebrow {
+    margin: 0;
+    font-size: var(--font-xs);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--amber-text);
+}
+
+.storeTitle {
+    margin: 0;
+    font-size: var(--font-lg);
+    font-weight: 800;
+    line-height: 1.25;
+    color: var(--text-primary);
+}
+
+.storeText {
+    margin: var(--space-1) 0 0;
+    font-size: var(--font-sm);
+    color: var(--text-secondary);
+}
+
+.storePerks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.storePerk {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--font-xs);
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.storePerk svg {
+    color: var(--amber-text);
+    flex-shrink: 0;
+}
+
+.storeCta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    min-height: 2.75rem;
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-md);
+    background: var(--amber);
+    color: #1a1a1a;
+    font-size: var(--font-base);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.storeCta:hover {
+    filter: brightness(1.05);
+    color: #1a1a1a;
+}
+
+/* ---------- Estado vazio ---------- */
+
+.emptyNotice {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    margin-bottom: var(--space-3);
+    border-radius: var(--radius-lg);
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    text-align: left;
+}
+
+.emptyTitle {
+    margin: 0;
+    font-size: var(--font-base);
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.emptyText {
+    margin: var(--space-1) 0 0;
+    font-size: var(--font-sm);
+    color: var(--text-secondary);
+}

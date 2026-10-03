@@ -54,14 +54,17 @@ const studentSections: HelpSection[] = [
     },
     {
         id: 'montar-meu-treino',
-        title: 'Montar meu próprio treino',
+        title: 'Criar meu próprio treino',
         body: (
             <>
                 <p className="mb-2">
                     Já tem uma ficha da academia ou de outra fonte? Em{' '}
-                    <Link href="/meus-treinos">Meus Treinos</Link>, toque em{' '}
-                    <strong>Montar meu próprio treino</strong> e passe a ficha
-                    para o app. São quatro etapas, e a barra no topo da tela
+                    <Link href="/meus-treinos">Meus Treinos</Link>, no bloco{' '}
+                    <strong>Treinar por conta própria</strong>, toque em{' '}
+                    <strong>Criar meu treino</strong> e passe a ficha para o
+                    app. Esse bloco só aparece para quem não tem personal
+                    vinculado: com personal, quem monta o treino é ele. São
+                    quatro etapas, e a barra no topo da tela
                     mostra em qual você está:
                 </p>
                 <ol className="mb-2">
@@ -339,11 +342,13 @@ const studentSections: HelpSection[] = [
         title: 'Escolher um plano pronto',
         body: (
             <p className="mb-0">
-                Em <strong>Planos estilo famosos</strong> você pode comprar um
+                Em Meus Treinos, no cartão <strong>Treine como os famosos</strong>{' '}
+                (Loja de planos), você pode comprar um
                 modelo de treino pronto e aplicá-lo como seu plano ativo — o
                 plano em andamento é marcado como concluído e o novo entra no
                 lugar. Cada plano é uma compra avulsa e pode ser baixado para
-                treinar offline.
+                treinar offline. Se o seu personal tem o plano PRO, a loja não
+                aparece: o seu treino vem dele.
             </p>
         ),
     },

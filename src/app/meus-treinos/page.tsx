@@ -1,7 +1,7 @@
 // src/app/meus-treinos/page.tsx
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import Link from 'next/link';
 import TrainingCard from '../../components/features/TrainingCard';
@@ -43,7 +43,6 @@ import {
     weeklyTargetDays,
     type WeeklyProgress,
 } from '@/libs/currentWeek';
-import DownloadOfflineButton from '../../components/features/DownloadOfflineButton';
 import OverdueBlockNotice from '@/components/features/OverdueBlockNotice';
 import { isOverdueBlockError } from '@/libs/overdueBlock';
 import GamificationBanner from '../../components/features/GamificationBanner';
@@ -52,7 +51,6 @@ import {
     getAllOfflineMacrocycles,
     getOfflineMacrocycle,
 } from '@/libs/offline/downloadManager';
-import SyncPendingBadge from '../../components/features/SyncPendingBadge';
 import PersonalAnamnesisPendingBanner from '@/components/features/PersonalAnamnesisPendingBanner';
 import ScrollHint from '@/components/atoms/ScrollHint';
 import GanttPlanning, {
@@ -62,16 +60,18 @@ import { useGanttToggle } from '@/hooks/useGanttToggle';
 import {
     FiCalendar,
     FiCheckCircle,
-    FiChevronDown,
-    FiStar,
+    FiClipboard,
     FiEdit2,
-    FiTrash2,
     FiWifiOff,
-    FiFileText,
 } from 'react-icons/fi';
 import styles from '../../components/features/TrainingProtocolList.module.css';
 import { summarizeTraining } from '@/libs/trainingSummary';
 import TrainingPdfUploadModal from '@/components/features/TrainingPdfUploadModal';
+import { getPlans } from '@/libs/paymentService';
+import { usePlanStoreHidden } from '@/hooks/usePlanStoreHidden';
+import CurrentPlanCard from './_components/CurrentPlanCard';
+import PlanShortcuts from './_components/PlanShortcuts';
+import ownStyles from './_components/meusTreinos.module.css';
 import {
     getNewWorkoutLogs,
     NewWorkoutLogResponse,
@@ -197,30 +197,26 @@ export default function MeusTreinosPage() {
     // student_blocked_overdue): tela própria em vez de "Erro: ...".
     const [overdueBlocked, setOverdueBlocked] = useState(false);
     const [isOfflineData, setIsOfflineData] = useState(false);
-    const [selectorOpen, setSelectorOpen] = useState(false);
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [isMounted, setIsMounted] = useState(false);
     const [pdfImportOpen, setPdfImportOpen] = useState(false);
-    const dropdownRef = useRef<HTMLDivElement>(null);
+    // Aluno com personal não monta nem importa treino (quem prescreve é o
+    // personal) — os atalhos de "treinar por conta própria" somem.
+    const [hasPersonal, setHasPersonal] = useState(false);
+    // Preço do plano avulso da loja, exibido no cartão de venda.
+    const [storePrice, setStorePrice] = useState<number | null>(null);
+    // Loja escondida para aluno de personal PRO; enquanto não se sabe
+    // (null), também fica escondida — ver usePlanStoreHidden.
+    const showStore = usePlanStoreHidden(hasPersonal) === false;
     const router = useRouter();
 
     useEffect(() => {
         setIsMounted(true);
-    }, []);
-
-    // Close dropdown when clicking outside
-    useEffect(() => {
-        function handleClickOutside(e: MouseEvent) {
-            if (
-                dropdownRef.current &&
-                !dropdownRef.current.contains(e.target as Node)
-            ) {
-                setSelectorOpen(false);
-            }
-        }
-        document.addEventListener('mousedown', handleClickOutside);
-        return () =>
-            document.removeEventListener('mousedown', handleClickOutside);
+        setHasPersonal(!!getUser()?.has_personal);
+        // Best-effort: sem o preço, o cartão da loja só omite o valor.
+        getPlans()
+            .then((catalog) => setStorePrice(catalog.library_plan.value))
+            .catch(() => {});
     }, []);
 
     useEffect(() => {
@@ -305,7 +301,6 @@ export default function MeusTreinosPage() {
     }, [isMounted, router]);
 
     async function selectMacro(macro: MacrocycleResponse) {
-        setSelectorOpen(false);
         setLoading(true);
         try {
             const detail = await getMyMacrocycle(macro.id);
@@ -429,43 +424,34 @@ export default function MeusTreinosPage() {
 
     if (macrocycles.length === 0) {
         return (
-            <div
-                className="p-6 text-center"
-                style={{ color: 'var(--text-secondary)' }}
-            >
+            <div className="container mx-auto p-4">
                 {/* Aluno recém-vinculado costuma cair aqui antes do primeiro
                     treino — justamente quando o personal pede a anamnese. */}
                 <PersonalAnamnesisPendingBanner />
-                <p>Nenhum treino disponível para você no momento.</p>
-                <div
-                    className="d-flex flex-column align-items-center gap-2 mt-2"
-                >
-                    <Link
-                        href="/meus-treinos/montar"
-                        className="fw-bold text-decoration-none d-inline-flex align-items-center gap-1"
-                        style={{ color: 'var(--mint-text, #2ecc71)' }}
-                    >
-                        <FiEdit2 size={14} />
-                        Montar meu próprio treino
-                    </Link>
-                    <Link
-                        href="/meus-treinos/escolher-plano"
-                        className="fw-bold text-decoration-none d-inline-flex align-items-center gap-1"
-                        style={{ color: 'var(--amber)' }}
-                    >
-                        <FiStar size={14} />
-                        Escolher um plano estilo famosos
-                    </Link>
-                    <button
-                        type="button"
-                        onClick={() => setPdfImportOpen(true)}
-                        className="fw-bold text-decoration-none d-inline-flex align-items-center gap-1 btn btn-link p-0"
-                        style={{ color: 'var(--mint-text, #2ecc71)' }}
-                    >
-                        <FiFileText size={14} />
-                        Importar treino de PDF
-                    </button>
+                <div className={ownStyles.emptyNotice} role="status">
+                    <span className={ownStyles.iconTile}>
+                        <FiClipboard size={20} aria-hidden="true" />
+                    </span>
+                    <div>
+                        <p className={ownStyles.emptyTitle}>
+                            {hasPersonal
+                                ? 'Seu treino está a caminho'
+                                : 'Você ainda não tem um treino'}
+                        </p>
+                        <p className={ownStyles.emptyText}>
+                            {hasPersonal
+                                ? 'Seu personal está preparando seu plano. Assim que ficar pronto, ele aparece aqui.'
+                                : 'Crie o seu, importe uma ficha em PDF ou comece com um plano pronto da loja.'}
+                        </p>
+                    </div>
                 </div>
+                <PlanShortcuts
+                    hasPersonal={hasPersonal}
+                    storePrice={storePrice}
+                    showStore={showStore}
+                    onImportPdf={() => setPdfImportOpen(true)}
+                    showHistory={false}
+                />
                 <TrainingPdfUploadModal
                     open={pdfImportOpen}
                     role="student"
@@ -504,6 +490,16 @@ export default function MeusTreinosPage() {
                         momento).
                     </div>
                 )}
+                {/* Plano em uso + troca de plano: fica no topo para que plano
+                    → fase → treinos da semana leiam como uma hierarquia só. */}
+                <CurrentPlanCard
+                    plans={macrocycles}
+                    selected={selectedMacro}
+                    personalName={personalName}
+                    deletingId={deletingId}
+                    onSelect={selectMacro}
+                    onDelete={handleDeleteMacro}
+                />
                 {/* Dias treinados nesta semana contra a meta que o personal
                     definiu na prescrição (ou o número de treinos da fase).
                     Zera na segunda-feira, junto com os "Concluído" dos cards. */}
@@ -587,7 +583,9 @@ export default function MeusTreinosPage() {
                                             color: 'var(--text-muted)',
                                         }}
                                     >
-                                        {group.phase} &middot;{' '}
+                                        {group.phase && (
+                                            <>Fase {group.phase} &middot; </>
+                                        )}
                                         {group.durationWeeks} semana
                                         {group.durationWeeks === 1 ? '' : 's'}
                                         {group.trainings.length > 0 && (
@@ -688,266 +686,20 @@ export default function MeusTreinosPage() {
                 {/* Gamificação: streak + conquistas (some se ainda não treinou) */}
                 <GamificationBanner />
 
-                {/* Seletor de plano + atalhos rápidos, agrupados num único
-                    cartão para não competir em peso visual com o card do
-                    personal acima. */}
-                <div
-                    style={{
-                        background: 'var(--surface-1)',
-                        border: '1px solid var(--border-subtle)',
-                        borderRadius: 12,
-                        padding: '2px 14px',
-                        marginBottom: '1.2rem',
-                    }}
-                >
-                    <div
-                        className="position-relative d-flex align-items-center gap-2"
-                        ref={dropdownRef}
-                        style={{
-                            padding: '10px 0',
-                            borderBottom: '1px solid var(--border-subtle)',
-                        }}
-                    >
-                        <span
-                            aria-hidden="true"
-                            style={{
-                                width: 8,
-                                height: 8,
-                                borderRadius: 2,
-                                background: 'var(--amber)',
-                                flexShrink: 0,
-                            }}
-                        />
-                        <button
-                            onClick={() => setSelectorOpen((o) => !o)}
-                            className="btn btn-link d-flex align-items-center gap-1 fw-bold fs-6 text-decoration-none p-0 flex-grow-1"
-                            style={{
-                                color: 'var(--text-primary)',
-                                boxShadow: 'none',
-                                textAlign: 'left',
-                            }}
-                            aria-haspopup="listbox"
-                            aria-expanded={selectorOpen}
-                        >
-                            <span className="flex-grow-1">
-                                {selectedMacro?.name || 'Meus Treinos'}
-                            </span>
-                            {macrocycles.length > 1 && (
-                                <FiChevronDown
-                                    size={16}
-                                    style={{
-                                        transition: 'transform 0.2s',
-                                        transform: selectorOpen
-                                            ? 'rotate(180deg)'
-                                            : 'rotate(0deg)',
-                                        flexShrink: 0,
-                                    }}
-                                />
-                            )}
-                        </button>
-                        <div
-                            className="d-flex align-items-center gap-2"
-                            style={{ flexShrink: 0 }}
-                        >
-                            {selectedMacro?.status === 'active' && (
-                                <DownloadOfflineButton
-                                    macrocycle={selectedMacro}
-                                />
-                            )}
-                            <SyncPendingBadge />
-                        </div>
-
-                        {selectorOpen && macrocycles.length > 1 && (
-                            <ul
-                                role="listbox"
-                                className="dropdown-menu show position-absolute"
-                                style={{
-                                    background: 'var(--surface-1)',
-                                    border: '1px solid var(--border-mid)',
-                                    minWidth: '180px',
-                                    top: '100%',
-                                    left: 0,
-                                    zIndex: 50,
-                                }}
-                            >
-                                {macrocycles.map((m) => (
-                                    <li
-                                        key={m.id}
-                                        className="d-flex align-items-center"
-                                    >
-                                        <button
-                                            role="option"
-                                            aria-selected={
-                                                m.id === selectedMacro?.id
-                                            }
-                                            onClick={() => selectMacro(m)}
-                                            className="dropdown-item flex-grow-1"
-                                            style={{
-                                                background: 'transparent',
-                                                color:
-                                                    m.id === selectedMacro?.id
-                                                        ? 'var(--mint)'
-                                                        : 'var(--text-primary)',
-                                                fontWeight:
-                                                    m.id === selectedMacro?.id
-                                                        ? 700
-                                                        : 400,
-                                            }}
-                                            onMouseEnter={(e) =>
-                                                (e.currentTarget.style.background =
-                                                    'var(--surface-2)')
-                                            }
-                                            onMouseLeave={(e) =>
-                                                (e.currentTarget.style.background =
-                                                    'transparent')
-                                            }
-                                        >
-                                            {m.name || 'Macrociclo'}
-                                        </button>
-                                        {(m.category === 'celebrity' ||
-                                            m.category === 'imported_pdf') && (
-                                            <button
-                                                type="button"
-                                                aria-label={`Remover plano ${m.name}`}
-                                                title="Remover este plano"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleDeleteMacro(m);
-                                                }}
-                                                disabled={deletingId === m.id}
-                                                className="btn btn-link p-0 me-2 d-flex align-items-center"
-                                                style={{
-                                                    color: 'var(--text-muted)',
-                                                    lineHeight: 1,
-                                                }}
-                                            >
-                                                {deletingId === m.id ? (
-                                                    '…'
-                                                ) : (
-                                                    <FiTrash2 size={14} />
-                                                )}
-                                            </button>
-                                        )}
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                    </div>
-
-                    <Link
-                        href="/meus-treinos/historico"
-                        className="d-flex align-items-center gap-2 text-decoration-none"
-                        style={{
-                            padding: '10px 0',
-                            borderBottom: '1px solid var(--border-subtle)',
-                        }}
-                    >
-                        <span
-                            aria-hidden="true"
-                            style={{
-                                width: 8,
-                                height: 8,
-                                borderRadius: 2,
-                                background: 'var(--mint)',
-                                flexShrink: 0,
-                            }}
-                        />
-                        <span
-                            style={{
-                                fontSize: '0.87rem',
-                                fontWeight: 600,
-                                color: 'var(--mint-text)',
-                            }}
-                        >
-                            Ver histórico completo
-                        </span>
-                    </Link>
-                    <Link
-                        href="/meus-treinos/montar"
-                        className="d-flex align-items-center gap-2 text-decoration-none"
-                        style={{
-                            padding: '10px 0',
-                            borderBottom: '1px solid var(--border-subtle)',
-                        }}
-                    >
-                        <span
-                            aria-hidden="true"
-                            style={{
-                                width: 8,
-                                height: 8,
-                                borderRadius: 2,
-                                background: 'var(--mint)',
-                                flexShrink: 0,
-                            }}
-                        />
-                        <span
-                            style={{
-                                fontSize: '0.87rem',
-                                fontWeight: 600,
-                                color: 'var(--mint-text, #2ecc71)',
-                            }}
-                        >
-                            Montar meu próprio treino
-                        </span>
-                    </Link>
-                    <Link
-                        href="/meus-treinos/escolher-plano"
-                        className="d-flex align-items-center gap-2 text-decoration-none"
-                        style={{ padding: '10px 0' }}
-                    >
-                        <span
-                            aria-hidden="true"
-                            style={{
-                                width: 8,
-                                height: 8,
-                                borderRadius: 2,
-                                background: 'var(--violet)',
-                                flexShrink: 0,
-                            }}
-                        />
-                        <span
-                            style={{
-                                fontSize: '0.87rem',
-                                fontWeight: 600,
-                                color: 'var(--amber)',
-                            }}
-                        >
-                            Planos estilo famosos
-                        </span>
-                    </Link>
-                    <button
-                        type="button"
-                        onClick={() => setPdfImportOpen(true)}
-                        className="d-flex align-items-center gap-2 text-decoration-none btn btn-link p-0 w-100"
-                        style={{ padding: '10px 0' }}
-                    >
-                        <span
-                            aria-hidden="true"
-                            style={{
-                                width: 8,
-                                height: 8,
-                                borderRadius: 2,
-                                background: 'var(--mint)',
-                                flexShrink: 0,
-                            }}
-                        />
-                        <span
-                            style={{
-                                fontSize: '0.87rem',
-                                fontWeight: 600,
-                                color: 'var(--mint-text, #2ecc71)',
-                            }}
-                        >
-                            Importar treino de PDF
-                        </span>
-                    </button>
-                    <TrainingPdfUploadModal
-                        open={pdfImportOpen}
-                        role="student"
-                        onClose={() => setPdfImportOpen(false)}
-                        onApplied={handlePdfImportApplied}
-                    />
-                </div>
+                {/* Atalhos por intenção: histórico, treinar por conta
+                    própria (só sem personal) e loja de planos. */}
+                <PlanShortcuts
+                    hasPersonal={hasPersonal}
+                    storePrice={storePrice}
+                    showStore={showStore}
+                    onImportPdf={() => setPdfImportOpen(true)}
+                />
+                <TrainingPdfUploadModal
+                    open={pdfImportOpen}
+                    role="student"
+                    onClose={() => setPdfImportOpen(false)}
+                    onApplied={handlePdfImportApplied}
+                />
                 {/* Gantt chart (read-only) — só faz sentido mostrar (com o
                     toggle de ocultar) quando o personal já definiu datas */}
                 {ganttPhases.length > 0 && (
