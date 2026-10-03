@@ -11,7 +11,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { FiClock, FiUsers } from 'react-icons/fi';
 import { Api } from '@/libs/api';
 import { useForegroundRefresh } from '@/hooks/useForegroundRefresh';
-import type { Student } from '@/hooks/usePersonalStudents';
+import { studentDisplayName, type Student } from '@/hooks/usePersonalStudents';
 import {
     chooseStudentsToKeep,
     getStudentOverflow,
@@ -201,7 +201,7 @@ function StudentOverflowChoice({
                                                 disabled={disabled}
                                                 onChange={() => toggle(st.id)}
                                             />
-                                            <span>{st.name}</span>
+                                            <span>{studentDisplayName(st)}</span>
                                         </label>
                                     </li>
                                 );
@@ -234,7 +234,7 @@ function StudentOverflowChoice({
                     <>
                         <p className={s.text}>
                             <strong>Vão para a espera até {deadline}:</strong>{' '}
-                            {leaving.map((st) => st.name).join(', ')}. Esta
+                            {leaving.map((st) => studentDisplayName(st)).join(', ')}. Esta
                             escolha não pode ser desfeita.
                         </p>
                         <div className={s.actions}>

@@ -309,7 +309,7 @@ export default function CiclosTab({ view, students, planType = 'free', onBack }:
                     className={s.formInput}
                 >
                     <option value="">Selecione o aluno</option>
-                    {students.map((st) => (
+                    {students.filter((st) => !st.awaiting_consent).map((st) => (
                         <option key={st.id} value={st.id}>
                             {st.name} — {st.email}
                         </option>

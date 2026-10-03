@@ -978,11 +978,17 @@ const personalSections: HelpSection[] = [
                     recebe por e-mail uma senha temporária, que troca no
                     primeiro login. Se o e-mail já tem conta, enviamos um
                     pedido de vínculo — o aluno precisa confirmar na
-                    própria conta antes de ficar vinculado.
+                    própria conta antes de ficar vinculado. Até ele
+                    aceitar, o cartão mostra só o e-mail: os dados e o
+                    treino dele ficam fechados para você, e no menu{' '}
+                    <strong>⋯</strong> dá para cancelar o pedido. Se ele
+                    recusar, o pedido sai da sua lista.
                 </p>
                 <p className="mb-2">
                     Cada aluno mostra um selo de situação:{' '}
                     <strong>Ativo</strong>,{' '}
+                    <strong>Aguardando o aluno aceitar</strong> (pedido de
+                    vínculo ainda sem resposta),{' '}
                     <strong>Aguardando confirmação</strong> (o aluno ainda
                     precisa aceitar a reativação) ou <strong>Inativo</strong>.
                     Nos cartões você acessa{' '}

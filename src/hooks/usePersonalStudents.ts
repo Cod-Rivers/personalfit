@@ -23,6 +23,18 @@ export interface Student {
     link_status: LinkStatus;
     created_at: string;
     avatar?: string;
+    /**
+     * Pedido de vínculo a uma conta que já existia, ainda não aceito. O
+     * servidor manda só id, e-mail e status (sem nome, CPF, telefone, foto)
+     * e recusa qualquer acesso aos dados do aluno, exceto cancelar o pedido
+     * ou pedir de novo.
+     */
+    awaiting_consent?: boolean;
+}
+
+/** Nome para exibir: o pedido não aceito chega sem nome, só com o e-mail. */
+export function studentDisplayName(st: Pick<Student, 'name' | 'email'>): string {
+    return st.name || st.email;
 }
 
 export type StudentModalMode = null | 'preregister' | 'edit' | 'unlink';

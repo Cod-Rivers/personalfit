@@ -22,7 +22,7 @@ import CountBadge from '@/components/atoms/CountBadge';
 import Modal from '@/components/system/Modal';
 import TrainingPdfUploadModal from '@/components/features/TrainingPdfUploadModal';
 import LogWindowSettings from '@/components/features/LogWindowSettings';
-import { usePersonalStudents } from '@/hooks/usePersonalStudents';
+import { usePersonalStudents, studentDisplayName } from '@/hooks/usePersonalStudents';
 import { useStudentOverflow } from '@/components/features/StudentOverflowGate';
 import { formatCpfInput } from '@/libs/formatters';
 import {
@@ -204,13 +204,13 @@ export default function StudentsTab({ state, unreadComments }: Props) {
                             <div className={s.studentCardHead}>
                                 <AvatarUpload
                                     current={st.avatar}
-                                    name={st.name}
+                                    name={studentDisplayName(st)}
                                     size={48}
                                     editable={false}
                                 />
                                 <div className={s.studentInfo}>
                                     <p className={s.studentName}>
-                                        {st.name}
+                                        {studentDisplayName(st)}
                                         <span
                                             className={
                                                 st.link_status === 'active'
@@ -223,9 +223,13 @@ export default function StudentsTab({ state, unreadComments }: Props) {
                                         >
                                             {st.link_status === 'active'
                                                 ? 'Ativo'
-                                                : st.link_status === 'pending'
-                                                  ? 'Aguardando confirmação'
-                                                  : 'Inativo'}
+                                                : st.awaiting_consent
+                                                  ? st.link_status === 'pending'
+                                                      ? 'Aguardando o aluno aceitar'
+                                                      : 'Pedido não aceito'
+                                                  : st.link_status === 'pending'
+                                                    ? 'Aguardando confirmação'
+                                                    : 'Inativo'}
                                         </span>
                                         {overflow?.standby_student_ids.includes(
                                             st.id,
@@ -245,11 +249,21 @@ export default function StudentsTab({ state, unreadComments }: Props) {
                                             </span>
                                         )}
                                     </p>
-                                    <p className={s.studentMeta}>
-                                        {st.email} · {st.cpf}
-                                        {st.phone ? ` · ${st.phone}` : ''}
-                                    </p>
-                                    <FinanceChip status={financeStatus[st.id]} />
+                                    {st.awaiting_consent ? (
+                                        <p className={s.studentMeta}>
+                                            Os dados e o treino do aluno só
+                                            aparecem depois que ele aceitar o
+                                            pedido de vínculo.
+                                        </p>
+                                    ) : (
+                                        <>
+                                            <p className={s.studentMeta}>
+                                                {st.email} · {st.cpf}
+                                                {st.phone ? ` · ${st.phone}` : ''}
+                                            </p>
+                                            <FinanceChip status={financeStatus[st.id]} />
+                                        </>
+                                    )}
 
                                 </div>
                                 <button
@@ -303,7 +317,9 @@ export default function StudentsTab({ state, unreadComments }: Props) {
                                                       : st.link_status ===
                                                           'pending'
                                                         ? 'Aguardando aluno...'
-                                                        : 'Ativar aluno'}
+                                                        : st.awaiting_consent
+                                                          ? 'Pedir vínculo de novo'
+                                                          : 'Ativar aluno'}
                                             </button>
                                             <button
                                                 type="button"
@@ -313,13 +329,21 @@ export default function StudentsTab({ state, unreadComments }: Props) {
                                                     openUnlink(st);
                                                 }}
                                             >
-                                                Desvincular
+                                                {!st.awaiting_consent
+                                                    ? 'Desvincular'
+                                                    : st.link_status === 'pending'
+                                                      ? 'Cancelar pedido'
+                                                      : 'Remover da lista'}
                                             </button>
                                         </div>
                                     </>
                                 )}
                             </div>
 
+                            {/* Pedido não aceito: nada do aluno abre (o
+                                servidor recusa) — só o menu ⋯ com cancelar
+                                ou pedir de novo. */}
+                            {!st.awaiting_consent && (
                             <div className={s.studentCardBody}>
                                 {/* Uma tela só para o treino do aluno: ver,
                                     ajustar qualquer exercício e finalizar a
@@ -478,6 +502,7 @@ export default function StudentsTab({ state, unreadComments }: Props) {
                                     )}
                                 </div>
                             </div>
+                            )}
                         </div>
                     ))}
                 </div>
@@ -520,8 +545,9 @@ export default function StudentsTab({ state, unreadComments }: Props) {
                                     {preRegisterResult.email}
                                 </span>{' '}
                                 — o aluno vai aparecer como &quot;Aguardando
-                                confirmação&quot; até aceitar o vínculo na
-                                própria conta.
+                                o aluno aceitar&quot; até aceitar o vínculo na
+                                própria conta. Os dados e o treino dele só
+                                aparecem para você depois do aceite.
                             </p>
                         ) : (
                             <>
@@ -743,11 +769,11 @@ export default function StudentsTab({ state, unreadComments }: Props) {
             <Modal
                 open={modal === 'unlink' && !!unlinkTarget}
                 onClose={closeModal}
-                title="Desvincular Aluno"
+                title={unlinkTarget?.awaiting_consent ? 'Cancelar pedido de vínculo' : 'Desvincular Aluno'}
                 footer={
                     <>
                         <button onClick={closeModal} className={s.btnCancel}>
-                            Cancelar
+                            Voltar
                         </button>
                         <button
                             onClick={handleUnlink}
@@ -755,24 +781,41 @@ export default function StudentsTab({ state, unreadComments }: Props) {
                             className={s.btnSubmit}
                             style={{ background: 'var(--grad-coral)', color: '#fff' }}
                         >
-                            {submitting ? 'Desvinculando...' : 'Desvincular'}
+                            {submitting
+                                ? 'Aguarde...'
+                                : unlinkTarget?.awaiting_consent
+                                  ? 'Cancelar pedido'
+                                  : 'Desvincular'}
                         </button>
                     </>
                 }
             >
                 {error && <div className={s.errorMsg}>{error}</div>}
-                <p className={s.confirmText}>
-                    Tem certeza que deseja desvincular{' '}
-                    <span className={s.confirmName}>
-                        {unlinkTarget?.name}
-                    </span>
-                    ?
-                </p>
-                <p className={s.confirmText}>
-                    A conta do aluno não é excluída — apenas o vínculo
-                    com você. Sem um personal, o aluno passa a montar o
-                    próprio treino.
-                </p>
+                {unlinkTarget?.awaiting_consent ? (
+                    <p className={s.confirmText}>
+                        O pedido de vínculo para{' '}
+                        <span className={s.confirmName}>
+                            {unlinkTarget.email}
+                        </span>{' '}
+                        sai da sua lista. Se quiser, você pode pedir de novo
+                        depois em &quot;+ Adicionar Aluno&quot;.
+                    </p>
+                ) : (
+                    <>
+                        <p className={s.confirmText}>
+                            Tem certeza que deseja desvincular{' '}
+                            <span className={s.confirmName}>
+                                {unlinkTarget?.name}
+                            </span>
+                            ?
+                        </p>
+                        <p className={s.confirmText}>
+                            A conta do aluno não é excluída — apenas o vínculo
+                            com você. Sem um personal, o aluno passa a montar o
+                            próprio treino.
+                        </p>
+                    </>
+                )}
             </Modal>
 
             {/* ── Importar Treino de PDF: escolher aluno (área geral) ── */}
@@ -782,7 +825,7 @@ export default function StudentsTab({ state, unreadComments }: Props) {
                 title="Importar Treino de PDF — escolha o aluno"
             >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {students.map((st) => (
+                    {students.filter((st) => !st.awaiting_consent).map((st) => (
                         <button
                             key={st.id}
                             type="button"

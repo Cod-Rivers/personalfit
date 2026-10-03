@@ -64,6 +64,7 @@ interface UserData {
 interface Student {
     id: string;
     name: string;
+    awaiting_consent?: boolean;
 }
 
 const STATUS_COLOR: Record<AppointmentStatus, string> = {
@@ -197,8 +198,10 @@ export default function AgendaPage() {
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (!token) return;
+        // Pedido de vínculo não aceito não entra: o servidor recusa marcar
+        // aula para quem ainda não é aluno.
         Api.get<Student[]>('/students', { headers: { Authorization: token } })
-            .then((r) => setStudents(r.data))
+            .then((r) => setStudents(r.data.filter((st) => !st.awaiting_consent)))
             .catch(() => {});
     }, []);
 
