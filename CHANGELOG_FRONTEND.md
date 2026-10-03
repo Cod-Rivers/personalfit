@@ -778,3 +778,24 @@
 ## 2026-09-30 07:42 — River (via Claude Code)
 **Resumo:** Encontrei um jeito de fazer o checkbox e já está pronto nas duas telas. No histórico de carga não achei nenhum defeito. Nada foi commitado nem testado ao vivo. **Histórico de carga (conferido só no código)** - **Gravação no backend:** cada série é gravada com a identificação do exercício e a carga prescrita na hora, tanto quando o aluno finaliza quanto quando o personal registra no atendimento. As duas rotas de leitura (personal e aluno) estão ligadas e os testes do Go passam. - **Exibição no front:** os campos que a tela espera são os mesmos que o servidor envia. O card monta a identificação …
 **Arquivos:** AjudaClient.tsx, CHANGELOG_FRONTEND.md, DoneToggle, ExerciseDetailCard.module.css, ExerciseDetailCard.tsx, StudentExerciseRow.tsx, TrainingPage.module.css, acompanhar.module.css, exerciseDoneMarks.test.ts, exerciseDoneMarks.ts, page.tsx, session.ts
+
+## 2026-10-01 18:55 — River (via Claude Code)
+**Resumo:** Esse custo é do **Container Registry Vulnerability Scanning** do Google Cloud (Artifact Analysis / Container Analysis). **Por que apareceu:** quando você faz push de uma imagem Docker pro Artifact Registry/Container Registry (o backend Go, provavelmente), o GCP automaticamente escaneia essa imagem em busca de vulnerabilidades conhecidas (CVEs) nos pacotes/dependências do SO e bibliotecas. Isso é cobrado por imagem escaneada + rastreamento contínuo. O salto no gráfico bate com os dias de deploy mais intensos (fim de setembro) que aparecem na memória — provavelmente as rodadas de commits/push do…
+**Commits:** Checkbox de "exercício feito" separado do ✓ de seleção (item -38)
+
+## 2026-10-01 22:04 — River (via Claude Code)
+**Resumo:** Desativado com sucesso. A Container Scanning API (`containerscanning.googleapis.com`) foi desligada no projeto **venafit-78329**. Isso para novos escaneamentos de vulnerabilidade a partir de agora — o custo de ~R$20/mês visto no gráfico deve parar de aparecer nos próximos ciclos de faturamento. Vulnerabilidades já escaneadas em imagens antigas não são afetadas, só o scan contínuo futuro.
+**Arquivos:** CHANGELOG_FRONTEND.md
+
+## 2026-10-02 19:31 — River (via Claude Code)
+**Resumo:** Os modelos de treino não aceitam mais nome repetido. A trava fica no backend, então vale em qualquer tela que salve modelo. O build, o `go vet`, os testes do Go, o `tsc` e o eslint passaram. Ainda não testei no app rodando e não fiz commit. **Como funciona:** dois modelos do mesmo dono não podem ter o mesmo nome. "Treino A" e " treino a " contam como iguais, porque maiúsculas e espaços extras não fazem diferença; acentos fazem. Se o nome já existe, o servidor recusa e o app mostra "já existe um modelo de treino com este nome; escolha outro". A regra está em [template-name.go](Personal-fit-Back…
+**Arquivos:** page.tsx
+**Commits:** Grava carga ao marcar exercício como "feito", sem esperar Finalizar treino
+
+## 2026-10-02 22:46 — River (via Claude Code)
+**Resumo:** Refiz a área do aluno em Meus Treinos. O type-check e o lint passaram, mas ainda não testei no app rodando e não fiz commit. **Como a tela ficou** 1. **"Plano atual", no topo, acima dos treinos da semana.** É um cartão com o nome do plano e de onde ele veio: "Montado por Riverson", "Plano dos famosos", "Importado de PDF" ou "Criado por você". Quando o aluno tem mais de um plano, aparece o botão **"Trocar plano (N)"**. Ele substitui o nome clicável que ninguém percebia, e a lista de planos mostra a origem de cada um. Embaixo do cartão, a fase passou a aparecer como "Fase Manutenção · 1 semana",…
+**Arquivos:** AjudaClient.tsx, _components, page.tsx
+
+## 2026-10-02 22:57 — River (via Claude Code)
+**Resumo:** O servidor agora bloqueia aluno com personal de montar ou importar treino, e a loja de planos ficou escondida só para alunos de personal PRO. Os testes passam nos dois repositórios, mas não testei no app rodando e não fiz commit. **Backend: o bloqueio estava faltando, e havia um problema mais sério** Nenhuma rota de "montar treino" do aluno verificava se ele tinha personal. Pior: ao confirmar uma importação por PDF, o servidor marcava como concluído o plano ativo do aluno. Ou seja, um aluno vinculado, como a Aline do print, podia **encerrar o plano que o personal montou** só importando um PDF.…
+**Arquivos:** usePlanStoreHidden.test.ts, usePlanStoreHidden.ts
