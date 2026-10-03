@@ -43,10 +43,20 @@ export type CircuitRunState =
 
 export type CircuitCue = 'go' | 'recover' | 'rest' | 'done';
 
+/** Rodada anunciada ("Round 2", ou "Final round" na última de 2+). */
+export interface RoundCall {
+    round: number;
+    final: boolean;
+}
+
 export interface CircuitTransition {
     state: CircuitRunState;
     /** Som da ENTRADA no novo estado, quando houver. */
     cue?: CircuitCue;
+    /** A rodada é anunciada quando começa a pausa que a antecede — a
+     * preparação do 1º exercício dela ou o descanso entre rodadas. Sem
+     * descanso entre as rodadas, vem junto do "go". */
+    roundCall?: RoundCall;
 }
 
 const CUE_OF_STEP: Record<CircuitStep['kind'], CircuitCue> = {
@@ -68,16 +78,31 @@ export function clockRemaining(clock: CircuitClock, now: number): number {
     return clock.status === 'paused' ? clock.remaining : 0;
 }
 
-/** Entra no passo `index` já contando; passou do fim = circuito concluído. */
+function callRound(steps: CircuitStep[], round: number): RoundCall {
+    const lastRound = steps[steps.length - 1]?.round ?? 1;
+    return { round, final: round === lastRound && lastRound > 1 };
+}
+
+/** Entra no passo `index` já contando; passou do fim = circuito concluído.
+ * `advancing`: veio do passo anterior (relógio zerado, "Feito", "Pular"),
+ * e não da preparação. */
 function enterStep(
     steps: CircuitStep[],
     index: number,
     now: number,
     fromSeconds?: number,
+    advancing = false,
 ): CircuitTransition {
     const step = steps[index];
     if (!step) return { state: { phase: 'done' }, cue: 'done' };
     const secs = fromSeconds ?? step.seconds ?? 0;
+    // Exercício emendado no último da rodada anterior: sem descanso entre as
+    // rodadas, não houve pausa onde anunciar a nova.
+    const roundWithoutRest =
+        advancing &&
+        step.kind === 'work' &&
+        step.position === 0 &&
+        steps[index - 1]?.kind === 'work';
     return {
         state: {
             phase: 'step',
@@ -85,15 +110,26 @@ function enterStep(
             clock: secs > 0 ? runFor(secs, now) : { status: 'manual' },
         },
         cue: CUE_OF_STEP[step.kind],
+        roundCall:
+            step.kind === 'rest'
+                ? callRound(steps, step.round + 1)
+                : roundWithoutRest
+                  ? callRound(steps, step.round)
+                  : undefined,
     };
 }
 
+/** Preparação antes do exercício `index`. Antes do 1º da rodada, anuncia a
+ * rodada — menos ao retomar uma pausa (`resumeFrom`): ela já tinha sido
+ * anunciada. */
 function enterPrep(
+    steps: CircuitStep[],
     index: number,
     now: number,
     seconds = PREP_SECONDS,
     resumeFrom: number | null = null,
 ): CircuitTransition {
+    const step = steps[index];
     return {
         state: {
             phase: 'prep',
@@ -101,6 +137,10 @@ function enterPrep(
             clock: runFor(seconds, now),
             resumeFrom,
         },
+        roundCall:
+            resumeFrom == null && step?.kind === 'work' && step.position === 0
+                ? callRound(steps, step.round)
+                : undefined,
     };
 }
 
@@ -109,7 +149,7 @@ export function startCircuit(
     now: number,
 ): CircuitTransition {
     if (steps.length === 0) return { state: { phase: 'done' } };
-    return enterPrep(0, now);
+    return enterPrep(steps, 0, now);
 }
 
 /** Avança quando o relógio zera; fora disso devolve o mesmo estado. */
@@ -125,7 +165,7 @@ export function tickCircuit(
     if (state.phase === 'prep') {
         return enterStep(steps, state.index, now, state.resumeFrom ?? undefined);
     }
-    return enterStep(steps, state.index + 1, now);
+    return enterStep(steps, state.index + 1, now, undefined, true);
 }
 
 /** "Feito" no passo manual e "Pular": vai direto ao próximo, sem preparação
@@ -139,7 +179,9 @@ export function skipCircuit(
     if (state.phase === 'prep') {
         return enterStep(steps, state.index, now, state.resumeFrom ?? undefined);
     }
-    if (state.phase === 'step') return enterStep(steps, state.index + 1, now);
+    if (state.phase === 'step') {
+        return enterStep(steps, state.index + 1, now, undefined, true);
+    }
     return { state };
 }
 
@@ -178,7 +220,13 @@ export function resumeCircuit(
     }
     const { remaining } = state.clock;
     if (state.phase === 'step' && steps[state.index]?.kind === 'work') {
-        return enterPrep(state.index, now, RESUME_PREP_SECONDS, remaining);
+        return enterPrep(
+            steps,
+            state.index,
+            now,
+            RESUME_PREP_SECONDS,
+            remaining,
+        );
     }
     return { state: { ...state, clock: runFor(remaining, now) } };
 }
@@ -192,11 +240,11 @@ export function restartCurrentStep(
     steps: CircuitStep[],
     now: number,
 ): CircuitTransition {
-    if (state.phase === 'prep') return enterPrep(state.index, now);
+    if (state.phase === 'prep') return enterPrep(steps, state.index, now);
     if (state.phase !== 'step') return { state };
     const step = steps[state.index];
     if (!step || step.seconds == null) return { state };
-    if (step.kind === 'work') return enterPrep(state.index, now);
+    if (step.kind === 'work') return enterPrep(steps, state.index, now);
     return { state: { ...state, clock: runFor(step.seconds, now) } };
 }
 
@@ -221,7 +269,7 @@ export function backCircuit(
 ): CircuitTransition {
     if (state.phase !== 'prep' && state.phase !== 'step') return { state };
     const prev = previousWorkIndex(steps, state.index);
-    return prev < 0 ? { state } : enterPrep(prev, now);
+    return prev < 0 ? { state } : enterPrep(steps, prev, now);
 }
 
 export function canGoBack(

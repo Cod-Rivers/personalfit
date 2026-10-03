@@ -8,7 +8,7 @@ import {
 } from '@testing-library/react';
 import { createRef } from 'react';
 import CircuitTimer, { type CircuitTimerHandle } from './index';
-import { playCircuitSound } from '@/libs/circuitSounds';
+import { playCircuitSound, type CircuitSoundEvent } from '@/libs/circuitSounds';
 import { PREP_SECONDS, RESUME_PREP_SECONDS } from '@/libs/circuitRunner';
 
 // Howler não toca em jsdom: os sons são espiados no módulo.
@@ -221,9 +221,6 @@ describe('CircuitTimer', () => {
             { name: 'A', series: [20, 20], timed: true, rest: 30 },
             { name: 'B', series: [20, 20], timed: true, rest: 30 },
         ];
-        const sounds = () =>
-            vi.mocked(playCircuitSound).mock.calls.map((c) => c[0]);
-
         it('recuperação prescrita entra entre os exercícios da rodada', () => {
             render(<CircuitTimer exercises={pair} recoverySeconds={10} />);
             expect(screen.getByText('Tabata · 10 s')).toBeTruthy();
@@ -247,26 +244,142 @@ describe('CircuitTimer', () => {
             expect(screen.getByText(/Exercício 2 de 2/)).toBeTruthy();
         });
 
-        it('toca um som por transição: bips da preparação, vai, recuperação, descanso', () => {
-            render(<CircuitTimer exercises={pair} recoverySeconds={10} />);
-            startNow();
-            expect(sounds()).toEqual(['tick', 'tick', 'tick', 'go']);
-            tick(20_000); // A termina
-            const afterA = sounds().slice(4);
-            expect(afterA.filter((n) => n === 'tick')).toHaveLength(3);
-            expect(afterA[afterA.length - 1]).toBe('recover');
-            tick(10_000); // recuperação (10 s) termina -> B
-            expect(sounds().pop()).toBe('go');
-            tick(20_000); // B termina -> descanso da rodada
-            expect(sounds().pop()).toBe('rest');
+        const styles = () =>
+            vi.mocked(playCircuitSound).mock.calls.map((c) => c[1]);
+        /** Rótulo curto do evento: "3", "1+ready", "go", "rest+final"… */
+        const label = (e: CircuitSoundEvent) => {
+            if (e.kind === 'count') return e.ready ? `${e.n}+ready` : `${e.n}`;
+            const round = e.roundCall
+                ? e.roundCall.final
+                    ? 'final'
+                    : `round${e.roundCall.round}`
+                : null;
+            return [e.cue, round].filter(Boolean).join('+');
+        };
+        let seen = 0;
+        /** Eventos tocados desde a última chamada. */
+        const heard = () => {
+            const calls = vi.mocked(playCircuitSound).mock.calls;
+            const fresh = calls.slice(seen).map((c) => label(c[0]));
+            seen = calls.length;
+            return fresh;
+        };
+        beforeEach(() => {
+            seen = 0;
         });
 
-        it('com o som desligado não toca nada', () => {
+        it('roteiro inteiro: rodada, 3-2-1, "Ready" antes de cada exercício, pausas e fim', () => {
+            render(<CircuitTimer exercises={pair} recoverySeconds={10} />);
+            startNow();
+            expect(heard()).toEqual(['round1', '3', '2', '1+ready', 'go']);
+            tick(20_000); // A termina -> recuperação: sem "Ready"
+            expect(heard()).toEqual(['3', '2', '1', 'recover']);
+            tick(10_000); // recuperação termina -> B
+            expect(heard()).toEqual(['3', '2', '1+ready', 'go']);
+            tick(20_000); // B termina -> descanso, que anuncia a última rodada
+            expect(heard()).toEqual(['3', '2', '1', 'rest+final']);
+            tick(30_000); // descanso termina -> A da rodada 2
+            expect(heard()).toEqual(['3', '2', '1+ready', 'go']);
+            tick(30_000); // A + recuperação
+            heard();
+            tick(20_000); // B, o último passo
+            expect(heard()).toEqual(['3', '2', '1', 'done']);
+        });
+
+        it('rodadas do meio são anunciadas pelo número', () => {
+            render(
+                <CircuitTimer
+                    exercises={[
+                        { name: 'A', series: [20, 20, 20], timed: true },
+                        {
+                            name: 'B',
+                            series: [20, 20, 20],
+                            timed: true,
+                            rest: 30,
+                        },
+                    ]}
+                />,
+            );
+            startNow();
+            heard();
+            tick(40_000); // rodada 1 -> descanso
+            expect(heard().pop()).toBe('rest+round2');
+            tick(70_000); // descanso + rodada 2 -> descanso
+            expect(heard().pop()).toBe('rest+final');
+        });
+
+        it('circuito de uma rodada só é "round 1", não "final"', () => {
+            render(
+                <CircuitTimer
+                    exercises={[
+                        { name: 'A', series: [20], timed: true },
+                        { name: 'B', series: [20], timed: true },
+                    ]}
+                />,
+            );
+            startNow();
+            expect(heard()).toEqual(['round1', '3', '2', '1+ready', 'go']);
+        });
+
+        it('"Feito" na série por repetições vai direto ao "go", sem contagem', () => {
+            render(
+                <CircuitTimer
+                    exercises={[
+                        { name: 'A', series: [12] },
+                        { name: 'B', series: [20], timed: true },
+                    ]}
+                />,
+            );
+            startNow();
+            heard();
+            click(/Feito/);
+            expect(heard()).toEqual(['go']);
+        });
+
+        it('voz é o padrão; "Bipe" troca o pacote, fica guardado e volta ao reabrir', () => {
+            const { unmount } = render(<CircuitTimer exercises={pair} />);
+            const group = screen.getByRole('group', { name: 'Tipo de som' });
+            const voice = screen.getByRole('button', { name: 'Voz' });
+            const beep = screen.getByRole('button', { name: 'Bipe' });
+            expect(group).toBeTruthy();
+            expect(voice.getAttribute('aria-pressed')).toBe('true');
+            expect(beep.getAttribute('aria-pressed')).toBe('false');
+
+            startNow();
+            expect(new Set(styles())).toEqual(new Set(['voice']));
+
+            fireEvent.click(beep);
+            expect(beep.getAttribute('aria-pressed')).toBe('true');
+            expect(voice.getAttribute('aria-pressed')).toBe('false');
+            expect(
+                JSON.parse(
+                    window.localStorage.getItem('venafit.circuit.settings')!,
+                ),
+            ).toMatchObject({ sound: true, soundStyle: 'beep' });
+
+            vi.mocked(playCircuitSound).mockClear();
+            tick(20_000); // A -> B, já com os bipes
+            expect(heard()).toEqual(['3', '2', '1+ready', 'go']);
+            expect(new Set(styles())).toEqual(new Set(['beep']));
+
+            unmount();
+            render(<CircuitTimer exercises={pair} />);
+            expect(
+                screen
+                    .getByRole('button', { name: 'Bipe' })
+                    .getAttribute('aria-pressed'),
+            ).toBe('true');
+        });
+
+        it('com o som desligado não toca nada e esconde a escolha voz/bipe', () => {
             window.localStorage.setItem(
                 'venafit.circuit.settings',
                 JSON.stringify({ sound: false }),
             );
             render(<CircuitTimer exercises={pair} />);
+            expect(
+                screen.queryByRole('group', { name: 'Tipo de som' }),
+            ).toBeNull();
             startNow();
             tick(20_000);
             expect(playCircuitSound).not.toHaveBeenCalled();

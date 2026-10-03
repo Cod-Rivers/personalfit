@@ -18,6 +18,59 @@ const GIF_CACHE = 'venafit-gifs-v1';
 const SHELL_CACHE = 'venafit-shell-v1';
 const MEDIA_HOSTS = ['midia.venafit.codriverslabs.com'];
 
+// Sons do cronômetro de circuito (src/libs/circuitSounds.ts), baixados na
+// instalação para tocar offline desde o 1º uso. O Howler os busca por XHR
+// (destination vazio), que o cache de shell abaixo deixa passar direto —
+// sem esta lista o circuito ficava mudo sem rede. Os dois pacotes vêm, para
+// a troca Voz/Bipe também funcionar offline. Mantenha igual à lista do app
+// (circuitSounds.test.ts confere). Mudou um arquivo de som? Suba a versão
+// do cache. O logout (clearSession) preserva este cache pelo prefixo.
+const SOUND_CACHE = 'venafit-sounds-v1';
+const SOUND_FILES = [
+    '/sounds/tick.wav',
+    '/sounds/go.wav',
+    '/sounds/recover.wav',
+    '/sounds/rest.wav',
+    '/sounds/done.wav',
+    '/sounds/voice/1.mp3',
+    '/sounds/voice/2.mp3',
+    '/sounds/voice/3.mp3',
+    '/sounds/voice/4.mp3',
+    '/sounds/voice/5.mp3',
+    '/sounds/voice/6.mp3',
+    '/sounds/voice/7.mp3',
+    '/sounds/voice/8.mp3',
+    '/sounds/voice/9.mp3',
+    '/sounds/voice/10.mp3',
+    '/sounds/voice/ready.mp3',
+    '/sounds/voice/go.mp3',
+    '/sounds/voice/round.mp3',
+    '/sounds/voice/final_round.mp3',
+    '/sounds/voice/level_up.mp3',
+    '/sounds/voice/time_over.mp3',
+    '/sounds/voice/congratulations.mp3',
+    '/sounds/voice/you_win.mp3',
+];
+
+// Melhor-esforço, arquivo por arquivo: um som que falhar não pode travar a
+// instalação do SW (cache.addAll falharia inteiro); o cache-first do fetch
+// completa o que faltar no próximo uso com rede.
+async function precacheSounds() {
+    const cache = await caches.open(SOUND_CACHE);
+    await Promise.all(
+        SOUND_FILES.map((path) => cache.add(path).catch(() => {})),
+    );
+}
+
+async function purgeOldSoundCaches() {
+    const keys = await caches.keys();
+    await Promise.all(
+        keys
+            .filter((k) => k.startsWith('venafit-sounds-') && k !== SOUND_CACHE)
+            .map((k) => caches.delete(k)),
+    );
+}
+
 // URLs assinadas (GET presigned) contra o endpoint direto do R2 servem mídia
 // sensível (fotos de evolução do aluno, PDF de plano alimentar) — cada URL
 // expira e é única por requisição (assinatura na query string), então nunca
@@ -49,8 +102,9 @@ function isSensitivePath(pathname) {
     return NO_CACHE_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'));
 }
 
-self.addEventListener('install', () => {
+self.addEventListener('install', (event) => {
     self.skipWaiting();
+    event.waitUntil(precacheSounds().catch(() => {}));
 });
 
 // Tira do cache de shell o que foi guardado antes de o caminho entrar em
@@ -72,6 +126,7 @@ self.addEventListener('activate', (event) => {
             self.clients.claim(),
             // Faxina é melhor-esforço: falhar aqui não pode travar a ativação.
             purgeSensitiveShellEntries().catch(() => {}),
+            purgeOldSoundCaches().catch(() => {}),
         ]),
     );
 });
@@ -145,6 +200,25 @@ self.addEventListener('fetch', (event) => {
                     if (cached) return cached;
                     throw err;
                 }
+            }),
+        );
+        return;
+    }
+
+    // Sons do circuito: cache-first, inclusive pelo XHR do Howler, que o
+    // ramo de shell abaixo deixaria passar sem cache. Só guarda resposta
+    // inteira (200): o <audio> do fallback HTML5 pede faixas (206), e
+    // cache.put recusa resposta parcial.
+    if (url.origin === self.location.origin && url.pathname.startsWith('/sounds/')) {
+        event.respondWith(
+            caches.open(SOUND_CACHE).then(async (cache) => {
+                const cached = await cache.match(request, { ignoreSearch: true });
+                if (cached) return cached;
+                const response = await fetch(request);
+                if (response.status === 200) {
+                    cache.put(request, response.clone()).catch(() => {});
+                }
+                return response;
             }),
         );
         return;

@@ -56,7 +56,8 @@ import {
 import {
     playCircuitSound,
     preloadCircuitSounds,
-    type CircuitSound,
+    type CircuitSoundEvent,
+    type CircuitSoundStyle,
 } from '@/libs/circuitSounds';
 import styles from './styles.module.css';
 
@@ -68,8 +69,22 @@ function vibrate(pattern: number[]) {
     }
 }
 
-/** Últimos segundos de uma contagem avisam com um bip por segundo. */
+/** Últimos segundos de uma contagem avisam um por um: "3, 2, 1" na voz, um
+ * bip por segundo no outro pacote. */
 const TICK_FROM = 3;
+
+const SOUND_STYLES: {
+    value: CircuitSoundStyle;
+    label: string;
+    title: string;
+}[] = [
+    {
+        value: 'voice',
+        label: 'Voz',
+        title: 'Locutora: "3, 2, 1, Ready, Go!"',
+    },
+    { value: 'beep', label: 'Bipe', title: 'Bipes curtos' },
+];
 
 /** O que a página pode pedir ao cronômetro de fora — o atalho "Iniciar
  * circuito" do card do exercício (ExerciseDetailCard) usa isto para começar
@@ -129,8 +144,8 @@ const CircuitTimer = forwardRef<CircuitTimerHandle, CircuitTimerProps>(
         const [settings, setSettings] = useState<CircuitSettings>(
             DEFAULT_CIRCUIT_SETTINGS,
         );
-        const soundRef = useRef(settings.sound);
-        soundRef.current = settings.sound;
+        const settingsRef = useRef(settings);
+        settingsRef.current = settings;
 
         const updateSettings = (patch: Partial<CircuitSettings>) => {
             setSettings((prev) => {
@@ -140,8 +155,14 @@ const CircuitTimer = forwardRef<CircuitTimerHandle, CircuitTimerProps>(
             });
         };
 
-        const play = useCallback((name: CircuitSound) => {
-            if (soundRef.current) playCircuitSound(name);
+        const chooseSoundStyle = (soundStyle: CircuitSoundStyle) => {
+            preloadCircuitSounds(soundStyle);
+            updateSettings({ soundStyle });
+        };
+
+        const play = useCallback((event: CircuitSoundEvent) => {
+            const { sound, soundStyle } = settingsRef.current;
+            if (sound) playCircuitSound(event, soundStyle);
         }, []);
 
         // Pela assinatura: quem chama monta o array a cada render, e um plano
@@ -178,7 +199,13 @@ const CircuitTimer = forwardRef<CircuitTimerHandle, CircuitTimerProps>(
                 setRun(t.state);
                 setNow(Date.now());
                 lastTickRef.current = null;
-                if (t.cue) play(t.cue);
+                if (t.cue || t.roundCall) {
+                    play({
+                        kind: 'transition',
+                        cue: t.cue,
+                        roundCall: t.roundCall,
+                    });
+                }
                 if (t.cue === 'done') {
                     vibrate([300, 150, 300, 150, 300]);
                     onCompleteRef.current?.();
@@ -194,8 +221,10 @@ const CircuitTimer = forwardRef<CircuitTimerHandle, CircuitTimerProps>(
         // senão o 'idle' inicial apagaria o que estava guardado.
         const hydratedRef = useRef(false);
         useEffect(() => {
-            setSettings(loadCircuitSettings());
-            preloadCircuitSounds();
+            const stored = loadCircuitSettings();
+            settingsRef.current = stored;
+            setSettings(stored);
+            preloadCircuitSounds(stored.soundStyle);
             if (storageKey) {
                 const saved = loadCircuitProgress(storageKey, planSignature);
                 if (saved) {
@@ -228,8 +257,8 @@ const CircuitTimer = forwardRef<CircuitTimerHandle, CircuitTimerProps>(
         const inProgress = run.phase === 'prep' || run.phase === 'step';
         useWakeLock(inProgress);
 
-        // Relógio: redesenha e avança quando zera. Bip nos últimos segundos
-        // de qualquer contagem mais longa que o próprio aviso.
+        // Relógio: redesenha e avança quando zera. "3, 2, 1" (ou bipes) nos
+        // últimos segundos de qualquer contagem mais longa que o próprio aviso.
         useEffect(() => {
             if (
                 (run.phase !== 'prep' && run.phase !== 'step') ||
@@ -260,7 +289,17 @@ const CircuitTimer = forwardRef<CircuitTimerHandle, CircuitTimerProps>(
                     lastTickRef.current !== mark
                 ) {
                     lastTickRef.current = mark;
-                    play('tick');
+                    // No "1": o zero começa um exercício? A própria máquina
+                    // responde — é a transição que o relógio vai disparar.
+                    const next =
+                        left === 1
+                            ? tickCircuit(current, steps, current.clock.endAt)
+                            : null;
+                    play({
+                        kind: 'count',
+                        n: left as 1 | 2 | 3,
+                        ready: next?.cue === 'go' && !next.roundCall,
+                    });
                 }
                 if (left === 0) {
                     apply(tickCircuit(current, steps, t), current.phase === 'step');
@@ -400,6 +439,30 @@ const CircuitTimer = forwardRef<CircuitTimerHandle, CircuitTimerProps>(
                                 ? `${rounds} ${rounds === 1 ? 'rodada' : 'rodadas'} concluídas`
                                 : `Rodada ${Math.min(queueRound, rounds)} de ${rounds}`}
                         </span>
+                        {settings.sound && (
+                            <span
+                                className={styles.styleToggle}
+                                role="group"
+                                aria-label="Tipo de som"
+                            >
+                                {SOUND_STYLES.map((option) => (
+                                    <button
+                                        key={option.value}
+                                        type="button"
+                                        className={styles.styleOption}
+                                        onClick={() =>
+                                            chooseSoundStyle(option.value)
+                                        }
+                                        aria-pressed={
+                                            settings.soundStyle === option.value
+                                        }
+                                        title={option.title}
+                                    >
+                                        {option.label}
+                                    </button>
+                                ))}
+                            </span>
+                        )}
                         <button
                             type="button"
                             className={styles.iconBtn}

@@ -52,6 +52,87 @@ describe('circuitRunner', () => {
         expect(t.cue).toBe('recover');
     });
 
+    describe('anúncio da rodada', () => {
+        // steps: A, rec, B, descanso, A(rodada 2), rec, B(rodada 2)
+        it('a preparação do início anuncia a rodada 1', () => {
+            expect(startCircuit(steps, T0).roundCall).toEqual({
+                round: 1,
+                final: false,
+            });
+        });
+
+        it('o descanso anuncia a rodada seguinte; a última é "final"', () => {
+            const rest = tickCircuit(stepAt(2, 0), steps, T0);
+            expect(rest.state).toMatchObject({ phase: 'step', index: 3 });
+            expect(rest.cue).toBe('rest');
+            expect(rest.roundCall).toEqual({ round: 2, final: true });
+            // Já anunciada no descanso: o exercício entra só com "go".
+            const go = tickCircuit(stepAt(3, 0), steps, T0);
+            expect(go.cue).toBe('go');
+            expect(go.roundCall).toBeUndefined();
+        });
+
+        it('rodadas do meio não são "final"', () => {
+            const three = buildCircuitPlan([
+                { name: 'A', series: [20, 20, 20], timed: true, rest: 30 },
+                { name: 'B', series: [20, 20, 20], timed: true, rest: 30 },
+            ]).steps;
+            // A, B, descanso, A, B, descanso, A, B
+            expect(tickCircuit(stepAt(1, 0), three, T0).roundCall).toEqual({
+                round: 2,
+                final: false,
+            });
+            expect(tickCircuit(stepAt(4, 0), three, T0).roundCall).toEqual({
+                round: 3,
+                final: true,
+            });
+        });
+
+        it('sem descanso entre as rodadas, o anúncio vem junto do "go"', () => {
+            const noRest = buildCircuitPlan([
+                { name: 'A', series: [20, 20], timed: true },
+                { name: 'B', series: [20, 20], timed: true },
+            ]).steps;
+            // A, B, A(rodada 2), B
+            const t = tickCircuit(stepAt(1, 0), noRest, T0);
+            expect(t.state).toMatchObject({ phase: 'step', index: 2 });
+            expect(t.cue).toBe('go');
+            expect(t.roundCall).toEqual({ round: 2, final: true });
+            // Dentro da rodada, nada de anúncio.
+            expect(tickCircuit(stepAt(0, 0), noRest, T0).roundCall).toBe(
+                undefined,
+            );
+        });
+
+        it('voltar ao 1º exercício de uma rodada anuncia de novo; a retomada não', () => {
+            const back = backCircuit(stepAt(5, 5), steps, T0);
+            expect(back.state).toMatchObject({ phase: 'prep', index: 4 });
+            expect(back.roundCall).toEqual({ round: 2, final: true });
+            // Da preparação para o exercício: só "go", a rodada já foi dita.
+            const go = tickCircuit(back.state, steps, s(PREP_SECONDS));
+            expect(go.cue).toBe('go');
+            expect(go.roundCall).toBeUndefined();
+
+            const paused = pauseCircuit(stepAt(4, 12), T0).state;
+            const prep = resumeCircuit(paused, steps, T0);
+            expect(prep.state).toMatchObject({ phase: 'prep', resumeFrom: 12 });
+            expect(prep.roundCall).toBeUndefined();
+            const resumed = tickCircuit(
+                prep.state,
+                steps,
+                s(RESUME_PREP_SECONDS),
+            );
+            expect(resumed.cue).toBe('go');
+            expect(resumed.roundCall).toBeUndefined();
+        });
+
+        it('exercício do meio da rodada não anuncia nada na preparação', () => {
+            const redo = restartCurrentStep(stepAt(2, 8), steps, T0);
+            expect(redo.state).toMatchObject({ phase: 'prep', index: 2 });
+            expect(redo.roundCall).toBeUndefined();
+        });
+    });
+
     it('depois do último passo, concluído com "done"', () => {
         const t = tickCircuit(stepAt(steps.length - 1, 0), steps, T0);
         expect(t.state).toEqual({ phase: 'done' });

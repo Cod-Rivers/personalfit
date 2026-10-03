@@ -379,11 +379,19 @@ async function runClearSession(): Promise<void> {
         /* melhor-esforço: não bloquear o logout por falha de limpeza */
     }
 
-    // Cache Storage do service worker (respostas cacheadas)
+    // Cache Storage do service worker (respostas cacheadas). Os sons do
+    // cronômetro de circuito ficam: são arquivos públicos do app, não dados
+    // da conta, e o SW só os baixa de novo na próxima atualização — apagar
+    // deixaria o circuito mudo offline até lá. Prefixo em sincronia com
+    // SOUND_CACHE em public/sw.js.
     try {
         if ('caches' in window) {
             const keys = await caches.keys();
-            await Promise.all(keys.map((k) => caches.delete(k)));
+            await Promise.all(
+                keys
+                    .filter((k) => !k.startsWith('venafit-sounds-'))
+                    .map((k) => caches.delete(k)),
+            );
         }
     } catch {
         /* melhor-esforço */
