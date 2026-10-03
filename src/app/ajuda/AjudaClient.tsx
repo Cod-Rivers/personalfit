@@ -320,6 +320,13 @@ const studentSections: HelpSection[] = [
                     o motivo. Se o seu personal ainda não configurou uma
                     grade, você digita a data e hora livremente, como antes.
                 </p>
+                <p className="mb-0 mt-2">
+                    A Agenda faz parte do plano PRO do seu personal. Se ele
+                    sair do PRO, as suas <strong>aulas fixas</strong> aparecem
+                    como <strong>Pausada</strong> e voltam sozinhas quando ele
+                    reativar. Os horários que já estavam marcados continuam
+                    valendo.
+                </p>
             </>
         ),
     },
@@ -2211,6 +2218,15 @@ const personalSections: HelpSection[] = [
                     <Link href="#plano-pro">plano PRO</Link>. Para limitar os
                     horários que o aluno pode escolher, veja{' '}
                     <Link href="#disponibilidade">Disponibilidade</Link>.
+                </p>
+                <p className="mb-0 mt-2">
+                    <strong>Se você voltar ao plano gratuito</strong> (fim do
+                    teste grátis ou da assinatura), a Agenda abre em modo
+                    limitado: você continua vendo e cancelando os horários já
+                    marcados e respondendo os pedidos dos alunos, mas não marca
+                    nada novo nem mexe na disponibilidade. As aulas fixas ficam
+                    pausadas, e o aluno vê o aviso. Nada é apagado: tudo volta
+                    a valer quando você assinar o PRO de novo.
                 </p>
             </>
         ),

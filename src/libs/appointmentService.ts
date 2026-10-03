@@ -31,6 +31,9 @@ export interface RecurrenceResponse {
     notes?: string;
     active_until?: string;
     created_at: string;
+    /** Pausada: o personal não está no PRO (a Agenda é recurso PRO). Volta
+     * sozinha se ele voltar ao PRO — o servidor calcula a cada leitura. */
+    paused?: boolean;
 }
 
 export interface RecurrenceExceptionResponse {

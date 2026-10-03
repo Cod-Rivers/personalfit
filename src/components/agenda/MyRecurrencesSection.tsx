@@ -147,11 +147,19 @@ export default function MyRecurrencesSection() {
                         <div key={r.id} className={s.apptCard}>
                             <div className={s.apptCardTop}>
                                 <span className={s.typeBadge}>{APPOINTMENT_TYPE_LABEL[r.type]}</span>
+                                {r.paused && <span className={s.pausedBadge}>Pausada</span>}
                             </div>
                             <p className={s.apptTime}>
                                 Toda {describeDays(r.days_of_week)}, das {r.start_time} às {r.end_time}
                             </p>
                             {r.notes && <p className={s.apptNotes}>{r.notes}</p>}
+                            {r.paused && (
+                                <p className={s.apptNotes}>
+                                    Esta aula fixa está pausada: a Agenda do seu personal faz parte do plano PRO, e
+                                    ele não está nesse plano agora. Ela volta sozinha quando ele reativar. Combine os
+                                    horários direto com ele enquanto isso.
+                                </p>
+                            )}
 
                             {requests.length > 0 && (
                                 <ul className="list-unstyled mb-2" style={{ fontSize: '0.85rem' }}>
@@ -171,11 +179,13 @@ export default function MyRecurrencesSection() {
                                 </ul>
                             )}
 
-                            <div className={s.apptActions}>
-                                <button className={s.btnSecondary} onClick={() => openRequest(r)}>
-                                    Pedir alteração numa data
-                                </button>
-                            </div>
+                            {!r.paused && (
+                                <div className={s.apptActions}>
+                                    <button className={s.btnSecondary} onClick={() => openRequest(r)}>
+                                        Pedir alteração numa data
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     );
                 })}

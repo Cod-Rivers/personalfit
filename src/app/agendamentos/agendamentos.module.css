@@ -279,3 +279,13 @@
     box-sizing: border-box;
 }
 .input:focus { outline: none; border-color: var(--mint); box-shadow: 0 0 0 2px rgba(61,255,208,0.2); }
+
+/* Aula fixa pausada: o personal não está no PRO (a Agenda é recurso PRO). */
+.pausedBadge {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    background: var(--amber-dim);
+    color: var(--amber-text);
+}

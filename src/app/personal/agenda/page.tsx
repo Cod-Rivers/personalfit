@@ -42,6 +42,7 @@ import { useToast } from '@/components/system/Toast';
 import AvailabilityEditor from '@/components/agenda/AvailabilityEditor';
 import SlotPicker from '@/components/agenda/SlotPicker';
 import ExternalLink from '@/components/atoms/ExternalLink';
+import { useBranding } from '@/context/BrandingContext';
 import s from './agenda.module.css';
 
 function todayStr(): string {
@@ -93,6 +94,7 @@ function formatDate(iso: string) {
 
 export default function AgendaPage() {
     const router = useRouter();
+    const { effectivePlanType } = useBranding();
     const [user, setUser] = useState<UserData | null>(null);
     const [appointments, setAppointments] = useState<AppointmentResponse[]>([]);
     const [recurrences, setRecurrences] = useState<RecurrenceResponse[]>([]);
@@ -176,14 +178,20 @@ export default function AgendaPage() {
             router.replace('/app');
             return;
         }
-        // Agenda é exclusiva do plano PRO — free vai para o upgrade.
-        if (parsed.plan_type !== 'pro') {
-            router.replace('/pagamento?produto=pro');
-            return;
-        }
+        // A Agenda é PRO, mas o personal no free entra em modo limitado (ver
+        // `limited`) em vez de ir direto para o upgrade: ele precisa ver e
+        // cancelar o que já estava marcado quando o PRO acabou.
         setUser(parsed);
         setCancelAdvanceHours(parsed.cancel_advance_hours ?? 24);
     }, [router]);
+
+    // O /branding responde depois da sessão: se ele disser que o plano é o
+    // free com a aba de disponibilidade aberta (que é PRO), volta para os
+    // agendamentos em vez de mostrar uma aba vazia.
+    useEffect(() => {
+        const isPro = (effectivePlanType ?? user?.plan_type) === 'pro';
+        if (!isPro && tab === 'availability') setTab('appointments');
+    }, [effectivePlanType, user, tab]);
 
     /* ── Fetch students ── */
     useEffect(() => {
@@ -414,6 +422,14 @@ export default function AgendaPage() {
 
     if (!user) return null;
 
+    // Modo limitado (personal no free): vê e cancela o que já existe e
+    // responde os pedidos dos alunos, mas não cria horário, aula fixa nem
+    // exceção, e não mexe na disponibilidade — o servidor recusa essas rotas
+    // com 403. O plano vem do /branding, lido do servidor a cada abertura do
+    // app (já com o fim do teste ou do período cancelado aplicado); a sessão
+    // é a do login e pode estar desatualizada.
+    const limited = (effectivePlanType ?? user.plan_type) !== 'pro';
+
     return (
         <div className={s.page}>
             <div className={s.container}>
@@ -433,6 +449,29 @@ export default function AgendaPage() {
                     </button>
                 </div>
 
+                {limited && (
+                    <div className={s.limitedBanner} role="status">
+                        <p className={s.limitedTitle}>
+                            Agenda no modo limitado
+                        </p>
+                        <p className={s.limitedText}>
+                            A Agenda é um recurso do plano PRO. No plano
+                            gratuito você continua vendo e cancelando os
+                            horários já marcados e respondendo os pedidos dos
+                            alunos. As aulas fixas ficam pausadas e voltam
+                            quando você assinar o PRO.
+                        </p>
+                        <button
+                            className={s.btnPrimary}
+                            onClick={() =>
+                                router.push('/pagamento?produto=pro')
+                            }
+                        >
+                            Assinar o PRO
+                        </button>
+                    </div>
+                )}
+
                 {error && <p className={s.errorMsg}>{error}</p>}
 
                 {/* Tabs */}
@@ -449,16 +488,18 @@ export default function AgendaPage() {
                     >
                         Recorrências
                     </button>
-                    <button
-                        className={`${s.tabBtn} ${tab === 'availability' ? s.tabActive : ''}`}
-                        onClick={() => setTab('availability')}
-                    >
-                        Disponibilidade
-                    </button>
+                    {!limited && (
+                        <button
+                            className={`${s.tabBtn} ${tab === 'availability' ? s.tabActive : ''}`}
+                            onClick={() => setTab('availability')}
+                        >
+                            Disponibilidade
+                        </button>
+                    )}
                 </div>
 
                 {/* ── Configuração: antecedência para cancelamento ── */}
-                {tab !== 'availability' && (
+                {tab !== 'availability' && !limited && (
                 <div className={s.advanceConfig}>
                     <span className={s.advanceConfigLabel}>
                         Antecedência mínima para cancelamento sem débito:
@@ -485,7 +526,7 @@ export default function AgendaPage() {
                 )}
 
                 {/* ── AVAILABILITY TAB ── */}
-                {tab === 'availability' && <AvailabilityEditor />}
+                {tab === 'availability' && !limited && <AvailabilityEditor />}
 
                 {/* ── APPOINTMENTS TAB ── */}
                 {tab === 'appointments' && (
@@ -521,12 +562,14 @@ export default function AgendaPage() {
                                     Filtrar
                                 </button>
                             </div>
-                            <button
-                                className={s.btnPrimary}
-                                onClick={() => setShowApptModal(true)}
-                            >
-                                + Agendar
-                            </button>
+                            {!limited && (
+                                <button
+                                    className={s.btnPrimary}
+                                    onClick={() => setShowApptModal(true)}
+                                >
+                                    + Agendar
+                                </button>
+                            )}
                         </div>
 
                         {loading ? (
@@ -660,14 +703,16 @@ export default function AgendaPage() {
                 {/* ── RECURRENCES TAB ── */}
                 {tab === 'recurrences' && (
                     <>
-                        <div className={s.toolbar}>
-                            <button
-                                className={s.btnPrimary}
-                                onClick={() => setShowRecModal(true)}
-                            >
-                                + Nova Recorrência
-                            </button>
-                        </div>
+                        {!limited && (
+                            <div className={s.toolbar}>
+                                <button
+                                    className={s.btnPrimary}
+                                    onClick={() => setShowRecModal(true)}
+                                >
+                                    + Nova Recorrência
+                                </button>
+                            </div>
+                        )}
 
                         {recurrences.length === 0 ? (
                             <p className={s.emptyMsg}>
@@ -695,6 +740,14 @@ export default function AgendaPage() {
                                                     {DAY_OF_WEEK_LABEL[d]}
                                                 </span>
                                             ))}
+                                            {r.paused && (
+                                                <span
+                                                    className={s.pausedBadge}
+                                                    title="Pausada enquanto você não estiver no PRO"
+                                                >
+                                                    Pausada
+                                                </span>
+                                            )}
                                         </div>
                                         <p className={s.apptStudent}>
                                             <strong>
@@ -877,15 +930,19 @@ export default function AgendaPage() {
                                         </div>
 
                                         <div className={s.apptActions}>
-                                            <button
-                                                className={s.btnSecondary}
-                                                onClick={() =>
-                                                    setShowExcModal(r.id)
-                                                }
-                                                style={{ fontSize: '0.8rem' }}
-                                            >
-                                                + Exceção
-                                            </button>
+                                            {!limited && (
+                                                <button
+                                                    className={s.btnSecondary}
+                                                    onClick={() =>
+                                                        setShowExcModal(r.id)
+                                                    }
+                                                    style={{
+                                                        fontSize: '0.8rem',
+                                                    }}
+                                                >
+                                                    + Exceção
+                                                </button>
+                                            )}
                                             <button
                                                 className={s.btnDelete}
                                                 onClick={() =>

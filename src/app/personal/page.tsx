@@ -329,17 +329,13 @@ export default function PersonalDashboard() {
                     <span className={s.tabSlot}>
                         <button
                             className={s.tab}
-                            onClick={() =>
-                                router.push(
-                                    planType === 'pro'
-                                        ? '/personal/agenda'
-                                        : '/pagamento?produto=pro',
-                                )
-                            }
+                            // No free a Agenda abre em modo limitado: ver e
+                            // cancelar o que já está marcado (e assinar dali).
+                            onClick={() => router.push('/personal/agenda')}
                             title={
                                 planType === 'pro'
                                     ? undefined
-                                    : 'Recurso exclusivo do plano PRO'
+                                    : 'Recurso PRO: no plano gratuito, só ver e cancelar o que já está marcado'
                             }
                         >
                             <FiCalendar className={s.tabIcon} />
