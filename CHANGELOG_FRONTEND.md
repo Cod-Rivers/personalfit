@@ -799,3 +799,17 @@
 ## 2026-10-02 22:57 — River (via Claude Code)
 **Resumo:** O servidor agora bloqueia aluno com personal de montar ou importar treino, e a loja de planos ficou escondida só para alunos de personal PRO. Os testes passam nos dois repositórios, mas não testei no app rodando e não fiz commit. **Backend: o bloqueio estava faltando, e havia um problema mais sério** Nenhuma rota de "montar treino" do aluno verificava se ele tinha personal. Pior: ao confirmar uma importação por PDF, o servidor marcava como concluído o plano ativo do aluno. Ou seja, um aluno vinculado, como a Aline do print, podia **encerrar o plano que o personal montou** só importando um PDF.…
 **Arquivos:** usePlanStoreHidden.test.ts, usePlanStoreHidden.ts
+
+## 2026-10-02 23:06 — River (via Claude Code)
+**Resumo:** I committed and pushed today's changes, then checked what happens to a personal's existing students when they move from free to PRO and back. In this second part I only read code and changed nothing. Most of the transition works, but I found five problems. The most serious: when a student of a free personal buys a plan from the store, the plan the personal built for them is marked as finished. **Commit e push:** frontend `7a9cb32`, backend `ac9de86`, each followed by a changelog commit. O push dispara o deploy automático. O trabalho de nome único nos modelos de treino continua sem commit, como…
+**Commits:** Reorganiza a área do aluno em Meus Treinos: plano atual, atalhos por intenção e loja de planos | docs: atualiza changelog
+
+## 2026-10-02 23:35 — River (via Claude Code)
+**Resumo:** O cronômetro do circuito agora fala "3, 2, 1" e depois uma frase em cada troca de etapa. Aluno e personal escolhem entre **Voz** e **Bipe** num seletor no cabeçalho do cronômetro. Os testes passam, mas ainda não vi isso funcionando no app. **O que a locutora fala:** | Situação | Últimos 3 segundos | Frase | |---|---|---| | Fim da preparação, começa o exercício | 3, 2, 1 | "Go!" | | Fim da recuperação (tabata) ou do descanso | 3, 2, 1 | "Go!" | | Começa a última rodada (circuito com 2 ou mais rodadas) | 3, 2, 1 | "Final round" | | Exercício termina e vem a recuperação ou o descanso | 3, 2, 1 | …
+**Arquivos:** CHANGELOG_FRONTEND.md, CircuitTimer.test.tsx, agenda.module.css, appointmentService.ts, circuitRunner.test.ts, circuitRunner.ts, circuitSettings.ts, circuitSounds.ts, index.tsx, page.tsx, styles.module.css, voice
+**Commits:** Compra na loja convive com o plano do personal: PIX, Acompanhar e Ajuda
+
+## 2026-10-02 23:52 — River (via Claude Code)
+**Resumo:** O roteiro de vozes que você pediu está montado, e os sons agora funcionam sem internet. Os 585 testes do frontend passam e o tsc e o eslint não acusam nada, mas eu ainda não ouvi as vozes num celular. **Como fica um circuito de 2 rodadas com tabata e descanso:** | Momento | O que a locutora fala | |---|---| | Toque em "Iniciar circuito" | "Round 1" | | Fim da preparação | "3, 2, 1, Ready" e "Go!" quando o exercício começa | | Fim do exercício, vem a recuperação | "3, 2, 1" e "Time over" | | Fim da recuperação | "3, 2, 1, Ready" e "Go!" | | Fim da rodada, vem o descanso | "3, 2, 1" e "Level up,…
+**Arquivos:** circuitSounds.test.ts, session.ts, sw.js
+**Commits:** Agenda em modo limitado para o personal no free, com aulas fixas pausadas | Plano alimentar fora do PRO: aluno vê o último plano e o aviso certo
