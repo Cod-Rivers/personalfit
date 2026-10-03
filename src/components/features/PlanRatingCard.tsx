@@ -12,9 +12,10 @@ interface PlanRatingCardProps {
     hasPersonal?: boolean;
 }
 
-// Planos que o próprio aluno montou ou importou: avaliar a si mesmo não
+// Planos que o próprio aluno montou ou importou, e o plano que ele manteve
+// depois do desvínculo (o ex-personal não vê mais a nota): avaliar não
 // informa ninguém.
-const SELF_AUTHORED = new Set(['self_made', 'imported_pdf']);
+const SELF_AUTHORED = new Set(['self_made', 'imported_pdf', 'kept']);
 
 /**
  * "Avaliar este plano" em Meus treinos. A nota vai para a tela de feedback
