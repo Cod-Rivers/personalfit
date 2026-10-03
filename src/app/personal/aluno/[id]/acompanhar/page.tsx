@@ -80,6 +80,7 @@ import {
     getCachedStudentPlannings,
     isOfflineError,
 } from '@/libs/offline/personalCache';
+import { pickPrescribedPlanning } from '@/libs/prescribedPlan';
 import { Api } from '@/libs/api';
 import {
     GROUP_TECHNIQUE_CATALOG,
@@ -348,9 +349,9 @@ export default function AcompanharTreinoPage() {
                     );
                     return;
                 }
-                planningId = (
-                    plannings.find((p) => p.status === 'active') ?? plannings[0]
-                ).id;
+                // O plano que o personal montou — o aluno pode ter também um
+                // plano comprado na loja ativo (ver pickPrescribedPlanning).
+                planningId = pickPrescribedPlanning(plannings)!.id;
             }
             const data = await getMacrocycle(studentId, planningId);
             setMacro(data);
@@ -365,10 +366,9 @@ export default function AcompanharTreinoPage() {
                     await getCachedStudentPlannings(studentId);
                 const targetId =
                     fromQuery ??
-                    (
-                        cachedPlannings?.find((p) => p.status === 'active') ??
-                        cachedPlannings?.[0]
-                    )?.id;
+                    (cachedPlannings
+                        ? pickPrescribedPlanning(cachedPlannings)?.id
+                        : undefined);
                 const cached = targetId
                     ? await getCachedPersonalMacrocycle(studentId, targetId)
                     : null;

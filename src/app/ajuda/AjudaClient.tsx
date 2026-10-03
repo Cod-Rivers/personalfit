@@ -343,12 +343,13 @@ const studentSections: HelpSection[] = [
         body: (
             <p className="mb-0">
                 Em Meus Treinos, no cartão <strong>Treine como os famosos</strong>{' '}
-                (Loja de planos), você pode comprar um
-                modelo de treino pronto e aplicá-lo como seu plano ativo — o
-                plano em andamento é marcado como concluído e o novo entra no
-                lugar. Cada plano é uma compra avulsa e pode ser baixado para
-                treinar offline. Se o seu personal tem o plano PRO, a loja não
-                aparece: o seu treino vem dele.
+                (Loja de planos), você pode comprar um modelo de treino pronto.
+                Ele entra como o seu plano atual. Se você tem personal, o plano
+                que ele montou continua valendo e fica em{' '}
+                <strong>Trocar plano</strong>; sem personal, o plano novo
+                substitui o anterior. Cada plano é uma compra avulsa e pode ser
+                baixado para treinar offline. Se o seu personal tem o plano PRO,
+                a loja não aparece: o seu treino vem dele.
             </p>
         ),
     },
@@ -3364,8 +3365,10 @@ const personalSections: HelpSection[] = [
                 </p>
                 <p className="mb-0 text-muted small">
                     Observação: os seus alunos não têm plano PRO. Eles
-                    acompanham a evolução gratuitamente e podem comprar planos
-                    de treino avulsos (estilo famosos) quando quiserem. O{' '}
+                    acompanham a evolução gratuitamente. Com você no plano
+                    gratuito, eles podem comprar planos de treino avulsos
+                    (estilo famosos), e o plano que você montou continua valendo;
+                    com o PRO, a loja não aparece para os seus alunos. O{' '}
                     <strong>Aluno Plus</strong> é só para quem treina sem
                     personal.
                 </p>

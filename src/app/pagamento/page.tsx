@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { FiArrowLeft } from 'react-icons/fi';
 
 import './styles.css';
-import { Api } from '@/libs/api';
 import {
     CardSubscriptionForm,
     PlanCatalog,
@@ -32,6 +31,7 @@ import {
     getActiveReferralPartners,
 } from '@/libs/referralPartnerService';
 import { getStudentHomeRoute, getUser, updateSessionPlanType } from '@/libs/session';
+import { getMyPlannings } from '@/libs/planningService';
 import { trackTrialStarted } from '@/libs/analytics';
 
 // Valor fixo para "sem indicação" — usado tanto aqui quanto interpretado no
@@ -118,9 +118,12 @@ function PaymentPageInner() {
               ? 'plus'
               : 'pro';
     const templateId = searchParams.get('templateId') ?? '';
-    // Guarda o macrociclo ativo ANTES da compra de um plano, para detectar a
-    // troca (webhook aplica o plano comprado) durante o polling do PIX.
-    const planoActiveBefore = useRef<string | null>(null);
+    // Planos que o aluno já tinha ANTES da compra: no polling do PIX, a compra
+    // confirmada (o webhook aplica o plano) aparece como um plano novo. Não
+    // dá para comparar "o plano ativo": com personal, a compra não encerra o
+    // plano dele, e o ativo mais recente pode continuar sendo o do personal
+    // (ex.: plano agendado para começar no futuro). null = ainda não se sabe.
+    const plansBefore = useRef<Set<string> | null>(null);
 
     const [catalog, setCatalog] = useState<PlanCatalog | null>(null);
     const [cycle, setCycle] = useState('MONTHLY');
@@ -222,9 +225,13 @@ function PaymentPageInner() {
                         updateSessionPlanType('pro');
                     }
                 } else if (produto === 'plano') {
-                    // O webhook troca o macrociclo ativo pelo plano comprado.
-                    const { data } = await Api.get<{ id?: string }>('/my-planning/active');
-                    if (data?.id && data.id !== planoActiveBefore.current) {
+                    // O webhook aplica o plano comprado: ele aparece na lista.
+                    const ids = (await getMyPlannings()).map((p) => p.id);
+                    if (!plansBefore.current) {
+                        // A foto de antes falhou: tira agora, sem confirmar —
+                        // melhor esperar mais um ciclo que confirmar à toa.
+                        plansBefore.current = new Set(ids);
+                    } else if (ids.some((id) => !plansBefore.current!.has(id))) {
                         setConfirmed(true);
                         if (pollingRef.current) clearInterval(pollingRef.current);
                     }
@@ -271,12 +278,12 @@ function PaymentPageInner() {
                     expiresAt: res.expires_at,
                 });
             } else {
-                // Captura o plano ativo atual para detectar a troca no polling.
+                // Foto dos planos de antes, para reconhecer o comprado no polling.
                 try {
-                    const { data } = await Api.get<{ id?: string }>('/my-planning/active');
-                    planoActiveBefore.current = data?.id ?? null;
+                    const plans = await getMyPlannings();
+                    plansBefore.current = new Set(plans.map((p) => p.id));
                 } catch {
-                    planoActiveBefore.current = null;
+                    plansBefore.current = null;
                 }
                 const res = await purchaseLibraryPlanPix(templateId);
                 setPix({
