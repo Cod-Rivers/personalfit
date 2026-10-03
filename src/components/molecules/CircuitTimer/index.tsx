@@ -17,8 +17,6 @@ import {
     FiRotateCcw,
     FiSkipBack,
     FiSkipForward,
-    FiVolume2,
-    FiVolumeX,
 } from 'react-icons/fi';
 import { formatCountdown } from '@/hooks/useRestCountdown';
 import { useWakeLock } from '@/hooks/useWakeLock';
@@ -47,18 +45,13 @@ import {
     loadCircuitProgress,
     saveCircuitProgress,
 } from '@/libs/circuitProgress';
+import { getTimerSoundSettings } from '@/libs/timerSoundSettings';
 import {
-    DEFAULT_CIRCUIT_SETTINGS,
-    loadCircuitSettings,
-    saveCircuitSettings,
-    type CircuitSettings,
-} from '@/libs/circuitSettings';
-import {
-    playCircuitSound,
-    preloadCircuitSounds,
-    type CircuitSoundEvent,
-    type CircuitSoundStyle,
-} from '@/libs/circuitSounds';
+    playTimerSound,
+    preloadTimerSounds,
+    type TimerSoundEvent,
+} from '@/libs/timerSounds';
+import TimerSoundToggle from '@/components/molecules/TimerSoundToggle';
 import styles from './styles.module.css';
 
 function vibrate(pattern: number[]) {
@@ -72,19 +65,6 @@ function vibrate(pattern: number[]) {
 /** Últimos segundos de uma contagem avisam um por um: "3, 2, 1" na voz, um
  * bip por segundo no outro pacote. */
 const TICK_FROM = 3;
-
-const SOUND_STYLES: {
-    value: CircuitSoundStyle;
-    label: string;
-    title: string;
-}[] = [
-    {
-        value: 'voice',
-        label: 'Voz',
-        title: 'Locutora: "3, 2, 1, Ready, Go!"',
-    },
-    { value: 'beep', label: 'Bipe', title: 'Bipes curtos' },
-];
 
 /** O que a página pode pedir ao cronômetro de fora — o atalho "Iniciar
  * circuito" do card do exercício (ExerciseDetailCard) usa isto para começar
@@ -139,30 +119,11 @@ const CircuitTimer = forwardRef<CircuitTimerHandle, CircuitTimerProps>(
         },
         ref,
     ) {
-        // Preferência de som do aparelho. Lida depois de montar (no servidor
-        // não há localStorage, e ler antes daria diferença de hidratação).
-        const [settings, setSettings] = useState<CircuitSettings>(
-            DEFAULT_CIRCUIT_SETTINGS,
-        );
-        const settingsRef = useRef(settings);
-        settingsRef.current = settings;
-
-        const updateSettings = (patch: Partial<CircuitSettings>) => {
-            setSettings((prev) => {
-                const next = { ...prev, ...patch };
-                saveCircuitSettings(next);
-                return next;
-            });
-        };
-
-        const chooseSoundStyle = (soundStyle: CircuitSoundStyle) => {
-            preloadCircuitSounds(soundStyle);
-            updateSettings({ soundStyle });
-        };
-
-        const play = useCallback((event: CircuitSoundEvent) => {
-            const { sound, soundStyle } = settingsRef.current;
-            if (sound) playCircuitSound(event, soundStyle);
+        // Preferência de som do aparelho, lida na hora de tocar: a mesma de
+        // todos os cronômetros (TimerSoundToggle no cabeçalho muda ela).
+        const play = useCallback((event: TimerSoundEvent) => {
+            const { sound, soundStyle } = getTimerSoundSettings();
+            if (sound) playTimerSound(event, soundStyle);
         }, []);
 
         // Pela assinatura: quem chama monta o array a cada render, e um plano
@@ -216,15 +177,12 @@ const CircuitTimer = forwardRef<CircuitTimerHandle, CircuitTimerProps>(
             [play],
         );
 
-        // Montagem: preferência de som, sons pré-carregados e andamento
-        // guardado. `hydrated` segura o salvamento até a leitura acontecer —
-        // senão o 'idle' inicial apagaria o que estava guardado.
+        // Montagem: sons pré-carregados e andamento guardado. `hydrated`
+        // segura o salvamento até a leitura acontecer — senão o 'idle'
+        // inicial apagaria o que estava guardado.
         const hydratedRef = useRef(false);
         useEffect(() => {
-            const stored = loadCircuitSettings();
-            settingsRef.current = stored;
-            setSettings(stored);
-            preloadCircuitSounds(stored.soundStyle);
+            preloadTimerSounds(getTimerSoundSettings().soundStyle);
             if (storageKey) {
                 const saved = loadCircuitProgress(storageKey, planSignature);
                 if (saved) {
@@ -383,7 +341,6 @@ const CircuitTimer = forwardRef<CircuitTimerHandle, CircuitTimerProps>(
             return before.length - 1;
         })();
 
-        const soundLabel = settings.sound ? 'Desligar sons' : 'Ligar sons';
         const redoLabel =
             step?.kind === 'rest'
                 ? 'Refazer descanso'
@@ -439,42 +396,7 @@ const CircuitTimer = forwardRef<CircuitTimerHandle, CircuitTimerProps>(
                                 ? `${rounds} ${rounds === 1 ? 'rodada' : 'rodadas'} concluídas`
                                 : `Rodada ${Math.min(queueRound, rounds)} de ${rounds}`}
                         </span>
-                        {settings.sound && (
-                            <span
-                                className={styles.styleToggle}
-                                role="group"
-                                aria-label="Tipo de som"
-                            >
-                                {SOUND_STYLES.map((option) => (
-                                    <button
-                                        key={option.value}
-                                        type="button"
-                                        className={styles.styleOption}
-                                        onClick={() =>
-                                            chooseSoundStyle(option.value)
-                                        }
-                                        aria-pressed={
-                                            settings.soundStyle === option.value
-                                        }
-                                        title={option.title}
-                                    >
-                                        {option.label}
-                                    </button>
-                                ))}
-                            </span>
-                        )}
-                        <button
-                            type="button"
-                            className={styles.iconBtn}
-                            onClick={() =>
-                                updateSettings({ sound: !settings.sound })
-                            }
-                            aria-pressed={settings.sound}
-                            aria-label={soundLabel}
-                            title={soundLabel}
-                        >
-                            {settings.sound ? <FiVolume2 /> : <FiVolumeX />}
-                        </button>
+                        <TimerSoundToggle />
                     </span>
                 </div>
 

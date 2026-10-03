@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { FiChevronRight, FiPause, FiPlay, FiRotateCcw } from 'react-icons/fi';
 import { formatCountdown, useRestCountdown } from '@/hooks/useRestCountdown';
+import TimerSoundToggle from '@/components/molecules/TimerSoundToggle';
 import styles from './styles.module.css';
 
 /**
@@ -14,6 +15,10 @@ import styles from './styles.module.css';
  *
  * O relógio é o useRestCountdown (conta pelo instante de término, vibra ao
  * fim); o descanso ENTRE séries segue no cronômetro de descanso do card.
+ *
+ * Voz, no mesmo sentido do circuito (série = rodada): "Go!" ao iniciar; no
+ * fim, "3, 2, 1, Level up, Round 2" (ou "Final round") anuncia a próxima
+ * série, e a última fecha com "Time over, Congratulations, You win!".
  */
 export default function SeriesTimer({
     durations,
@@ -26,14 +31,31 @@ export default function SeriesTimer({
     const [index, setIndex] = useState(0);
     const safeIndex = Math.min(index, durations.length - 1);
     const seconds = durations[safeIndex] ?? 0;
-    const { remaining, running, finished, start, pause, reset } =
-        useRestCountdown(seconds);
     const hasNext = safeIndex < durations.length - 1;
+    const nextRound = safeIndex + 2;
+    const { remaining, running, finished, start, pause, reset } =
+        useRestCountdown(seconds, {
+            start: { kind: 'transition', cue: 'go' },
+            finish: hasNext
+                ? {
+                      kind: 'transition',
+                      cue: 'rest',
+                      roundCall: {
+                          round: nextRound,
+                          final: nextRound === durations.length,
+                      },
+                  }
+                : { kind: 'transition', cue: 'done' },
+        });
     const of = exerciseName ? ` de ${exerciseName}` : '';
     const state = finished ? 'done' : running ? 'running' : 'idle';
 
+    // reset(): o hook só zera sozinho quando a DURAÇÃO muda. Séries iguais
+    // (3 × 30 s) deixavam o "Tempo!" da anterior na tela, e o botão já
+    // oferecia a série seguinte — a 2ª era pulada.
     const goNext = () => {
         setIndex(safeIndex + 1);
+        reset();
     };
     const restart = () => {
         setIndex(0);
@@ -48,8 +70,11 @@ export default function SeriesTimer({
                 <span className={styles.label}>
                     Série {safeIndex + 1} de {durations.length}
                 </span>
-                <span className={styles.total}>
-                    prescrito: {formatCountdown(seconds)}
+                <span className={styles.headRight}>
+                    <span className={styles.total}>
+                        prescrito: {formatCountdown(seconds)}
+                    </span>
+                    <TimerSoundToggle />
                 </span>
             </div>
             <div className={styles.row}>

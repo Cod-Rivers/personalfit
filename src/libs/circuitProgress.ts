@@ -10,7 +10,7 @@
  *
  * localStorage pode lançar ou vir vazio (janela privada, dados bloqueados):
  * sem ele o circuito funciona, só não é retomado. Mesmo molde de
- * circuitSettings.ts.
+ * timerSoundSettings.ts.
  */
 import type { CircuitRunState } from './circuitRunner';
 

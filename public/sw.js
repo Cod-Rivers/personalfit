@@ -18,12 +18,12 @@ const GIF_CACHE = 'venafit-gifs-v1';
 const SHELL_CACHE = 'venafit-shell-v1';
 const MEDIA_HOSTS = ['midia.venafit.codriverslabs.com'];
 
-// Sons do cronômetro de circuito (src/libs/circuitSounds.ts), baixados na
+// Sons dos cronômetros do treino (src/libs/timerSounds.ts), baixados na
 // instalação para tocar offline desde o 1º uso. O Howler os busca por XHR
 // (destination vazio), que o cache de shell abaixo deixa passar direto —
-// sem esta lista o circuito ficava mudo sem rede. Os dois pacotes vêm, para
+// sem esta lista os cronômetros ficavam mudos sem rede. Os dois pacotes vêm, para
 // a troca Voz/Bipe também funcionar offline. Mantenha igual à lista do app
-// (circuitSounds.test.ts confere). Mudou um arquivo de som? Suba a versão
+// (timerSounds.test.ts confere). Mudou um arquivo de som? Suba a versão
 // do cache. O logout (clearSession) preserva este cache pelo prefixo.
 const SOUND_CACHE = 'venafit-sounds-v1';
 const SOUND_FILES = [

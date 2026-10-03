@@ -1,44 +1,54 @@
 /**
- * Sons do circuito, tocados com Howler.js (Web Audio, com fallback para
- * HTML5 Audio). Os arquivos ficam em public/sounds.
+ * Sons dos cronômetros do treino, tocados com Howler.js (Web Audio, com
+ * fallback para HTML5 Audio). Os arquivos ficam em public/sounds.
  *
- * Dois pacotes, escolha de quem executa (libs/circuitSettings.ts):
+ * Dois pacotes, escolha do aparelho (libs/timerSoundSettings.ts), que vale
+ * para todos os cronômetros:
  * - voice: locutora (Voiceover Pack do Kenney, kenney.nl, licença CC0 — uso
- *   comercial livre, sem crédito obrigatório). Roteiro de uma rodada:
- *     "Round 1" … "3, 2, 1, Ready" "Go!" … "3, 2, 1" "Time over" (recuperação)
- *     … "3, 2, 1" "Level up, Round 2" (descanso) … "Final round" na última
- *     … "Time over, Congratulations, You win!" no fim.
- * - beep: os bipes de antes — um por segundo e um som por transição; a
- *   rodada não é anunciada.
+ *   comercial livre, sem crédito obrigatório).
+ * - beep: bipes — um por segundo nos três últimos e um som por transição.
  *
- * Howler é importado sob demanda: só quem abre um circuito paga por ele, e o
- * módulo nunca é avaliado no servidor (ele toca em `window` ao carregar).
+ * Roteiro na voz, por cronômetro:
+ * - Circuito (CircuitTimer): "Round 1" … "3, 2, 1, Ready" "Go!" … "3, 2, 1"
+ *   "Time over" (recuperação) … "3, 2, 1" "Level up, Round 2" (descanso) …
+ *   "Final round" na última … "Time over, Congratulations, You win!" no fim.
+ * - Descanso entre séries (card do exercício, RestTimer): "3, 2, 1, Ready"
+ *   "Go!" — o descanso acabou, a próxima série começa.
+ * - Série por tempo (SeriesTimer): "Go!" ao iniciar; no fim, "3, 2, 1"
+ *   "Level up, Round 2" quando há outra série, "Time over, Congratulations,
+ *   You win!" na última. O RestTimer de uma série avulsa diz "Time over".
+ *
+ * Howler é importado sob demanda: só quem abre um cronômetro paga por ele, e
+ * o módulo nunca é avaliado no servidor (ele toca em `window` ao carregar).
  * Cada pacote só é decodificado quando escolhido.
  *
  * Offline: o service worker (public/sw.js, SOUND_FILES) baixa os arquivos
- * dos dois pacotes na instalação e os serve do cache — CIRCUIT_SOUND_FILES
+ * dos dois pacotes na instalação e os serve do cache — TIMER_SOUND_FILES
  * abaixo é a lista que ele precisa espelhar.
  *
  * Navegador e WebView bloqueiam áudio até um gesto do usuário. O Howler se
  * destrava sozinho no primeiro toque/clique depois de criado o primeiro Howl
- * — por isso o pré-carregamento acontece ao montar o cronômetro, e o botão
- * "Iniciar circuito" (o gesto) já toca o primeiro som.
+ * — por isso o pré-carregamento acontece ao montar o cronômetro, e o toque
+ * em "Iniciar" (o gesto) já toca o primeiro som.
  */
 import type { Howl } from 'howler';
 import type { CircuitCue, RoundCall } from './circuitRunner';
 
-export type CircuitSoundStyle = 'voice' | 'beep';
+export type TimerSoundStyle = 'voice' | 'beep';
 
-export type CircuitSoundEvent =
+export type TimerSoundEvent =
     /** Um dos três últimos segundos de uma contagem. `ready`: no zero começa
      * um exercício — a voz emenda "Ready" no "1" e o "Go!" cai no início. */
     | { kind: 'count'; n: 1 | 2 | 3; ready: boolean }
-    /** Entrada num estado novo do circuito (libs/circuitRunner.ts). */
+    /** Mudança de fase: as deixas são as do circuito (libs/circuitRunner.ts),
+     * reaproveitadas pelos outros cronômetros com o mesmo sentido — `go` =
+     * começa a série, `recover` = acabou o tempo dela, `rest` = troca de
+     * série, `done` = acabou tudo. */
     | { kind: 'transition'; cue?: CircuitCue; roundCall?: RoundCall };
 
 const NUMBERS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
 
-const CLIPS: Record<CircuitSoundStyle, readonly string[]> = {
+const CLIPS: Record<TimerSoundStyle, readonly string[]> = {
     voice: [
         ...NUMBERS,
         'ready',
@@ -53,14 +63,14 @@ const CLIPS: Record<CircuitSoundStyle, readonly string[]> = {
     beep: ['tick', 'go', 'recover', 'rest', 'done'],
 };
 
-const fileOf = (clip: string, style: CircuitSoundStyle) =>
+const fileOf = (clip: string, style: TimerSoundStyle) =>
     style === 'voice' ? `/sounds/voice/${clip}.mp3` : `/sounds/${clip}.wav`;
 
 /** Todos os arquivos dos dois pacotes. O service worker (public/sw.js,
- * SOUND_FILES) baixa estes mesmos na instalação para o circuito tocar
- * offline — circuitSounds.test.ts confere que as listas batem. */
-export const CIRCUIT_SOUND_FILES: string[] = (
-    Object.keys(CLIPS) as CircuitSoundStyle[]
+ * SOUND_FILES) baixa estes mesmos na instalação para os cronômetros tocarem
+ * offline — timerSounds.test.ts confere que as listas batem. */
+export const TIMER_SOUND_FILES: string[] = (
+    Object.keys(CLIPS) as TimerSoundStyle[]
 ).flatMap((style) => CLIPS[style].map((clip) => fileOf(clip, style)));
 
 /** Só há número gravado até 10: acima disso a voz diz só "Round". */
@@ -70,9 +80,9 @@ function voiceRound(call: RoundCall): string[] {
 }
 
 /** Falas (ou bipes) de um evento, na ordem em que tocam. */
-export function circuitSoundSequence(
-    event: CircuitSoundEvent,
-    style: CircuitSoundStyle,
+export function timerSoundSequence(
+    event: TimerSoundEvent,
+    style: TimerSoundStyle,
 ): string[] {
     if (style === 'beep') {
         if (event.kind === 'count') return ['tick'];
@@ -99,16 +109,16 @@ export function circuitSoundSequence(
 
 type Clip = {
     howl: Howl;
-    kind: CircuitSoundEvent['kind'];
+    kind: TimerSoundEvent['kind'];
     /** Solta os ouvintes de fim desta fala (tocou até o fim ou foi cortada). */
     release?: () => void;
 };
 
 const loading: Partial<
-    Record<CircuitSoundStyle, Promise<Map<string, Howl> | null>>
+    Record<TimerSoundStyle, Promise<Map<string, Howl> | null>>
 > = {};
 
-function load(style: CircuitSoundStyle): Promise<Map<string, Howl> | null> {
+function load(style: TimerSoundStyle): Promise<Map<string, Howl> | null> {
     if (typeof window === 'undefined') return Promise.resolve(null);
     let pack = loading[style];
     if (!pack) {
@@ -172,7 +182,7 @@ function interrupt() {
 }
 
 /** Baixa e decodifica um pacote antes do primeiro uso. */
-export function preloadCircuitSounds(style: CircuitSoundStyle): void {
+export function preloadTimerSounds(style: TimerSoundStyle): void {
     void load(style);
 }
 
@@ -185,11 +195,11 @@ export function preloadCircuitSounds(style: CircuitSoundStyle): void {
  * "Pular" seguidos não falam uma frase por cima da outra, e a contagem nunca
  * atrasa.
  */
-export function playCircuitSound(
-    event: CircuitSoundEvent,
-    style: CircuitSoundStyle,
+export function playTimerSound(
+    event: TimerSoundEvent,
+    style: TimerSoundStyle,
 ): void {
-    const names = circuitSoundSequence(event, style);
+    const names = timerSoundSequence(event, style);
     if (names.length === 0) return;
     void load(style).then((howls) => {
         if (!howls) return;

@@ -379,10 +379,10 @@ async function runClearSession(): Promise<void> {
         /* melhor-esforço: não bloquear o logout por falha de limpeza */
     }
 
-    // Cache Storage do service worker (respostas cacheadas). Os sons do
-    // cronômetro de circuito ficam: são arquivos públicos do app, não dados
+    // Cache Storage do service worker (respostas cacheadas). Os sons dos
+    // cronômetros do treino ficam: são arquivos públicos do app, não dados
     // da conta, e o SW só os baixa de novo na próxima atualização — apagar
-    // deixaria o circuito mudo offline até lá. Prefixo em sincronia com
+    // deixaria os cronômetros mudos offline até lá. Prefixo em sincronia com
     // SOUND_CACHE em public/sw.js.
     try {
         if ('caches' in window) {

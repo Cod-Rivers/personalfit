@@ -8,13 +8,13 @@ import {
 } from '@testing-library/react';
 import { createRef } from 'react';
 import CircuitTimer, { type CircuitTimerHandle } from './index';
-import { playCircuitSound, type CircuitSoundEvent } from '@/libs/circuitSounds';
+import { playTimerSound, type TimerSoundEvent } from '@/libs/timerSounds';
 import { PREP_SECONDS, RESUME_PREP_SECONDS } from '@/libs/circuitRunner';
 
 // Howler não toca em jsdom: os sons são espiados no módulo.
-vi.mock('@/libs/circuitSounds', () => ({
-    playCircuitSound: vi.fn(),
-    preloadCircuitSounds: vi.fn(),
+vi.mock('@/libs/timerSounds', () => ({
+    playTimerSound: vi.fn(),
+    preloadTimerSounds: vi.fn(),
 }));
 
 /**
@@ -24,7 +24,7 @@ vi.mock('@/libs/circuitSounds', () => ({
 describe('CircuitTimer', () => {
     beforeEach(() => {
         vi.useFakeTimers();
-        vi.mocked(playCircuitSound).mockClear();
+        vi.mocked(playTimerSound).mockClear();
         window.localStorage.clear();
         Element.prototype.scrollIntoView = vi.fn();
     });
@@ -245,9 +245,9 @@ describe('CircuitTimer', () => {
         });
 
         const styles = () =>
-            vi.mocked(playCircuitSound).mock.calls.map((c) => c[1]);
+            vi.mocked(playTimerSound).mock.calls.map((c) => c[1]);
         /** Rótulo curto do evento: "3", "1+ready", "go", "rest+final"… */
-        const label = (e: CircuitSoundEvent) => {
+        const label = (e: TimerSoundEvent) => {
             if (e.kind === 'count') return e.ready ? `${e.n}+ready` : `${e.n}`;
             const round = e.roundCall
                 ? e.roundCall.final
@@ -259,7 +259,7 @@ describe('CircuitTimer', () => {
         let seen = 0;
         /** Eventos tocados desde a última chamada. */
         const heard = () => {
-            const calls = vi.mocked(playCircuitSound).mock.calls;
+            const calls = vi.mocked(playTimerSound).mock.calls;
             const fresh = calls.slice(seen).map((c) => label(c[0]));
             seen = calls.length;
             return fresh;
@@ -357,7 +357,7 @@ describe('CircuitTimer', () => {
                 ),
             ).toMatchObject({ sound: true, soundStyle: 'beep' });
 
-            vi.mocked(playCircuitSound).mockClear();
+            vi.mocked(playTimerSound).mockClear();
             tick(20_000); // A -> B, já com os bipes
             expect(heard()).toEqual(['3', '2', '1+ready', 'go']);
             expect(new Set(styles())).toEqual(new Set(['beep']));
@@ -382,7 +382,7 @@ describe('CircuitTimer', () => {
             ).toBeNull();
             startNow();
             tick(20_000);
-            expect(playCircuitSound).not.toHaveBeenCalled();
+            expect(playTimerSound).not.toHaveBeenCalled();
         });
     });
 

@@ -1,0 +1,110 @@
+/* Escolha do som dos cronômetros (ver index.tsx). Tokens de
+   app/css/constants.css. */
+.full {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+/* Botão de ícone com área de toque de ~44px sem aumentar o ícone. */
+.iconBtn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+    background: transparent;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.iconBtn::after {
+    content: '';
+    position: absolute;
+    inset: -8px;
+}
+
+.iconBtn[aria-pressed='false'] {
+    color: var(--text-muted);
+}
+
+/* Voz × Bipe: as duas opções à vista, a escolhida preenchida. Mesma altura
+   do botão de som, com a área de toque esticada na vertical. */
+.styleToggle {
+    display: inline-flex;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+}
+
+.styleOption {
+    position: relative;
+    min-width: 2.5rem;
+    height: 26px;
+    padding: 0 var(--space-2);
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: var(--font-xs);
+    cursor: pointer;
+}
+
+.styleOption::after {
+    content: '';
+    position: absolute;
+    inset: -9px 0;
+}
+
+.styleOption:first-child {
+    border-radius: var(--radius-md) 0 0 var(--radius-md);
+}
+
+.styleOption:last-child {
+    border-left: 1px solid var(--border-subtle);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+
+.styleOption[aria-pressed='true'] {
+    background: var(--mint-glow);
+    color: var(--mint-text);
+    font-weight: 600;
+}
+
+/* Compacto: o mesmo botão de ~22px do RestTimer (ver o .btn de lá), alvo de
+   toque esticado só na vertical para não invadir o botão vizinho. */
+.compact {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.5rem;
+    min-height: 1.375rem;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-primary);
+    font-size: var(--font-sm);
+    cursor: pointer;
+}
+
+.compact::before {
+    content: '';
+    position: absolute;
+    inset: -11px 0;
+}
+
+.compact[data-mode='off'] {
+    color: var(--text-muted);
+}
+
+.compact:active {
+    transform: scale(0.94);
+}
+
+.compact:focus-visible {
+    outline: 2px solid var(--mint);
+    outline-offset: 1px;
+}

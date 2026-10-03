@@ -2,12 +2,12 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
-    CIRCUIT_SOUND_FILES,
-    circuitSoundSequence,
-    type CircuitSoundEvent,
-} from './circuitSounds';
+    TIMER_SOUND_FILES,
+    timerSoundSequence,
+    type TimerSoundEvent,
+} from './timerSounds';
 
-const count = (n: 1 | 2 | 3, ready = false): CircuitSoundEvent => ({
+const count = (n: 1 | 2 | 3, ready = false): TimerSoundEvent => ({
     kind: 'count',
     n,
     ready,
@@ -15,10 +15,10 @@ const count = (n: 1 | 2 | 3, ready = false): CircuitSoundEvent => ({
 const transition = (
     cue?: 'go' | 'recover' | 'rest' | 'done',
     roundCall?: { round: number; final: boolean },
-): CircuitSoundEvent => ({ kind: 'transition', cue, roundCall });
+): TimerSoundEvent => ({ kind: 'transition', cue, roundCall });
 
-describe('circuitSoundSequence — voz', () => {
-    const voice = (e: CircuitSoundEvent) => circuitSoundSequence(e, 'voice');
+describe('timerSoundSequence — voz', () => {
+    const voice = (e: TimerSoundEvent) => timerSoundSequence(e, 'voice');
 
     it('contagem fala o número; no "1" antes de exercício emenda "Ready"', () => {
         expect(voice(count(3))).toEqual(['3']);
@@ -67,8 +67,8 @@ describe('circuitSoundSequence — voz', () => {
     });
 });
 
-describe('circuitSoundSequence — bipe', () => {
-    const beep = (e: CircuitSoundEvent) => circuitSoundSequence(e, 'beep');
+describe('timerSoundSequence — bipe', () => {
+    const beep = (e: TimerSoundEvent) => timerSoundSequence(e, 'beep');
 
     it('igual ao de antes: um bip por segundo e um som por transição', () => {
         expect(beep(count(3))).toEqual(['tick']);
@@ -92,7 +92,7 @@ describe('circuitSoundSequence — bipe', () => {
 
 describe('arquivos de som', () => {
     it('toda fala de qualquer sequência tem arquivo no pacote', () => {
-        const events: CircuitSoundEvent[] = [
+        const events: TimerSoundEvent[] = [
             count(1, true),
             count(2),
             count(3),
@@ -108,10 +108,8 @@ describe('arquivos de som', () => {
             const ext = style === 'voice' ? 'mp3' : 'wav';
             const dir = style === 'voice' ? '/sounds/voice/' : '/sounds/';
             for (const e of events) {
-                for (const clip of circuitSoundSequence(e, style)) {
-                    expect(CIRCUIT_SOUND_FILES).toContain(
-                        `${dir}${clip}.${ext}`,
-                    );
+                for (const clip of timerSoundSequence(e, style)) {
+                    expect(TIMER_SOUND_FILES).toContain(`${dir}${clip}.${ext}`);
                 }
             }
         }
@@ -125,8 +123,8 @@ describe('arquivos de som', () => {
         const precached = [...block![1].matchAll(/'([^']+)'/g)].map(
             (m) => m[1],
         );
-        expect([...precached].sort()).toEqual([...CIRCUIT_SOUND_FILES].sort());
-        for (const file of CIRCUIT_SOUND_FILES) {
+        expect([...precached].sort()).toEqual([...TIMER_SOUND_FILES].sort());
+        for (const file of TIMER_SOUND_FILES) {
             expect(() =>
                 readFileSync(resolve(root, 'public', `.${file}`)),
             ).not.toThrow();

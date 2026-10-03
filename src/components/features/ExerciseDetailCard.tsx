@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import {
     FiImage,
@@ -62,7 +62,17 @@ import HelpTooltip from '@/components/atoms/HelpTooltip';
 import DoneToggle from '@/components/atoms/DoneToggle';
 import TechniqueHelpTooltip from '@/components/molecules/TechniqueHelpTooltip';
 import ExternalLink from '@/components/atoms/ExternalLink';
+import TimerSoundToggle from '@/components/molecules/TimerSoundToggle';
 import { getGlossaryTerm } from '@/libs/glossaryContent';
+import {
+    useRestCountdown,
+    type CountdownSounds,
+} from '@/hooks/useRestCountdown';
+
+/** Fim do descanso: "3, 2, 1, Ready, Go!" — a próxima série começa. */
+const REST_SOUNDS: CountdownSounds = {
+    finish: { kind: 'transition', cue: 'go' },
+};
 
 interface ExerciseDetailCardProps {
     exercise: ExerciseLog;
@@ -150,10 +160,16 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
     onShowHistory,
 }) => {
     // --- Estados ---
-    const [timerValue, setTimerValue] = useState<number>(
-        exercise.restTime || 60,
-    );
-    const [isTimerRunning, setIsTimerRunning] = useState<boolean>(false);
+    // Descanso entre séries: o relógio do useRestCountdown (conta pelo
+    // instante de término — o decremento por segundo de antes atrasava com a
+    // tela bloqueada) e o som da preferência do aparelho.
+    const {
+        remaining: timerValue,
+        running: isTimerRunning,
+        start: handleStartTimer,
+        pause: handlePauseTimer,
+        reset: handleResetTimer,
+    } = useRestCountdown(exercise.restTime || 60, REST_SOUNDS);
     const [isVideoPlayerOpen, setIsVideoPlayerOpen] = useState(false);
     const [videoAspectRatio, setVideoAspectRatio] = useState<number | null>(
         null,
@@ -201,32 +217,18 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
     // card para baixo.
     const [editorOpen, setEditorOpen] = useState(false);
     // --- Efeitos ---
-    Racional: useEffect(() => {
-        // Lógica do cronômetro
-        let interval: NodeJS.Timeout | null = null;
-        if (isTimerRunning && timerValue > 0) {
-            interval = setInterval(() => {
-                setTimerValue((prevTime) => prevTime - 1);
-            }, 1000);
-        } else if (timerValue === 0 && isTimerRunning) {
-            setIsTimerRunning(false);
-            alert('Tempo de descanso finalizado!');
-        }
-        return () => {
-            if (interval) {
-                clearInterval(interval);
-            }
-        };
-    }, [isTimerRunning, timerValue]);
-
     useEffect(() => {
         // Resetar o cronômetro ao mudar de exercício
-        setTimerValue(exercise.restTime || 60);
-        setIsTimerRunning(false);
+        handleResetTimer();
         setThumbAspectRatio(null);
         setIsPrescribedWeightEditing(false);
         setPrescribedWeightValue(exercise.plannedWeight ?? '');
-    }, [exercise.restTime, exercise.id, exercise.plannedWeight]);
+    }, [
+        exercise.restTime,
+        exercise.id,
+        exercise.plannedWeight,
+        handleResetTimer,
+    ]);
 
     // Sincroniza o formulário de séries com a prescrição vigente. A chave é a
     // ASSINATURA do conteúdo, não a identidade do objeto: os chamadores
@@ -304,21 +306,6 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
     }, [exercise.id, readOnly]);
 
     // --- Funções de Callback e Auxiliares ---
-    const handleStartTimer = useCallback(() => {
-        if (timerValue > 0) {
-            setIsTimerRunning(true);
-        }
-    }, [timerValue]);
-
-    const handlePauseTimer = useCallback(() => {
-        setIsTimerRunning(false);
-    }, []);
-
-    const handleResetTimer = useCallback(() => {
-        setIsTimerRunning(false);
-        setTimerValue(exercise.restTime || 60);
-    }, [exercise.restTime]);
-
     const formatTime = (timeInSeconds: number): string => {
         const minutes = Math.floor(timeInSeconds / 60);
         const seconds = timeInSeconds % 60;
@@ -1718,6 +1705,9 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                                     label="Ajuda sobre descanso entre exercícios"
                                                 />
                                             </span>
+                                            <TimerSoundToggle
+                                                className={styles.timerSound}
+                                            />
                                         </div>
                                         <div className={styles.timerControls}>
                                             {!isTimerRunning &&
