@@ -26,6 +26,8 @@ export function planOriginLabel(
             return 'Importado de PDF';
         case 'self_made':
             return 'Criado por você';
+        case 'kept':
+            return 'Plano mantido';
         case 'anamnesis':
             return 'Plano automático';
         default:
@@ -35,9 +37,14 @@ export function planOriginLabel(
     }
 }
 
-/** Só o que o próprio aluno trouxe pode ser removido por ele. */
+/** Só o que o próprio aluno trouxe (ou pagou para manter) pode ser removido
+ * por ele. */
 function isRemovable(plan: MacrocycleResponse): boolean {
-    return plan.category === 'celebrity' || plan.category === 'imported_pdf';
+    return (
+        plan.category === 'celebrity' ||
+        plan.category === 'imported_pdf' ||
+        plan.category === 'kept'
+    );
 }
 
 interface CurrentPlanCardProps {

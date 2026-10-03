@@ -20,6 +20,8 @@ import {
     launchGooglePlayPurchase,
     purchaseLibraryPlanCard,
     purchaseLibraryPlanPix,
+    purchaseLockedPlanCard,
+    purchaseLockedPlanPix,
     startProTrial,
     subscribeProCard,
     subscribeProPix,
@@ -71,6 +73,14 @@ const PLANO_BENEFITS = [
     'Baixe para treinar offline, onde e quando quiser',
 ];
 
+// Manter o plano que o personal montou, bloqueado no desvínculo do fim da
+// espera do plano gratuito (produto=plano&planId=...). Mesmo produto e preço.
+const MANTER_BENEFITS = [
+    'O mesmo treino que o seu personal montou, com tudo o que você já registrou',
+    'Volta para Meus Treinos assim que o pagamento é confirmado',
+    'Fica com você: baixe para treinar offline quando quiser',
+];
+
 // Benefícios do Aluno Plus (aluno sem personal). Ver
 // Todo/PLANO_MONETIZACAO_FREE_PRO.md §5.2.
 const PLUS_BENEFITS = [
@@ -118,6 +128,10 @@ function PaymentPageInner() {
               ? 'plus'
               : 'pro';
     const templateId = searchParams.get('templateId') ?? '';
+    // Com planId, a compra do plano avulso mantém o plano bloqueado do
+    // personal em vez de aplicar um modelo da loja (mesmo produto e preço).
+    const lockedPlanId = searchParams.get('planId') ?? '';
+    const keepsPlan = produto === 'plano' && lockedPlanId !== '';
     // Planos que o aluno já tinha ANTES da compra: no polling do PIX, a compra
     // confirmada (o webhook aplica o plano) aparece como um plano novo. Não
     // dá para comparar "o plano ativo": com personal, a compra não encerra o
@@ -187,15 +201,19 @@ function PaymentPageInner() {
     const productTitle =
         produto === 'pro'
             ? `Plano PRO — ${CYCLE_LABELS[cycle] ?? cycle}`
-            : produto === 'plano'
-              ? 'Plano de treino selecionado'
-              : 'Aluno Plus — Mensal';
+            : keepsPlan
+              ? 'Manter o plano do seu personal'
+              : produto === 'plano'
+                ? 'Plano de treino selecionado'
+                : 'Aluno Plus — Mensal';
     const benefits =
         produto === 'pro'
             ? PRO_BENEFITS
-            : produto === 'plano'
-              ? PLANO_BENEFITS
-              : PLUS_BENEFITS;
+            : keepsPlan
+              ? MANTER_BENEFITS
+              : produto === 'plano'
+                ? PLANO_BENEFITS
+                : PLUS_BENEFITS;
     const benefitsTitle =
         produto === 'pro'
             ? 'O que o PRO desbloqueia para você (personal):'
@@ -285,7 +303,9 @@ function PaymentPageInner() {
                 } catch {
                     plansBefore.current = null;
                 }
-                const res = await purchaseLibraryPlanPix(templateId);
+                const res = keepsPlan
+                    ? await purchaseLockedPlanPix(lockedPlanId)
+                    : await purchaseLibraryPlanPix(templateId);
                 setPix({
                     qrImageUrl: res.qr_image_url,
                     payload: res.qr_code_payload,
@@ -319,7 +339,8 @@ function PaymentPageInner() {
                 productId,
                 result.purchaseToken!,
                 productType,
-                produto === 'plano' ? templateId : undefined,
+                produto === 'plano' && !keepsPlan ? templateId : undefined,
+                keepsPlan ? lockedPlanId : undefined,
             );
             if (verify.success) {
                 if (produto === 'pro') updateSessionPlanType('pro');
@@ -374,7 +395,9 @@ function PaymentPageInner() {
                     <p>
                         {produto === 'pro'
                             ? 'Seu plano PRO está ativo. Aproveite todos os recursos.'
-                            : produto === 'plano'
+                            : keepsPlan
+                              ? 'O plano que o seu personal montou voltou para você. Bora treinar!'
+                              : produto === 'plano'
                               ? 'Seu novo plano de treino está ativo. Bora treinar!'
                               : 'Seu Aluno Plus está ativo: sem anúncios, com a Substituição Inteligente de Exercícios e os links do Instagram e do TikTok.'}
                     </p>
@@ -684,7 +707,9 @@ function PaymentPageInner() {
                                             setError('');
                                             setLoading(true);
                                             try {
-                                                const res = await purchaseLibraryPlanCard(templateId, form);
+                                                const res = keepsPlan
+                                                    ? await purchaseLockedPlanCard(lockedPlanId, form)
+                                                    : await purchaseLibraryPlanCard(templateId, form);
                                                 setLoading(false);
                                                 if (res.applied) {
                                                     setConfirmed(true);

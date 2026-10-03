@@ -784,6 +784,25 @@ export async function getMyPlannings(): Promise<MacrocycleResponse[]> {
     return data ?? [];
 }
 
+/**
+ * Plano que o personal montou e que ficou bloqueado quando o aluno foi
+ * desvinculado no fim da espera do plano gratuito do personal. O aluno pode
+ * mantê-lo pelo preço do plano avulso (`value`) até `purge_at`; depois ele é
+ * apagado.
+ */
+export interface LockedPlan {
+    id: string;
+    name: string;
+    goal?: string;
+    purge_at: string;
+    value: number;
+}
+
+export async function getMyLockedPlans(): Promise<LockedPlan[]> {
+    const { data } = await Api.get<LockedPlan[]>('/my-planning/locked');
+    return data ?? [];
+}
+
 /** DELETE /my-planning/:planningId — remove um plano que o aluno escolheu
  * (biblioteca estilo-famosos). Backend responde 403 para planos montados
  * pelo personal. */

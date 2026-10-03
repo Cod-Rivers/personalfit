@@ -219,6 +219,33 @@ export async function purchaseLibraryPlanCard(
     return res.data;
 }
 
+/**
+ * Compra para manter o plano que o personal montou e que ficou bloqueado
+ * quando o aluno foi desvinculado no fim da espera do plano gratuito. Mesmo
+ * produto e preço do plano avulso; PIX confirma pelo webhook.
+ */
+export async function purchaseLockedPlanPix(
+    planId: string,
+): Promise<PurchaseLibraryPlanResponse> {
+    const res = await Api.post<PurchaseLibraryPlanResponse>(
+        `/my-planning/locked/${planId}/purchase`,
+        { payment_method: 'PIX' },
+    );
+    return res.data;
+}
+
+/** Manter o plano bloqueado pagando no cartão (síncrono). */
+export async function purchaseLockedPlanCard(
+    planId: string,
+    card: CardSubscriptionForm,
+): Promise<PurchaseLibraryPlanResponse> {
+    const res = await Api.post<PurchaseLibraryPlanResponse>(
+        `/my-planning/locked/${planId}/purchase`,
+        { payment_method: 'CREDIT_CARD', ...card },
+    );
+    return res.data;
+}
+
 /* ── Google Play Billing (bridge nativa do app Android) ── */
 
 export interface GooglePlayVerifyResponse {
@@ -232,12 +259,15 @@ export async function verifyGooglePlayPurchase(
     purchaseToken: string,
     productType: 'subs' | 'inapp',
     templateId?: string,
+    /** Manter o plano bloqueado (mesmo produto do plano avulso). */
+    lockedPlanId?: string,
 ): Promise<GooglePlayVerifyResponse> {
     const res = await Api.post<GooglePlayVerifyResponse>('/billing/google/verify', {
         product_id: productId,
         purchase_token: purchaseToken,
         product_type: productType,
         ...(templateId ? { template_id: templateId } : {}),
+        ...(lockedPlanId ? { locked_plan_id: lockedPlanId } : {}),
     });
     return res.data;
 }

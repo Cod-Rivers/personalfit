@@ -58,7 +58,10 @@ const studentSections: HelpSection[] = [
                     por 2 meses, mas ele não é alterado. Uma semana antes do
                     fim você recebe outro aviso. Se o personal voltar ao PRO
                     nesse prazo, tudo continua; senão, o vínculo com ele é
-                    encerrado.
+                    encerrado e o treino montado por ele fica bloqueado. Por
+                    30 dias você pode mantê-lo pelo valor de um plano avulso,
+                    pelo aviso em Meus Treinos; depois disso ele é apagado. O
+                    histórico do que você já registrou continua seu.
                 </p>
             </>
         ),
@@ -3404,7 +3407,9 @@ const personalSections: HelpSection[] = [
                     continuam treinando o plano atual e você ainda vê os dados
                     deles, mas não altera nada. Se você assinar o PRO nesse
                     prazo, todos voltam ao normal; senão, os alunos em espera
-                    são desvinculados. Se você não escolher, ficam os 3
+                    são desvinculados, e o treino que você montou para eles
+                    fica bloqueado (o aluno pode comprá-lo para mantê-lo).
+                    Se você não escolher, ficam os 3
                     vínculos mais antigos. Os alunos em espera são avisados
                     por notificação, e uma semana antes do fim do prazo você
                     e eles recebem um lembrete.
