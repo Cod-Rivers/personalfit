@@ -423,8 +423,8 @@ function PaymentPageInner() {
 
     if (trialStarted) {
         return (
-            <div className="container-box">
-                <div className="main_box p-4 text-center">
+            <div className="pay-page">
+                <div className="pay-box pay-box--narrow text-center">
                     <i className="fa-solid fa-circle-check text-success fa-3x mb-3"></i>
                     <h2 className="h4">Seu teste do PRO começou!</h2>
                     <p>
@@ -443,8 +443,8 @@ function PaymentPageInner() {
 
     if (confirmed) {
         return (
-            <div className="container-box">
-                <div className="main_box p-4 text-center">
+            <div className="pay-page">
+                <div className="pay-box pay-box--narrow text-center">
                     <i className="fa-solid fa-circle-check text-success fa-3x mb-3"></i>
                     <h2 className="h4">Pagamento confirmado!</h2>
                     <p>
@@ -474,21 +474,21 @@ function PaymentPageInner() {
     }
 
     return (
-        <div className="container-box">
-            <div className="main_box">
-                <header className="m-3 d-flex align-items-center gap-4">
+        <div className="pay-page">
+            <div className="pay-box">
+                <header className="pay-header">
                     <Image
                         src="/assets/images/logo.png"
                         alt="logo"
                         width={150}
                         height={70}
                     />
-                    <h1 className="h3 mt-2">Pagamento</h1>
+                    <h1 className="h3">Pagamento</h1>
                 </header>
 
-                <div className="mx-3">
+                <div className="mb-3">
                     <button
-                        className="btn btn-outline-secondary btn-sm mb-3 d-inline-flex align-items-center gap-2"
+                        className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2"
                         onClick={() =>
                             router.push(
                                 isPersonalPlan
@@ -502,7 +502,7 @@ function PaymentPageInner() {
                 </div>
 
                 {error && (
-                    <div className="alert alert-danger m-3" role="alert">
+                    <div className="alert alert-danger" role="alert">
                         {error}
                     </div>
                 )}
@@ -512,7 +512,7 @@ function PaymentPageInner() {
                     plano invalidaria a cobrança já gerada — daí o onSelect
                     sair de cena nesse caso. */}
                 {isPersonalPlan && (
-                    <div className="m-3">
+                    <div className="pay-section">
                         <PersonalPlanLadder
                             plusPrice={catalog?.personal_plus.value}
                             proPrice={catalog?.pro.find((p) => p.cycle === 'MONTHLY')?.value}
@@ -533,23 +533,27 @@ function PaymentPageInner() {
                 )}
 
                 {produto === 'pro' && trial?.pro_trial_eligible && (
-                    <div className="alert alert-success m-3" role="status">
-                        <p className="fw-semibold mb-1">Teste o PRO por 14 dias, de graça</p>
-                        <p className="small mb-2">
-                            Sem cartão e sem cobrança. Se não assinar até o fim, a conta
-                            volta ao plano gratuito sozinha. Vale uma vez por conta.
-                        </p>
-                        <button
-                            className="btn btn-gold btn-sm"
-                            onClick={handleStartTrial}
-                            disabled={loading}
-                        >
-                            Começar teste grátis
-                        </button>
+                    <div className="alert alert-success pay-section mb-0" role="status">
+                        <div className="pay-trial">
+                            <div className="pay-trial-text">
+                                <p className="fw-semibold mb-1">Teste o PRO por 14 dias, de graça</p>
+                                <p className="small">
+                                    Sem cartão e sem cobrança. Se não assinar até o fim, a conta
+                                    volta ao plano gratuito sozinha. Vale uma vez por conta.
+                                </p>
+                            </div>
+                            <button
+                                className="btn btn-gold btn-sm"
+                                onClick={handleStartTrial}
+                                disabled={loading}
+                            >
+                                Começar teste grátis
+                            </button>
+                        </div>
                     </div>
                 )}
                 {produto === 'pro' && trial?.pro_trial_active && (
-                    <div className="alert alert-info m-3" role="status">
+                    <div className="alert alert-info pay-section mb-0" role="status">
                         Você está no teste grátis do PRO até{' '}
                         <strong>{formatDate(trial.pro_trial_ends_at)}</strong> (
                         {daysUntil(trial.pro_trial_ends_at)} dia(s)). Assine para não
@@ -557,97 +561,90 @@ function PaymentPageInner() {
                     </div>
                 )}
 
-                <div className="row g-3 m-3 py-3">
-                    <div className="col-12 col-md-6 order-first order-md-last">
-                        <div className="card">
-                            <div className="card-body">
-                                <h5 className="card-title">Resumo do Pedido</h5>
-                                <p className="card-text fw-semibold">{productTitle}</p>
+                <div className="pay-grid">
+                    <aside className="pay-summary" aria-labelledby="summaryTitle">
+                        <h2 id="summaryTitle">Resumo do pedido</h2>
+                        <p className="pay-summary-product">{productTitle}</p>
 
-                                <p className="small text-muted mb-2">{benefitsTitle}</p>
-                                <ul className="list-unstyled mb-3">
-                                    {benefits.map((b) => (
-                                        <li
-                                            key={b}
-                                            className="d-flex align-items-start gap-2 mb-2"
-                                        >
-                                            <i className="fa-solid fa-circle-check text-success mt-1"></i>
-                                            <span>{b}</span>
-                                        </li>
+                        <p className="small text-muted mb-2">{benefitsTitle}</p>
+                        <ul className="pay-benefits">
+                            {benefits.map((b) => (
+                                <li key={b}>
+                                    <i className="fa-solid fa-circle-check" aria-hidden="true"></i>
+                                    <span>{b}</span>
+                                </li>
+                            ))}
+                        </ul>
+
+                        {produto === 'pro' && (
+                            <p className="small text-muted mb-3">
+                                Seus alunos registram a própria evolução
+                                (medidas e fotos) de graça. O plano
+                                alimentar fica liberado para os alunos
+                                vinculados a você.
+                            </p>
+                        )}
+
+                        {produto === 'pro' && catalog && (
+                            <div className="mb-3">
+                                <label htmlFor="cycleSelect" className="form-label">
+                                    Ciclo de cobrança
+                                </label>
+                                <select
+                                    id="cycleSelect"
+                                    className="form-select"
+                                    value={cycle}
+                                    disabled={!!pix}
+                                    onChange={(e) => setCycle(e.target.value)}
+                                >
+                                    {catalog.pro.map((p) => (
+                                        <option key={p.cycle} value={p.cycle}>
+                                            {CYCLE_LABELS[p.cycle ?? ''] ?? p.cycle} —{' '}
+                                            {formatBRL(p.value)}
+                                        </option>
                                     ))}
-                                </ul>
-
-                                {produto === 'pro' && (
-                                    <p className="small text-muted mb-3">
-                                        Seus alunos registram a própria evolução
-                                        (medidas e fotos) de graça. O plano
-                                        alimentar fica liberado para os alunos
-                                        vinculados a você.
-                                    </p>
-                                )}
-
-                                {produto === 'pro' && catalog && (
-                                    <div className="mb-3">
-                                        <label htmlFor="cycleSelect" className="form-label">
-                                            Ciclo de cobrança
-                                        </label>
-                                        <select
-                                            id="cycleSelect"
-                                            className="form-select"
-                                            value={cycle}
-                                            disabled={!!pix}
-                                            onChange={(e) => setCycle(e.target.value)}
-                                        >
-                                            {catalog.pro.map((p) => (
-                                                <option key={p.cycle} value={p.cycle}>
-                                                    {CYCLE_LABELS[p.cycle ?? ''] ?? p.cycle} —{' '}
-                                                    {formatBRL(p.value)}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                )}
-
-                                {produto === 'pro' && (
-                                    <div className="mb-3">
-                                        <label
-                                            htmlFor="indicationSelect"
-                                            className="form-label"
-                                        >
-                                            Como você conheceu a plataforma?
-                                        </label>
-                                        <select
-                                            id="indicationSelect"
-                                            className="form-select"
-                                            value={indicationReceiver}
-                                            disabled={!!pix}
-                                            onChange={(e) =>
-                                                setIndicationReceiver(e.target.value)
-                                            }
-                                        >
-                                            <option value={INDICATION_NONE}>
-                                                Nenhuma Indicação
-                                            </option>
-                                            <option value="instagram">Instagram</option>
-                                            <option value="facebook">Facebook</option>
-                                            <option value="youtube">YouTube</option>
-                                            {partners.map((p) => (
-                                                <option key={p.id} value={p.code}>
-                                                    {p.name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                )}
-                                <p className="card-text fw-bold">
-                                    Total: {price != null ? formatBRL(price) : '—'}
-                                    {produto === 'plus' && price != null ? ' por mês' : ''}
-                                </p>
+                                </select>
                             </div>
-                        </div>
-                    </div>
+                        )}
 
-                    <div className="col-12 col-md-6">
+                        {produto === 'pro' && (
+                            <div className="mb-3">
+                                <label
+                                    htmlFor="indicationSelect"
+                                    className="form-label"
+                                >
+                                    Como você conheceu a plataforma?
+                                </label>
+                                <select
+                                    id="indicationSelect"
+                                    className="form-select"
+                                    value={indicationReceiver}
+                                    disabled={!!pix}
+                                    onChange={(e) =>
+                                        setIndicationReceiver(e.target.value)
+                                    }
+                                >
+                                    <option value={INDICATION_NONE}>
+                                        Nenhuma Indicação
+                                    </option>
+                                    <option value="instagram">Instagram</option>
+                                    <option value="facebook">Facebook</option>
+                                    <option value="youtube">YouTube</option>
+                                    {partners.map((p) => (
+                                        <option key={p.id} value={p.code}>
+                                            {p.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+                        <p className="pay-total">
+                            Total: {price != null ? formatBRL(price) : '—'}
+                            {produto === 'plus' && price != null ? ' por mês' : ''}
+                        </p>
+                    </aside>
+
+                    <div className="pay-checkout">
                         {unavailableReason ? (
                             <div className="alert alert-info" role="status">
                                 {unavailableReason}
@@ -655,10 +652,10 @@ function PaymentPageInner() {
                         ) : (
                             <>
                                 {!pix && methods.length > 1 && (
-                                    <div className="d-flex gap-2 flex-wrap">
+                                    <div className="pay-methods">
                                         {methods.includes('pix') && (
                                             <button
-                                                className={`btn btn-${metodo !== 'pix' ? 'outline-' : ''}gold flex-fill`}
+                                                className={`btn btn-${metodo !== 'pix' ? 'outline-' : ''}gold`}
                                                 onClick={() => setMetodo('pix')}
                                             >
                                                 <h6 className="mb-1">Pix</h6>
@@ -667,7 +664,7 @@ function PaymentPageInner() {
                                         )}
                                         {methods.includes('card') && (
                                             <button
-                                                className={`btn btn-${metodo !== 'card' ? 'outline-' : ''}gold flex-fill`}
+                                                className={`btn btn-${metodo !== 'card' ? 'outline-' : ''}gold`}
                                                 onClick={() => setMetodo('card')}
                                             >
                                                 <h6 className="mb-1">Cartão</h6>
@@ -676,7 +673,7 @@ function PaymentPageInner() {
                                         )}
                                         {methods.includes('google') && (
                                             <button
-                                                className={`btn btn-${metodo !== 'google' ? 'outline-' : ''}gold flex-fill`}
+                                                className={`btn btn-${metodo !== 'google' ? 'outline-' : ''}gold`}
                                                 onClick={() => setMetodo('google')}
                                             >
                                                 <h6 className="mb-1">Google Play</h6>
@@ -964,7 +961,7 @@ function CardForm(props: {
 }
 
 const Payment: React.FC = () => (
-    <Suspense fallback={<div className="container-box p-5 text-center">Carregando…</div>}>
+    <Suspense fallback={<div className="pay-page text-center">Carregando…</div>}>
         <PaymentPageInner />
     </Suspense>
 );
