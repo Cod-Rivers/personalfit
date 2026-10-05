@@ -135,7 +135,10 @@ export interface UserListItem {
     name: string;
     email: string;
     role: string;
+    /** PRO pago (o campo Active do servidor) — não é a suspensão. */
     active: boolean;
+    /** Suspensa pelo admin: não entra, não renova a sessão. */
+    suspended: boolean;
     plan_type: string;
     created_at: string;
 }
@@ -301,8 +304,12 @@ export async function updateUserRole(id: string, role: string): Promise<{ id: st
     return data;
 }
 
-export async function setUserActive(id: string, active: boolean): Promise<{ id: string; active: boolean }> {
-    const { data } = await Api.patch(`/admin/users/${id}/active`, { active });
+/**
+ * Suspende ou reativa a conta. Suspensa, ela não entra, não renova a sessão
+ * e toda requisição é recusada na hora (pendência -32, M2).
+ */
+export async function setUserSuspended(id: string, suspended: boolean): Promise<{ id: string; suspended: boolean }> {
+    const { data } = await Api.patch(`/admin/users/${id}/suspension`, { suspended });
     return data;
 }
 
@@ -415,7 +422,10 @@ export interface DiagnosticsUserItem {
     email: string;
     cpf: string;
     role: string;
+    /** PRO pago (o campo Active do servidor) — não é a suspensão. */
     active: boolean;
+    /** Suspensa pelo admin. */
+    suspended: boolean;
     plan_type: string;
 }
 

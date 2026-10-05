@@ -12,6 +12,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, LoginFormData } from '@/libs/validation/authSchemas';
 import { landingRouteFor, saveSession } from '@/libs/session';
 
+// Conta suspensa pelo admin: o login responde 403 account_suspended, e o
+// interceptor do Api manda para cá com ?reason=account_suspended quando a
+// suspensão pega uma sessão aberta.
+const ACCOUNT_SUSPENDED_MESSAGE =
+    'Sua conta está suspensa. Fale com o suporte do Venafit.';
+
 const TLogin: FC = () => {
     const t = useTranslations('LoginPage');
     const [loading, setLoading] = useState<boolean>(false);
@@ -54,14 +60,17 @@ const TLogin: FC = () => {
         } catch (err: unknown) {
             const response = (
                 err as
-                    | { response?: { status?: number; data?: { error?: string } } }
+                    | { response?: { status?: number; data?: { error?: string; code?: string } } }
                     | undefined
             )?.response;
             // 429: muitas tentativas para este e-mail (ou deste IP).
+            // 403 account_suspended: conta suspensa pelo admin.
             setError(
                 response?.status === 429
                     ? 'Muitas tentativas de login. Aguarde 15 minutos ou use "Esqueci minha senha".'
-                    : 'Erro ao realizar login',
+                    : response?.data?.code === 'account_suspended'
+                      ? ACCOUNT_SUSPENDED_MESSAGE
+                      : 'Erro ao realizar login',
             );
         } finally {
             setLoading(false);
@@ -74,6 +83,9 @@ const TLogin: FC = () => {
         const params = new URLSearchParams(window.location.search);
         if (params.get('reason') === 'session_expired') {
             setInfo('Sua sessão expirou. Por favor, faça login novamente.');
+        }
+        if (params.get('reason') === 'account_suspended') {
+            setError(ACCOUNT_SUSPENDED_MESSAGE);
         }
         if (params.get('reason') === 'password_reset') {
             setInfo(

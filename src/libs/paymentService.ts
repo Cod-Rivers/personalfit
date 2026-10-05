@@ -21,9 +21,15 @@ export interface PlanCatalogItem {
 
 export interface PlanCatalog {
     pro: PlanCatalogItem[];
+    /** Personal Plus: alunos ilimitados, marca e financeiro. Só mensal. */
+    personal_plus: PlanCatalogItem;
     library_plan: PlanCatalogItem;
     student_plus: PlanCatalogItem;
 }
+
+/** Produtos de assinatura de PERSONAL aceitos por POST /user/subscribe.
+ *  Ausente = 'pro', por compatibilidade com versões publicadas antes do Plus. */
+export type PersonalPlanProduct = 'pro' | 'personal_plus';
 
 export async function getPlans(): Promise<PlanCatalog> {
     const res = await Api.get<PlanCatalog>('/plans');
@@ -50,10 +56,12 @@ export interface SubscribeCardResponse {
 export async function subscribeProPix(
     cycle: string,
     indicationReceiver?: string,
+    product: PersonalPlanProduct = 'pro',
 ): Promise<SubscribePixResponse> {
     const res = await Api.post<SubscribePixResponse>('/user/subscribe', {
         payment_method: 'PIX',
         plan_cycle: cycle,
+        product,
         ...(indicationReceiver ? { indication_receiver: indicationReceiver } : {}),
     });
     return res.data;
@@ -77,14 +85,30 @@ export async function subscribeProCard(
     cycle: string,
     card: CardSubscriptionForm,
     indicationReceiver?: string,
+    product: PersonalPlanProduct = 'pro',
 ): Promise<SubscribeCardResponse> {
     const res = await Api.post<SubscribeCardResponse>('/user/subscribe', {
         payment_method: 'CREDIT_CARD',
         plan_cycle: cycle,
+        product,
         ...(indicationReceiver ? { indication_receiver: indicationReceiver } : {}),
         ...card,
     });
     return res.data;
+}
+
+/** Oferta de retenção: desce do PRO para o Personal Plus sem novo checkout.
+ *  A assinatura do Asaas só tem o valor trocado — o cartão segue o mesmo —, e
+ *  `effective_at` (ISO) é quando o Plus passa a valer: o PRO vale até lá. */
+export interface SwitchToPlusResponse {
+    message: string;
+    effective_at: string;
+    new_value: number;
+}
+
+export async function switchToPersonalPlus(): Promise<SwitchToPlusResponse> {
+    const { data } = await Api.post<SwitchToPlusResponse>('/user/subscription/switch-to-plus');
+    return data;
 }
 
 /** Cancela o PRO no cartão. As cobranças param na hora; `access_until`
@@ -94,13 +118,24 @@ export async function cancelSubscription(): Promise<{ access_until?: string }> {
     return data ?? {};
 }
 
-/** Situação do PRO do personal, lida de GET /me. */
+/** Situação do plano do personal, lida de GET /me. */
 export interface ProPlanStatus {
+    /** Plano EFETIVO: 'free' | 'plus' | 'pro'. Nunca comparar com 'pro' para
+     *  decidir acesso — use `is_plus` / `is_pro`, que o backend já calcula
+     *  pela escada (ver domain/user/plan-tier.go). */
     plan_type?: string;
+    /** Tem Plus ou PRO: alunos ilimitados, marca, financeiro, sem anúncio. */
+    is_plus?: boolean;
+    /** Tem o PRO completo: IA, upload de vídeo nativo e agenda. */
+    is_pro?: boolean;
     has_active_subscription?: boolean;
     subscription_cycle?: string;
     /** ISO: PRO cancelado que ainda vale até esta data. */
     pro_access_until?: string;
+    /** Troca de plano agendada (hoje só 'plus'): o plano muda em
+     *  `plan_change_at` e até lá o atual continua valendo. */
+    plan_change_to?: string;
+    plan_change_at?: string;
 }
 
 export async function getProPlanStatus(): Promise<ProPlanStatus> {
@@ -114,10 +149,30 @@ export async function getProPlanStatus(): Promise<ProPlanStatus> {
  *  confirmaria antes de o PIX ser pago. O pagamento desfaz o cancelamento e
  *  converte o teste, então é isso que se espera. */
 export async function isProPaymentConfirmed(wasOnTrial: boolean): Promise<boolean> {
+    return isPersonalPlanPaymentConfirmed('pro', wasOnTrial);
+}
+
+/** Versão da confirmação acima para qualquer plano de personal.
+ *
+ *  O Plus precisa de uma checagem própria porque comprar o Plus durante o
+ *  teste grátis (ou no período pago de um PRO cancelado) NÃO muda
+ *  `plan_type`: a conta segue "pro" até a data, de propósito — quem pagou o
+ *  PRO tem direito a ele até o fim. Nesses casos o sinal da compra é o
+ *  backend passar a reconhecer uma assinatura ativa. */
+export async function isPersonalPlanPaymentConfirmed(
+    tier: 'plus' | 'pro',
+    wasOnTrial: boolean,
+): Promise<boolean> {
     const status = await getProPlanStatus();
-    if (status.plan_type !== 'pro' || status.pro_access_until) return false;
-    if (!wasOnTrial) return true;
-    return !(await getProTrialStatus()).pro_trial_active;
+    if (tier === 'pro') {
+        if (status.plan_type !== 'pro' || status.pro_access_until) return false;
+        if (!wasOnTrial) return true;
+        return !(await getProTrialStatus()).pro_trial_active;
+    }
+    // Plus: ou o plano efetivo já é 'plus', ou a conta segue num PRO
+    // emprestado e o que confirma é a assinatura nova ter sido reconhecida.
+    if (status.plan_type === 'plus') return true;
+    return !!status.has_active_subscription && !!status.is_plus;
 }
 
 /* ── Aluno Plus: assinatura do aluno sem personal ──

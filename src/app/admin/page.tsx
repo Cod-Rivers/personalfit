@@ -2263,11 +2263,19 @@ function UsersSection({ currentUserId }: { currentUserId: string }) {
         }
     };
 
-    const handleToggleActive = async (id: string, active: boolean) => {
+    const handleToggleSuspended = async (id: string, name: string, suspended: boolean) => {
+        if (
+            !suspended &&
+            !confirm(
+                `Suspender a conta de "${name}"? A pessoa sai do app na hora e não consegue entrar até você reativar. Alunos e assinatura não são afetados.`,
+            )
+        ) {
+            return;
+        }
         setError('');
         setBusyId(id);
         try {
-            await adminService.setUserActive(id, !active);
+            await adminService.setUserSuspended(id, !suspended);
             await fetchUsers();
         } catch (err) {
             const msg = isAxiosError(err)
@@ -2364,13 +2372,17 @@ function UsersSection({ currentUserId }: { currentUserId: string }) {
                                         </span>
                                     </td>
                                     <td>
-                                        {u.active ? (
-                                            <span className={s.badgeSuccess}>
-                                                Ativo
+                                        {/* Só a suspensão pelo admin. O antigo
+                                            "Ativo/Inativo" lia o campo Active,
+                                            que significa PRO pago — quase todo
+                                            mundo aparecia como "Inativo". */}
+                                        {u.suspended ? (
+                                            <span className={s.badgeDanger}>
+                                                Suspensa
                                             </span>
                                         ) : (
-                                            <span className={s.badgeDanger}>
-                                                Inativo
+                                            <span className={s.badgeSuccess}>
+                                                Ativa
                                             </span>
                                         )}
                                     </td>
@@ -2378,6 +2390,10 @@ function UsersSection({ currentUserId }: { currentUserId: string }) {
                                         {u.plan_type === 'pro' ? (
                                             <span className={s.badgeSuccess}>
                                                 PRO
+                                            </span>
+                                        ) : u.plan_type === 'plus' ? (
+                                            <span className={s.badgeSuccess}>
+                                                Plus
                                             </span>
                                         ) : (
                                             <span className={s.badgeWarning}>
@@ -2447,31 +2463,35 @@ function UsersSection({ currentUserId }: { currentUserId: string }) {
                                                 <option value="free">
                                                     free
                                                 </option>
+                                                <option value="plus">
+                                                    plus
+                                                </option>
                                                 <option value="pro">
                                                     pro
                                                 </option>
                                             </select>
                                             <button
                                                 onClick={() =>
-                                                    handleToggleActive(
+                                                    handleToggleSuspended(
                                                         u.id,
-                                                        u.active,
+                                                        u.name,
+                                                        u.suspended,
                                                     )
                                                 }
                                                 disabled={
-                                                    (isSelf && u.active) ||
+                                                    (isSelf && !u.suspended) ||
                                                     isBusy
                                                 }
                                                 className={`${s.btnOutline} ${s.btnSmall}`}
                                                 title={
-                                                    isSelf && u.active
-                                                        ? 'Não é possível desativar sua própria conta'
+                                                    isSelf && !u.suspended
+                                                        ? 'Não é possível suspender sua própria conta'
                                                         : undefined
                                                 }
                                             >
-                                                {u.active
-                                                    ? 'Desativar'
-                                                    : 'Ativar'}
+                                                {u.suspended
+                                                    ? 'Reativar'
+                                                    : 'Suspender'}
                                             </button>
                                             <button
                                                 onClick={() =>
@@ -3033,9 +3053,9 @@ function DiagnosticsSection() {
                                         <span className={s.badgeInfo}>
                                             {u.role}
                                         </span>
-                                        {!u.active && (
+                                        {u.suspended && (
                                             <span className={s.badgeDanger}>
-                                                inativo
+                                                suspensa
                                             </span>
                                         )}
                                     </h3>
@@ -3064,8 +3084,9 @@ function DiagnosticsSection() {
                         {detail.phone || '—'} · Cel:{' '}
                         {detail.mobile_phone || '—'}
                         <br />
-                        Plano: {detail.user.plan_type || '—'} · Status:{' '}
-                        {detail.user.active ? 'Ativo' : 'Inativo'} · Criado
+                        Plano: {detail.user.plan_type || '—'}
+                        {detail.user.active ? ' (pago)' : ''} · Conta:{' '}
+                        {detail.user.suspended ? 'suspensa' : 'ativa'} · Criado
                         em {detail.created_at}
                     </p>
 

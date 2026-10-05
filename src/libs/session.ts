@@ -32,9 +32,33 @@ export interface SessionUser {
     // Vazio quando o personal pré-cadastrou o aluno sem informar CPF — a
     // tela de troca de senha do primeiro login exige completá-lo nesse caso.
     cpf?: string;
-    // "free" | "pro". Cache do que o login devolveu — o backend é quem decide
-    // o que é Pro; isto só evita a tela oferecer o que vai dar 403.
+    // "free" | "plus" | "pro". Cache do que o login devolveu — o backend é
+    // quem decide o que cada plano libera; isto só evita a tela oferecer o
+    // que vai dar 403.
+    //
+    // NUNCA comparar com 'pro' para decidir acesso: desde o Personal Plus
+    // (2026-10-05) existe um nível no meio, e `plan_type === 'pro'` nega ao
+    // Plus o que ele paga. Use sessionHasAtLeastPlus / sessionHasFullPro.
     plan_type?: string;
+}
+
+/** Posição do plano na escada free → plus → pro. Plano desconhecido conta
+ *  como free: negar é o erro seguro (espelha user.PlanRank no backend). */
+export function planRank(planType?: string): number {
+    if (planType === 'pro') return 2;
+    if (planType === 'plus') return 1;
+    return 0;
+}
+
+/** Tem Plus ou PRO: alunos ilimitados, marca, vitrine, financeiro e app do
+ *  aluno sem anúncio. */
+export function sessionHasAtLeastPlus(): boolean {
+    return planRank(getUser()?.plan_type) >= 1;
+}
+
+/** Tem o PRO completo: IA, upload de vídeo nativo, agenda, plano alimentar. */
+export function sessionHasFullPro(): boolean {
+    return planRank(getUser()?.plan_type) >= 2;
 }
 
 const TOKEN_KEY = 'token';

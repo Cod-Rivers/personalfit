@@ -36,15 +36,19 @@
     border: 1px solid var(--border-subtle);
 }
 
+/* flex-wrap: o selo "Disponível offline (data, hora)" do .planTools não
+ * encolhe e, sem quebra de linha, espremia o nome do plano numa coluna de
+ * uma letra em telas de ~390px. Agora o selo desce para a linha de baixo. */
 .planRow {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: var(--space-3);
     min-width: 0;
 }
 
 .planText {
-    flex: 1;
+    flex: 1 1 10rem;
     min-width: 0;
 }
 
@@ -74,9 +78,11 @@
 
 .planTools {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: var(--space-2);
     flex-shrink: 0;
+    max-width: 100%;
 }
 
 .switchButton {

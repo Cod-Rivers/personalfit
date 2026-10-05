@@ -207,11 +207,22 @@ const productTerms: GlossaryTerm[] = [
     {
         id: 'plano-pro',
         term: 'PRO',
-        short: 'Assinatura do personal trainer: alunos ilimitados, sem anúncios, marca própria e mais.',
-        long: 'O PRO é a assinatura do personal trainer no Venafit. Desbloqueia alunos ilimitados, remove anúncios, libera a personalização da marca no app dos alunos, upload de vídeos próprios, ciclos de treino privados, plano alimentar, anúncios, a Agenda com controle de presença, o bloqueio automático de inadimplentes e a lista completa do painel de retenção. Quem nunca assinou pode testar por 14 dias, sem cartão.',
+        short: 'O mais completo dos três planos do personal: tudo do Plus mais IA, vídeo próprio e agenda.',
+        long: 'O PRO é o plano mais completo do personal trainer no Venafit. Tem tudo o que o Plus tem (alunos ilimitados, financeiro completo, marca e vitrine no app do aluno, app sem anúncios) e acrescenta o que depende de inteligência artificial ou de armazenamento de vídeo: Substituição Inteligente de Exercícios, importação de treino por PDF e relatórios de acompanhamento com IA, upload dos próprios vídeos, a Agenda com controle de presença, o plano alimentar do aluno, fotos nas avaliações físicas, ciclos de treino privados e Meus Anúncios. Quem nunca assinou pode testar por 14 dias, sem cartão. Ciclos mensal, semestral e anual.',
         seeAlso: {
             id: 'plano-pro',
-            label: 'Plano PRO — o que desbloqueia',
+            label: 'Planos do personal — Gratuito, Plus e PRO',
+            audience: 'personal',
+        },
+    },
+    {
+        id: 'personal-plus',
+        term: 'Personal Plus',
+        short: 'Plano intermediário do personal: alunos ilimitados, financeiro e marca própria, sem a parte de IA e vídeo.',
+        long: 'O Personal Plus é o plano do meio da escada do personal trainer (Gratuito → Plus → PRO). Inclui alunos ilimitados, o financeiro completo (mensalidade automática, lembretes, bloqueio de inadimplente e exportação), a sua marca e a sua vitrine no app do aluno, o app sem anúncios para você e para eles, e vídeo por link (YouTube e Vimeo) nos exercícios. NÃO inclui o que depende de inteligência artificial (Substituição Inteligente, importação por PDF, relatórios), o upload dos seus próprios vídeos, a Agenda de aulas, o plano alimentar nem as fotos da avaliação física — esses são do PRO. Só ciclo mensal. Não confundir com o Aluno Plus, que é a assinatura do aluno que treina sem personal.',
+        seeAlso: {
+            id: 'plano-pro',
+            label: 'Planos do personal — Gratuito, Plus e PRO',
             audience: 'personal',
         },
     },

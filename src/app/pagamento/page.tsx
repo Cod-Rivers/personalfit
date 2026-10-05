@@ -16,7 +16,7 @@ import {
     getProTrialStatus,
     getStudentPlusStatus,
     isGooglePlayBillingAvailable,
-    isProPaymentConfirmed,
+    isPersonalPlanPaymentConfirmed,
     launchGooglePlayPurchase,
     purchaseLibraryPlanCard,
     purchaseLibraryPlanPix,
@@ -32,7 +32,13 @@ import {
     ReferralPartnerPublic,
     getActiveReferralPartners,
 } from '@/libs/referralPartnerService';
-import { getStudentHomeRoute, getUser, updateSessionPlanType } from '@/libs/session';
+import PersonalPlanLadder, { type LadderPlan } from '@/components/features/PersonalPlanLadder';
+import {
+    getStudentHomeRoute,
+    getUser,
+    planRank,
+    updateSessionPlanType,
+} from '@/libs/session';
 import { getMyPlannings } from '@/libs/planningService';
 import { trackTrialStarted } from '@/libs/analytics';
 
@@ -40,7 +46,9 @@ import { trackTrialStarted } from '@/libs/analytics';
 // backend/estatísticas (ver ReferralPartnerController.GetIndicationStats).
 const INDICATION_NONE = 'none';
 
-type Produto = 'pro' | 'plano' | 'plus';
+// 'pro' e 'personal-plus' são os dois planos do PERSONAL; 'plano' é a compra
+// avulsa de um treino da biblioteca e 'plus' é o Aluno Plus (do aluno).
+type Produto = 'pro' | 'personal-plus' | 'plano' | 'plus';
 type Metodo = 'pix' | 'card' | 'google';
 
 const CYCLE_LABELS: Record<string, string> = {
@@ -49,8 +57,25 @@ const CYCLE_LABELS: Record<string, string> = {
     YEARLY: 'Anual',
 };
 
-// O plano PRO é um recurso do personal trainer. Estes são os benefícios que
-// ele desbloqueia — exibidos para o cliente entender o que está pagando.
+// Os planos do personal e o que cada um desbloqueia — exibidos para o cliente
+// entender o que está pagando.
+//
+// Benefícios do Personal Plus: o que tem custo marginal perto de zero para a
+// nossa infraestrutura (texto no banco), e por isso cabe num preço menor.
+// Ver Todo/PLANO_PERSONAL_PLUS.md §1.
+const PERSONAL_PLUS_BENEFITS = [
+    'Alunos ilimitados (o plano gratuito vai até 3)',
+    'Sua marca no app do aluno: logo, cores e vitrine de divulgação',
+    'Financeiro: mensalidade automática, lembretes aos alunos e bloqueio de quem atrasar',
+    'Painel de retenção completo: quem está parando de treinar e há quanto tempo',
+    'Sem anúncios para você e para seus alunos',
+    'Links de vídeo do YouTube e do Vimeo nos seus exercícios',
+    'Cancele quando quiser, sem fidelidade',
+];
+
+// O que o PRO acrescenta ao Plus (IA, mídia própria, agenda, plano alimentar)
+// não é repetido aqui: quem compara os dois planos lê a tabela do
+// PersonalPlanLadder, que é a fonte única da comparação.
 const PRO_BENEFITS = [
     'Alunos ilimitados (o plano gratuito vai até 3)',
     'Agenda com controle de presença, recorrências e remarcações',
@@ -104,6 +129,9 @@ function formatDate(iso?: string): string {
  *  pagamentos da loja exige o Play Billing nesse caso. */
 function methodsFor(produto: Produto, googleAvailable: boolean): Metodo[] {
     if (produto === 'plus') return googleAvailable ? ['google'] : ['card'];
+    // O Personal Plus aceita os mesmos meios do PRO: o PIX de assinatura é
+    // cobrança única que o webhook converte em plano (ver
+    // handlePixPayment no backend), e é assim que o PRO já funciona.
     const methods: Metodo[] = ['pix', 'card'];
     if (googleAvailable) methods.push('google');
     return methods;
@@ -126,7 +154,18 @@ function PaymentPageInner() {
             ? 'plano'
             : produtoParam === 'plus' || produtoParam === 'ia-substituicao'
               ? 'plus'
-              : 'pro';
+              : produtoParam === 'personal-plus'
+                ? 'personal-plus'
+                : 'pro';
+    // Os dois planos do personal compartilham quase tudo nesta tela (volta
+    // para /personal, indicação, tela de confirmação). O que é só do PRO
+    // (ciclo de cobrança e teste grátis) segue testando `produto === 'pro'`.
+    const isPersonalPlan = produto === 'pro' || produto === 'personal-plus';
+    // Plano que a conta já tem, do cache da sessão — serve só para marcar
+    // "seu plano atual" na comparação. Quem decide acesso é o backend.
+    // Lido em efeito, não na renderização: localStorage não existe no
+    // servidor e ler direto daria divergência de hidratação.
+    const [currentPlan, setCurrentPlan] = useState<LadderPlan>('free');
     const templateId = searchParams.get('templateId') ?? '';
     // Com planId, a compra do plano avulso mantém o plano bloqueado do
     // personal em vez de aplicar um modelo da loja (mesmo produto e preço).
@@ -174,14 +213,19 @@ function PaymentPageInner() {
     // Teste grátis (PRO, só personal) e situação do Plus (aluno): ambos são
     // complementos — se falharem, a compra continua disponível.
     useEffect(() => {
+        const rank = planRank(getUser()?.plan_type);
+        setCurrentPlan(rank >= 2 ? 'pro' : rank >= 1 ? 'plus' : 'free');
+    }, []);
+
+    useEffect(() => {
         const role = getUser()?.role;
-        if (produto === 'pro' && role === 'personal') {
+        if (isPersonalPlan && role === 'personal') {
             getProTrialStatus().then(setTrial).catch(() => setTrial(null));
         }
         if (produto === 'plus') {
             getStudentPlusStatus().then(setPlusStatus).catch(() => setPlusStatus(null));
         }
-    }, [produto]);
+    }, [produto, isPersonalPlan]);
 
     const methods = methodsFor(produto, googleAvailable);
     // O meio escolhido precisa existir para o produto (ex.: Plus dentro do
@@ -195,29 +239,34 @@ function PaymentPageInner() {
     const price =
         produto === 'pro'
             ? selectedProPlan?.value
-            : produto === 'plano'
-              ? catalog?.library_plan.value
-              : catalog?.student_plus.value;
+            : produto === 'personal-plus'
+              ? catalog?.personal_plus.value
+              : produto === 'plano'
+                ? catalog?.library_plan.value
+                : catalog?.student_plus.value;
     const productTitle =
         produto === 'pro'
             ? `Plano PRO — ${CYCLE_LABELS[cycle] ?? cycle}`
-            : keepsPlan
-              ? 'Manter o plano do seu personal'
-              : produto === 'plano'
-                ? 'Plano de treino selecionado'
-                : 'Aluno Plus — Mensal';
+            : produto === 'personal-plus'
+              ? 'Personal Plus — Mensal'
+              : keepsPlan
+                ? 'Manter o plano do seu personal'
+                : produto === 'plano'
+                  ? 'Plano de treino selecionado'
+                  : 'Aluno Plus — Mensal';
     const benefits =
         produto === 'pro'
             ? PRO_BENEFITS
-            : keepsPlan
-              ? MANTER_BENEFITS
-              : produto === 'plano'
-                ? PLANO_BENEFITS
-                : PLUS_BENEFITS;
-    const benefitsTitle =
-        produto === 'pro'
-            ? 'O que o PRO desbloqueia para você (personal):'
-            : 'O que você recebe:';
+            : produto === 'personal-plus'
+              ? PERSONAL_PLUS_BENEFITS
+              : keepsPlan
+                ? MANTER_BENEFITS
+                : produto === 'plano'
+                  ? PLANO_BENEFITS
+                  : PLUS_BENEFITS;
+    const benefitsTitle = isPersonalPlan
+        ? 'O que este plano desbloqueia para você (personal):'
+        : 'O que você recebe:';
 
     // Motivo para não vender agora (produto fora de venda ou fora do perfil).
     const unavailableReason =
@@ -234,13 +283,14 @@ function PaymentPageInner() {
         if (pollingRef.current) clearInterval(pollingRef.current);
         pollingRef.current = setInterval(async () => {
             try {
-                if (produto === 'pro') {
+                if (isPersonalPlan) {
                     const wasOnTrial = !!(trial?.pro_trial_active || trialStarted?.pro_trial_active);
-                    if (await isProPaymentConfirmed(wasOnTrial)) {
+                    const tier = produto === 'personal-plus' ? 'plus' : 'pro';
+                    if (await isPersonalPlanPaymentConfirmed(tier, wasOnTrial)) {
                         setConfirmed(true);
                         if (pollingRef.current) clearInterval(pollingRef.current);
                         // Atualiza o cache local de usuário para refletir o plano novo
-                        updateSessionPlanType('pro');
+                        updateSessionPlanType(tier);
                     }
                 } else if (produto === 'plano') {
                     // O webhook aplica o plano comprado: ele aparece na lista.
@@ -264,7 +314,7 @@ function PaymentPageInner() {
                 // erros transitórios de polling são ignorados
             }
         }, 5000);
-    }, [produto, trial, trialStarted]);
+    }, [produto, isPersonalPlan, trial, trialStarted]);
 
     const handleStartTrial = async () => {
         setError('');
@@ -285,10 +335,11 @@ function PaymentPageInner() {
         setError('');
         setLoading(true);
         try {
-            if (produto === 'pro') {
+            if (isPersonalPlan) {
                 const res: SubscribePixResponse = await subscribeProPix(
                     cycle,
                     indicationReceiver,
+                    produto === "personal-plus" ? "personal_plus" : "pro",
                 );
                 setPix({
                     qrImageUrl: res.qr_image_url,
@@ -328,10 +379,12 @@ function PaymentPageInner() {
             const productId =
                 produto === 'pro'
                     ? (selectedProPlan?.play_product_id ?? '')
-                    : produto === 'plano'
-                      ? (catalog?.library_plan.play_product_id ?? '')
-                      : (catalog?.student_plus.play_product_id ?? '');
-            const productType = produto === 'pro' || produto === 'plus' ? 'subs' : 'inapp';
+                    : produto === 'personal-plus'
+                      ? (catalog?.personal_plus.play_product_id ?? '')
+                      : produto === 'plano'
+                        ? (catalog?.library_plan.play_product_id ?? '')
+                        : (catalog?.student_plus.play_product_id ?? '');
+            const productType = isPersonalPlan || produto === 'plus' ? 'subs' : 'inapp';
             if (!productId) throw new Error('Produto indisponível');
 
             const result = await launchGooglePlayPurchase(productId, productType, accountId);
@@ -343,7 +396,9 @@ function PaymentPageInner() {
                 keepsPlan ? lockedPlanId : undefined,
             );
             if (verify.success) {
-                if (produto === 'pro') updateSessionPlanType('pro');
+                if (isPersonalPlan) {
+                    updateSessionPlanType(produto === 'personal-plus' ? 'plus' : 'pro');
+                }
                 setConfirmed(true);
             } else {
                 setError(verify.message || 'Compra não confirmada pelo Google Play.');
@@ -395,6 +450,8 @@ function PaymentPageInner() {
                     <p>
                         {produto === 'pro'
                             ? 'Seu plano PRO está ativo. Aproveite todos os recursos.'
+                            : produto === 'personal-plus'
+                            ? 'Seu Personal Plus está ativo: alunos ilimitados, sua marca no app e o financeiro liberados.'
                             : keepsPlan
                               ? 'O plano que o seu personal montou voltou para você. Bora treinar!'
                               : produto === 'plano'
@@ -405,11 +462,11 @@ function PaymentPageInner() {
                         className="btn btn-gold mt-2"
                         onClick={() =>
                             router.push(
-                                produto === 'pro' ? '/' : '/meus-treinos',
+                                isPersonalPlan ? '/' : '/meus-treinos',
                             )
                         }
                     >
-                        {produto === 'pro' ? 'Ir para o início' : 'Ver meus treinos'}
+                        {isPersonalPlan ? 'Ir para o início' : 'Ver meus treinos'}
                     </button>
                 </div>
             </div>
@@ -434,7 +491,7 @@ function PaymentPageInner() {
                         className="btn btn-outline-secondary btn-sm mb-3 d-inline-flex align-items-center gap-2"
                         onClick={() =>
                             router.push(
-                                produto === 'pro'
+                                isPersonalPlan
                                     ? '/personal'
                                     : getStudentHomeRoute(),
                             )
@@ -447,6 +504,31 @@ function PaymentPageInner() {
                 {error && (
                     <div className="alert alert-danger m-3" role="alert">
                         {error}
+                    </div>
+                )}
+
+                {/* Comparação dos três planos: o Plus só se explica ao lado do
+                    que ele NÃO tem. Enquanto o PIX está em aberto, trocar de
+                    plano invalidaria a cobrança já gerada — daí o onSelect
+                    sair de cena nesse caso. */}
+                {isPersonalPlan && (
+                    <div className="m-3">
+                        <PersonalPlanLadder
+                            plusPrice={catalog?.personal_plus.value}
+                            proPrice={catalog?.pro.find((p) => p.cycle === 'MONTHLY')?.value}
+                            selected={produto === 'personal-plus' ? 'plus' : 'pro'}
+                            currentPlan={currentPlan}
+                            onSelect={
+                                pix
+                                    ? undefined
+                                    : (plan) =>
+                                          router.push(
+                                              plan === 'plus'
+                                                  ? '/pagamento?produto=personal-plus'
+                                                  : '/pagamento?produto=pro',
+                                          )
+                            }
+                        />
                     </div>
                 )}
 
@@ -669,8 +751,8 @@ function PaymentPageInner() {
                                     </div>
                                 )}
 
-                                {/* Cartão de crédito — assinatura PRO (recorrente) */}
-                                {metodo === 'card' && produto === 'pro' && (
+                                {/* Cartão de crédito — assinatura do personal (recorrente) */}
+                                {metodo === 'card' && isPersonalPlan && (
                                     <CardForm
                                         disabled={loading}
                                         submitLabel="Assinar"
@@ -682,10 +764,17 @@ function PaymentPageInner() {
                                                     cycle,
                                                     form,
                                                     indicationReceiver,
+                                                    produto === 'personal-plus'
+                                                        ? 'personal_plus'
+                                                        : 'pro',
                                                 );
                                                 setLoading(false);
                                                 if (res.status === 'ACTIVE') {
-                                                    updateSessionPlanType('pro');
+                                                    updateSessionPlanType(
+                                                        produto === 'personal-plus'
+                                                            ? 'plus'
+                                                            : 'pro',
+                                                    );
                                                     setConfirmed(true);
                                                 } else {
                                                     startPolling();

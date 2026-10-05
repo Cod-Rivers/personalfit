@@ -7,6 +7,7 @@ import {
     getMyBranding,
 } from '@/libs/brandingService';
 import { useBranding } from '@/context/BrandingContext';
+import { planRank } from '@/libs/session';
 import {
     DEFAULT_SHOWCASE_THEME_ID,
     SHOWCASE_THEMES,
@@ -32,7 +33,11 @@ function fileToDataURI(file: File): Promise<string> {
 
 export default function BrandingSettings({ planType }: Props) {
     const { setBranding } = useBranding();
-    const isPro = planType === 'pro';
+    // A marca é benefício do Plus para cima (2026-10-05): logo e cores são
+    // texto no banco, sem custo variável. O nome da variável ficou "isPro"
+    // por ser usada em ~8 pontos deste arquivo — o que ela significa é
+    // "tem plano pago".
+    const isPro = planRank(planType) >= 1;
 
     const [logo, setLogo] = useState('');
     const [themeId, setThemeId] = useState(DEFAULT_SHOWCASE_THEME_ID);

@@ -76,6 +76,20 @@ Api.interceptors.response.use(
         const originalRequest = error.config as RetriableConfig | undefined;
         const isRefreshCall = originalRequest?.url?.includes('/refresh');
 
+        // Conta suspensa pelo admin (403 account_suspended): renovar não
+        // adianta — encerra a sessão e o login mostra o motivo. O próprio
+        // POST /login também responde assim; ali quem mostra é a tela.
+        if (
+            typeof window !== 'undefined' &&
+            error.response?.data?.code === 'account_suspended' &&
+            originalRequest?.url !== '/login'
+        ) {
+            void clearSession().finally(() => {
+                window.location.href = '/?reason=account_suspended';
+            });
+            return Promise.reject(error);
+        }
+
         // Access token expirado (comum: app reaberto depois dos 45min de
         // validade, antes do heartbeat rodar de novo) — tenta renovar com o
         // refresh token e refazer a requisição original UMA vez antes de

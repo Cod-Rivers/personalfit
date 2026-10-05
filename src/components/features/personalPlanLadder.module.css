@@ -1,0 +1,130 @@
+/* Escada de planos do personal (PersonalPlanLadder.tsx).
+   Cores, espaçamentos e raios vindos de src/app/css/constants.css — ver
+   rules/css-design-tokens.md. */
+
+.wrapper {
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+}
+
+.title {
+    font-size: var(--font-lg);
+    color: var(--text-primary);
+    margin: 0 0 var(--space-3);
+}
+
+/* A tabela tem 4 colunas e não cabe em tela de celular: rola só ela, nunca a
+   página (ver rules/layout-viewport-dvh-mobile.md — a página não pode ganhar
+   rolagem horizontal). */
+.scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table {
+    width: 100%;
+    min-width: 32rem;
+    border-collapse: collapse;
+    font-size: var(--font-sm);
+}
+
+.table th,
+.table td {
+    padding: var(--space-2) var(--space-3);
+    border-bottom: 1px solid var(--border-subtle);
+    text-align: center;
+    vertical-align: middle;
+}
+
+.featureHead,
+.featureCell {
+    text-align: left;
+    font-weight: 500;
+    color: var(--text-secondary);
+    /* A primeira coluna fica visível enquanto as colunas de plano rolam:
+       sem isso, no celular o usuário perde de vista qual recurso está lendo. */
+    position: sticky;
+    left: 0;
+    background: var(--surface-1);
+    min-width: 11rem;
+}
+
+.planHead {
+    background: var(--surface-2);
+    color: var(--text-primary);
+    line-height: 1.3;
+}
+
+.planName {
+    display: block;
+    font-size: var(--font-md);
+    font-weight: 700;
+}
+
+.planPrice {
+    display: block;
+    font-size: var(--font-lg);
+    color: var(--color-gold);
+    font-weight: 700;
+}
+
+.planPeriod {
+    display: block;
+    font-size: var(--font-xs);
+    color: var(--text-muted);
+}
+
+.currentBadge {
+    display: inline-block;
+    margin-top: var(--space-1);
+    padding: 0 var(--space-2);
+    border-radius: var(--radius-full);
+    background: var(--surface-3);
+    color: var(--text-secondary);
+    font-size: var(--font-xs);
+    font-weight: 500;
+}
+
+/* Coluna do plano que está sendo comprado. */
+.selected {
+    background: var(--surface-3);
+    box-shadow: inset 0 3px 0 var(--color-gold);
+}
+
+.selectedCell {
+    background: var(--surface-2);
+}
+
+/* "Incluído" e "não incluído" não dependem só da cor: há ícone em cada caso
+   (ver rules/css-design-tokens.md, acessibilidade para daltonismo). */
+.yes {
+    color: #1a7f5a;
+    font-size: var(--font-md);
+}
+
+.no {
+    color: var(--text-muted);
+    font-size: var(--font-md);
+}
+
+.note {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+}
+
+.actions button {
+    flex: 1 1 10rem;
+}
+
+[data-theme='dark'] .yes {
+    color: #4ade80;
+}

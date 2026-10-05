@@ -3326,26 +3326,51 @@ const personalSections: HelpSection[] = [
     },
     {
         id: 'plano-pro',
-        title: 'Plano PRO — o que desbloqueia',
+        title: 'Planos do personal — Gratuito, Plus e PRO',
         body: (
             <>
                 <p className="mb-2">
-                    O <strong>PRO</strong> é a assinatura do personal trainer.
-                    Ele desbloqueia:
+                    São três planos. O <strong>Gratuito</strong> atende até 3
+                    alunos. O <strong>Plus</strong> tira esse limite e entrega a
+                    gestão do seu negócio. O <strong>PRO</strong> acrescenta o
+                    que usa inteligência artificial, vídeo próprio e agenda.
                 </p>
+
+                <p className="mb-1 fw-semibold">O Plus desbloqueia:</p>
                 <ul className="mb-2 ps-3">
                     <li>
                         <strong>Alunos ilimitados</strong> (o plano gratuito
                         vai até 3).
                     </li>
                     <li>
+                        O <Link href="#financeiro-personal">financeiro</Link>{' '}
+                        completo: mensalidade automática, painel com o que entra
+                        e quem deve, lembretes e avisos para os alunos, bloqueio
+                        de inadimplentes e exportação para o Carnê-Leão, além da
+                        lista completa do painel de{' '}
+                        <Link href="#retencao">retenção</Link> (a partir de
+                        27/11/2026; até lá, liberados para todos).
+                    </li>
+                    <li>
+                        <Link href="#personalizacao">Sua marca</Link> (logo,
+                        cores e boas-vindas) e a sua{' '}
+                        <Link href="#minha-pagina">vitrine</Link> no app dos
+                        alunos.
+                    </li>
+                    <li>
                         <strong>Sem anúncios</strong> para você e para os seus
                         alunos.
                     </li>
                     <li>
-                        <Link href="#personalizacao">Sua marca</Link> (logo,
-                        cores e boas-vindas) no app dos alunos.
+                        Vídeo por <strong>link</strong> (YouTube e Vimeo) nos
+                        seus exercícios.
                     </li>
+                </ul>
+
+                <p className="mb-1 fw-semibold">
+                    O PRO tem tudo isso e mais:
+                </p>
+                <ul className="mb-2 ps-3">
                     <li>
                         <Link href="#plano-alimentar-personal">
                             Plano alimentar
@@ -3357,7 +3382,35 @@ const personalSections: HelpSection[] = [
                         <Link href="#exercicios">
                             vídeos e mídia própria
                         </Link>{' '}
-                        nos seus exercícios.
+                        nos seus exercícios (sem depender de link).
+                    </li>
+                    <li>
+                        <Link href="#substituicao-ia">
+                            Substituição Inteligente de Exercícios
+                        </Link>{' '}
+                        para os seus alunos, com uma cota mensal de sugestões da
+                        IA somada entre todos eles.
+                    </li>
+                    <li>
+                        Importação de treino por <strong>PDF</strong> e{' '}
+                        <Link href="#relatorio-acompanhamento">
+                            relatórios de acompanhamento
+                        </Link>{' '}
+                        com IA.
+                    </li>
+                    <li>
+                        <Link href="#agenda">Agenda e controle de presença</Link>
+                        , com recorrências e remarcações.
+                    </li>
+                    <li>
+                        <Link href="#plano-alimentar-personal">
+                            Plano alimentar
+                        </Link>{' '}
+                        para os alunos vinculados a você.
+                    </li>
+                    <li>
+                        Fotos nas avaliações físicas e a evolução de carga com
+                        relatório para o aluno.
                     </li>
                     <li>
                         <Link href="#periodizacao-biblioteca">
@@ -3370,40 +3423,34 @@ const personalSections: HelpSection[] = [
                         divulgar o seu trabalho.
                     </li>
                     <li>
-                        <Link href="#agenda">Agenda e controle de presença</Link>
-                        , com recorrências e remarcações.
-                    </li>
-                    <li>
-                        O <Link href="#financeiro-personal">financeiro</Link>{' '}
-                        completo: mensalidade automática, painel com o que
-                        entra e quem deve, lembretes e avisos para os alunos,
-                        bloqueio de inadimplentes e exportação para o
-                        Carnê-Leão, além da lista completa do painel de{' '}
-                        <Link href="#retencao">retenção</Link> (a partir de
-                        27/11/2026; até lá, liberados para todos).
-                    </li>
-                    <li>
-                        Substituição Inteligente de Exercícios para os seus
-                        alunos, com uma cota mensal de sugestões da IA somada
-                        entre todos eles.
-                    </li>
-                    <li>
                         Seu logo e seu nome junto com a marca do Venafit na
                         imagem que os alunos compartilham nas redes.
                     </li>
                 </ul>
                 <p className="mb-2">
-                    Planos: <strong>Mensal</strong>, <strong>Semestral</strong>{' '}
-                    e <strong>Anual</strong>. Os valores atualizados aparecem na
-                    tela de{' '}
+                    O <strong>Plus</strong> é mensal. O <strong>PRO</strong> tem{' '}
+                    <strong>Mensal</strong>, <strong>Semestral</strong> e{' '}
+                    <strong>Anual</strong>. Os valores atualizados e a
+                    comparação lado a lado aparecem na tela de{' '}
                     <Link href="/pagamento?produto=pro">assinatura</Link>.
+                </p>
+                <p className="mb-2">
+                    <strong>Mudar de plano:</strong> para subir do Plus ao PRO,
+                    assine o PRO na tela de assinatura. Para descer do PRO ao
+                    Plus, use <em>Cancelar assinatura</em> em Minha conta: antes
+                    de cancelar aparece a opção de ficar no Plus. A troca não
+                    pede o cartão de novo, o PRO vale até o fim do período já
+                    pago e só a partir daí a cobrança passa a ser a do Plus.
+                    Assinatura feita pelo Google Play se troca e se cancela pela
+                    Play Store.
                 </p>
                 <p className="mb-2">
                     <strong>Teste grátis:</strong> quem nunca assinou pode usar o
                     PRO por 14 dias, sem cartão, uma vez por conta. Se não
-                    assinar até o fim, a conta volta ao plano gratuito sozinha;
-                    o que você configurou (marca, vitrine, vídeos) fica guardado
-                    e volta a valer quando assinar.
+                    assinar até o fim, a conta volta ao plano que ela paga — o
+                    gratuito, ou o Plus se você tiver assinado o Plus durante o
+                    teste. O que você configurou (marca, vitrine, vídeos) fica
+                    guardado e volta a valer quando assinar.
                 </p>
                 <p className="mb-2">
                     <strong>Mais de 3 alunos ao voltar ao gratuito:</strong> no
@@ -3411,8 +3458,9 @@ const personalSections: HelpSection[] = [
                     escolha os 3 alunos que continuam (a escolha é definitiva).
                     Os demais ficam <strong>em espera por 2 meses</strong>:
                     continuam treinando o plano atual e você ainda vê os dados
-                    deles, mas não altera nada. Se você assinar o PRO nesse
-                    prazo, todos voltam ao normal; senão, os alunos em espera
+                    deles, mas não altera nada. Se você assinar o Plus ou o PRO
+                    nesse prazo, todos voltam ao normal (os dois têm alunos
+                    ilimitados); senão, os alunos em espera
                     são desvinculados, e o treino que você montou para eles
                     fica bloqueado (o aluno pode comprá-lo para mantê-lo).
                     Se você não escolher, ficam os 3

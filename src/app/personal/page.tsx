@@ -33,7 +33,7 @@ import ExercisesTab from './_components/ExercisesTab';
 import CiclosTab from './_components/CiclosTab';
 import RetentionTab from './_components/RetentionTab';
 import { type ProTrialStatus, daysUntil, getProTrialStatus } from '@/libs/paymentService';
-import { updateSessionPlanType } from '@/libs/session';
+import { planRank, updateSessionPlanType } from '@/libs/session';
 import CountBadge from '@/components/atoms/CountBadge';
 import { getUnreadCommentCounts, type UnreadCommentCounts } from '@/libs/workoutCommentService';
 
@@ -61,6 +61,11 @@ export default function PersonalDashboard() {
     const [user, setUser] = useState<UserData | null>(null);
     const [tab, setTab] = useState<Tab>('students');
     const [planType, setPlanType] = useState<string>('free');
+    // Escada de planos: 'plus' existe entre 'free' e 'pro' desde 2026-10-05.
+    // hasPlus libera o que o Plus paga (financeiro, marca, vitrine); isPro, o
+    // que só o PRO tem (IA, mídia, agenda, ciclo público).
+    const hasPlus = planRank(planType) >= 1;
+    const isPro = planRank(planType) >= 2;
 
     /* ── Auth guard ── */
     useEffect(() => {
@@ -222,14 +227,14 @@ export default function PersonalDashboard() {
                         <button
                             className={s.tab}
                             onClick={() => router.push('/personal/financeiro')}
-                            title={planType === 'pro' ? undefined : 'Recurso do plano PRO'}
+                            title={hasPlus ? undefined : 'Recurso do plano Plus'}
                         >
                             <FiDollarSign className={s.tabIcon} />
                             Financeiro
-                            {planType !== 'pro' && <FiLock className={s.tabLock} />}
+                            {!hasPlus && <FiLock className={s.tabLock} />}
                         </button>
                         <HelpTooltip
-                            text="Quanto entrou, quem está devendo, mensalidade automática, lembretes para os alunos e exportação para o Carnê-Leão. Recurso PRO."
+                            text="Quanto entrou, quem está devendo, mensalidade automática, lembretes para os alunos e exportação para o Carnê-Leão. Recurso do plano Plus."
                             href="/ajuda#financeiro-personal"
                             label="Ajuda sobre o Financeiro"
                         />
@@ -310,7 +315,7 @@ export default function PersonalDashboard() {
                             label="Ajuda sobre Substituição por IA"
                         />
                     </span>
-                    {planType === 'pro' && (
+                    {isPro && (
                         <span className={s.tabSlot}>
                             <button
                                 className={tab === 'ads' ? s.tabActive : s.tab}
@@ -355,25 +360,21 @@ export default function PersonalDashboard() {
                             className={s.tab}
                             onClick={() =>
                                 router.push(
-                                    planType === 'pro'
-                                        ? '/vitrine'
-                                        : '/pagamento?produto=pro',
+                                    hasPlus ? '/vitrine' : '/pagamento?produto=personal-plus',
                                 )
                             }
                             title={
-                                planType === 'pro'
+                                hasPlus
                                     ? 'Página de divulgação exibida aos seus alunos'
-                                    : 'Recurso exclusivo do plano PRO'
+                                    : 'Recurso do plano Plus'
                             }
                         >
                             <FiExternalLink className={s.tabIcon} />
                             Minha Página
-                            {planType !== 'pro' && (
-                                <FiLock className={s.tabLock} />
-                            )}
+                            {!hasPlus && <FiLock className={s.tabLock} />}
                         </button>
                         <HelpTooltip
-                            text="Sua vitrine: a tela que o aluno vê ao entrar no app, com bio, especialidades, resultados e redes. Recurso PRO."
+                            text="Sua vitrine: a tela que o aluno vê ao entrar no app, com bio, especialidades, resultados e redes. Recurso do plano Plus."
                             href="/ajuda#minha-pagina"
                             label="Ajuda sobre Minha Página"
                         />
@@ -432,7 +433,7 @@ export default function PersonalDashboard() {
 
                 {tab === 'exercises' && (
                     <ExercisesTab
-                        planType={planType === 'pro' ? 'pro' : 'free'}
+                        planType={isPro ? 'pro' : 'free'}
                     />
                 )}
 
@@ -443,13 +444,13 @@ export default function PersonalDashboard() {
                 {tab === 'autoregulation' && <AutoregulationPolicySettings />}
                 {tab === 'ai-substitution' && <AISubstitutionSettings />}
 
-                {tab === 'ads' && planType === 'pro' && <MyAdvertisements />}
+                {tab === 'ads' && isPro && <MyAdvertisements />}
 
                 {tab === 'ciclos' && (
                     <CiclosTab
                         view="own"
                         students={studentsState.students}
-                        planType={planType === 'pro' ? 'pro' : 'free'}
+                        planType={isPro ? 'pro' : 'free'}
                     />
                 )}
 
@@ -457,7 +458,7 @@ export default function PersonalDashboard() {
                     <CiclosTab
                         view="public"
                         students={studentsState.students}
-                        planType={planType === 'pro' ? 'pro' : 'free'}
+                        planType={isPro ? 'pro' : 'free'}
                         onBack={() => setTab('ciclos')}
                     />
                 )}
