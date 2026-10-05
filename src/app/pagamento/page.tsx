@@ -17,6 +17,8 @@ import {
     getStudentPlusStatus,
     isGooglePlayBillingAvailable,
     isPersonalPlanPaymentConfirmed,
+    getProPlanStatus,
+    pixPlanPaymentConfirmed,
     launchGooglePlayPurchase,
     purchaseLibraryPlanCard,
     purchaseLibraryPlanPix,
@@ -192,6 +194,11 @@ function PaymentPageInner() {
     // Cartão aceito, cobrança ainda sem confirmação (análise de risco): o
     // formulário some e o polling do /me espera o plano subir.
     const [cardPending, setCardPending] = useState(false);
+    // PIX de plano do personal: fim do período pago ANTES do QR Code ('' se
+    // não havia). null = a compra em andamento não é PIX de plano. Ver
+    // pixPlanPaymentConfirmed.
+    const prepaidBefore = useRef<string | null>(null);
+    const [paidUntil, setPaidUntil] = useState('');
     const [trial, setTrial] = useState<ProTrialStatus | null>(null);
     const [trialStarted, setTrialStarted] = useState<ProTrialStatus | null>(null);
     const [plusStatus, setPlusStatus] = useState<StudentPlusStatus | null>(null);
@@ -289,7 +296,15 @@ function PaymentPageInner() {
                 if (isPersonalPlan) {
                     const wasOnTrial = !!(trial?.pro_trial_active || trialStarted?.pro_trial_active);
                     const tier = produto === 'personal-plus' ? 'plus' : 'pro';
-                    if (await isPersonalPlanPaymentConfirmed(tier, wasOnTrial)) {
+                    if (prepaidBefore.current !== null) {
+                        const paid = await pixPlanPaymentConfirmed(tier, prepaidBefore.current);
+                        if (paid) {
+                            setPaidUntil(paid.prepaid_until ?? '');
+                            setConfirmed(true);
+                            if (pollingRef.current) clearInterval(pollingRef.current);
+                            if (paid.plan_type) updateSessionPlanType(paid.plan_type);
+                        }
+                    } else if (await isPersonalPlanPaymentConfirmed(tier, wasOnTrial)) {
                         setConfirmed(true);
                         if (pollingRef.current) clearInterval(pollingRef.current);
                         // Atualiza o cache local de usuário para refletir o plano novo
@@ -339,6 +354,10 @@ function PaymentPageInner() {
         setLoading(true);
         try {
             if (isPersonalPlan) {
+                // Foto do período pago antes do QR Code: é a data mudar que
+                // confirma o PIX (renovação já está no plano).
+                const before = await getProPlanStatus().catch(() => null);
+                prepaidBefore.current = before?.prepaid_until ?? '';
                 const res: SubscribePixResponse = await subscribeProPix(
                     cycle,
                     indicationReceiver,
@@ -461,6 +480,14 @@ function PaymentPageInner() {
                               ? 'Seu novo plano de treino está ativo. Bora treinar!'
                               : 'Seu Aluno Plus está ativo: sem anúncios, com a Substituição Inteligente de Exercícios e os links do Instagram e do TikTok.'}
                     </p>
+                    {paidUntil && (
+                        <p className="small text-muted">
+                            Pago por PIX até{' '}
+                            <strong>{new Date(paidUntil).toLocaleDateString('pt-BR')}</strong>. O PIX
+                            não renova sozinho: avisamos 3 dias antes, e para continuar é só
+                            pagar um novo em Minha conta.
+                        </p>
+                    )}
                     <button
                         className="btn btn-gold mt-2"
                         onClick={() =>
@@ -693,6 +720,18 @@ function PaymentPageInner() {
                                 )}
 
                                 {/* PIX */}
+                                {metodo === 'pix' && isPersonalPlan && !pix && (
+                                    <p className="small text-muted mt-3 mb-0">
+                                        O PIX paga{' '}
+                                        {produto === 'pro' && cycle === 'SEMIANNUALLY'
+                                            ? '6 meses'
+                                            : produto === 'pro' && cycle === 'YEARLY'
+                                              ? '12 meses'
+                                              : '1 mês'}{' '}
+                                        e não renova sozinho: avisamos 3 dias antes do fim. Para
+                                        cobrança automática todo mês, use o cartão.
+                                    </p>
+                                )}
                                 {metodo === 'pix' && (
                                     <div className="text-center mt-3">
                                         {!pix ? (

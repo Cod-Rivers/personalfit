@@ -3445,6 +3445,14 @@ const personalSections: HelpSection[] = [
                     Play Store.
                 </p>
                 <p className="mb-2">
+                    <strong>Cartão ou PIX:</strong> no cartão, a assinatura renova
+                    sozinha a cada ciclo até você cancelar. O PIX paga um período (1
+                    mês; no PRO, também 6 ou 12 meses) e não renova: avisamos 3 dias
+                    antes do fim, e o botão Renovar em Minha conta gera um PIX novo.
+                    Renovar antes da data soma ao período que você já tem. Sem renovar,
+                    a conta volta ao plano gratuito na data.
+                </p>
+                <p className="mb-2">
                     <strong>Teste grátis:</strong> quem nunca assinou pode usar o
                     PRO por 14 dias, sem cartão, uma vez por conta. Se não
                     assinar até o fim, a conta volta ao plano que ela paga — o

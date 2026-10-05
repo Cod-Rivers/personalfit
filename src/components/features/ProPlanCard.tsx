@@ -237,6 +237,39 @@ export default function ProPlanCard() {
                             </button>
                         </div>
                     </>
+                ) : status.prepaid_until ? (
+                    // Pago por PIX: cobrança única, sem nada a cancelar, mas com
+                    // data de fim — sem renovar, a conta volta ao gratuito.
+                    <>
+                        <p className="text-secondary mb-3" style={{ fontSize: '0.9rem' }}>
+                            Pago por PIX até{' '}
+                            <strong>{formatDay(status.prepaid_until)}</strong>. O PIX não
+                            renova sozinho: pague um novo antes dessa data para não voltar ao
+                            plano gratuito (até 3 alunos).
+                        </p>
+                        <div className="d-flex flex-wrap gap-2">
+                            <button
+                                className="btn btn-primary"
+                                onClick={() =>
+                                    router.push(
+                                        status.prepaid_tier === 'plus'
+                                            ? '/pagamento?produto=personal-plus'
+                                            : '/pagamento?produto=pro',
+                                    )
+                                }
+                            >
+                                Renovar
+                            </button>
+                            {status.prepaid_tier === 'plus' && !isPro && (
+                                <button
+                                    className="btn btn-outline-primary"
+                                    onClick={() => router.push('/pagamento?produto=pro')}
+                                >
+                                    Subir para o PRO
+                                </button>
+                            )}
+                        </div>
+                    </>
                 ) : isPlus ? (
                     <p className="text-secondary mb-0" style={{ fontSize: '0.9rem' }}>
                         Sua conta está no {planLabel} sem assinatura recorrente (teste grátis

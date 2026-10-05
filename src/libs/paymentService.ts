@@ -142,6 +142,11 @@ export interface ProPlanStatus {
      *  `plan_change_at` e até lá o atual continua valendo. */
     plan_change_to?: string;
     plan_change_at?: string;
+    /** Plano pago por PIX: cobrança única que compra um período e NÃO
+     *  renova sozinha. `prepaid_until` (ISO) é o fim do período pago;
+     *  ausentes sem período PIX valendo. */
+    prepaid_tier?: string;
+    prepaid_until?: string;
 }
 
 export async function getProPlanStatus(): Promise<ProPlanStatus> {
@@ -179,6 +184,23 @@ export async function isPersonalPlanPaymentConfirmed(
     // emprestado e o que confirma é a assinatura nova ter sido reconhecida.
     if (status.plan_type === 'plus') return true;
     return !!status.has_active_subscription && !!status.is_plus;
+}
+
+/** O PIX de plano do personal foi pago? O PIX compra um período, então o
+ *  sinal é o /me mostrar um período desse nível com data DIFERENTE da de
+ *  antes do QR Code (`prepaidUntilBefore`, '' se não havia). Olhar o
+ *  `plan_type`, como no cartão, confirmaria na hora a renovação de quem já
+ *  está no plano — antes de pagar. Devolve o status quando confirmado. */
+export async function pixPlanPaymentConfirmed(
+    tier: 'plus' | 'pro',
+    prepaidUntilBefore: string,
+): Promise<ProPlanStatus | null> {
+    const status = await getProPlanStatus();
+    const paid =
+        status.prepaid_tier === tier &&
+        !!status.prepaid_until &&
+        status.prepaid_until !== prepaidUntilBefore;
+    return paid ? status : null;
 }
 
 /* ── Aluno Plus: assinatura do aluno sem personal ──
