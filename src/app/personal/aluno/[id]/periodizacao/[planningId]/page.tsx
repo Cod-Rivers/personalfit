@@ -1,11 +1,11 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
     labelPartsOf,
     type TrainingLabelPart,
 } from '@/libs/trainingLabel';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
-import { FiActivity, FiArrowLeft, FiWifiOff } from 'react-icons/fi';
+import { FiActivity, FiArrowLeft, FiEye, FiWifiOff } from 'react-icons/fi';
 import {
     getMacrocycle,
     updateMacrocycle,
@@ -27,7 +27,6 @@ import GanttPlanning, {
 import { useGanttToggle } from '@/hooks/useGanttToggle';
 import { useEditablePhaseDates } from '@/hooks/useEditablePhaseDates';
 import {
-    STATUS_LABEL,
     formatDate,
     mesoToRequest,
     duplicateMesoRequest,
@@ -37,6 +36,8 @@ import MesocycleSection from '@/app/personal/_shared/periodizacao/components/Mes
 import MesocycleFormModal from '@/app/personal/_shared/periodizacao/components/MesocycleFormModal';
 import PlanningNextStep from '@/app/personal/_shared/periodizacao/components/PlanningNextStep';
 import WeeklyTargetPicker from '@/app/personal/_shared/periodizacao/components/WeeklyTargetPicker';
+import StudentViewPreview from '@/app/personal/_shared/periodizacao/components/StudentViewPreview';
+import { planKindLabel } from '@/app/personal/_shared/periodizacao/lib/routineDefaults';
 import { currentCycle, weeklyTargetDays } from '@/libs/currentWeek';
 import HelpTooltip from '@/components/atoms/HelpTooltip';
 import { getGlossaryTerm } from '@/libs/glossaryContent';
@@ -129,17 +130,22 @@ export default function PeriodizacaoDetalhePage() {
         return () => window.removeEventListener('online', onOnline);
     }, [loadMacrocycle]);
 
-    /* ── Confirmação de macrociclo recém-criado (vem da tela "Novo
-     * Macrociclo") ── some da URL logo em seguida pra não reaparecer num
-     * refresh manual da página. */
+    /* ── Rotina recém-criada (vem de "Nova rotina") ── some da URL logo em
+     * seguida pra não reaparecer num refresh manual da página. Criada do
+     * zero, ela ainda não tem treino: o editor já abre em "Treinos da
+     * semana" (ou na primeira fase), sem o personal precisar achar o botão.
+     * Copiada da biblioteca, já vem montada e só mostra o aviso. */
+    const justCreated = useRef(false);
     useEffect(() => {
         if (searchParams.get('created') !== '1') return;
-        showSuccess('Macrociclo criado com sucesso!');
+        justCreated.current = true;
         router.replace(
             `/personal/aluno/${studentId}/periodizacao/${planningId}`,
         );
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [searchParams]);
+
+    const [showStudentView, setShowStudentView] = useState(false);
 
     /* ── Comparativo plano×realizado + marcos de avaliação física (Gantt) ──
      * Best-effort: sem start_date/end_date não há janela pra buscar; e a
@@ -195,6 +201,18 @@ export default function PeriodizacaoDetalhePage() {
         setModalMode(null);
         setEditingMeso(null);
     }, []);
+
+    useEffect(() => {
+        if (!justCreated.current || !macro) return;
+        justCreated.current = false;
+        const kind = planKindLabel(macro.planning_mode);
+        if ((macro.mesocycles ?? []).length === 0) {
+            showSuccess(`${kind} criada. Agora monte os treinos.`);
+            openAddModal();
+        } else {
+            showSuccess(`${kind} criada.`);
+        }
+    }, [macro, openAddModal, showSuccess]);
 
     /* ── Delete mesociclo ── */
     const deleteMeso = useCallback(
@@ -388,13 +406,11 @@ export default function PeriodizacaoDetalhePage() {
     const ganttPhases = isSimpleMode
         ? []
         : macroToGanttPhases(macro, workoutLogs);
-    const statusClass =
-        macro.status === 'active'
-            ? s.badgeActive
-            : macro.status === 'completed'
-              ? s.badgeCompleted
-              : s.badgeDraft;
+    // "Rascunho" saiu do fluxo (o aluno sempre viu o plano em qualquer
+    // status): o chip diz o tipo, e "Arquivada" quando sumiu do aluno.
+    const statusClass = macro.archived ? s.badgeDraft : s.badgeActive;
     const simpleMeso = isSimpleMode ? (macro.mesocycles ?? [])[0] : undefined;
+    const simpleTrainingCount = simpleMeso?.trainings?.length ?? 0;
     const labelParts = labelPartsOf(macro);
 
     return (
@@ -410,6 +426,13 @@ export default function PeriodizacaoDetalhePage() {
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                         {/* Respostas da Anamnese do personal à mão enquanto monta as séries */}
                         <PersonalAnamnesisQuickView studentId={studentId} className={s.btnBack} />
+                        {/* O treino montado do jeito que o aluno vê no app. */}
+                        <button
+                            className={s.btnBack}
+                            onClick={() => setShowStudentView(true)}
+                        >
+                            <FiEye /> Visão do aluno
+                        </button>
                         {/* Esta tela é a de MONTAR o plano (fases, semanas).
                             O treino da semana, com ajuste de qualquer
                             exercício e o botão de finalizar, vive em
@@ -435,19 +458,40 @@ export default function PeriodizacaoDetalhePage() {
                     antes da primeira fase aparecer. */}
                 <div className={s.summaryChips}>
                     <span className={statusClass}>
-                        {STATUS_LABEL[macro.status] ?? macro.status}
+                        {macro.archived
+                            ? 'Arquivada'
+                            : planKindLabel(macro.planning_mode)}
                     </span>
                     <span className={s.summaryChip}>
                         {formatDate(macro.start_date)} →{' '}
                         {formatDate(macro.end_date)}
                     </span>
-                    <span className={s.summaryChip}>
-                        {macro.mesocycles?.length ?? 0}{' '}
-                        {isSimpleMode
-                            ? 'semana configurada'
-                            : `mesociclo${(macro.mesocycles?.length ?? 0) === 1 ? '' : 's'}`}
-                    </span>
+                    {isSimpleMode ? (
+                        <span className={s.summaryChip}>
+                            {simpleTrainingCount} treino
+                            {simpleTrainingCount === 1 ? '' : 's'}
+                        </span>
+                    ) : (
+                        <span className={s.summaryChip}>
+                            {macro.mesocycles?.length ?? 0} fase
+                            {(macro.mesocycles?.length ?? 0) === 1 ? '' : 's'}
+                        </span>
+                    )}
+                    {macro.archive_on_end && !macro.archived && (
+                        <span className={s.summaryChip}>
+                            Arquiva ao terminar
+                        </span>
+                    )}
                 </div>
+
+                {macro.notes && (
+                    <div className={s.planNotes}>
+                        <p className={s.planNotesTitle}>
+                            Observações para o aluno
+                        </p>
+                        <p className={s.planNotesText}>{macro.notes}</p>
+                    </div>
+                )}
 
                 <WeeklyTargetPicker
                     value={macro.weekly_target_days ?? 0}
@@ -597,6 +641,13 @@ export default function PeriodizacaoDetalhePage() {
                         ))
                 )}
             </div>
+
+            {showStudentView && (
+                <StudentViewPreview
+                    macro={macro}
+                    onClose={() => setShowStudentView(false)}
+                />
+            )}
 
             {/* ─── Modal: Add / Edit Mesociclo ─── */}
             {modalMode !== null && (

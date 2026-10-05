@@ -884,3 +884,35 @@
     color: var(--amber-text);
     border: 1px solid var(--amber);
 }
+
+/* Filtro de pastas da biblioteca de treinos (CiclosTab). */
+.folderChips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+.folderChip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 2.75rem;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border-subtle);
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+.folderChip:focus-visible {
+    outline: 2px solid var(--mint);
+    outline-offset: 2px;
+}
+.folderChipOn {
+    composes: folderChip;
+    border-color: var(--mint);
+    background: var(--surface-2);
+    color: var(--text-primary);
+}

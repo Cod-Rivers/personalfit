@@ -1,9 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Api } from '@/libs/api';
 import {
     getMyTemplates,
+    getPublicTemplates,
     applyTemplate,
     updateTemplate,
     deleteTemplate,
@@ -17,6 +17,8 @@ export interface TplFormData {
     name?: string;
     goal?: string;
     is_public?: boolean;
+    /** Pasta na biblioteca ("Iniciante", "Feminino"...). Vazio = sem pasta. */
+    folder?: string;
 }
 
 function extractErrorMessage(err: unknown, fallback: string): string {
@@ -24,13 +26,6 @@ function extractErrorMessage(err: unknown, fallback: string): string {
         err as { response?: { data?: { error?: string; message?: string } } }
     )?.response?.data;
     return data?.error || data?.message || fallback;
-}
-
-async function fetchPublicTemplatesApi(): Promise<MacrocycleResponse[]> {
-    const { data } = await Api.get<MacrocycleResponse[]>(
-        '/planning/templates/public',
-    );
-    return data ?? [];
 }
 
 /**
@@ -54,7 +49,7 @@ export function usePersonalTemplates(view: 'own' | 'public') {
         try {
             const list =
                 view === 'public'
-                    ? await fetchPublicTemplatesApi()
+                    ? await getPublicTemplates()
                     : await getMyTemplates();
             setTemplates(list ?? []);
         } catch {
@@ -88,6 +83,7 @@ export function usePersonalTemplates(view: 'own' | 'public') {
             name: tpl.name,
             goal: tpl.goal,
             is_public: tpl.is_public,
+            folder: tpl.folder ?? '',
         });
         setError('');
         setModal('tplEdit');
@@ -126,6 +122,7 @@ export function usePersonalTemplates(view: 'own' | 'public') {
                 name: tplForm.name,
                 goal: tplForm.goal || '',
                 is_public: tplForm.is_public === true,
+                folder: (tplForm.folder ?? '').trim(),
             });
             closeModal();
             fetchTemplates();

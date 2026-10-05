@@ -12,6 +12,7 @@ import {
     FiTrash2,
     FiArrowLeft,
     FiBookOpen,
+    FiFolder,
 } from 'react-icons/fi';
 import { usePersonalTemplates } from '@/hooks/usePersonalTemplates';
 import type { Student } from '@/hooks/usePersonalStudents';
@@ -27,6 +28,16 @@ interface Props {
 }
 
 type SortMode = 'recent' | 'usage';
+
+/** "Rotina · 3 treinos", "Periodização · 2 fases". */
+function templateSummary(tpl: MacrocycleResponse): string {
+    const mesos = tpl.mesocycles ?? [];
+    if (tpl.planning_mode === 'simple') {
+        const n = mesos.reduce((sum, m) => sum + (m.trainings?.length ?? 0), 0);
+        return `Rotina · ${n} treino${n === 1 ? '' : 's'}`;
+    }
+    return `Periodização · ${mesos.length} fase${mesos.length === 1 ? '' : 's'}`;
+}
 
 export default function CiclosTab({ view, students, planType = 'free', onBack }: Props) {
     const isPro = planType === 'pro';
@@ -64,23 +75,36 @@ export default function CiclosTab({ view, students, planType = 'free', onBack }:
 
     const [search, setSearch] = useState('');
     const [sortMode, setSortMode] = useState<SortMode>('recent');
+    /** Pasta escolhida no filtro. null = todas. */
+    const [folder, setFolder] = useState<string | null>(null);
+
+    // Pastas em uso, para o filtro e para sugerir no formulário.
+    const folders = useMemo(() => {
+        const set = new Set<string>();
+        templates.forEach((t) => t.folder && set.add(t.folder));
+        return [...set].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    }, [templates]);
 
     const visibleTemplates = useMemo(() => {
         const q = search.trim().toLowerCase();
+        const inFolder =
+            folder === null
+                ? templates
+                : templates.filter((t) => (t.folder ?? '') === folder);
         const filtered = q
-            ? templates.filter(
+            ? inFolder.filter(
                   (t) =>
                       t.name?.toLowerCase().includes(q) ||
                       t.goal?.toLowerCase().includes(q),
               )
-            : templates;
+            : inFolder;
         if (sortMode === 'usage') {
             return [...filtered].sort(
                 (a, b) => (b.usage_count ?? 0) - (a.usage_count ?? 0),
             );
         }
         return filtered;
-    }, [templates, search, sortMode]);
+    }, [templates, search, sortMode, folder]);
 
     const renderTemplateCard = useCallback(
         (tpl: MacrocycleResponse) => (
@@ -98,19 +122,15 @@ export default function CiclosTab({ view, students, planType = 'free', onBack }:
                                 : undefined
                         }
                     >
-                        {tpl.name || 'Ciclo sem nome'}
-                        <span
-                            className={`${s.badgeMesocycles} ${
-                                tpl.status === 'active'
-                                    ? s.badgeActive
-                                    : tpl.status === 'draft'
-                                      ? s.badgeDraft
-                                      : s.badgeArchived
-                            }`}
-                        >
-                            {tpl.mesocycles?.length ?? 0} meso
-                            {tpl.mesocycles?.length === 1 ? '' : 's'}
+                        {tpl.name || 'Treino sem nome'}
+                        <span className={`${s.badgeMesocycles} ${s.badgeArchived}`}>
+                            {templateSummary(tpl)}
                         </span>
+                        {!isPublic && tpl.folder && (
+                            <span className={`${s.badgeMesocycles} ${s.badgeArchived}`}>
+                                <FiFolder aria-hidden /> {tpl.folder}
+                            </span>
+                        )}
                         {isPublic && tpl.is_public && (
                             <span className={s.badgePublic} title="Público">
                                 <FiGlobe />
@@ -167,14 +187,14 @@ export default function CiclosTab({ view, students, planType = 'free', onBack }:
                             }
                             className={s.btnEdit}
                         >
-                            <FiSettings /> Configurar treinos
+                            <FiSettings /> Montar treinos
                         </button>
                     )}
                     <button
                         onClick={() => openApply(tpl)}
                         className={s.btnApply}
                     >
-                        <FiClipboard /> Aplicar
+                        <FiClipboard /> Copiar para aluno
                     </button>
                     {!isPublic && (
                         <>
@@ -220,22 +240,52 @@ export default function CiclosTab({ view, students, planType = 'free', onBack }:
                             <FiGlobe /> Biblioteca Pública
                         </>
                     ) : (
-                        'Minha Periodização / Treinos'
+                        'Minha biblioteca de treinos'
                     )}
                 </h2>
                 {isPublic ? (
                     <button onClick={onBack} className={s.btnCancel}>
-                        <FiArrowLeft /> Voltar aos Próprios
+                        <FiArrowLeft /> Voltar à minha biblioteca
                     </button>
                 ) : (
                     <button
                         onClick={() => router.push('/personal/templates/novo')}
                         className={s.btnAdd}
                     >
-                        + Novo Ciclo
+                        + Novo treino
                     </button>
                 )}
             </div>
+
+            {/* Pastas (Iniciante, Feminino...): o personal agrupa os treinos
+                que reaproveita. Só na biblioteca própria. */}
+            {!isPublic && folders.length > 0 && (
+                <div
+                    className={s.folderChips}
+                    role="group"
+                    aria-label="Pastas"
+                >
+                    {[null, ...folders].map((f) => (
+                        <button
+                            key={f ?? '__all'}
+                            type="button"
+                            aria-pressed={folder === f}
+                            className={
+                                folder === f ? s.folderChipOn : s.folderChip
+                            }
+                            onClick={() => setFolder(f)}
+                        >
+                            {f ? (
+                                <>
+                                    <FiFolder aria-hidden /> {f}
+                                </>
+                            ) : (
+                                'Todas'
+                            )}
+                        </button>
+                    ))}
+                </div>
+            )}
 
             {!tplLoading && templates.length > 0 && (
                 <div className={s.exSearch}>
@@ -267,18 +317,20 @@ export default function CiclosTab({ view, students, planType = 'free', onBack }:
                     <div className={s.emptyIcon}>{isPublic ? <FiGlobe /> : <FiBookOpen />}</div>
                     <h3 className={s.emptyTitle}>
                         {isPublic
-                            ? 'Nenhum ciclo público disponível'
-                            : 'Nenhuma periodização criada ainda'}
+                            ? 'Nenhum treino público disponível'
+                            : 'Sua biblioteca ainda está vazia'}
                     </h3>
                     <p className={s.emptyText}>
                         {isPublic
-                            ? 'Ciclos públicos ficam visíveis quando o personal escolhe compartilhar.'
-                            : 'Monte periodizações e treinos reutilizáveis para aplicar rapidamente em alunos.'}
+                            ? 'Treinos públicos ficam visíveis quando o personal escolhe compartilhar.'
+                            : 'Guarde aqui os treinos que você repete (iniciante, hipertrofia, emagrecimento...) e copie para um aluno em dois toques. Na rotina de um aluno, "Salvar na biblioteca" também traz o treino para cá.'}
                     </p>
                 </div>
             ) : visibleTemplates.length === 0 ? (
                 <p className={s.loading}>
-                    Nenhum ciclo encontrado para &quot;{search}&quot;.
+                    {search.trim()
+                        ? `Nenhum treino encontrado para "${search}".`
+                        : 'Nenhum treino nesta pasta.'}
                 </p>
             ) : (
                 <div className={s.studentList}>
@@ -290,14 +342,14 @@ export default function CiclosTab({ view, students, planType = 'free', onBack }:
             <Modal
                 open={modal === 'tplApply' && !!selectedTemplate}
                 onClose={closeModal}
-                title="Aplicar ciclo em aluno"
+                title="Copiar treino para um aluno"
             >
                 {error && <div className={s.errorMsg}>{error}</div>}
                 {selectedTemplate && (
                     <p className={s.applyConfirmText}>
-                        Ciclo:{' '}
+                        Treino:{' '}
                         <strong>
-                            {selectedTemplate.name || 'Ciclo sem nome'}
+                            {selectedTemplate.name || 'Treino sem nome'}
                         </strong>
                         <br />
                         Objetivo: {selectedTemplate.goal || 'Não definido'}
@@ -316,15 +368,19 @@ export default function CiclosTab({ view, students, planType = 'free', onBack }:
                     ))}
                 </select>
                 {submitting && (
-                    <p className={s.loading}>Aplicando ciclo...</p>
+                    <p className={s.loading}>Copiando treino...</p>
                 )}
+                <p className={s.confirmText}>
+                    O aluno recebe uma cópia: o que você ajustar nele não muda
+                    o treino da biblioteca.
+                </p>
             </Modal>
 
             {/* ── Template Edit Modal (metadados) ── */}
             <Modal
                 open={modal === 'tplEdit'}
                 onClose={closeModal}
-                title="Editar Ciclo"
+                title="Editar treino da biblioteca"
                 footer={
                     <>
                         <button onClick={closeModal} className={s.btnCancel}>
@@ -382,6 +438,30 @@ export default function CiclosTab({ view, students, planType = 'free', onBack }:
                     </select>
                 </div>
                 <div className={s.formGroup}>
+                    <label className={s.formLabel} htmlFor="tpl-folder">
+                        Pasta (opcional)
+                    </label>
+                    <input
+                        id="tpl-folder"
+                        list="tpl-folders"
+                        value={tplForm.folder || ''}
+                        onChange={(e) =>
+                            setTplForm({
+                                ...tplForm,
+                                folder: e.target.value,
+                            })
+                        }
+                        maxLength={40}
+                        className={s.formInput}
+                        placeholder="Ex.: Iniciante, Feminino, Hipertrofia"
+                    />
+                    <datalist id="tpl-folders">
+                        {folders.map((f) => (
+                            <option key={f} value={f} />
+                        ))}
+                    </datalist>
+                </div>
+                <div className={s.formGroup}>
                     <label className={s.formLabel}>
                         Visibilidade
                     </label>
@@ -413,10 +493,10 @@ export default function CiclosTab({ view, students, planType = 'free', onBack }:
                                 margin: 0,
                             }}
                         >
-                            No plano gratuito, os ciclos ficam
+                            No plano gratuito, os treinos da biblioteca ficam
                             disponíveis para revisão da equipe
                             Venafit e podem entrar na biblioteca
-                            pública. Quer manter seus ciclos privados?{' '}
+                            pública. Quer manter seus treinos privados?{' '}
                             <a
                                 href="/pagamento?produto=pro"
                                 style={{ color: '#d4af37' }}
@@ -433,7 +513,7 @@ export default function CiclosTab({ view, students, planType = 'free', onBack }:
                                 marginTop: 4,
                             }}
                         >
-                            Manter ciclos privados é exclusivo do
+                            Manter treinos privados é exclusivo do
                             plano PRO.
                         </p>
                     )}
@@ -444,7 +524,7 @@ export default function CiclosTab({ view, students, planType = 'free', onBack }:
             <Modal
                 open={modal === 'tplDelete' && !!selectedTemplate}
                 onClose={closeModal}
-                title="Remover Ciclo"
+                title="Remover da biblioteca"
                 footer={
                     <>
                         <button onClick={closeModal} className={s.btnCancel}>
@@ -463,15 +543,15 @@ export default function CiclosTab({ view, students, planType = 'free', onBack }:
             >
                 {error && <div className={s.errorMsg}>{error}</div>}
                 <p className={s.confirmText}>
-                    Tem certeza que deseja remover o ciclo{' '}
+                    Tem certeza que deseja remover o treino{' '}
                     <span className={s.confirmName}>
-                        {selectedTemplate?.name || 'Ciclo sem nome'}
+                        {selectedTemplate?.name || 'Treino sem nome'}
                     </span>
                     ?
                 </p>
                 <p className={s.confirmText}>
-                    Esta ação não pode ser desfeita. Templates
-                    aplicados a alunos serão removidos permanentemente.
+                    Esta ação não pode ser desfeita. Os alunos que já
+                    receberam uma cópia continuam com ela.
                 </p>
             </Modal>
         </>

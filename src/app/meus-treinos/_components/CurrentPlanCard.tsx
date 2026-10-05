@@ -108,6 +108,20 @@ export default function CurrentPlanCard({
                     <p className={s.planOrigin}>
                         {planOriginLabel(selected, personalName)}
                     </p>
+                    {/* Observações da rotina que o personal escreveu ao
+                        montá-la (valem para todos os treinos). */}
+                    {selected.notes && (
+                        <p
+                            className={s.planOrigin}
+                            style={{
+                                whiteSpace: 'pre-line',
+                                overflowWrap: 'anywhere',
+                                marginTop: 6,
+                            }}
+                        >
+                            {selected.notes}
+                        </p>
+                    )}
                 </div>
                 <div className={s.planTools}>
                     {selected.status === 'active' && (

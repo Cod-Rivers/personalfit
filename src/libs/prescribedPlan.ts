@@ -2,7 +2,7 @@ import type { MacrocycleResponse } from '@/libs/planningService';
 
 type PlanningLike = Pick<
     MacrocycleResponse,
-    'status' | 'category' | 'start_date'
+    'status' | 'category' | 'start_date' | 'archived'
 >;
 
 function startMs(p: PlanningLike): number {
@@ -20,10 +20,13 @@ function startMs(p: PlanningLike): number {
  * comprado ativo — e ele vem antes na lista, por ser o mais recente.
  *
  * Sem plano do personal ativo, vale qualquer ativo; sem ativo, o primeiro.
+ * Rotina arquivada nunca entra: ela sumiu do app do aluno, e acompanhar a
+ * sessão nela gravaria treino num plano que o aluno não vê.
  */
 export function pickPrescribedPlanning<T extends PlanningLike>(
-    plannings: T[],
+    all: T[],
 ): T | undefined {
+    const plannings = all.filter((p) => !p.archived);
     const prescribed = plannings
         .filter((p) => p.status === 'active' && !p.category)
         .sort((a, b) => startMs(b) - startMs(a))[0];

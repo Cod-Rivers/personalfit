@@ -374,7 +374,7 @@ export default function StudentsTab({ state, unreadComments }: Props) {
                                             color: '#5bc0be',
                                         }}
                                     >
-                                        <FiClipboard /> Prescrever Treino
+                                        <FiClipboard /> Rotinas
                                     </button>
                                     <button
                                         onClick={() =>

@@ -1,12 +1,15 @@
 'use client';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import {
+    FiArchive,
+    FiBookmark,
+    FiCheck,
+    FiChevronRight,
     FiClipboard,
     FiArrowLeft,
-    FiFolder,
-    FiChevronRight,
     FiEdit3,
+    FiRotateCcw,
     FiTrash2,
     FiWifiOff,
 } from 'react-icons/fi';
@@ -15,29 +18,35 @@ import {
     deleteMacrocycle,
     saveAsTemplate,
     getMyTemplates,
-    applyTemplate,
-    deleteTemplate,
+    updateTemplate,
     updateMacrocycle,
+    setPlanningArchived,
+    listPlanningTrash,
+    restorePlanningFromTrash,
+    deletePlanningForever,
     type MacrocycleResponse,
 } from '@/libs/planningService';
 import Modal from '@/components/system/Modal';
+import { useToast } from '@/components/system/Toast';
 import {
     cacheStudentPlannings,
     getCachedStudentPlannings,
     isOfflineError,
 } from '@/libs/offline/personalCache';
 import NewMacrocycleModal from '@/app/personal/_shared/periodizacao/components/NewMacrocycleModal';
+import { planKindLabel } from '@/app/personal/_shared/periodizacao/lib/routineDefaults';
 import s from './periodizacao.module.css';
 
-const STATUS_LABEL: Record<string, string> = {
-    draft: 'Rascunho',
-    active: 'Ativo',
-    completed: 'Concluído',
-};
+/** Dias que um plano excluído fica na lixeira (training.TrashRetention). */
+const TRASH_DAYS = 30;
+
+type Tab = 'active' | 'archived' | 'trash';
 
 function formatDate(iso?: string) {
     if (!iso) return '—';
-    return new Date(iso).toLocaleDateString('pt-BR');
+    // Data civil: "2026-10-05" lida como UTC cairia no dia anterior no Brasil.
+    const [y, m, d] = iso.slice(0, 10).split('-').map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString('pt-BR');
 }
 
 function toInputDate(iso?: string) {
@@ -45,47 +54,81 @@ function toInputDate(iso?: string) {
     return iso.slice(0, 10);
 }
 
+function serverMessage(e: unknown, fallback: string): string {
+    const data = (
+        e as { response?: { data?: { error?: string; message?: string } } }
+    )?.response?.data;
+    return data?.error || data?.message || fallback;
+}
+
+/** "3 treinos" na rotina, "2 fases" na periodização. */
+function contentSummary(m: MacrocycleResponse): string {
+    const mesos = m.mesocycles ?? [];
+    if (m.planning_mode === 'simple') {
+        const n = mesos.reduce((sum, x) => sum + (x.trainings?.length ?? 0), 0);
+        return `${n} treino${n === 1 ? '' : 's'}`;
+    }
+    return `${mesos.length} fase${mesos.length === 1 ? '' : 's'}`;
+}
+
+/** Dias até a lixeira apagar o plano sozinha. */
+function daysLeftInTrash(trashedAt?: string): number {
+    if (!trashedAt) return TRASH_DAYS;
+    const elapsed = Date.now() - new Date(trashedAt).getTime();
+    return Math.max(0, TRASH_DAYS - Math.floor(elapsed / 86_400_000));
+}
+
 interface EditFormData {
     name: string;
     goal: string;
-    status: string;
     start_date: string;
     end_date: string;
+    notes: string;
+    archive_on_end: boolean;
 }
 
 export default function PeriodizacaoPage() {
     const router = useRouter();
     const params = useParams<{ id: string }>();
     const studentId = params.id;
+    const { showSuccess, showError, ToastSlot } = useToast();
 
     const [plannings, setPlannings] = useState<MacrocycleResponse[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     /** Lista servida do cache local por falta de rede (ver personalCache.ts). */
     const [isOfflineData, setIsOfflineData] = useState(false);
-    const [deleting, setDeleting] = useState<string | null>(null);
-
-    // template states
-    const [savingTemplate, setSavingTemplate] = useState<string | null>(null);
-    const [showTemplateModal, setShowTemplateModal] = useState(false);
+    const [tab, setTab] = useState<Tab>('active');
+    const [busyId, setBusyId] = useState<string | null>(null);
     const [creating, setCreating] = useState(false);
-    const [templates, setTemplates] = useState<MacrocycleResponse[]>([]);
-    const [loadingTemplates, setLoadingTemplates] = useState(false);
-    const [applyingTemplate, setApplyingTemplate] = useState<string | null>(
-        null,
-    );
-    const [deletingTemplate, setDeletingTemplate] = useState<string | null>(
-        null,
-    );
 
-    // edit macrocycle states
+    // Lixeira: carregada ao abrir a aba (precisa de rede).
+    const [trash, setTrash] = useState<MacrocycleResponse[] | null>(null);
+    const [trashError, setTrashError] = useState('');
+    const [trashTarget, setTrashTarget] = useState<MacrocycleResponse | null>(
+        null,
+    );
+    const [foreverTarget, setForeverTarget] =
+        useState<MacrocycleResponse | null>(null);
+
+    // Salvar na biblioteca
+    const [libraryTarget, setLibraryTarget] =
+        useState<MacrocycleResponse | null>(null);
+    const [libraryName, setLibraryName] = useState('');
+    const [libraryFolder, setLibraryFolder] = useState('');
+    const [knownFolders, setKnownFolders] = useState<string[]>([]);
+    const [savingLibrary, setSavingLibrary] = useState(false);
+    const [libraryError, setLibraryError] = useState('');
+
+    // Edição dos dados da rotina
     const [editing, setEditing] = useState<MacrocycleResponse | null>(null);
     const [editForm, setEditForm] = useState<EditFormData>({
         name: '',
         goal: '',
-        status: 'draft',
         start_date: '',
         end_date: '',
+        notes: '',
+        archive_on_end: false,
     });
     const [savingEdit, setSavingEdit] = useState(false);
     const [editError, setEditError] = useState('');
@@ -111,7 +154,7 @@ export default function PeriodizacaoPage() {
                     return;
                 }
                 setError(
-                    'Sem conexão e os planos deste aluno ainda não foram abertos neste aparelho. Abra esta tela uma vez com internet para poder consultá-la offline.',
+                    'Sem conexão e os treinos deste aluno ainda não foram abertos neste aparelho. Abra esta tela uma vez com internet para poder consultá-la offline.',
                 );
                 return;
             }
@@ -131,28 +174,127 @@ export default function PeriodizacaoPage() {
         return () => window.removeEventListener('online', onOnline);
     }, [loadPlannings]);
 
-    const handleDelete = useCallback(
-        async (e: React.MouseEvent, id: string) => {
-            e.stopPropagation();
-            if (
-                !confirm(
-                    'Excluir este macrociclo? Esta ação não pode ser desfeita.',
-                )
-            )
-                return;
-            setDeleting(id);
-            try {
-                await deleteMacrocycle(studentId, id);
-                setPlannings((prev) => prev.filter((p) => p.id !== id));
-            } catch {
-                alert('Erro ao excluir macrociclo.');
-            } finally {
-                setDeleting(null);
-            }
-        },
-        [studentId],
+    const loadTrash = useCallback(async () => {
+        setTrashError('');
+        try {
+            setTrash(await listPlanningTrash(studentId));
+        } catch (e) {
+            setTrash([]);
+            setTrashError(
+                isOfflineError(e)
+                    ? 'A lixeira precisa de internet.'
+                    : serverMessage(e, 'Não foi possível abrir a lixeira.'),
+            );
+        }
+    }, [studentId]);
+
+    useEffect(() => {
+        if (tab === 'trash' && trash === null) void loadTrash();
+    }, [tab, trash, loadTrash]);
+
+    const active = useMemo(
+        () => plannings.filter((p) => !p.archived),
+        [plannings],
+    );
+    const archived = useMemo(
+        () => plannings.filter((p) => p.archived),
+        [plannings],
+    );
+    const shown = tab === 'archived' ? archived : active;
+
+    const replacePlanning = useCallback(
+        (updated: MacrocycleResponse) =>
+            setPlannings((prev) =>
+                prev.map((p) => (p.id === updated.id ? updated : p)),
+            ),
+        [],
     );
 
+    /* ── Arquivar / desarquivar ── */
+    const toggleArchived = useCallback(
+        async (e: React.MouseEvent, macro: MacrocycleResponse) => {
+            e.stopPropagation();
+            setBusyId(macro.id);
+            try {
+                const updated = await setPlanningArchived(
+                    studentId,
+                    macro.id,
+                    !macro.archived,
+                );
+                replacePlanning(updated);
+                showSuccess(
+                    updated.archived
+                        ? 'Arquivada. O aluno não vê mais esta rotina.'
+                        : 'Desarquivada. A rotina voltou para o aluno.',
+                );
+            } catch (err) {
+                showError(serverMessage(err, 'Não foi possível arquivar.'));
+            } finally {
+                setBusyId(null);
+            }
+        },
+        [studentId, replacePlanning, showSuccess, showError],
+    );
+
+    /* ── Excluir = mover para a lixeira ── */
+    const confirmTrash = useCallback(async () => {
+        if (!trashTarget) return;
+        const target = trashTarget;
+        setBusyId(target.id);
+        try {
+            await deleteMacrocycle(studentId, target.id);
+            setPlannings((prev) => prev.filter((p) => p.id !== target.id));
+            setTrash(null); // recarrega quando a aba abrir
+            setTrashTarget(null);
+            showSuccess(
+                `Movida para a lixeira. Dá para restaurar por ${TRASH_DAYS} dias.`,
+            );
+        } catch (err) {
+            showError(serverMessage(err, 'Não foi possível excluir.'));
+        } finally {
+            setBusyId(null);
+        }
+    }, [trashTarget, studentId, showSuccess, showError]);
+
+    const restore = useCallback(
+        async (macro: MacrocycleResponse) => {
+            setBusyId(macro.id);
+            try {
+                const restored = await restorePlanningFromTrash(
+                    studentId,
+                    macro.id,
+                );
+                setTrash((prev) =>
+                    (prev ?? []).filter((p) => p.id !== macro.id),
+                );
+                setPlannings((prev) => [restored, ...prev]);
+                showSuccess('Restaurada. A rotina voltou para o aluno.');
+            } catch (err) {
+                showError(serverMessage(err, 'Não foi possível restaurar.'));
+            } finally {
+                setBusyId(null);
+            }
+        },
+        [studentId, showSuccess, showError],
+    );
+
+    const confirmForever = useCallback(async () => {
+        if (!foreverTarget) return;
+        const target = foreverTarget;
+        setBusyId(target.id);
+        try {
+            await deletePlanningForever(studentId, target.id);
+            setTrash((prev) => (prev ?? []).filter((p) => p.id !== target.id));
+            setForeverTarget(null);
+            showSuccess('Apagada de vez.');
+        } catch (err) {
+            showError(serverMessage(err, 'Não foi possível apagar.'));
+        } finally {
+            setBusyId(null);
+        }
+    }, [foreverTarget, studentId, showSuccess, showError]);
+
+    /* ── Edição dos dados ── */
     const openEditModal = useCallback(
         (e: React.MouseEvent, macro: MacrocycleResponse) => {
             e.stopPropagation();
@@ -160,9 +302,10 @@ export default function PeriodizacaoPage() {
             setEditForm({
                 name: macro.name,
                 goal: macro.goal ?? '',
-                status: macro.status,
                 start_date: toInputDate(macro.start_date),
                 end_date: toInputDate(macro.end_date),
+                notes: macro.notes ?? '',
+                archive_on_end: !!macro.archive_on_end,
             });
             setEditError('');
         },
@@ -181,128 +324,132 @@ export default function PeriodizacaoPage() {
             >,
         ) => {
             const { name, value } = e.target;
-            setEditForm((prev) => ({ ...prev, [name]: value }));
+            setEditForm((prev) => ({
+                ...prev,
+                [name]: value,
+                // Sem término não há o que arquivar sozinho.
+                ...(name === 'end_date' && !value
+                    ? { archive_on_end: false }
+                    : {}),
+            }));
         },
         [],
     );
 
     const handleEditSubmit = useCallback(async () => {
         if (!editing) return;
+        if (!editForm.name.trim()) {
+            setEditError('Dê um nome à rotina.');
+            return;
+        }
         if (
             editForm.start_date &&
             editForm.end_date &&
             editForm.end_date <= editForm.start_date
         ) {
-            setEditError('Data de término deve ser depois da data de início.');
+            setEditError('O término precisa ser depois do início.');
             return;
         }
         setSavingEdit(true);
         setEditError('');
         try {
             const updated = await updateMacrocycle(studentId, editing.id, {
-                name: editForm.name,
+                name: editForm.name.trim(),
                 goal: editForm.goal,
-                status: editForm.status,
                 start_date: editForm.start_date || null,
                 end_date: editForm.end_date || null,
+                notes: editForm.notes.trim(),
+                archive_on_end: !!editForm.end_date && editForm.archive_on_end,
+                // "Rascunho" saiu do fluxo: o aluno sempre viu o plano em
+                // qualquer status. Um plano antigo em rascunho vira ativo ao
+                // ser editado, para entrar no relatório do personal.
+                ...(editing.status === 'draft' ? { status: 'active' } : {}),
             });
-            setPlannings((prev) =>
-                prev.map((p) => (p.id === updated.id ? updated : p)),
-            );
+            replacePlanning(updated);
             closeEditModal();
+            showSuccess('Dados salvos.');
         } catch (e: unknown) {
-            setEditError((e as Error).message ?? 'Erro ao salvar macrociclo.');
+            setEditError(serverMessage(e, 'Não foi possível salvar.'));
         } finally {
             setSavingEdit(false);
         }
-    }, [editing, editForm, studentId, closeEditModal]);
+    }, [
+        editing,
+        editForm,
+        studentId,
+        replacePlanning,
+        closeEditModal,
+        showSuccess,
+    ]);
 
-    const handleSaveAsTemplate = useCallback(
-        async (e: React.MouseEvent, macro: MacrocycleResponse) => {
+    /* ── Salvar na biblioteca ── */
+    const openLibraryModal = useCallback(
+        (e: React.MouseEvent, macro: MacrocycleResponse) => {
             e.stopPropagation();
-            const name = prompt('Nome do modelo:', macro.name + ' (modelo)');
-            if (!name) return;
-            setSavingTemplate(macro.id);
-            try {
-                await saveAsTemplate(studentId, macro.id, name);
-                alert('Modelo salvo com sucesso!');
-            } catch (err: unknown) {
-                // 409 = nome repetido entre os modelos do personal.
-                const serverMsg = (
-                    err as { response?: { data?: { error?: string } } }
-                )?.response?.data?.error;
-                alert(serverMsg || 'Erro ao salvar modelo.');
-            } finally {
-                setSavingTemplate(null);
-            }
-        },
-        [studentId],
-    );
-
-    const openTemplateModal = useCallback(async () => {
-        setShowTemplateModal(true);
-        setLoadingTemplates(true);
-        try {
-            const data = await getMyTemplates();
-            setTemplates(data);
-        } catch {
-            alert('Erro ao carregar modelos.');
-            setShowTemplateModal(false);
-        } finally {
-            setLoadingTemplates(false);
-        }
-    }, []);
-
-    const handleApplyTemplate = useCallback(
-        async (templateId: string) => {
-            if (
-                !confirm(
-                    'Aplicar este modelo ao aluno? Um novo macrociclo será criado.',
+            setLibraryTarget(macro);
+            setLibraryName(macro.name);
+            setLibraryFolder('');
+            setLibraryError('');
+            // Pastas já usadas, para sugerir no campo.
+            getMyTemplates()
+                .then((tpls) =>
+                    setKnownFolders(
+                        [
+                            ...new Set(
+                                tpls
+                                    .map((t) => t.folder)
+                                    .filter((f): f is string => !!f),
+                            ),
+                        ].sort((a, b) => a.localeCompare(b, 'pt-BR')),
+                    ),
                 )
-            )
-                return;
-            setApplyingTemplate(templateId);
-            try {
-                const created = await applyTemplate(studentId, templateId);
-                setPlannings((prev) => [...prev, created]);
-                setShowTemplateModal(false);
-                alert('Macrociclo criado a partir do modelo!');
-            } catch {
-                alert('Erro ao aplicar modelo.');
-            } finally {
-                setApplyingTemplate(null);
-            }
-        },
-        [studentId],
-    );
-
-    const handleDeleteTemplate = useCallback(
-        async (e: React.MouseEvent, templateId: string) => {
-            e.stopPropagation();
-            if (!confirm('Excluir este modelo permanentemente?')) return;
-            setDeletingTemplate(templateId);
-            try {
-                await deleteTemplate(templateId);
-                setTemplates((prev) => prev.filter((t) => t.id !== templateId));
-            } catch {
-                alert('Erro ao excluir modelo.');
-            } finally {
-                setDeletingTemplate(null);
-            }
+                .catch(() => setKnownFolders([]));
         },
         [],
     );
 
+    const confirmSaveToLibrary = useCallback(async () => {
+        if (!libraryTarget || !libraryName.trim()) return;
+        setSavingLibrary(true);
+        setLibraryError('');
+        try {
+            const tpl = await saveAsTemplate(
+                studentId,
+                libraryTarget.id,
+                libraryName.trim(),
+            );
+            if (libraryFolder.trim()) {
+                await updateTemplate(tpl.id, { folder: libraryFolder.trim() });
+            }
+            setLibraryTarget(null);
+            showSuccess(
+                'Salvo na biblioteca. Use "Copiar da biblioteca" ao criar a rotina de outro aluno.',
+            );
+        } catch (err: unknown) {
+            // 409 = nome repetido entre os treinos da biblioteca.
+            setLibraryError(serverMessage(err, 'Não foi possível salvar.'));
+        } finally {
+            setSavingLibrary(false);
+        }
+    }, [libraryTarget, libraryName, libraryFolder, studentId, showSuccess]);
+
+    const online = !isOfflineData;
+
     return (
         <>
+            {ToastSlot}
             <div className={s.page}>
                 <div className={s.container}>
                     <div className={s.header}>
                         <div>
-                            <h1 className={s.headerTitle}><FiClipboard /> Periodização</h1>
-                            <p className={s.headerSub}>Macrociclos do aluno</p>
+                            <h1 className={s.headerTitle}>
+                                <FiClipboard /> Treinos
+                            </h1>
+                            <p className={s.headerSub}>
+                                Rotinas e periodizações do aluno
+                            </p>
                         </div>
-                        <div style={{ display: 'flex', gap: 10 }}>
+                        <div className={s.headerActions}>
                             <button
                                 className={s.btnBack}
                                 onClick={() => router.back()}
@@ -310,18 +457,33 @@ export default function PeriodizacaoPage() {
                                 <FiArrowLeft /> Voltar
                             </button>
                             <button
-                                className={s.btnSecondary}
-                                onClick={openTemplateModal}
-                            >
-                                <FiFolder /> De Modelo
-                            </button>
-                            <button
                                 className={s.btnAdd}
                                 onClick={() => setCreating(true)}
+                                disabled={!online}
                             >
-                                + Novo Treino/Macrociclo
+                                + Nova rotina
                             </button>
                         </div>
+                    </div>
+
+                    <div className={s.tabs} role="tablist">
+                        {(
+                            [
+                                ['active', `Ativas (${active.length})`],
+                                ['archived', `Arquivadas (${archived.length})`],
+                                ['trash', 'Lixeira'],
+                            ] as [Tab, string][]
+                        ).map(([key, label]) => (
+                            <button
+                                key={key}
+                                role="tab"
+                                aria-selected={tab === key}
+                                className={tab === key ? s.tabOn : s.tab}
+                                onClick={() => setTab(key)}
+                            >
+                                {label}
+                            </button>
+                        ))}
                     </div>
 
                     {loading && (
@@ -336,8 +498,8 @@ export default function PeriodizacaoPage() {
 
                     {isOfflineData && (
                         <div className={s.offlineNotice}>
-                            <FiWifiOff /> Sem conexão — mostrando os planos
-                            salvos neste aparelho. Abrir um plano e ajustar
+                            <FiWifiOff /> Sem conexão — mostrando os treinos
+                            salvos neste aparelho. Abrir um treino e ajustar
                             série/carga continua funcionando; o envio acontece
                             quando a internet voltar.
                         </div>
@@ -345,33 +507,39 @@ export default function PeriodizacaoPage() {
 
                     {error && <div className="alert alert-danger">{error}</div>}
 
-                    {!loading && !error && plannings.length === 0 && (
-                        <div className={s.emptyPlans}>
-                            <p className={s.emptyPlansText}>
-                                Nenhum plano de treino ainda. Você pode começar
-                                de um modelo pronto e ajustar, ou montar do
-                                zero.
-                            </p>
-                            <div className={s.emptyPlansActions}>
-                                <button
-                                    className={s.btnSecondary}
-                                    onClick={openTemplateModal}
-                                >
-                                    <FiFolder /> Começar de um modelo
-                                </button>
-                                <button
-                                    className={s.btnAdd}
-                                    onClick={() => setCreating(true)}
-                                >
-                                    Montar do zero
-                                </button>
+                    {tab !== 'trash' &&
+                        !loading &&
+                        !error &&
+                        shown.length === 0 && (
+                            <div className={s.emptyPlans}>
+                                {tab === 'active' ? (
+                                    <>
+                                        <p className={s.emptyPlansText}>
+                                            Este aluno ainda não tem treino.
+                                            Monte uma rotina do zero ou copie
+                                            um treino da sua biblioteca.
+                                        </p>
+                                        <button
+                                            className={s.btnAdd}
+                                            onClick={() => setCreating(true)}
+                                            disabled={!online}
+                                        >
+                                            + Nova rotina
+                                        </button>
+                                    </>
+                                ) : (
+                                    <p className={s.emptyPlansText}>
+                                        Nenhuma rotina arquivada. Arquivada, a
+                                        rotina some do app do aluno e continua
+                                        guardada aqui.
+                                    </p>
+                                )}
                             </div>
-                        </div>
-                    )}
+                        )}
 
-                    {!loading && plannings.length > 0 && (
+                    {tab !== 'trash' && !loading && shown.length > 0 && (
                         <div className={s.list}>
-                            {plannings.map((m) => (
+                            {shown.map((m) => (
                                 <div
                                     key={m.id}
                                     className={s.card}
@@ -384,83 +552,157 @@ export default function PeriodizacaoPage() {
                                     <div className={s.cardInfo}>
                                         <p className={s.cardName}>
                                             {m.name}
-                                            <span
-                                                className={
-                                                    m.status === 'active'
-                                                        ? s.badgeActive
-                                                        : m.status ===
-                                                            'completed'
-                                                          ? s.badgeCompleted
-                                                          : s.badgeDraft
-                                                }
-                                            >
-                                                {STATUS_LABEL[m.status] ??
-                                                    m.status}
+                                            <span className={s.badgeKind}>
+                                                {planKindLabel(m.planning_mode)}
                                             </span>
+                                            {m.archived && (
+                                                <span className={s.badgeDraft}>
+                                                    Arquivada
+                                                </span>
+                                            )}
                                         </p>
                                         <p className={s.cardMeta}>
                                             {m.goal ? m.goal + ' · ' : ''}
                                             {formatDate(m.start_date)} →{' '}
                                             {formatDate(m.end_date)} ·{' '}
-                                            {m.mesocycles?.length ?? 0}{' '}
-                                            mesociclo(s)
+                                            {contentSummary(m)}
+                                            {m.archive_on_end &&
+                                                !m.archived &&
+                                                ' · arquiva ao terminar'}
                                         </p>
                                     </div>
                                     <div className={s.cardActions}>
                                         <span className={s.btnAction}>
-                                            Ver detalhes <FiChevronRight />
+                                            Abrir <FiChevronRight />
                                         </span>
                                         <button
                                             className={s.btnSecondary}
-                                            onClick={(e) =>
-                                                openEditModal(e, m)
-                                            }
+                                            disabled={!online}
+                                            onClick={(e) => openEditModal(e, m)}
                                         >
                                             <FiEdit3 /> Editar
                                         </button>
                                         <button
                                             className={s.btnSecondary}
-                                            disabled={savingTemplate === m.id}
+                                            disabled={!online}
                                             onClick={(e) =>
-                                                handleSaveAsTemplate(e, m)
+                                                openLibraryModal(e, m)
                                             }
                                         >
-                                            {savingTemplate === m.id ? (
-                                                '...'
+                                            <FiBookmark /> Salvar na biblioteca
+                                        </button>
+                                        <button
+                                            className={s.btnSecondary}
+                                            disabled={!online || busyId === m.id}
+                                            onClick={(e) => toggleArchived(e, m)}
+                                        >
+                                            {m.archived ? (
+                                                <>
+                                                    <FiRotateCcw /> Desarquivar
+                                                </>
                                             ) : (
                                                 <>
-                                                    <FiClipboard /> Modelo
+                                                    <FiArchive /> Arquivar
                                                 </>
                                             )}
                                         </button>
                                         <button
                                             className={s.btnDanger}
-                                            disabled={deleting === m.id}
-                                            onClick={(e) =>
-                                                handleDelete(e, m.id)
-                                            }
+                                            disabled={!online || busyId === m.id}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setTrashTarget(m);
+                                            }}
                                         >
-                                            {deleting === m.id ? (
-                                                '...'
-                                            ) : (
-                                                <>
-                                                    <FiTrash2 /> Excluir
-                                                </>
-                                            )}
+                                            <FiTrash2 /> Excluir
                                         </button>
                                     </div>
                                 </div>
                             ))}
                         </div>
                     )}
+
+                    {tab === 'trash' && (
+                        <>
+                            <p className={s.trashHint}>
+                                O que você exclui fica aqui por {TRASH_DAYS}{' '}
+                                dias e depois some sozinho. Enquanto estiver
+                                na lixeira, o aluno não vê.
+                            </p>
+                            {trash === null ? (
+                                <p className={s.loading}>Carregando...</p>
+                            ) : trashError ? (
+                                <div className={s.errorMsg}>{trashError}</div>
+                            ) : trash.length === 0 ? (
+                                <div className={s.emptyPlans}>
+                                    <p className={s.emptyPlansText}>
+                                        A lixeira está vazia.
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className={s.list}>
+                                    {trash.map((m) => (
+                                        <div
+                                            key={m.id}
+                                            className={s.cardStatic}
+                                        >
+                                            <div className={s.cardInfo}>
+                                                <p className={s.cardName}>
+                                                    {m.name}
+                                                    <span
+                                                        className={s.badgeKind}
+                                                    >
+                                                        {planKindLabel(
+                                                            m.planning_mode,
+                                                        )}
+                                                    </span>
+                                                </p>
+                                                <p className={s.cardMeta}>
+                                                    {contentSummary(m)} · some
+                                                    em{' '}
+                                                    {daysLeftInTrash(
+                                                        m.trashed_at,
+                                                    )}{' '}
+                                                    dia
+                                                    {daysLeftInTrash(
+                                                        m.trashed_at,
+                                                    ) === 1
+                                                        ? ''
+                                                        : 's'}
+                                                </p>
+                                            </div>
+                                            <div className={s.cardActions}>
+                                                <button
+                                                    className={s.btnSecondary}
+                                                    disabled={busyId === m.id}
+                                                    onClick={() => restore(m)}
+                                                >
+                                                    <FiRotateCcw /> Restaurar
+                                                </button>
+                                                <button
+                                                    className={s.btnDanger}
+                                                    disabled={busyId === m.id}
+                                                    onClick={() =>
+                                                        setForeverTarget(m)
+                                                    }
+                                                >
+                                                    <FiTrash2 /> Apagar de vez
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </>
+                    )}
                 </div>
             </div>
 
-            {/* Modal de edição do macrociclo */}
+            {/* Dados da rotina */}
             <Modal
                 open={!!editing}
                 onClose={closeEditModal}
-                title="Editar Macrociclo"
+                title={`Editar ${planKindLabel(editing?.planning_mode).toLowerCase()}`}
                 footer={
                     <>
                         <button
@@ -479,12 +721,13 @@ export default function PeriodizacaoPage() {
                     </>
                 }
             >
-                {editError && (
-                    <div className={s.errorMsg}>{editError}</div>
-                )}
+                {editError && <div className={s.errorMsg}>{editError}</div>}
                 <div className={s.formGroup}>
-                    <label className={s.formLabel}>Nome</label>
+                    <label className={s.formLabel} htmlFor="ed-name">
+                        Nome
+                    </label>
                     <input
+                        id="ed-name"
                         name="name"
                         value={editForm.name}
                         onChange={handleEditInput}
@@ -492,33 +735,24 @@ export default function PeriodizacaoPage() {
                     />
                 </div>
                 <div className={s.formGroup}>
-                    <label className={s.formLabel}>Objetivo</label>
+                    <label className={s.formLabel} htmlFor="ed-goal">
+                        Objetivo (opcional)
+                    </label>
                     <input
+                        id="ed-goal"
                         name="goal"
                         value={editForm.goal}
                         onChange={handleEditInput}
                         className={s.formInput}
                     />
                 </div>
-                <div className={s.formGroup}>
-                    <label className={s.formLabel}>Status</label>
-                    <select
-                        name="status"
-                        value={editForm.status}
-                        onChange={handleEditInput}
-                        className={s.formInput}
-                    >
-                        <option value="draft">Rascunho</option>
-                        <option value="active">Ativo</option>
-                        <option value="completed">Concluído</option>
-                    </select>
-                </div>
                 <div className={s.formRow}>
                     <div className={s.formGroup}>
-                        <label className={s.formLabel}>
-                            Data de início
+                        <label className={s.formLabel} htmlFor="ed-start">
+                            Início
                         </label>
                         <input
+                            id="ed-start"
                             type="date"
                             name="start_date"
                             value={editForm.start_date}
@@ -527,10 +761,11 @@ export default function PeriodizacaoPage() {
                         />
                     </div>
                     <div className={s.formGroup}>
-                        <label className={s.formLabel}>
-                            Data de término
+                        <label className={s.formLabel} htmlFor="ed-end">
+                            Término
                         </label>
                         <input
+                            id="ed-end"
                             type="date"
                             name="end_date"
                             value={editForm.end_date}
@@ -539,99 +774,163 @@ export default function PeriodizacaoPage() {
                         />
                     </div>
                 </div>
+                {/* Botão com aria-pressed, não checkbox: o CSS global já
+                    comeu o :checked dos checkboxes do app uma vez. */}
+                <button
+                    type="button"
+                    aria-pressed={editForm.archive_on_end}
+                    disabled={!editForm.end_date}
+                    className={
+                        editForm.archive_on_end ? s.toggleChipOn : s.toggleChip
+                    }
+                    onClick={() =>
+                        setEditForm((prev) => ({
+                            ...prev,
+                            archive_on_end: !prev.archive_on_end,
+                        }))
+                    }
+                >
+                    {editForm.archive_on_end && <FiCheck aria-hidden />}
+                    Arquivar quando terminar
+                </button>
+                <div className={s.formGroup} style={{ marginTop: 16 }}>
+                    <label className={s.formLabel} htmlFor="ed-notes">
+                        Observações para o aluno
+                    </label>
+                    <textarea
+                        id="ed-notes"
+                        name="notes"
+                        value={editForm.notes}
+                        onChange={handleEditInput}
+                        className={s.formInput}
+                        rows={3}
+                        maxLength={2000}
+                        placeholder="Ex.: aqueça 10 minutos antes de todo treino."
+                    />
+                </div>
             </Modal>
 
-            {/* Modal de templates */}
+            {/* Salvar na biblioteca */}
             <Modal
-                open={showTemplateModal}
-                onClose={() => setShowTemplateModal(false)}
-                title={
+                open={!!libraryTarget}
+                onClose={() => setLibraryTarget(null)}
+                title="Salvar na biblioteca"
+                footer={
                     <>
-                        <FiFolder /> Aplicar Modelo de Macrociclo
+                        <button
+                            onClick={() => setLibraryTarget(null)}
+                            className={s.btnCancel}
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={confirmSaveToLibrary}
+                            disabled={savingLibrary || !libraryName.trim()}
+                            className={s.btnSubmit}
+                        >
+                            {savingLibrary ? 'Salvando...' : 'Salvar'}
+                        </button>
                     </>
                 }
+            >
+                {libraryError && (
+                    <div className={s.errorMsg}>{libraryError}</div>
+                )}
+                <p className={s.confirmText}>
+                    Guarda uma cópia deste treino para usar com outros alunos.
+                    Mudar a cópia depois não mexe no treino deste aluno.
+                </p>
+                <div className={s.formGroup}>
+                    <label className={s.formLabel} htmlFor="lib-name">
+                        Nome na biblioteca
+                    </label>
+                    <input
+                        id="lib-name"
+                        value={libraryName}
+                        onChange={(e) => setLibraryName(e.target.value)}
+                        className={s.formInput}
+                    />
+                </div>
+                <div className={s.formGroup}>
+                    <label className={s.formLabel} htmlFor="lib-folder">
+                        Pasta (opcional)
+                    </label>
+                    <input
+                        id="lib-folder"
+                        list="lib-folders"
+                        value={libraryFolder}
+                        onChange={(e) => setLibraryFolder(e.target.value)}
+                        className={s.formInput}
+                        maxLength={40}
+                        placeholder="Ex.: Iniciante, Feminino, Hipertrofia"
+                    />
+                    <datalist id="lib-folders">
+                        {knownFolders.map((f) => (
+                            <option key={f} value={f} />
+                        ))}
+                    </datalist>
+                </div>
+            </Modal>
+
+            {/* Excluir → lixeira */}
+            <Modal
+                open={!!trashTarget}
+                onClose={() => setTrashTarget(null)}
+                title="Excluir rotina"
                 footer={
-                    <button
-                        className="btn btn-secondary"
-                        onClick={() => setShowTemplateModal(false)}
-                    >
-                        Fechar
-                    </button>
+                    <>
+                        <button
+                            onClick={() => setTrashTarget(null)}
+                            className={s.btnCancel}
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={confirmTrash}
+                            disabled={busyId === trashTarget?.id}
+                            className={s.btnSubmit}
+                        >
+                            Mover para a lixeira
+                        </button>
+                    </>
                 }
             >
-                {loadingTemplates && (
-                    <div className="text-center py-3">
-                        <div
-                            className="spinner-border spinner-border-sm"
-                            role="status"
-                        />
-                    </div>
-                )}
-                {!loadingTemplates &&
-                    templates.length === 0 && (
-                        <p className="text-muted text-center py-3">
-                            Nenhum modelo salvo ainda. Use o
-                            botão &quot;Modelo&quot; em um
-                            macrociclo para criar o primeiro.
-                        </p>
-                    )}
-                {!loadingTemplates && templates.length > 0 && (
-                    <ul className="list-group">
-                        {templates.map((t) => (
-                            <li
-                                key={t.id}
-                                className="list-group-item d-flex justify-content-between align-items-center"
-                            >
-                                <div>
-                                    <strong>{t.name}</strong>
-                                    <br />
-                                    <small className="text-muted">
-                                        {t.mesocycles?.length ??
-                                            0}{' '}
-                                        mesociclo(s)
-                                    </small>
-                                </div>
-                                <div className="d-flex gap-2">
-                                    <button
-                                        className="btn btn-sm btn-primary"
-                                        disabled={
-                                            applyingTemplate ===
-                                            t.id
-                                        }
-                                        onClick={() =>
-                                            handleApplyTemplate(
-                                                t.id,
-                                            )
-                                        }
-                                    >
-                                        {applyingTemplate ===
-                                        t.id
-                                            ? '...'
-                                            : 'Aplicar'}
-                                    </button>
-                                    <button
-                                        className="btn btn-sm btn-outline-danger"
-                                        disabled={
-                                            deletingTemplate ===
-                                            t.id
-                                        }
-                                        onClick={(e) =>
-                                            handleDeleteTemplate(
-                                                e,
-                                                t.id,
-                                            )
-                                        }
-                                    >
-                                        {deletingTemplate ===
-                                        t.id
-                                            ? '...'
-                                            : <FiTrash2 />}
-                                    </button>
-                                </div>
-                            </li>
-                        ))}
-                    </ul>
-                )}
+                <p className={s.confirmText}>
+                    <span className={s.confirmName}>{trashTarget?.name}</span>{' '}
+                    sai do app do aluno e fica na lixeira por {TRASH_DAYS}{' '}
+                    dias. Dá para restaurar nesse prazo.
+                </p>
+            </Modal>
+
+            {/* Apagar de vez */}
+            <Modal
+                open={!!foreverTarget}
+                onClose={() => setForeverTarget(null)}
+                title="Apagar de vez"
+                footer={
+                    <>
+                        <button
+                            onClick={() => setForeverTarget(null)}
+                            className={s.btnCancel}
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={confirmForever}
+                            disabled={busyId === foreverTarget?.id}
+                            className={s.btnSubmit}
+                        >
+                            Apagar de vez
+                        </button>
+                    </>
+                }
+            >
+                <p className={s.confirmText}>
+                    <span className={s.confirmName}>
+                        {foreverTarget?.name}
+                    </span>{' '}
+                    será apagada e não poderá ser recuperada.
+                </p>
             </Modal>
 
             {creating && (

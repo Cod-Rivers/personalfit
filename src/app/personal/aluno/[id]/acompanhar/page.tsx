@@ -124,6 +124,7 @@ import {
     ungroupInTraining,
 } from '@/app/personal/_shared/periodizacao/lib/trainingEditPatch';
 import ExercisePicker from '@/app/personal/_shared/periodizacao/components/ExercisePicker';
+import NewMacrocycleModal from '@/app/personal/_shared/periodizacao/components/NewMacrocycleModal';
 import ExerciseInlineEditor from '@/app/personal/_shared/periodizacao/components/ExerciseInlineEditor';
 import Modal from '@/components/system/Modal';
 import { SortableItem, SortableList } from '@/components/system/SortableList';
@@ -200,6 +201,10 @@ export default function AcompanharTreinoPage() {
     );
     const [loading, setLoading] = useState(true);
     const [pageError, setPageError] = useState('');
+    /** O aluno não tem rotina que ele veja (nenhuma, ou só arquivadas): a tela
+     * oferece criar a primeira ali mesmo, em vez de mandar para outra página. */
+    const [noPlan, setNoPlan] = useState(false);
+    const [creatingPlan, setCreatingPlan] = useState(false);
     const [isOfflineData, setIsOfflineData] = useState(false);
     const [loggerOpen, setLoggerOpen] = useState(false);
     /** Histórico de carga do aluno (resumo): "última vez" de cada exercício,
@@ -343,20 +348,21 @@ export default function AcompanharTreinoPage() {
             let planningId = fromQuery;
             if (!planningId) {
                 const plannings = await getStudentPlannings(studentId);
-                if (plannings.length === 0) {
-                    setPageError(
-                        'Este aluno ainda não tem um plano de treino. Monte a periodização antes de acompanhar a sessão.',
-                    );
-                    return;
-                }
                 // O plano que o personal montou — o aluno pode ter também um
                 // plano comprado na loja ativo (ver pickPrescribedPlanning).
-                planningId = pickPrescribedPlanning(plannings)!.id;
+                // Arquivada não conta: o aluno não a vê mais.
+                const picked = pickPrescribedPlanning(plannings);
+                if (!picked) {
+                    setNoPlan(true);
+                    return;
+                }
+                planningId = picked.id;
             }
             const data = await getMacrocycle(studentId, planningId);
             setMacro(data);
             setIsOfflineData(false);
             setPageError('');
+            setNoPlan(false);
         } catch (e) {
             // Mesma distinção de sempre (rules/api-error-offline-vs-server):
             // sem resposta = sem rede, cai na cópia local; resposta 4xx/5xx é
@@ -1023,6 +1029,54 @@ export default function AcompanharTreinoPage() {
         );
     }
 
+    if (noPlan) {
+        return (
+            <div className={s.page}>
+                <div className={s.container}>
+                    <div className={s.noPlan}>
+                        <h1 className={s.noPlanTitle}>
+                            {studentName
+                                ? `${studentName} ainda não tem treino`
+                                : 'Este aluno ainda não tem treino'}
+                        </h1>
+                        <p className={s.noPlanText}>
+                            Monte uma rotina do zero (treinos por dia da
+                            semana ou A/B/C) ou copie um treino da sua
+                            biblioteca. Assim que você adicionar os
+                            exercícios, o aluno já vê no app.
+                        </p>
+                        <div className={s.noPlanActions}>
+                            <Button onClick={() => setCreatingPlan(true)}>
+                                + Criar rotina
+                            </Button>
+                            <button
+                                className={s.btnBack}
+                                onClick={() =>
+                                    router.push(
+                                        `/personal/aluno/${studentId}/periodizacao`,
+                                    )
+                                }
+                            >
+                                Ver treinos arquivados
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {creatingPlan && (
+                    <NewMacrocycleModal
+                        studentId={studentId}
+                        onClose={() => setCreatingPlan(false)}
+                        onCreated={(created) =>
+                            router.push(
+                                `/personal/aluno/${studentId}/periodizacao/${created.id}?created=1`,
+                            )
+                        }
+                    />
+                )}
+            </div>
+        );
+    }
+
     if (pageError) {
         return (
             <div className={s.page}>
@@ -1037,7 +1091,7 @@ export default function AcompanharTreinoPage() {
                             )
                         }
                     >
-                        <FiArrowLeft /> Ir para a periodização
+                        <FiArrowLeft /> Ver treinos do aluno
                     </button>
                 </div>
             </div>

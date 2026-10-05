@@ -1,0 +1,137 @@
+/* "Visão do aluno" (StudentViewPreview): a lista do treino como o aluno vê. */
+
+.hint {
+    margin: 0 0 14px;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+}
+
+.notes {
+    margin-bottom: 16px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border-subtle);
+    background: var(--surface-2);
+}
+.notesTitle {
+    margin: 0 0 4px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+.notesText {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--text-primary);
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+
+.empty {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--text-muted);
+}
+
+.chips {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    margin-bottom: 14px;
+}
+.chip {
+    flex-shrink: 0;
+    min-height: 2.75rem;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border-subtle);
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.chip:focus-visible {
+    outline: 2px solid var(--mint);
+    outline-offset: 2px;
+}
+.chipOn {
+    composes: chip;
+    border-color: var(--mint);
+    background: var(--surface-2);
+    color: var(--text-primary);
+}
+
+.list,
+.comboList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border-subtle);
+    background: var(--surface-1);
+    color: var(--text-primary);
+    text-align: left;
+    cursor: pointer;
+}
+.row:focus-visible {
+    outline: 2px solid var(--mint);
+    outline-offset: 2px;
+}
+
+.rowText {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+}
+.rowName {
+    font-weight: 600;
+    font-size: 0.95rem;
+    overflow-wrap: anywhere;
+}
+.rowMeta {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+.rowComment {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    overflow-wrap: anywhere;
+}
+.rowIcon {
+    flex-shrink: 0;
+    color: var(--text-muted);
+}
+
+/* Bloco de bi-set/tri-set: os exercícios dentro de uma moldura com o nome do
+   bloco, como na tela do aluno. */
+.combo {
+    padding: 8px;
+    border-radius: 12px;
+    border: 1px dashed var(--border-mid);
+}
+.comboLabel {
+    display: block;
+    margin: 0 0 6px 4px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}

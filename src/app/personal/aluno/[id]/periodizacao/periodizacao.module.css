@@ -379,3 +379,119 @@
 .offlineNotice svg {
     flex-shrink: 0;
 }
+
+/* ── Lista de rotinas (Ativas / Arquivadas / Lixeira) ── */
+.headerActions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.btnAdd:disabled,
+.btnAction:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+.tab {
+    min-height: 2.75rem;
+    padding: 0 16px;
+    border-radius: 999px;
+    border: 1px solid var(--border-subtle);
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+.tab:focus-visible {
+    outline: 2px solid var(--mint);
+    outline-offset: 2px;
+}
+.tabOn {
+    composes: tab;
+    border-color: var(--mint);
+    background: var(--surface-2);
+    color: var(--text-primary);
+}
+
+/* Rotina × Periodização: só o tipo, sem cor de status — "rascunho" saiu do
+   fluxo (o aluno sempre viu o plano em qualquer status). */
+.badgeKind {
+    display: inline-block;
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-weight: 600;
+    vertical-align: middle;
+    background: var(--surface-2);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-subtle);
+}
+
+/* Na lixeira o card não abre o plano: sem cursor de link nem hover. */
+.cardStatic {
+    composes: card;
+    cursor: default;
+}
+.cardStatic:hover {
+    border-color: var(--border-subtle);
+    box-shadow: none;
+    transform: none;
+}
+
+.trashHint {
+    margin: 0 0 16px;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+}
+
+.emptyPlans {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding: 40px 20px;
+    text-align: center;
+    background: var(--surface-1);
+    border: 1px dashed var(--border-mid);
+    border-radius: 12px;
+}
+.emptyPlansText {
+    margin: 0;
+    max-width: 420px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+/* "Arquivar quando terminar": botão com aria-pressed, não checkbox. */
+.toggleChip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 2.75rem;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border-subtle);
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+.toggleChip:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+.toggleChipOn {
+    composes: toggleChip;
+    border: 1.5px solid var(--mint);
+    background: var(--surface-2);
+    font-weight: 600;
+}

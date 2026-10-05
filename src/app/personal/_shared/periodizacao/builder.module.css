@@ -1818,3 +1818,74 @@
     font-size: 0.78rem;
     color: var(--coral, #e74c3c);
 }
+
+/* Lista de treinos da biblioteca em "Nova rotina → Copiar da biblioteca".
+   Cada item é um botão (aria-pressed), não um radio: mesmo motivo dos chips
+   de rótulo — o CSS global já comeu o :checked uma vez. */
+.templatePickList {
+    list-style: none;
+    margin: 0 0 16px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.templatePickItem {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border-subtle);
+    background: transparent;
+    color: var(--text-primary);
+    text-align: left;
+    cursor: pointer;
+}
+.templatePickItem:focus-visible {
+    outline: 2px solid var(--mint);
+    outline-offset: 2px;
+}
+.templatePickItemOn {
+    composes: templatePickItem;
+    border: 1.5px solid var(--mint);
+    background: var(--surface-2);
+}
+.templatePickName {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    overflow-wrap: anywhere;
+}
+.templatePickMeta {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    overflow-wrap: anywhere;
+}
+
+/* Observações da rotina para o aluno, logo abaixo do resumo do plano. */
+.planNotes {
+    margin-bottom: 20px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border-subtle);
+    background: var(--surface-2);
+}
+.planNotesTitle {
+    margin: 0 0 4px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+.planNotesText {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--text-primary);
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}

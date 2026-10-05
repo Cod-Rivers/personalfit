@@ -147,6 +147,17 @@ export interface MacrocycleResponse {
     mesocycles: MesocycleResponse[];
     created_at: string;
     updated_at: string;
+    /** Observações da rotina para o aluno (valem para o plano inteiro). */
+    notes?: string;
+    /** A rotina se arquiva sozinha quando passa o end_date. */
+    archive_on_end?: boolean;
+    /** Arquivada (à mão ou pela data — o backend já resolve o fuso). Some
+     * da lista do aluno, continua com o personal. */
+    archived?: boolean;
+    /** Só nos planos da lixeira (listPlanningTrash). */
+    trashed_at?: string;
+    /** Pasta do modelo na biblioteca do personal. Só em template. */
+    folder?: string;
     /** Exercícios que o PRÓPRIO aluno não pode substituir, por ID, com a
      * origem da trava. Só vem nas rotas /my-planning (o backend resolve com as
      * restrições do aluno); ausente nas telas do personal. */
@@ -227,6 +238,10 @@ export interface CreateMacrocycleRequest {
     planning_mode?: 'periodized' | 'simple';
     simple_day_label?: 'weekday' | 'number';
     training_label_parts?: TrainingLabelPart[];
+    /** Observações da rotina para o aluno. */
+    notes?: string;
+    /** Arquivar sozinha quando passar o end_date. */
+    archive_on_end?: boolean;
     mesocycles: MesocycleRequest[];
 }
 
@@ -242,6 +257,11 @@ export interface UpdateMacrocycleRequest {
     /** Meta semanal: 0 = automático (número de treinos da fase), 1–7 = fixa.
      * 0 e não null: o PUT não distingue null de campo ausente. */
     weekly_target_days?: number;
+    /** Observações da rotina. "" apaga. */
+    notes?: string;
+    archive_on_end?: boolean;
+    /** Pasta do modelo (só template). "" tira da pasta. */
+    folder?: string;
 }
 
 /** Heurística por STATUS: em andamento, senão o próximo pendente, senão o
@@ -679,7 +699,8 @@ export async function getPlanWorkoutLogs(
     return data ?? [];
 }
 
-/** DELETE /students/:studentId/planning/:planningId */
+/** DELETE /students/:studentId/planning/:planningId — move para a lixeira
+ * (fica 30 dias; ver restorePlanningFromTrash). */
 export async function deleteMacrocycle(
     studentId: string,
     planningId: string,
@@ -687,6 +708,49 @@ export async function deleteMacrocycle(
     await Api.delete(
         `/students/${studentId}/planning/${planningId}`,
     );
+}
+
+/** PATCH /students/:studentId/planning/:planningId/archive — arquivada, a
+ * rotina some da lista do aluno e do download offline. */
+export async function setPlanningArchived(
+    studentId: string,
+    planningId: string,
+    archived: boolean,
+): Promise<MacrocycleResponse> {
+    const { data } = await Api.patch<MacrocycleResponse>(
+        `/students/${studentId}/planning/${planningId}/archive`,
+        { archived },
+    );
+    return data;
+}
+
+/** GET /students/:studentId/planning/trash — planos excluídos nos últimos 30 dias. */
+export async function listPlanningTrash(
+    studentId: string,
+): Promise<MacrocycleResponse[]> {
+    const { data } = await Api.get<MacrocycleResponse[]>(
+        `/students/${studentId}/planning/trash`,
+    );
+    return data ?? [];
+}
+
+/** POST /students/:studentId/planning/trash/:planningId/restore */
+export async function restorePlanningFromTrash(
+    studentId: string,
+    planningId: string,
+): Promise<MacrocycleResponse> {
+    const { data } = await Api.post<MacrocycleResponse>(
+        `/students/${studentId}/planning/trash/${planningId}/restore`,
+    );
+    return data;
+}
+
+/** DELETE /students/:studentId/planning/trash/:planningId — apaga de vez. */
+export async function deletePlanningForever(
+    studentId: string,
+    planningId: string,
+): Promise<void> {
+    await Api.delete(`/students/${studentId}/planning/trash/${planningId}`);
 }
 
 /* ── Student self-access (role=student) ── */
@@ -713,6 +777,8 @@ export async function createNewTemplate(
         planning_mode?: 'periodized' | 'simple';
         simple_day_label?: 'weekday' | 'number';
         training_label_parts?: TrainingLabelPart[];
+        /** Pasta na biblioteca do personal. */
+        folder?: string;
     },
 ): Promise<MacrocycleResponse> {
     const { data } = await Api.post<MacrocycleResponse>(
@@ -723,6 +789,15 @@ export async function createNewTemplate(
 }
 export async function getMyTemplates(): Promise<MacrocycleResponse[]> {
     const { data } = await Api.get<MacrocycleResponse[]>('/planning/templates');
+    return data ?? [];
+}
+
+/** GET /planning/templates/public — biblioteca pública (equipe Venafit e
+ * modelos aprovados de outros personals). */
+export async function getPublicTemplates(): Promise<MacrocycleResponse[]> {
+    const { data } = await Api.get<MacrocycleResponse[]>(
+        '/planning/templates/public',
+    );
     return data ?? [];
 }
 

@@ -621,3 +621,30 @@
     opacity: 0.5;
     cursor: not-allowed;
 }
+
+/* ── Aluno sem rotina: criar a primeira ali mesmo ── */
+.noPlan {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding: var(--space-5) var(--space-4);
+    border-radius: var(--radius-md);
+    border: 1px dashed var(--border-mid);
+    background: var(--surface-1);
+}
+.noPlanTitle {
+    margin: 0;
+    font-size: var(--font-lg);
+    color: var(--text-primary);
+    overflow-wrap: anywhere;
+}
+.noPlanText {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: var(--font-sm);
+}
+.noPlanActions {
+    display: flex;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}

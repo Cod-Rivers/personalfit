@@ -49,4 +49,24 @@ describe('pickPrescribedPlanning', () => {
     it('lista vazia', () => {
         expect(pickPrescribedPlanning([])).toBeUndefined();
     });
+
+    it('pula a rotina arquivada, mesmo a mais recente', () => {
+        const plans: (P & { archived?: boolean })[] = [
+            {
+                id: 'arquivada',
+                status: 'active',
+                start_date: '2026-10-01',
+                archived: true,
+            },
+            { id: 'atual', status: 'active', start_date: '2026-09-01' },
+        ];
+        expect(pickPrescribedPlanning(plans)?.id).toBe('atual');
+    });
+
+    it('só arquivadas: nenhuma para acompanhar', () => {
+        const plans: (P & { archived?: boolean })[] = [
+            { id: 'arquivada', status: 'active', archived: true },
+        ];
+        expect(pickPrescribedPlanning(plans)).toBeUndefined();
+    });
 });
