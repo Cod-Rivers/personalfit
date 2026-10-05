@@ -43,9 +43,9 @@ export default function StudentOverflowNotice() {
                             O plano gratuito do seu personal inclui até {limit}{' '}
                             alunos, e você não está entre eles. Você continua
                             treinando o plano atual, mas ele não será alterado.
-                            Se o seu personal voltar ao PRO até {until}, tudo
-                            continua normalmente; senão, o vínculo com ele é
-                            encerrado.
+                            Se o seu personal assinar o Plus ou o PRO até{' '}
+                            {until}, tudo continua normalmente; senão, o
+                            vínculo com ele é encerrado.
                         </p>
                     </>
                 )}

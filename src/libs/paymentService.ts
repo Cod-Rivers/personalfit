@@ -49,8 +49,14 @@ export interface SubscribePixResponse {
 
 export interface SubscribeCardResponse {
     message: string;
-    status: string; // ACTIVE | PENDING | ...
+    /** Status da ASSINATURA (ACTIVE | PENDING | ...). ACTIVE é o cartão
+     *  validado, não o pagamento: não serve para dizer que o plano está ativo. */
+    status: string;
     subscription_id?: string;
+    /** Plano do personal: a cobrança foi paga e a conta já está no plano
+     *  comprado. Ausente = aguardando a confirmação (ou backend anterior a
+     *  este campo) — quem confirma é o /me. */
+    plan_active?: boolean;
 }
 
 export async function subscribeProPix(

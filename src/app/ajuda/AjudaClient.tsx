@@ -52,12 +52,12 @@ const studentSections: HelpSection[] = [
                 <p className="mb-0 mt-2">
                     <strong>Acompanhamento em espera:</strong> o plano
                     gratuito do personal inclui até 3 alunos. Se o seu
-                    personal sair do PRO com mais alunos e você não estiver
+                    personal voltar ao plano gratuito com mais alunos e você não estiver
                     entre os que ele escolheu, o aviso aparece aqui (e chega
                     uma notificação): você continua treinando o plano atual
                     por 2 meses, mas ele não é alterado. Uma semana antes do
-                    fim você recebe outro aviso. Se o personal voltar ao PRO
-                    nesse prazo, tudo continua; senão, o vínculo com ele é
+                    fim você recebe outro aviso. Se o personal assinar o Plus
+                    ou o PRO nesse prazo, tudo continua; senão, o vínculo com ele é
                     encerrado e o treino montado por ele fica bloqueado. Por
                     30 dias você pode mantê-lo pelo valor de um plano avulso,
                     pelo aviso em Meus Treinos; depois disso ele é apagado. O
@@ -1013,10 +1013,10 @@ const personalSections: HelpSection[] = [
                     personal, ele passa a montar o próprio treino. No plano
                     gratuito você mantém{' '}
                     <strong>até 3 alunos</strong>; com o{' '}
-                    <Link href="#plano-pro">PRO</Link> os alunos são
-                    ilimitados. Voltando ao gratuito com mais de 3, os
+                    <Link href="#plano-pro">Plus ou o PRO</Link> os alunos
+                    são ilimitados. Voltando ao gratuito com mais de 3, os
                     excedentes ficam em espera (veja{' '}
-                    <Link href="#plano-pro">Plano PRO</Link>).
+                    <Link href="#plano-pro">Planos do personal</Link>).
                 </p>
             </>
         ),

@@ -90,16 +90,21 @@ export default function StudentOverflowGate({
                         </strong>
                         <span>
                             Eles continuam treinando, mas você não altera nada
-                            deles. Assine o PRO até lá para voltar a acompanhar
-                            todos; senão, eles são desvinculados.
+                            deles. Assine o Plus ou o PRO até lá para voltar a
+                            acompanhar todos; senão, eles são desvinculados.
                         </span>
                     </div>
+                    {/* O Plus é o plano mais barato com alunos ilimitados; a
+                        tela de pagamento mostra a escada, e o PRO fica a um
+                        toque. */}
                     <button
                         type="button"
                         className={s.btnPrimary}
-                        onClick={() => router.push('/pagamento?produto=pro')}
+                        onClick={() =>
+                            router.push('/pagamento?produto=personal-plus')
+                        }
                     >
-                        Assinar o PRO
+                        Assinar o Plus
                     </button>
                 </div>
             )}
@@ -173,8 +178,8 @@ function StudentOverflowChoice({
                     alunos, e você tem {total || 'mais'}. Escolha quem continua
                     com você. Os demais ficam <strong>em espera</strong> até{' '}
                     {deadline}: continuam treinando o plano atual, mas você não
-                    altera nada deles. Se você assinar o PRO até lá, todos
-                    voltam ao normal; senão, eles são desvinculados.
+                    altera nada deles. Se você assinar o Plus ou o PRO até lá,
+                    todos voltam ao normal; senão, eles são desvinculados.
                 </p>
 
                 {error && <p className={s.error}>{error}</p>}
@@ -212,10 +217,12 @@ function StudentOverflowChoice({
                                 type="button"
                                 className={s.btnSecondary}
                                 onClick={() =>
-                                    router.push('/pagamento?produto=pro')
+                                    router.push(
+                                        '/pagamento?produto=personal-plus',
+                                    )
                                 }
                             >
-                                Assinar o PRO e manter todos
+                                Assinar o Plus e manter todos
                             </button>
                             <button
                                 type="button"

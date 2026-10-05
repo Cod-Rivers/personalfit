@@ -189,6 +189,9 @@ function PaymentPageInner() {
     const [pix, setPix] = useState<PixData | null>(null);
     const [copied, setCopied] = useState(false);
     const [confirmed, setConfirmed] = useState(false);
+    // Cartão aceito, cobrança ainda sem confirmação (análise de risco): o
+    // formulário some e o polling do /me espera o plano subir.
+    const [cardPending, setCardPending] = useState(false);
     const [trial, setTrial] = useState<ProTrialStatus | null>(null);
     const [trialStarted, setTrialStarted] = useState<ProTrialStatus | null>(null);
     const [plusStatus, setPlusStatus] = useState<StudentPlusStatus | null>(null);
@@ -519,7 +522,7 @@ function PaymentPageInner() {
                             selected={produto === 'personal-plus' ? 'plus' : 'pro'}
                             currentPlan={currentPlan}
                             onSelect={
-                                pix
+                                pix || cardPending
                                     ? undefined
                                     : (plan) =>
                                           router.push(
@@ -749,7 +752,23 @@ function PaymentPageInner() {
                                 )}
 
                                 {/* Cartão de crédito — assinatura do personal (recorrente) */}
-                                {metodo === 'card' && isPersonalPlan && (
+                                {metodo === 'card' && isPersonalPlan && cardPending && (
+                                    <div className="text-center mt-3">
+                                        <div className="d-flex align-items-center justify-content-center gap-2 text-muted small">
+                                            <div
+                                                className="spinner-border spinner-border-sm"
+                                                role="status"
+                                            ></div>
+                                            Confirmando o pagamento…
+                                        </div>
+                                        <p className="small text-muted mt-2 mb-0">
+                                            O cartão foi aceito e a cobrança está em análise. O plano é
+                                            ativado sozinho assim que ela for aprovada: pode fechar esta
+                                            tela. Não assine de novo.
+                                        </p>
+                                    </div>
+                                )}
+                                {metodo === 'card' && isPersonalPlan && !cardPending && (
                                     <CardForm
                                         disabled={loading}
                                         submitLabel="Assinar"
@@ -766,7 +785,11 @@ function PaymentPageInner() {
                                                         : 'pro',
                                                 );
                                                 setLoading(false);
-                                                if (res.status === 'ACTIVE') {
+                                                // Só plan_active é pagamento confirmado. "ACTIVE" é
+                                                // o status da assinatura (cartão validado), e foi ele
+                                                // que fez esta tela dizer "Seu Personal Plus está
+                                                // ativo" para quem continuou no free (2026-10-05).
+                                                if (res.plan_active) {
                                                     updateSessionPlanType(
                                                         produto === 'personal-plus'
                                                             ? 'plus'
@@ -774,6 +797,7 @@ function PaymentPageInner() {
                                                     );
                                                     setConfirmed(true);
                                                 } else {
+                                                    setCardPending(true);
                                                     startPolling();
                                                 }
                                             } catch (err: unknown) {
