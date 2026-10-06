@@ -1,6 +1,6 @@
 // Ative apenas depois que o app Android estiver publicado na Play Store —
 // antes disso o redirect levaria a uma ficha inexistente (404 da Play Store).
-export const ANDROID_APP_LIVE = false;
+export const ANDROID_APP_LIVE = true;
 
 const ANDROID_APP_PACKAGE = 'com.codriverslabs.venafit';
 export const ANDROID_PLAY_STORE_URL = `https://play.google.com/store/apps/details?id=${ANDROID_APP_PACKAGE}`;
