@@ -162,7 +162,7 @@ function ReportsPanel() {
                             </p>
                         )}
                         <Link href="/pagamento?produto=pro" className={s.teaserCta}>
-                            Conhecer o PRO (14 dias grátis)
+                            Conhecer o PRO
                         </Link>
                     </div>
                 </section>

@@ -126,17 +126,21 @@ function formatDate(iso?: string): string {
     return iso ? new Date(iso).toLocaleDateString('pt-BR') : '';
 }
 
-/** Meios de pagamento de cada produto. O Aluno Plus, dentro do app Android,
- *  só pelo Google Play: é produto digital comprado no app, e a política de
- *  pagamentos da loja exige o Play Billing nesse caso. */
-function methodsFor(produto: Produto, googleAvailable: boolean): Metodo[] {
-    if (produto === 'plus') return googleAvailable ? ['google'] : ['card'];
-    // O Personal Plus aceita os mesmos meios do PRO: o PIX de assinatura é
-    // cobrança única que o webhook converte em plano (ver
-    // handlePixPayment no backend), e é assim que o PRO já funciona.
-    const methods: Metodo[] = ['pix', 'card'];
-    if (googleAvailable) methods.push('google');
-    return methods;
+/** Meios de pagamento de cada produto.
+ *
+ *  Dentro do app Android, todo produto daqui é digital e a política da loja
+ *  exige passar pelo Google: o caminho começa SEMPRE pelo botão do Google
+ *  Play, que abre a tela de escolha do faturamento por escolha do usuário
+ *  (Google Play ou Asaas). Só depois de o usuário escolher o Asaas lá
+ *  (`altChosen`) o PIX e o cartão aparecem — nunca antes, nem lado a lado.
+ *
+ *  No site: o Aluno Plus só no cartão (PIX no Asaas é cobrança única, não
+ *  assinatura); o resto em PIX ou cartão. O Personal Plus aceita os mesmos
+ *  meios do PRO: o PIX de assinatura é cobrança única que o webhook converte
+ *  em plano (ver handlePixPayment no backend). */
+function methodsFor(produto: Produto, googleAvailable: boolean, altChosen: boolean): Metodo[] {
+    if (googleAvailable && !altChosen) return ['google'];
+    return produto === 'plus' ? ['card'] : ['pix', 'card'];
 }
 
 interface PixData {
@@ -184,6 +188,10 @@ function PaymentPageInner() {
     const [cycle, setCycle] = useState('MONTHLY');
     const [metodo, setMetodo] = useState<Metodo>(produto === 'plus' ? 'card' : 'pix');
     const [googleAvailable, setGoogleAvailable] = useState(false);
+    // Token da tela de escolha do Google: o usuário escolheu pagar pelo
+    // Asaas. Vai junto da compra para o backend informar o Google. '' = não
+    // escolheu (ou está no site).
+    const [altToken, setAltToken] = useState('');
     const [partners, setPartners] = useState<ReferralPartnerPublic[]>([]);
     const [indicationReceiver, setIndicationReceiver] = useState(INDICATION_NONE);
     const [loading, setLoading] = useState(false);
@@ -237,13 +245,17 @@ function PaymentPageInner() {
         }
     }, [produto, isPersonalPlan]);
 
-    const methods = methodsFor(produto, googleAvailable);
-    // O meio escolhido precisa existir para o produto (ex.: Plus dentro do
-    // app, onde só o Google Play vale).
+    const methods = methodsFor(produto, googleAvailable, altToken !== '');
+    // O meio escolhido precisa existir para o produto (ex.: dentro do app,
+    // antes da tela de escolha do Google, só o botão do Google Play).
     useEffect(() => {
         if (!methods.includes(metodo)) setMetodo(methods[0]);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [produto, googleAvailable]);
+    }, [produto, googleAvailable, altToken]);
+    // O token vale para o produto escolhido na tela do Google: trocar de
+    // plano ou de ciclo depois disso exigiria outra escolha.
+    const lockedByChoice = !!pix || altToken !== '';
+    const alt = altToken || undefined;
 
     const selectedProPlan = catalog?.pro.find((p) => p.cycle === cycle);
     const price =
@@ -362,6 +374,7 @@ function PaymentPageInner() {
                     cycle,
                     indicationReceiver,
                     produto === "personal-plus" ? "personal_plus" : "pro",
+                    alt,
                 );
                 setPix({
                     qrImageUrl: res.qr_image_url,
@@ -377,8 +390,8 @@ function PaymentPageInner() {
                     plansBefore.current = null;
                 }
                 const res = keepsPlan
-                    ? await purchaseLockedPlanPix(lockedPlanId)
-                    : await purchaseLibraryPlanPix(templateId);
+                    ? await purchaseLockedPlanPix(lockedPlanId, alt)
+                    : await purchaseLibraryPlanPix(templateId, alt);
                 setPix({
                     qrImageUrl: res.qr_image_url,
                     payload: res.qr_code_payload,
@@ -410,6 +423,12 @@ function PaymentPageInner() {
             if (!productId) throw new Error('Produto indisponível');
 
             const result = await launchGooglePlayPurchase(productId, productType, accountId);
+            if (result.status === 'alternative') {
+                // Escolheu o Asaas na tela do Google: nada foi cobrado.
+                // Aparecem PIX/cartão, e a compra leva o token.
+                setAltToken(result.externalTransactionToken ?? '');
+                return;
+            }
             const verify = await verifyGooglePlayPurchase(
                 productId,
                 result.purchaseToken!,
@@ -549,7 +568,7 @@ function PaymentPageInner() {
                             selected={produto === 'personal-plus' ? 'plus' : 'pro'}
                             currentPlan={currentPlan}
                             onSelect={
-                                pix || cardPending
+                                lockedByChoice || cardPending
                                     ? undefined
                                     : (plan) =>
                                           router.push(
@@ -624,7 +643,7 @@ function PaymentPageInner() {
                                     id="cycleSelect"
                                     className="form-select"
                                     value={cycle}
-                                    disabled={!!pix}
+                                    disabled={lockedByChoice}
                                     onChange={(e) => setCycle(e.target.value)}
                                 >
                                     {catalog.pro.map((p) => (
@@ -649,7 +668,7 @@ function PaymentPageInner() {
                                     id="indicationSelect"
                                     className="form-select"
                                     value={indicationReceiver}
-                                    disabled={!!pix}
+                                    disabled={lockedByChoice}
                                     onChange={(e) =>
                                         setIndicationReceiver(e.target.value)
                                     }
@@ -711,6 +730,12 @@ function PaymentPageInner() {
                                             </button>
                                         )}
                                     </div>
+                                )}
+                                {altToken && !pix && (
+                                    <p className="small text-muted mb-2">
+                                        Você escolheu pagar direto ao Venafit. Escolha PIX ou cartão
+                                        abaixo.
+                                    </p>
                                 )}
                                 {produto === 'plus' && metodo === 'card' && (
                                     <p className="small text-muted mb-2">
@@ -822,6 +847,7 @@ function PaymentPageInner() {
                                                     produto === 'personal-plus'
                                                         ? 'personal_plus'
                                                         : 'pro',
+                                                    alt,
                                                 );
                                                 setLoading(false);
                                                 // Só plan_active é pagamento confirmado. "ACTIVE" é
@@ -857,8 +883,8 @@ function PaymentPageInner() {
                                             setLoading(true);
                                             try {
                                                 const res = keepsPlan
-                                                    ? await purchaseLockedPlanCard(lockedPlanId, form)
-                                                    : await purchaseLibraryPlanCard(templateId, form);
+                                                    ? await purchaseLockedPlanCard(lockedPlanId, form, alt)
+                                                    : await purchaseLibraryPlanCard(templateId, form, alt);
                                                 setLoading(false);
                                                 if (res.applied) {
                                                     setConfirmed(true);
@@ -885,7 +911,7 @@ function PaymentPageInner() {
                                             setError('');
                                             setLoading(true);
                                             try {
-                                                const res = await subscribeStudentPlusCard(form);
+                                                const res = await subscribeStudentPlusCard(form, alt);
                                                 setLoading(false);
                                                 if (res.status === 'ACTIVE') {
                                                     setConfirmed(true);
@@ -913,11 +939,15 @@ function PaymentPageInner() {
                                                     <span className="visually-hidden">Carregando…</span>
                                                 </div>
                                             ) : (
-                                                'Pagar pelo Google Play'
+                                                'Continuar para o pagamento'
                                             )}
                                         </button>
                                         <p className="small text-muted mt-2">
-                                            A cobrança é feita pela sua conta Google Play.
+                                            Na próxima tela o Google mostra como você pode pagar
+                                            {produto !== 'plano'
+                                                ? '. Quem nunca assinou nada no Venafit ganha 1 mês grátis: a assinatura só é cobrada depois, e você pode cancelar antes pelo Google Play'
+                                                : ''}
+                                            .
                                         </p>
                                     </div>
                                 )}

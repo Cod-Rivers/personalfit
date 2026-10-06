@@ -1294,7 +1294,7 @@ const personalSections: HelpSection[] = [
                     . Com menos de 3 comentários no período, o relatório sai só
                     com números. Na ficha do aluno (Feedback), &quot;Gerar
                     relatório agora&quot; lê os últimos 30 dias, útil antes de
-                    uma reavaliação (5 por mês; 1 no teste grátis).
+                    uma reavaliação (5 por mês).
                 </p>
                 <p className="mb-0">
                     Privacidade: antes de ir para a IA, o texto perde nome,
@@ -3453,12 +3453,15 @@ const personalSections: HelpSection[] = [
                     a conta volta ao plano gratuito na data.
                 </p>
                 <p className="mb-2">
-                    <strong>Teste grátis:</strong> quem nunca assinou pode usar o
-                    PRO por 14 dias, sem cartão, uma vez por conta. Se não
-                    assinar até o fim, a conta volta ao plano que ela paga — o
-                    gratuito, ou o Plus se você tiver assinado o Plus durante o
-                    teste. O que você configurou (marca, vitrine, vídeos) fica
-                    guardado e volta a valer quando assinar.
+                    <strong>Teste grátis:</strong> no app Android, as assinaturas
+                    (PRO e Plus) pelo Google Play começam com 1 mês grátis para quem
+                    nunca assinou nada no Venafit. Depois do mês, a assinatura
+                    renova sozinha no ciclo escolhido. Cancele pelo Google Play
+                    antes do fim e nada é cobrado: a conta volta ao plano que ela
+                    paga — o gratuito, ou
+                    o Plus se você tiver assinado o Plus. O que você configurou
+                    (marca, vitrine, vídeos) fica guardado e volta a valer quando
+                    assinar.
                 </p>
                 <p className="mb-2">
                     <strong>Mais de 3 alunos ao voltar ao gratuito:</strong> no

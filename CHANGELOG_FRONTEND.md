@@ -848,3 +848,16 @@
 ## 2026-10-05 15:02 — River (via Claude Code)
 **Resumo:** Commitei e enviei a fase 1. O deploy dispara sozinho com o push. Nada foi testado no app rodando. - **Backend**: commit `1b8c36d` em `main`. - **Frontend**: commit `fbb0474` em `master`. **Atenção ao push do backend:** ele levou junto um commit de outra sessão que ainda não tinha sido enviado, o `afb84e5` ("Pedido de vínculo não aceito não abre mais os dados do aluno"). A parte do frontend dele já estava no ar, então agora os dois lados batem. Depois que esse deploy terminar, ainda falta rodar o `cmd/backfill-link-consent` com o `MONGO_URL` de produção, para corrigir os pedidos de vínculo anti…
 **Commits:** Montar treino mais simples: Nova rotina numa tela, Visão do aluno e lixeira
+
+## 2026-10-05 18:06 — River (via Claude Code)
+**Resumo:** Fiz o commit e o push dos três repositórios. | Repo | Commit | O que foi | |---|---|---| | Personal-fit-Back | `283d941` | Personal Plus (planos free < plus < pro, troca de PRO para Plus, `paid_plan_tier`) + suspensão de conta (403 `account_suspended`) | | personalfit | `0fafd4c` | Tabela com os três planos na página de pagamento, troca de PRO para Plus, gates e admin com "plus", sessão encerrada quando a conta está suspensa | | VenafitApp | `8ff8163` | Só o changelog | O backend compila e os testes dos pacotes alterados passam. No frontend, `tsc` passou e os dois testes novos também. Nada foi…
+**Commits:** Personal Plus: escada de planos na UI e sessão encerrada em conta suspensa
+
+## 2026-10-05 21:19 — River (via Claude Code)
+**Resumo:** Fiz as duas partes, e o Cloud Scheduler já rodou os três jobs em produção com sucesso. **Parte 1: commit e push** - O commit `9793f3d` (varredura de planos dentro do job do excedente) foi enviado. O deploy automático ainda estava rodando quando terminei. - Ele só troca a versão do código e mantém o secret, que eu conferi no serviço. **Parte 2: Cloud Scheduler** - **API:** ativei a API do Cloud Scheduler no projeto. - **Secret:** criei o `JOB_TRIGGER_SECRET` com um token aleatório de 64 caracteres, gravado sem BOM. O valor não apareceu em nenhuma saída. - **Cloud Run:** liguei o secret ao backe…
+**Arquivos:** CHANGELOG_FRONTEND.md
+**Commits:** Tela de pagamento: layout largo dentro do shell, banner e resumo corrigidos | Pagamento só confirma com plan_active; trava dos 3 alunos oferece o Plus (item -42) | PIX de plano mostra até quando vale e confirma pela data paga (item -42)
+
+## 2026-10-05 22:19 — River (via Claude Code)
+**Resumo:** Estou lendo os produtos do Play pela API com a conta de serviço. A leitura funcionou, mas o resultado ainda não é confiável: - **Assinaturas:** a API respondeu que **não há nenhuma**. - **Produtos únicos:** também **nenhum**. Isso não bate com o que eu tinha anotado: o `library_plan` a R$ 49,90 e o `early_anamnesis` ativo. Há duas explicações possíveis: 1. **A permissão ainda não terminou de valer.** O convite foi enviado há pouco, o Google pode levar algumas horas e, enquanto isso, a API pode responder vazio. 2. **Os produtos de fato não existem** neste app, ou foram criados em outro. Também …
+**Arquivos:** page.tsx, paymentService.ts

@@ -31,6 +31,15 @@ export interface PlanCatalog {
  *  Ausente = 'pro', por compatibilidade com versões publicadas antes do Plus. */
 export type PersonalPlanProduct = 'pro' | 'personal_plus';
 
+/** Token da tela de escolha do Google Play (faturamento por escolha do
+ *  usuário): presente quando, dentro do app Android, o usuário escolheu
+ *  pagar pelo Asaas. O backend usa para informar a cobrança ao Google. */
+function playChoice(externalTransactionToken?: string) {
+    return externalTransactionToken
+        ? { external_transaction_token: externalTransactionToken }
+        : {};
+}
+
 export async function getPlans(): Promise<PlanCatalog> {
     const res = await Api.get<PlanCatalog>('/plans');
     return res.data;
@@ -63,12 +72,14 @@ export async function subscribeProPix(
     cycle: string,
     indicationReceiver?: string,
     product: PersonalPlanProduct = 'pro',
+    externalTransactionToken?: string,
 ): Promise<SubscribePixResponse> {
     const res = await Api.post<SubscribePixResponse>('/user/subscribe', {
         payment_method: 'PIX',
         plan_cycle: cycle,
         product,
         ...(indicationReceiver ? { indication_receiver: indicationReceiver } : {}),
+        ...playChoice(externalTransactionToken),
     });
     return res.data;
 }
@@ -92,6 +103,7 @@ export async function subscribeProCard(
     card: CardSubscriptionForm,
     indicationReceiver?: string,
     product: PersonalPlanProduct = 'pro',
+    externalTransactionToken?: string,
 ): Promise<SubscribeCardResponse> {
     const res = await Api.post<SubscribeCardResponse>('/user/subscribe', {
         payment_method: 'CREDIT_CARD',
@@ -99,6 +111,7 @@ export async function subscribeProCard(
         product,
         ...(indicationReceiver ? { indication_receiver: indicationReceiver } : {}),
         ...card,
+        ...playChoice(externalTransactionToken),
     });
     return res.data;
 }
@@ -229,8 +242,12 @@ export async function getStudentPlusStatus(): Promise<StudentPlusStatus> {
 
 export async function subscribeStudentPlusCard(
     card: CardSubscriptionForm,
+    externalTransactionToken?: string,
 ): Promise<SubscribeCardResponse> {
-    const res = await Api.post<SubscribeCardResponse>('/me/student-plus/subscribe', card);
+    const res = await Api.post<SubscribeCardResponse>('/me/student-plus/subscribe', {
+        ...card,
+        ...playChoice(externalTransactionToken),
+    });
     return res.data;
 }
 
@@ -282,10 +299,11 @@ export interface PurchaseLibraryPlanResponse {
 /** Compra um plano da biblioteca via PIX. O plano é aplicado no webhook. */
 export async function purchaseLibraryPlanPix(
     templateId: string,
+    externalTransactionToken?: string,
 ): Promise<PurchaseLibraryPlanResponse> {
     const res = await Api.post<PurchaseLibraryPlanResponse>(
         `/my-planning/celebrity-templates/${templateId}/purchase`,
-        { payment_method: 'PIX' },
+        { payment_method: 'PIX', ...playChoice(externalTransactionToken) },
     );
     return res.data;
 }
@@ -294,10 +312,11 @@ export async function purchaseLibraryPlanPix(
 export async function purchaseLibraryPlanCard(
     templateId: string,
     card: CardSubscriptionForm,
+    externalTransactionToken?: string,
 ): Promise<PurchaseLibraryPlanResponse> {
     const res = await Api.post<PurchaseLibraryPlanResponse>(
         `/my-planning/celebrity-templates/${templateId}/purchase`,
-        { payment_method: 'CREDIT_CARD', ...card },
+        { payment_method: 'CREDIT_CARD', ...card, ...playChoice(externalTransactionToken) },
     );
     return res.data;
 }
@@ -309,10 +328,11 @@ export async function purchaseLibraryPlanCard(
  */
 export async function purchaseLockedPlanPix(
     planId: string,
+    externalTransactionToken?: string,
 ): Promise<PurchaseLibraryPlanResponse> {
     const res = await Api.post<PurchaseLibraryPlanResponse>(
         `/my-planning/locked/${planId}/purchase`,
-        { payment_method: 'PIX' },
+        { payment_method: 'PIX', ...playChoice(externalTransactionToken) },
     );
     return res.data;
 }
@@ -321,10 +341,11 @@ export async function purchaseLockedPlanPix(
 export async function purchaseLockedPlanCard(
     planId: string,
     card: CardSubscriptionForm,
+    externalTransactionToken?: string,
 ): Promise<PurchaseLibraryPlanResponse> {
     const res = await Api.post<PurchaseLibraryPlanResponse>(
         `/my-planning/locked/${planId}/purchase`,
-        { payment_method: 'CREDIT_CARD', ...card },
+        { payment_method: 'CREDIT_CARD', ...card, ...playChoice(externalTransactionToken) },
     );
     return res.data;
 }
@@ -365,16 +386,21 @@ export function isGooglePlayBillingAvailable(): Promise<boolean> {
 }
 
 export interface BillingBridgeEvent {
-    status: 'success' | 'canceled' | 'error';
+    /** 'alternative': na tela de escolha do Google, o usuário escolheu pagar
+     *  pelo Asaas — nada foi cobrado; segue para PIX/cartão com o token. */
+    status: 'success' | 'alternative' | 'canceled' | 'error';
     productId?: string;
     productType?: 'subs' | 'inapp';
     purchaseToken?: string;
+    externalTransactionToken?: string;
     message?: string;
 }
 
 /**
  * Dispara a compra nativa e resolve quando o app devolver o resultado via
- * CustomEvent 'venafit-billing'. Rejeita em cancelamento/erro/timeout.
+ * CustomEvent 'venafit-billing': compra no Google Play (status 'success') ou
+ * escolha do Asaas na tela do Google ('alternative'). Rejeita em
+ * cancelamento/erro/timeout.
  */
 export function launchGooglePlayPurchase(
     productId: string,
@@ -398,7 +424,10 @@ export function launchGooglePlayPurchase(
             if (detail?.productId && detail.productId !== productId) return; // outro produto
             clearTimeout(timer);
             window.removeEventListener('venafit-billing', onEvent as EventListener);
-            if (detail?.status === 'success' && detail.purchaseToken) {
+            if (
+                (detail?.status === 'success' && detail.purchaseToken) ||
+                (detail?.status === 'alternative' && detail.externalTransactionToken)
+            ) {
                 resolve(detail);
             } else if (detail?.status === 'canceled') {
                 reject(new Error('Compra cancelada'));

@@ -208,7 +208,7 @@ const productTerms: GlossaryTerm[] = [
         id: 'plano-pro',
         term: 'PRO',
         short: 'O mais completo dos três planos do personal: tudo do Plus mais IA, vídeo próprio e agenda.',
-        long: 'O PRO é o plano mais completo do personal trainer no Venafit. Tem tudo o que o Plus tem (alunos ilimitados, financeiro completo, marca e vitrine no app do aluno, app sem anúncios) e acrescenta o que depende de inteligência artificial ou de armazenamento de vídeo: Substituição Inteligente de Exercícios, importação de treino por PDF e relatórios de acompanhamento com IA, upload dos próprios vídeos, a Agenda com controle de presença, o plano alimentar do aluno, fotos nas avaliações físicas, ciclos de treino privados e Meus Anúncios. Quem nunca assinou pode testar por 14 dias, sem cartão. Ciclos mensal, semestral e anual.',
+        long: 'O PRO é o plano mais completo do personal trainer no Venafit. Tem tudo o que o Plus tem (alunos ilimitados, financeiro completo, marca e vitrine no app do aluno, app sem anúncios) e acrescenta o que depende de inteligência artificial ou de armazenamento de vídeo: Substituição Inteligente de Exercícios, importação de treino por PDF e relatórios de acompanhamento com IA, upload dos próprios vídeos, a Agenda com controle de presença, o plano alimentar do aluno, fotos nas avaliações físicas, ciclos de treino privados e Meus Anúncios. No app Android, a assinatura pelo Google Play começa com 1 mês grátis para quem nunca assinou nada no Venafit, e depois renova sozinha. Ciclos mensal, semestral e anual.',
         seeAlso: {
             id: 'plano-pro',
             label: 'Planos do personal — Gratuito, Plus e PRO',
