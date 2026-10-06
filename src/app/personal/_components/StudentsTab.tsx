@@ -16,7 +16,14 @@ import {
     FiCheck,
     FiWifiOff,
     FiLock,
+    FiPlus,
 } from 'react-icons/fi';
+import NewMacrocycleModal from '@/app/personal/_shared/periodizacao/components/NewMacrocycleModal';
+import {
+    getStudentsPlanSummary,
+    type StudentPlanSummaryItem,
+} from '@/libs/planningService';
+import { needsNewPlan, studentPlanStatus } from '@/libs/studentPlanStatus';
 import AvatarUpload from '@/components/molecules/AvatarUpload';
 import CountBadge from '@/components/atoms/CountBadge';
 import Modal from '@/components/system/Modal';
@@ -120,6 +127,40 @@ export default function StudentsTab({ state, unreadComments }: Props) {
         };
     }, [students.length]);
 
+    // Plano atual de cada aluno: decide entre "Treino do aluno" e
+    // "+ Montar treino" e dá o selo "Sem treino" / "Rotina · até 30/11".
+    // null = ainda não carregou ou falhou — aí o cartão fica como antes,
+    // sem afirmar que o aluno está sem treino.
+    const [planSummary, setPlanSummary] = useState<Record<
+        string,
+        StudentPlanSummaryItem
+    > | null>(null);
+    useEffect(() => {
+        if (students.length === 0) return;
+        let cancelled = false;
+        getStudentsPlanSummary()
+            .then((summary) => {
+                if (!cancelled) setPlanSummary(summary);
+            })
+            .catch(() => {});
+        return () => {
+            cancelled = true;
+        };
+    }, [students.length]);
+    const [newPlanStudentId, setNewPlanStudentId] = useState<string | null>(null);
+
+    // Filtro "Treino vencido": quem precisa de treino novo. Só aparece com o
+    // resumo carregado e algum aluno vencido (ou com o filtro já ligado).
+    const [onlyExpired, setOnlyExpired] = useState(false);
+    const isExpired = (id: string) =>
+        !!planSummary && studentPlanStatus(planSummary[id]).state === 'expired';
+    const expiredCount = planSummary
+        ? students.filter((st) => !st.awaiting_consent && isExpired(st.id)).length
+        : 0;
+    const visibleStudents = onlyExpired
+        ? students.filter((st) => !st.awaiting_consent && isExpired(st.id))
+        : students;
+
     return (
         <>
             <div className={s.toolbar}>
@@ -153,6 +194,27 @@ export default function StudentsTab({ state, unreadComments }: Props) {
                     </button>
                 </div>
             </div>
+
+            {(expiredCount > 0 || onlyExpired) && (
+                <div className={s.filterRow} role="group" aria-label="Filtrar alunos">
+                    <button
+                        type="button"
+                        aria-pressed={!onlyExpired}
+                        className={!onlyExpired ? s.filterChipOn : s.filterChip}
+                        onClick={() => setOnlyExpired(false)}
+                    >
+                        Todos ({students.length})
+                    </button>
+                    <button
+                        type="button"
+                        aria-pressed={onlyExpired}
+                        className={onlyExpired ? s.filterChipOn : s.filterChip}
+                        onClick={() => setOnlyExpired(true)}
+                    >
+                        Treino vencido ({expiredCount})
+                    </button>
+                </div>
+            )}
 
             {modal === null && error && (
                 <div className={s.errorMsg}>{error}</div>
@@ -199,7 +261,12 @@ export default function StudentsTab({ state, unreadComments }: Props) {
                 </div>
             ) : (
                 <div className={s.studentList}>
-                    {students.map((st) => (
+                    {onlyExpired && visibleStudents.length === 0 && (
+                        <p className={s.emptyText}>
+                            Nenhum aluno com treino vencido.
+                        </p>
+                    )}
+                    {visibleStudents.map((st) => (
                         <div key={st.id} className={s.studentCard}>
                             <div className={s.studentCardHead}>
                                 <AvatarUpload
@@ -261,7 +328,12 @@ export default function StudentsTab({ state, unreadComments }: Props) {
                                                 {st.email} · {st.cpf}
                                                 {st.phone ? ` · ${st.phone}` : ''}
                                             </p>
-                                            <FinanceChip status={financeStatus[st.id]} />
+                                            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                                {planSummary && (
+                                                    <PlanChip plan={planSummary[st.id]} />
+                                                )}
+                                                <FinanceChip status={financeStatus[st.id]} />
+                                            </div>
                                         </>
                                     )}
 
@@ -350,16 +422,27 @@ export default function StudentsTab({ state, unreadComments }: Props) {
                                     sessão. "Ver Treino" e "Acompanhar Treino"
                                     eram duas telas com metade das ações
                                     cada. */}
-                                <button
-                                    onClick={() =>
-                                        router.push(
-                                            `/personal/aluno/${st.id}/acompanhar`,
-                                        )
-                                    }
-                                    className={s.ctaPrimary}
-                                >
-                                    <FiEye /> Treino do aluno
-                                </button>
+                                {planSummary && needsNewPlan(planSummary[st.id]) ? (
+                                    // Sem plano atual: o botão principal já
+                                    // abre a criação da rotina aqui mesmo.
+                                    <button
+                                        onClick={() => setNewPlanStudentId(st.id)}
+                                        className={s.ctaPrimary}
+                                    >
+                                        <FiPlus /> Montar treino
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() =>
+                                            router.push(
+                                                `/personal/aluno/${st.id}/acompanhar`,
+                                            )
+                                        }
+                                        className={s.ctaPrimary}
+                                    >
+                                        <FiEye /> Treino do aluno
+                                    </button>
+                                )}
 
                                 <div className={s.actionsGrid}>
                                     <button
@@ -374,7 +457,7 @@ export default function StudentsTab({ state, unreadComments }: Props) {
                                             color: '#5bc0be',
                                         }}
                                     >
-                                        <FiClipboard /> Rotinas
+                                        <FiClipboard /> Treinos
                                     </button>
                                     <button
                                         onClick={() =>
@@ -847,6 +930,18 @@ export default function StudentsTab({ state, unreadComments }: Props) {
                 </div>
             </Modal>
 
+            {newPlanStudentId && (
+                <NewMacrocycleModal
+                    studentId={newPlanStudentId}
+                    onClose={() => setNewPlanStudentId(null)}
+                    onCreated={(macro) =>
+                        router.push(
+                            `/personal/aluno/${newPlanStudentId}/periodizacao/${macro.id}?created=1`,
+                        )
+                    }
+                />
+            )}
+
             {pdfImportStudent && (
                 <TrainingPdfUploadModal
                     open={!!pdfImportStudent}
@@ -867,8 +962,65 @@ export default function StudentsTab({ state, unreadComments }: Props) {
     );
 }
 
+/** Selo do treino: sem treino, vencido, vencendo ou o plano atual. */
+function PlanChip({ plan }: { plan?: StudentPlanSummaryItem }) {
+    const kind = plan?.planning_mode === 'periodized' ? 'Periodização' : 'Treino';
+    const status = studentPlanStatus(plan);
+    const chip = (() => {
+        switch (status.state) {
+            case 'none':
+                return { text: 'Sem treino', bg: 'rgba(255, 107, 107, 0.15)', color: 'var(--coral-dim)' };
+            case 'expired':
+                return {
+                    text: status.endDate
+                        ? `Treino vencido em ${fmtDate(status.endDate).slice(0, 5)}`
+                        : 'Treino vencido',
+                    bg: 'rgba(255, 107, 107, 0.15)',
+                    color: 'var(--coral-dim)',
+                };
+            case 'expiring':
+                return {
+                    text:
+                        status.daysLeft === 0
+                            ? 'Treino vence hoje'
+                            : status.daysLeft === 1
+                              ? 'Treino vence amanhã'
+                              : `Treino vence em ${status.daysLeft} dias`,
+                    bg: 'rgba(240, 165, 0, 0.16)',
+                    color: 'var(--amber-text)',
+                };
+            default:
+                return {
+                    text: plan?.end_date
+                        ? `${kind} · até ${fmtDate(plan.end_date).slice(0, 5)}`
+                        : kind,
+                    bg: 'var(--surface-3)',
+                    color: 'var(--text-secondary)',
+                };
+        }
+    })();
+    return (
+        <span
+            title={plan?.name}
+            style={{
+                display: 'inline-block',
+                marginTop: 4,
+                padding: '2px 10px',
+                borderRadius: 999,
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                background: chip.bg,
+                color: chip.color,
+            }}
+        >
+            🏋️ {chip.text}
+        </span>
+    );
+}
+
 /** Selo financeiro do aluno no card: só aparece quando há algo a dizer
  * (sem cobrança nenhuma, fica quieto). */
+
 function FinanceChip({ status }: { status?: FinanceStudentStatus }) {
     if (!status || status.state === 'none') return null;
     const chip = (() => {

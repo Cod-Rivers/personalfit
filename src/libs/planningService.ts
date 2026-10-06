@@ -1016,3 +1016,62 @@ export async function resolveMyVideoLink(
     }>('/my-planning/resolve-video-link', { video_url: videoUrl });
     return data;
 }
+
+/** Plano atual de um aluno no selo da lista de alunos do personal. */
+export interface StudentPlanSummaryItem {
+    id: string;
+    name: string;
+    planning_mode?: 'periodized' | 'simple';
+    end_date?: string;
+    /** Saiu do aluno porque o término passou e não há outro no lugar. */
+    ended?: boolean;
+}
+
+/**
+ * Plano atual de cada aluno, numa chamada só para a lista inteira. Aluno
+ * fora do mapa não tem plano atual montado por este personal: o cartão
+ * mostra "Montar treino". Espelha StudentsPlanSummary do backend.
+ */
+export async function getStudentsPlanSummary(): Promise<
+    Record<string, StudentPlanSummaryItem>
+> {
+    const { data } = await Api.get<{
+        students: Record<string, StudentPlanSummaryItem>;
+    }>('/planning/summary');
+    return data.students ?? {};
+}
+
+/** Treino que o personal montou para outro aluno e pode copiar. */
+export interface CopyablePlan {
+    id: string;
+    name: string;
+    goal?: string;
+    planning_mode?: 'periodized' | 'simple';
+    student_id: string;
+    student_name: string;
+    trainings: number;
+    archived?: boolean;
+    created_at: string;
+    end_date?: string;
+}
+
+/** GET /students/:studentId/planning/copyable — "Copiar de outro aluno". */
+export async function getCopyablePlans(
+    studentId: string,
+): Promise<CopyablePlan[]> {
+    const { data } = await Api.get<CopyablePlan[]>(
+        `/students/${studentId}/planning/copyable`,
+    );
+    return data ?? [];
+}
+
+/** POST /students/:studentId/planning/copy-from/:planningId */
+export async function copyPlanFromStudent(
+    studentId: string,
+    planningId: string,
+): Promise<MacrocycleResponse> {
+    const { data } = await Api.post<MacrocycleResponse>(
+        `/students/${studentId}/planning/copy-from/${planningId}`,
+    );
+    return data;
+}

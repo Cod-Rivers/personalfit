@@ -91,8 +91,8 @@ export default function StudentViewPreview({
 
                 {trainings.length === 0 ? (
                     <p className={s.empty}>
-                        Ainda não há treinos montados. O aluno verá esta
-                        rotina vazia até você adicionar o primeiro.
+                        Ainda não há treinos montados. O aluno verá este
+                        treino vazio até você adicionar o primeiro.
                     </p>
                 ) : (
                     <>

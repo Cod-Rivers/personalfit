@@ -1040,14 +1040,14 @@ export default function AcompanharTreinoPage() {
                                 : 'Este aluno ainda não tem treino'}
                         </h1>
                         <p className={s.noPlanText}>
-                            Monte uma rotina do zero (treinos por dia da
+                            Monte um treino do zero (por dia da
                             semana ou A/B/C) ou copie um treino da sua
                             biblioteca. Assim que você adicionar os
                             exercícios, o aluno já vê no app.
                         </p>
                         <div className={s.noPlanActions}>
                             <Button onClick={() => setCreatingPlan(true)}>
-                                + Criar rotina
+                                + Criar treino
                             </Button>
                             <button
                                 className={s.btnBack}

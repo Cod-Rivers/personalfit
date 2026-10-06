@@ -224,8 +224,8 @@ export default function PeriodizacaoPage() {
                 replacePlanning(updated);
                 showSuccess(
                     updated.archived
-                        ? 'Arquivada. O aluno não vê mais esta rotina.'
-                        : 'Desarquivada. A rotina voltou para o aluno.',
+                        ? 'Arquivado. O aluno não vê mais este treino.'
+                        : 'Desarquivado. O treino voltou para o aluno.',
                 );
             } catch (err) {
                 showError(serverMessage(err, 'Não foi possível arquivar.'));
@@ -268,7 +268,7 @@ export default function PeriodizacaoPage() {
                     (prev ?? []).filter((p) => p.id !== macro.id),
                 );
                 setPlannings((prev) => [restored, ...prev]);
-                showSuccess('Restaurada. A rotina voltou para o aluno.');
+                showSuccess('Restaurado. O treino voltou para o aluno.');
             } catch (err) {
                 showError(serverMessage(err, 'Não foi possível restaurar.'));
             } finally {
@@ -339,7 +339,7 @@ export default function PeriodizacaoPage() {
     const handleEditSubmit = useCallback(async () => {
         if (!editing) return;
         if (!editForm.name.trim()) {
-            setEditError('Dê um nome à rotina.');
+            setEditError('Dê um nome ao treino.');
             return;
         }
         if (
@@ -423,7 +423,7 @@ export default function PeriodizacaoPage() {
             }
             setLibraryTarget(null);
             showSuccess(
-                'Salvo na biblioteca. Use "Copiar da biblioteca" ao criar a rotina de outro aluno.',
+                'Salvo na biblioteca. Use "Copiar da biblioteca" ao criar o treino de outro aluno.',
             );
         } catch (err: unknown) {
             // 409 = nome repetido entre os treinos da biblioteca.
@@ -446,7 +446,7 @@ export default function PeriodizacaoPage() {
                                 <FiClipboard /> Treinos
                             </h1>
                             <p className={s.headerSub}>
-                                Rotinas e periodizações do aluno
+                                Treinos do aluno
                             </p>
                         </div>
                         <div className={s.headerActions}>
@@ -461,7 +461,7 @@ export default function PeriodizacaoPage() {
                                 onClick={() => setCreating(true)}
                                 disabled={!online}
                             >
-                                + Nova rotina
+                                + Criar treino
                             </button>
                         </div>
                     </div>
@@ -516,7 +516,7 @@ export default function PeriodizacaoPage() {
                                     <>
                                         <p className={s.emptyPlansText}>
                                             Este aluno ainda não tem treino.
-                                            Monte uma rotina do zero ou copie
+                                            Monte um treino do zero ou copie
                                             um treino da sua biblioteca.
                                         </p>
                                         <button
@@ -524,13 +524,13 @@ export default function PeriodizacaoPage() {
                                             onClick={() => setCreating(true)}
                                             disabled={!online}
                                         >
-                                            + Nova rotina
+                                            + Criar treino
                                         </button>
                                     </>
                                 ) : (
                                     <p className={s.emptyPlansText}>
-                                        Nenhuma rotina arquivada. Arquivada, a
-                                        rotina some do app do aluno e continua
+                                        Nenhum treino arquivado. Arquivado, o
+                                        treino some do app do aluno e continua
                                         guardada aqui.
                                     </p>
                                 )}
@@ -876,7 +876,7 @@ export default function PeriodizacaoPage() {
             <Modal
                 open={!!trashTarget}
                 onClose={() => setTrashTarget(null)}
-                title="Excluir rotina"
+                title="Excluir treino"
                 footer={
                     <>
                         <button

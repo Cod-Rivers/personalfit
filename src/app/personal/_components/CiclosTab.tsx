@@ -34,7 +34,7 @@ function templateSummary(tpl: MacrocycleResponse): string {
     const mesos = tpl.mesocycles ?? [];
     if (tpl.planning_mode === 'simple') {
         const n = mesos.reduce((sum, m) => sum + (m.trainings?.length ?? 0), 0);
-        return `Rotina · ${n} treino${n === 1 ? '' : 's'}`;
+        return `Treino · ${n} treino${n === 1 ? '' : 's'}`;
     }
     return `Periodização · ${mesos.length} fase${mesos.length === 1 ? '' : 's'}`;
 }
@@ -323,7 +323,7 @@ export default function CiclosTab({ view, students, planType = 'free', onBack }:
                     <p className={s.emptyText}>
                         {isPublic
                             ? 'Treinos públicos ficam visíveis quando o personal escolhe compartilhar.'
-                            : 'Guarde aqui os treinos que você repete (iniciante, hipertrofia, emagrecimento...) e copie para um aluno em dois toques. Na rotina de um aluno, "Salvar na biblioteca" também traz o treino para cá.'}
+                            : 'Guarde aqui os treinos que você repete (iniciante, hipertrofia, emagrecimento...) e copie para um aluno em dois toques. No treino de um aluno, "Salvar na biblioteca" também traz o treino para cá.'}
                     </p>
                 </div>
             ) : visibleTemplates.length === 0 ? (

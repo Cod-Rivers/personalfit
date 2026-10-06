@@ -861,3 +861,15 @@
 ## 2026-10-05 22:19 — River (via Claude Code)
 **Resumo:** Estou lendo os produtos do Play pela API com a conta de serviço. A leitura funcionou, mas o resultado ainda não é confiável: - **Assinaturas:** a API respondeu que **não há nenhuma**. - **Produtos únicos:** também **nenhum**. Isso não bate com o que eu tinha anotado: o `library_plan` a R$ 49,90 e o `early_anamnesis` ativo. Há duas explicações possíveis: 1. **A permissão ainda não terminou de valer.** O convite foi enviado há pouco, o Google pode levar algumas horas e, enquanto isso, a API pode responder vazio. 2. **Os produtos de fato não existem** neste app, ou foram criados em outro. Também …
 **Arquivos:** page.tsx, paymentService.ts
+
+## 2026-10-05 22:56 — River (via Claude Code)
+**Resumo:** Mudou hoje (05/10): o fluxo ficou mais parecido com o da MFIT. Esse é o caminho novo, mas ainda não foi testado ao vivo. ## Montar o treino de um aluno 1. **Abra o aluno.** No card dele, o botão que se chamava "Periodização" agora é **"Rotinas"**. Se o aluno ainda não tem plano, também dá para clicar em **"Criar rotina"** direto na tela de acompanhar dele. 2. **Escolha o modo.** A **Rotina** já vem marcada, e é o caminho simples. A Periodização completa continua lá como opção, e também há **"Copiar da biblioteca"** para partir de um modelo seu. 3. **Preencha os dados numa tela só:** - o nome j…
+**Commits:** Pagamento no app passa pela tela do Google; teste grátis vira 1 mês pelo Play
+
+## 2026-10-05 22:57 — River (via Claude Code)
+**Resumo:** Não tem, e você tem razão. O card não mostra em nenhum lugar por onde se começa um treino. Hoje há duas entradas: - **"Rotinas"**: abre a lista de planos do aluno (Ativas / Arquivadas / Lixeira), e de lá você clica em **Novo**. - **"Treino do aluno"** (o botão azul): se o aluno ainda não tem plano, essa tela mostra **"Criar rotina"** direto. O problema é que nenhum dos dois diz "comece aqui". "Rotinas" parece só uma lista para consultar, e "Treino do aluno" tem um ícone de olho, que dá ideia de só visualizar. Minha sugestão é o card mudar conforme o aluno tem treino ou não: - **Sem plano ativo…
+**Arquivos:** CHANGELOG_FRONTEND.md
+
+## 2026-10-05 23:02 — River (via Claude Code)
+**Resumo:** Pronto: o card do aluno agora indica onde começar, e onde aparecia "Rotina" para o personal agora aparece "Treino". Backend e frontend passam no build, no tsc, no eslint e nos testes. Não testei no app de verdade e não fiz commit. **O card do aluno** - **Aluno sem treino:** aparece o selo vermelho **🏋️ Sem treino**, e o botão azul vira **"+ Montar treino"**. Ele abre a criação ali mesmo na lista, sem passar por outra tela. - **Aluno com treino:** o selo mostra **🏋️ Treino · até 30/11** (ou "Periodização · até…"), e o botão azul continua **"Treino do aluno"**. - O selo considera só os treinos…
+**Arquivos:** CiclosTab.tsx, NewMacrocycleModal.tsx, StudentViewPreview.tsx, StudentsTab.tsx, page.tsx, planningService.ts

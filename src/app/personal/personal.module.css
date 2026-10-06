@@ -916,3 +916,29 @@
     background: var(--surface-2);
     color: var(--text-primary);
 }
+
+/* Filtro da lista de alunos ("Todos" / "Treino vencido"). */
+.filterRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: -8px 0 16px;
+}
+
+.filterChip {
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border-subtle);
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.filterChipOn {
+    composes: filterChip;
+    border-color: var(--mint);
+    background: var(--mint-glow);
+    color: var(--mint-text);
+}

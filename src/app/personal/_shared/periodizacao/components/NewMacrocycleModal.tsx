@@ -7,7 +7,10 @@ import { z } from 'zod';
 import { FiCheck, FiFolder } from 'react-icons/fi';
 import {
     applyTemplate,
+    copyPlanFromStudent,
     createMacrocycle,
+    getCopyablePlans,
+    type CopyablePlan,
     getMyTemplates,
     getPublicTemplates,
     type MacrocycleResponse,
@@ -31,7 +34,7 @@ const NOTES_MAX = 2000;
 
 const schema = z
     .object({
-        name: z.string().trim().min(1, 'Dê um nome à rotina'),
+        name: z.string().trim().min(1, 'Dê um nome ao treino'),
         goal: z.string().optional(),
         start_date: z.string().optional(),
         end_date: z.string().optional(),
@@ -52,8 +55,8 @@ const schema = z
     );
 type FormValues = z.infer<typeof schema>;
 
-type Origin = PlanningMode | 'library';
-type Step = 'mode' | 'details' | 'library';
+type Origin = PlanningMode | 'library' | 'student';
+type Step = 'mode' | 'details' | 'library' | 'student';
 
 /* "Rotina" vem primeiro e já marcada: é o fluxo de ficha (dias da semana ou
  * A/B/C) que o personal conhece de outros apps. A periodização continua a um
@@ -61,13 +64,18 @@ type Step = 'mode' | 'details' | 'library';
 const ORIGIN_OPTIONS: { origin: Origin; title: string; desc: string }[] = [
     {
         origin: 'simple',
-        title: 'Rotina',
+        title: 'Treino simples',
         desc: 'Treinos por dia da semana (Segunda, Terça…) ou A/B/C, como uma ficha. O jeito mais rápido de montar.',
     },
     {
         origin: 'library',
         title: 'Copiar da biblioteca',
         desc: 'Comece de um treino que você já salvou (ou da biblioteca pública) e ajuste para este aluno.',
+    },
+    {
+        origin: 'student',
+        title: 'Copiar de outro aluno',
+        desc: 'Use um treino que você já montou para outro aluno, sem precisar salvar na biblioteca antes.',
     },
     {
         origin: 'periodized',
@@ -170,7 +178,7 @@ export default function NewMacrocycleModal({
                 onCreated(macro);
             } catch (e: unknown) {
                 setError(
-                    (e as Error).message ?? 'Não foi possível criar a rotina.',
+                    (e as Error).message ?? 'Não foi possível criar o treino.',
                 );
             } finally {
                 setSubmitting(false);
@@ -245,6 +253,56 @@ export default function NewMacrocycleModal({
         }
     }, [selectedTemplateId, studentId, onCreated]);
 
+    /* ── Copiar de outro aluno ── */
+    const [copyable, setCopyable] = useState<CopyablePlan[] | null>(null);
+    const [copyableError, setCopyableError] = useState('');
+    const [studentQuery, setStudentQuery] = useState('');
+    const [selectedCopyId, setSelectedCopyId] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (current !== 'student' || copyable !== null) return;
+        let alive = true;
+        getCopyablePlans(studentId)
+            .then((list) => {
+                if (alive) setCopyable(list);
+            })
+            .catch(() => {
+                if (!alive) return;
+                setCopyable([]);
+                setCopyableError('Não foi possível carregar os treinos dos seus alunos.');
+            });
+        return () => {
+            alive = false;
+        };
+    }, [current, copyable, studentId]);
+
+    const visibleCopyable = useMemo(() => {
+        const q = studentQuery.trim().toLocaleLowerCase('pt-BR');
+        if (!q) return copyable ?? [];
+        return (copyable ?? []).filter(
+            (p) =>
+                p.student_name.toLocaleLowerCase('pt-BR').includes(q) ||
+                p.name.toLocaleLowerCase('pt-BR').includes(q),
+        );
+    }, [copyable, studentQuery]);
+
+    const copySelectedFromStudent = useCallback(async () => {
+        if (!selectedCopyId) return;
+        setSubmitting(true);
+        setError('');
+        try {
+            const macro = await copyPlanFromStudent(studentId, selectedCopyId);
+            onCreated(macro);
+        } catch (e: unknown) {
+            const serverMsg = (
+                e as { response?: { data?: { error?: string } } }
+            )?.response?.data?.error;
+            setError(serverMsg || 'Não foi possível copiar este treino.');
+        } finally {
+            setSubmitting(false);
+        }
+    }, [selectedCopyId, studentId, onCreated]);
+
     const renderTemplate = (t: MacrocycleResponse) => {
         const selected = selectedTemplateId === t.id;
         const trainings = (t.mesocycles ?? []).reduce(
@@ -280,7 +338,9 @@ export default function NewMacrocycleModal({
             ? 'Como você quer começar?'
             : current === 'library'
               ? 'Copiar da biblioteca'
-              : `Dados da ${planKindLabel(planningMode).toLowerCase()}`;
+              : current === 'student'
+                ? 'Copiar de outro aluno'
+                : `Dados da ${planKindLabel(planningMode).toLowerCase()}`;
 
     const footer =
         current === 'mode' ? (
@@ -288,10 +348,23 @@ export default function NewMacrocycleModal({
                 type="button"
                 className={s.btnEdit}
                 onClick={() =>
-                    stack.push(origin === 'library' ? 'library' : 'details')
+                    stack.push(
+                        origin === 'library' || origin === 'student'
+                            ? origin
+                            : 'details',
+                    )
                 }
             >
                 Continuar
+            </button>
+        ) : current === 'student' ? (
+            <button
+                type="button"
+                className={s.btnEdit}
+                disabled={!selectedCopyId || submitting}
+                onClick={copySelectedFromStudent}
+            >
+                {submitting ? 'Copiando...' : 'Copiar este treino'}
             </button>
         ) : current === 'library' ? (
             <button
@@ -344,11 +417,88 @@ export default function NewMacrocycleModal({
                         ))}
                     </div>
 
-                    {origin !== 'library' && (
+                    {origin !== 'library' && origin !== 'student' && (
                         <TrainingLabelPartsPicker
                             value={labelParts}
                             onChange={setChosenParts}
                         />
+                    )}
+                </>
+            )}
+
+            {current === 'student' && (
+                <>
+                    {error && (
+                        <div className={s.errorMsg} role="alert">
+                            {error}
+                        </div>
+                    )}
+                    {copyable === null ? (
+                        <p className={s.fieldHint}>Carregando...</p>
+                    ) : copyableError ? (
+                        <p className={s.errorMsg}>{copyableError}</p>
+                    ) : copyable.length === 0 ? (
+                        <p className={s.fieldHint}>
+                            Você ainda não montou treino para outro aluno.
+                            Volte e escolha &quot;Treino simples&quot; para
+                            montar do zero.
+                        </p>
+                    ) : (
+                        <>
+                            <input
+                                type="search"
+                                className={s.formInput}
+                                placeholder="Buscar pelo nome do aluno ou do treino"
+                                aria-label="Buscar pelo nome do aluno ou do treino"
+                                value={studentQuery}
+                                onChange={(e) => setStudentQuery(e.target.value)}
+                                style={{ marginBottom: 12 }}
+                            />
+                            {visibleCopyable.length === 0 ? (
+                                <p className={s.fieldHint}>
+                                    Nada encontrado com essa busca.
+                                </p>
+                            ) : (
+                                <ul className={s.templatePickList}>
+                                    {visibleCopyable.map((p) => {
+                                        const selected = selectedCopyId === p.id;
+                                        return (
+                                            <li key={p.id}>
+                                                <button
+                                                    type="button"
+                                                    aria-pressed={selected}
+                                                    className={
+                                                        selected
+                                                            ? s.templatePickItemOn
+                                                            : s.templatePickItem
+                                                    }
+                                                    onClick={() =>
+                                                        setSelectedCopyId(p.id)
+                                                    }
+                                                >
+                                                    <span className={s.templatePickName}>
+                                                        {selected && <FiCheck aria-hidden />}{' '}
+                                                        {p.student_name || 'Aluno'} · {p.name}
+                                                    </span>
+                                                    <span className={s.templatePickMeta}>
+                                                        {planKindLabel(p.planning_mode)} ·{' '}
+                                                        {p.trainings} treino
+                                                        {p.trainings === 1 ? '' : 's'}
+                                                        {p.goal ? ` · ${p.goal}` : ''}
+                                                        {p.archived ? ' · arquivado' : ''}
+                                                    </span>
+                                                </button>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            )}
+                            <p className={s.fieldHint}>
+                                Este aluno recebe uma cópia: o que você
+                                ajustar aqui não muda o treino do outro aluno.
+                                As datas ficam em branco para você definir.
+                            </p>
+                        </>
                     )}
                 </>
             )}
@@ -367,7 +517,7 @@ export default function NewMacrocycleModal({
                     ) : own.length === 0 && publicTpls.length === 0 ? (
                         <p className={s.fieldHint}>
                             A biblioteca ainda está vazia. Volte e escolha
-                            &quot;Rotina&quot; para montar do zero; depois,
+                            &quot;Treino simples&quot; para montar do zero; depois,
                             &quot;Salvar na biblioteca&quot; guarda o treino
                             para os próximos alunos.
                         </p>
@@ -555,7 +705,7 @@ export default function NewMacrocycleModal({
                     </button>
                     <small className={s.fieldHint}>
                         {endDate
-                            ? 'Arquivada, a rotina some do app do aluno e continua guardada com você.'
+                            ? 'Arquivado, o treino some do app do aluno e continua guardado com você.'
                             : 'Defina um término para poder arquivar sozinha.'}
                     </small>
 
