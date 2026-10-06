@@ -881,3 +881,15 @@
 ## 2026-10-06 08:10 — River (via Claude Code)
 **Resumo:** Ajustei a aba e a Central de Ajuda, e já fiz commit e push (`9b83537`). O tsc e o eslint passaram, e os 637 testes também. Ainda não testei no app de verdade. **A aba:** "Minha Periodização / Treinos" virou **"Minha Biblioteca de Treinos"**, que combina com os botões "Copiar da biblioteca" e "Salvar na biblioteca". Os "?" dela e da Biblioteca Pública agora falam em treinos. **Uma coisa que tinha escapado na rodada anterior:** o nome sugerido de um treino novo ainda era "Rotina de outubro", e o botão do modal ainda dizia "Criar rotina". Agora são **"Treino de outubro"** e **"Criar treino"**. As…
 **Commits:** Ajuda e aba da biblioteca acompanham o fluxo novo de treino
+
+## 2026-10-06 08:12 — River (via Claude Code)
+**Resumo:** Os três repositórios estão com tudo commitado e enviado ao remoto. O código das mudanças (selo de vencimento, filtro, "Copiar de outro aluno", troca de "Rotina" por "Treino", Ajuda) já tinha sido enviado antes. O que faltava eram só os CHANGELOGs, que são preenchidos sozinhos a cada resposta: - **Frontend:** `a85c654` - **Backend:** `2686f4b` - **Android:** `4d48c42`
+**Commits:** Atualiza changelog
+
+## 2026-10-06 08:12 — River (via Claude Code)
+**Resumo:** Para instalar a versão de teste no celular: **1. Confirme que a versão foi publicada para teste.** No Play Console, em **Teste → Teste interno**, a versão precisa estar com status **Disponível para testadores**. Se estiver só como rascunho, clique em **Revisar versão → Iniciar lançamento para teste interno**. **2. Cadastre os testadores.** Na aba **Testadores** (ainda em Teste interno): - crie uma lista de e-mails e adicione o e-mail da **conta Google do celular** (a que está logada na Play Store); - salve. **3. Pegue o link de aceite.** Na mesma aba, em **Como os testadores participam**, copi…
+**Arquivos:** CHANGELOG_FRONTEND.md
+
+## 2026-10-06 08:53 — River (via Claude Code)
+**Resumo:** Corrigi tudo, mas ainda não fiz commit. No app, nada muda até eu fazer o push, que é o que dispara o deploy do backend e do site. Rodei tsc, eslint, os 641 testes do front e os testes do backend, e conferi as telas em screenshots a 360px nos dois temas. No celular de verdade ainda não testei. **"Produto não encontrado no Google Play".** Suas assinaturas estão certas: conferi pela API do Play e o PRO mensal, semestral e anual estão ativos, com o preço novo e com o mês grátis. O erro estava no backend, que pedia ao Google os IDs `pro_monthly_v2`, `pro_semiannual_v2` e `pro_yearly_v2`, e esses pr…
+**Arquivos:** PersonalPlanLadder.tsx, pagamento.module.css, page.test.tsx, page.tsx, paymentService.ts, personalPlanLadder.module.css, styles.css
