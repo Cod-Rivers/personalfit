@@ -1,10 +1,10 @@
 'use client';
 import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
-import Image from 'next/image';
+import { createPortal } from 'react-dom';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FiArrowLeft } from 'react-icons/fi';
+import { FiArrowLeft, FiCheck, FiCheckCircle, FiChevronDown, FiUsers, FiX } from 'react-icons/fi';
 
-import './styles.css';
+import s from './pagamento.module.css';
 import {
     CardSubscriptionForm,
     PlanCatalog,
@@ -42,21 +42,57 @@ import {
     updateSessionPlanType,
 } from '@/libs/session';
 import { getMyPlannings } from '@/libs/planningService';
+import { hasNativeBilling } from '@/libs/nativeBridge';
 import { trackTrialStarted } from '@/libs/analytics';
+import { useCloseOnBack } from '@/hooks/useCloseOnBack';
 
 // Valor fixo para "sem indicação" — usado tanto aqui quanto interpretado no
 // backend/estatísticas (ver ReferralPartnerController.GetIndicationStats).
 const INDICATION_NONE = 'none';
+
+// Origens fixas de "como conheceu", além dos parceiros cadastrados.
+const INDICATION_CHANNELS = [
+    { value: 'instagram', label: 'Instagram', icon: 'fa-brands fa-instagram' },
+    { value: 'facebook', label: 'Facebook', icon: 'fa-brands fa-facebook' },
+    { value: 'youtube', label: 'YouTube', icon: 'fa-brands fa-youtube' },
+];
 
 // 'pro' e 'personal-plus' são os dois planos do PERSONAL; 'plano' é a compra
 // avulsa de um treino da biblioteca e 'plus' é o Aluno Plus (do aluno).
 type Produto = 'pro' | 'personal-plus' | 'plano' | 'plus';
 type Metodo = 'pix' | 'card' | 'google';
 
+/** Passos do checkout. Cada um ocupa a tela inteira e pede uma coisa só:
+ *  antes era tudo numa página longa, com a comparação dos planos rolando de
+ *  lado, o seletor de indicação escondido no meio do resumo e o erro do
+ *  Google Play aparecendo no topo, fora da vista de quem tinha rolado até o
+ *  botão — daí o "apertei e nada aconteceu". */
+type Step = 'plan' | 'cycle' | 'indication' | 'review' | 'pay';
+
+const STEP_TITLES: Record<Step, string> = {
+    plan: 'Escolha seu plano',
+    cycle: 'Escolha o período',
+    indication: 'Como você conheceu o Venafit?',
+    review: 'Confira seu pedido',
+    pay: 'Forma de pagamento',
+};
+
 const CYCLE_LABELS: Record<string, string> = {
     MONTHLY: 'Mensal',
     SEMIANNUALLY: 'Semestral',
     YEARLY: 'Anual',
+};
+
+const CYCLE_MONTHS: Record<string, number> = {
+    MONTHLY: 1,
+    SEMIANNUALLY: 6,
+    YEARLY: 12,
+};
+
+const CYCLE_CHARGE: Record<string, string> = {
+    MONTHLY: 'cobrado todo mês',
+    SEMIANNUALLY: 'cobrado a cada 6 meses',
+    YEARLY: 'cobrado uma vez por ano',
 };
 
 // Os planos do personal e o que cada um desbloqueia — exibidos para o cliente
@@ -118,6 +154,8 @@ const PLUS_BENEFITS = [
     'Cancele quando quiser, sem fidelidade',
 ];
 
+const CARD_FORM_ID = 'pay-card-form';
+
 function formatBRL(value: number): string {
     return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
@@ -155,7 +193,7 @@ function PaymentPageInner() {
     const produtoParam = searchParams.get('produto');
     // 'ia-substituicao' é o nome antigo do produto (links anteriores a
     // 2026-09-27): a assinatura avulsa de IA virou o Aluno Plus.
-    const produto: Produto =
+    const initialProduto: Produto =
         produtoParam === 'plano'
             ? 'plano'
             : produtoParam === 'plus' || produtoParam === 'ia-substituicao'
@@ -163,14 +201,19 @@ function PaymentPageInner() {
               : produtoParam === 'personal-plus'
                 ? 'personal-plus'
                 : 'pro';
+    // Trocar entre Plus e PRO é estado da tela, não navegação: o antigo
+    // "Quero o PRO" fazia router.push para a própria URL e não acontecia nada.
+    const [produto, setProduto] = useState<Produto>(initialProduto);
     // Os dois planos do personal compartilham quase tudo nesta tela (volta
     // para /personal, indicação, tela de confirmação). O que é só do PRO
     // (ciclo de cobrança e teste grátis) segue testando `produto === 'pro'`.
     const isPersonalPlan = produto === 'pro' || produto === 'personal-plus';
+    const isStudentPlus = produto === 'plus';
     // Plano que a conta já tem, do cache da sessão — serve só para marcar
-    // "seu plano atual" na comparação. Quem decide acesso é o backend.
-    // Lido em efeito, não na renderização: localStorage não existe no
-    // servidor e ler direto daria divergência de hidratação.
+    // "seu plano atual" nos cartões. Não bloqueia nada: "Renovar" (PIX
+    // pré-pago) e "Assinar de novo" (cancelado ainda no período) chegam aqui
+    // com o plano ativo. Lido em efeito, não na renderização: localStorage
+    // não existe no servidor e ler direto daria divergência de hidratação.
     const [currentPlan, setCurrentPlan] = useState<LadderPlan>('free');
     const templateId = searchParams.get('templateId') ?? '';
     // Com planId, a compra do plano avulso mantém o plano bloqueado do
@@ -184,16 +227,24 @@ function PaymentPageInner() {
     // (ex.: plano agendado para começar no futuro). null = ainda não se sabe.
     const plansBefore = useRef<Set<string> | null>(null);
 
+    const [step, setStep] = useState<Step>(
+        initialProduto === 'pro' || initialProduto === 'personal-plus' ? 'plan' : 'review',
+    );
     const [catalog, setCatalog] = useState<PlanCatalog | null>(null);
     const [cycle, setCycle] = useState('MONTHLY');
-    const [metodo, setMetodo] = useState<Metodo>(produto === 'plus' ? 'card' : 'pix');
+    const [metodo, setMetodo] = useState<Metodo>(initialProduto === 'plus' ? 'card' : 'pix');
     const [googleAvailable, setGoogleAvailable] = useState(false);
+    // Enquanto não se sabe se é o app, o botão de pagar espera: decidir
+    // antes mostraria PIX/cartão dentro do app.
+    const [googleChecked, setGoogleChecked] = useState(false);
     // Token da tela de escolha do Google: o usuário escolheu pagar pelo
     // Asaas. Vai junto da compra para o backend informar o Google. '' = não
     // escolheu (ou está no site).
     const [altToken, setAltToken] = useState('');
     const [partners, setPartners] = useState<ReferralPartnerPublic[]>([]);
-    const [indicationReceiver, setIndicationReceiver] = useState(INDICATION_NONE);
+    // '' = ainda não respondeu. A resposta é obrigatória (com "Ninguém me
+    // indicou" valendo como resposta): é dela que sai a comissão do parceiro.
+    const [indicationReceiver, setIndicationReceiver] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [pix, setPix] = useState<PixData | null>(null);
@@ -210,15 +261,34 @@ function PaymentPageInner() {
     const [trial, setTrial] = useState<ProTrialStatus | null>(null);
     const [trialStarted, setTrialStarted] = useState<ProTrialStatus | null>(null);
     const [plusStatus, setPlusStatus] = useState<StudentPlusStatus | null>(null);
+    const [benefitsOpen, setBenefitsOpen] = useState(false);
     const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const bodyRef = useRef<HTMLDivElement>(null);
+    const titleRef = useRef<HTMLHeadingElement>(null);
+    const errorRef = useRef<HTMLDivElement>(null);
+    // O passo vai por portal para o <body>: um ancestral com transform ou
+    // filter prenderia o position:fixed dentro dele.
+    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
+        setMounted(true);
         getPlans()
             .then(setCatalog)
             .catch(() => setError('Não foi possível carregar os planos. Tente novamente.'));
-        // Assíncrono: no app atual a pergunta vira mensagem ao Android.
-        void isGooglePlayBillingAvailable().then(setGoogleAvailable);
-        // Lista de parceiros é só um complemento do seletor de indicação — se
+        // Dentro do app o caminho é SEMPRE o Google Play, mesmo que o
+        // BillingClient ainda não tenha conectado (a resposta de
+        // isAvailable seria false logo depois de abrir o app, e a tela
+        // mostraria PIX/cartão, o que a política do Play proíbe). Se ele não
+        // conectar, a compra devolve um erro que aparece junto do botão.
+        if (hasNativeBilling()) {
+            setGoogleAvailable(true);
+            setGoogleChecked(true);
+        } else {
+            void isGooglePlayBillingAvailable()
+                .then(setGoogleAvailable)
+                .finally(() => setGoogleChecked(true));
+        }
+        // Lista de parceiros é só um complemento das opções de indicação — se
         // falhar, o checkout continua normalmente com apenas as opções fixas.
         getActiveReferralPartners()
             .then(setPartners)
@@ -228,22 +298,43 @@ function PaymentPageInner() {
         };
     }, []);
 
-    // Teste grátis (PRO, só personal) e situação do Plus (aluno): ambos são
-    // complementos — se falharem, a compra continua disponível.
     useEffect(() => {
         const rank = planRank(getUser()?.plan_type);
         setCurrentPlan(rank >= 2 ? 'pro' : rank >= 1 ? 'plus' : 'free');
     }, []);
 
+    // Teste grátis (PRO, só personal) e situação do Plus (aluno): ambos são
+    // complementos — se falharem, a compra continua disponível.
     useEffect(() => {
         const role = getUser()?.role;
         if (isPersonalPlan && role === 'personal') {
             getProTrialStatus().then(setTrial).catch(() => setTrial(null));
         }
-        if (produto === 'plus') {
+        if (isStudentPlus) {
             getStudentPlusStatus().then(setPlusStatus).catch(() => setPlusStatus(null));
         }
-    }, [produto, isPersonalPlan]);
+        // Plus↔PRO não muda a resposta do teste: depende só do tipo de produto.
+    }, [isPersonalPlan, isStudentPlus]);
+
+    // Tela cheia: a página de trás não rola enquanto o checkout está aberto.
+    // No Safari iOS o teclado encolhe só o visual viewport; espelhar a altura
+    // real mantém o botão de pagar à vista com o teclado aberto (mesma
+    // técnica do components/system/Modal).
+    useEffect(() => {
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        const vv = window.visualViewport;
+        const update = () => {
+            if (vv) document.documentElement.style.setProperty('--pay-vh', `${vv.height}px`);
+        };
+        update();
+        vv?.addEventListener('resize', update);
+        return () => {
+            document.body.style.overflow = previousOverflow;
+            vv?.removeEventListener('resize', update);
+            document.documentElement.style.removeProperty('--pay-vh');
+        };
+    }, []);
 
     const methods = methodsFor(produto, googleAvailable, altToken !== '');
     // O meio escolhido precisa existir para o produto (ex.: dentro do app,
@@ -252,12 +343,72 @@ function PaymentPageInner() {
         if (!methods.includes(metodo)) setMetodo(methods[0]);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [produto, googleAvailable, altToken]);
-    // O token vale para o produto escolhido na tela do Google: trocar de
-    // plano ou de ciclo depois disso exigiria outra escolha.
-    const lockedByChoice = !!pix || altToken !== '';
+    // PIX gerado, escolha feita na tela do Google ou cartão em análise: a
+    // compra já está amarrada a este plano e ciclo. Daí em diante não se
+    // volta para antes do resumo.
+    const lockedByChoice = !!pix || altToken !== '' || cardPending;
     const alt = altToken || undefined;
+    // Dentro do app, antes da tela de escolha do Google: pagar = Google Play.
+    const useGoogle = googleAvailable && !altToken;
 
+    // ── Passos ────────────────────────────────────────────────────────────
+    const needsPayStep = googleChecked && (!googleAvailable || altToken !== '');
+    const steps: Step[] = [];
+    if (isPersonalPlan) steps.push('plan');
+    if (produto === 'pro') steps.push('cycle');
+    if (isPersonalPlan) steps.push('indication');
+    steps.push('review');
+    if (needsPayStep) steps.push('pay');
+    const stepIndex = Math.max(0, steps.indexOf(step));
+    const currentStep = steps[stepIndex];
+    const firstIndex = lockedByChoice ? steps.indexOf('review') : 0;
+    const done = confirmed || !!trialStarted;
+    const canGoBack = stepIndex > firstIndex && !done;
+
+    const goTo = useCallback((next: Step) => {
+        setError('');
+        setStep(next);
+    }, []);
+    const goBack = () => {
+        if (stepIndex > 0) goTo(steps[stepIndex - 1]);
+    };
+    const goNext = () => {
+        if (stepIndex < steps.length - 1) goTo(steps[stepIndex + 1]);
+    };
+    const leave = () => router.push(isPersonalPlan ? '/personal' : getStudentHomeRoute());
+
+    // Voltar do Android/navegador volta um passo. No primeiro passo o hook
+    // sai de cena e o voltar deixa a página, como em qualquer tela.
+    useCloseOnBack(canGoBack, goBack);
+
+    // Passo novo começa do topo, com o foco no título (leitor de tela anuncia
+    // o passo). Não no primeiro render: o foco ficaria preso no título.
+    const firstRender = useRef(true);
+    useEffect(() => {
+        bodyRef.current?.scrollTo?.(0, 0);
+        if (firstRender.current) {
+            firstRender.current = false;
+            return;
+        }
+        titleRef.current?.focus({ preventScroll: true });
+    }, [currentStep, done]);
+
+    // O erro fica no rodapé, colado no botão que o causou.
+    useEffect(() => {
+        if (error) errorRef.current?.scrollIntoView?.({ block: 'nearest' });
+    }, [error]);
+
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && canGoBack) goBack();
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    });
+
+    // ── Preço e textos do produto ─────────────────────────────────────────
     const selectedProPlan = catalog?.pro.find((p) => p.cycle === cycle);
+    const proMonthly = catalog?.pro.find((p) => p.cycle === 'MONTHLY')?.value;
     const price =
         produto === 'pro'
             ? selectedProPlan?.value
@@ -266,6 +417,15 @@ function PaymentPageInner() {
               : produto === 'plano'
                 ? catalog?.library_plan.value
                 : catalog?.student_plus.value;
+    // Menor preço por mês do PRO entre os ciclos longos, para o cartão do PRO.
+    const proFromMonthly = (() => {
+        if (!catalog || proMonthly === undefined) return undefined;
+        const perMonth = catalog.pro
+            .filter((p) => (CYCLE_MONTHS[p.cycle ?? ''] ?? 1) > 1)
+            .map((p) => p.value / CYCLE_MONTHS[p.cycle ?? '']);
+        const min = perMonth.length ? Math.min(...perMonth) : undefined;
+        return min !== undefined && min < proMonthly ? min : undefined;
+    })();
     const productTitle =
         produto === 'pro'
             ? `Plano PRO — ${CYCLE_LABELS[cycle] ?? cycle}`
@@ -276,6 +436,12 @@ function PaymentPageInner() {
                 : produto === 'plano'
                   ? 'Plano de treino selecionado'
                   : 'Aluno Plus — Mensal';
+    const priceNote =
+        produto === 'pro'
+            ? CYCLE_CHARGE[cycle]
+            : produto === 'plano'
+              ? 'pagamento único'
+              : 'cobrado todo mês';
     const benefits =
         produto === 'pro'
             ? PRO_BENEFITS
@@ -286,9 +452,12 @@ function PaymentPageInner() {
                 : produto === 'plano'
                   ? PLANO_BENEFITS
                   : PLUS_BENEFITS;
-    const benefitsTitle = isPersonalPlan
-        ? 'O que este plano desbloqueia para você (personal):'
-        : 'O que você recebe:';
+    const indicationLabel =
+        indicationReceiver === INDICATION_NONE
+            ? 'Ninguém me indicou'
+            : (INDICATION_CHANNELS.find((c) => c.value === indicationReceiver)?.label ??
+              partners.find((p) => p.code === indicationReceiver)?.name ??
+              indicationReceiver);
 
     // Motivo para não vender agora (produto fora de venda ou fora do perfil).
     const unavailableReason =
@@ -372,8 +541,8 @@ function PaymentPageInner() {
                 prepaidBefore.current = before?.prepaid_until ?? '';
                 const res: SubscribePixResponse = await subscribeProPix(
                     cycle,
-                    indicationReceiver,
-                    produto === "personal-plus" ? "personal_plus" : "pro",
+                    indicationReceiver || INDICATION_NONE,
+                    produto === 'personal-plus' ? 'personal_plus' : 'pro',
                     alt,
                 );
                 setPix({
@@ -427,6 +596,7 @@ function PaymentPageInner() {
                 // Escolheu o Asaas na tela do Google: nada foi cobrado.
                 // Aparecem PIX/cartão, e a compra leva o token.
                 setAltToken(result.externalTransactionToken ?? '');
+                setStep('pay');
                 return;
             }
             const verify = await verifyGooglePlayPurchase(
@@ -435,6 +605,7 @@ function PaymentPageInner() {
                 productType,
                 produto === 'plano' && !keepsPlan ? templateId : undefined,
                 keepsPlan ? lockedPlanId : undefined,
+                isPersonalPlan ? indicationReceiver || INDICATION_NONE : undefined,
             );
             if (verify.success) {
                 if (isPersonalPlan) {
@@ -445,7 +616,54 @@ function PaymentPageInner() {
                 setError(verify.message || 'Compra não confirmada pelo Google Play.');
             }
         } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : 'Falha na compra pelo Google Play.');
+            setError(friendlyGooglePlayError(err));
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleCardSubmit = async (form: CardSubscriptionForm) => {
+        setError('');
+        setLoading(true);
+        try {
+            if (isPersonalPlan) {
+                const res = await subscribeProCard(
+                    cycle,
+                    form,
+                    indicationReceiver || INDICATION_NONE,
+                    produto === 'personal-plus' ? 'personal_plus' : 'pro',
+                    alt,
+                );
+                // Só plan_active é pagamento confirmado. "ACTIVE" é o status
+                // da assinatura (cartão validado), e foi ele que fez esta tela
+                // dizer "Seu Personal Plus está ativo" para quem continuou no
+                // free (2026-10-05).
+                if (res.plan_active) {
+                    updateSessionPlanType(produto === 'personal-plus' ? 'plus' : 'pro');
+                    setConfirmed(true);
+                } else {
+                    setCardPending(true);
+                    startPolling();
+                }
+            } else if (produto === 'plano') {
+                const res = keepsPlan
+                    ? await purchaseLockedPlanCard(lockedPlanId, form, alt)
+                    : await purchaseLibraryPlanCard(templateId, form, alt);
+                if (res.applied) {
+                    setConfirmed(true);
+                } else {
+                    setError(res.message || 'Pagamento não aprovado. Tente outro cartão ou use PIX.');
+                }
+            } else {
+                const res = await subscribeStudentPlusCard(form, alt);
+                if (res.status === 'ACTIVE') {
+                    setConfirmed(true);
+                } else {
+                    startPolling();
+                }
+            }
+        } catch (err: unknown) {
+            setError(extractApiError(err));
         } finally {
             setLoading(false);
         }
@@ -462,501 +680,627 @@ function PaymentPageInner() {
         }
     };
 
-    if (trialStarted) {
-        return (
-            <div className="pay-page">
-                <div className="pay-box pay-box--narrow text-center">
-                    <i className="fa-solid fa-circle-check text-success fa-3x mb-3"></i>
-                    <h2 className="h4">Seu teste do PRO começou!</h2>
-                    <p>
-                        Você tem todos os recursos do PRO até{' '}
-                        <strong>{formatDate(trialStarted.pro_trial_ends_at)}</strong>. Sem
-                        cartão e sem cobrança: se não assinar, a conta volta ao plano
-                        gratuito sozinha, e o que você configurar fica guardado.
-                    </p>
-                    <button className="btn btn-gold mt-2" onClick={() => router.push('/personal')}>
-                        Ir para o painel
-                    </button>
-                </div>
-            </div>
-        );
-    }
+    const selectPlan = (plan: LadderPlan) => {
+        if (plan === 'free') return;
+        setProduto(plan === 'plus' ? 'personal-plus' : 'pro');
+    };
 
-    if (confirmed) {
-        return (
-            <div className="pay-page">
-                <div className="pay-box pay-box--narrow text-center">
-                    <i className="fa-solid fa-circle-check text-success fa-3x mb-3"></i>
-                    <h2 className="h4">Pagamento confirmado!</h2>
-                    <p>
-                        {produto === 'pro'
-                            ? 'Seu plano PRO está ativo. Aproveite todos os recursos.'
-                            : produto === 'personal-plus'
-                            ? 'Seu Personal Plus está ativo: alunos ilimitados, sua marca no app e o financeiro liberados.'
-                            : keepsPlan
-                              ? 'O plano que o seu personal montou voltou para você. Bora treinar!'
-                              : produto === 'plano'
+    const spinner = (
+        <span className="spinner-border spinner-border-sm" role="status">
+            <span className="visually-hidden">Carregando…</span>
+        </span>
+    );
+
+    const renderSheet = (parts: {
+        title: string;
+        progress?: { index: number; total: number };
+        body: React.ReactNode;
+        footer: React.ReactNode;
+    }) => {
+        if (!mounted) return null;
+        return createPortal(
+            <div className={s.overlay}>
+                <section className={s.sheet} aria-labelledby="payStepTitle">
+                    <header className={s.head}>
+                        {canGoBack ? (
+                            <button
+                                type="button"
+                                className={s.iconBtn}
+                                onClick={goBack}
+                                aria-label="Voltar ao passo anterior"
+                            >
+                                <FiArrowLeft />
+                            </button>
+                        ) : (
+                            <span className={s.iconSpacer} aria-hidden="true" />
+                        )}
+                        <div className={s.headText}>
+                            {parts.progress && (
+                                <span className={s.stepCount}>
+                                    Passo {parts.progress.index + 1} de {parts.progress.total}
+                                </span>
+                            )}
+                            <h1 id="payStepTitle" ref={titleRef} tabIndex={-1} className={s.title}>
+                                {parts.title}
+                            </h1>
+                        </div>
+                        <button
+                            type="button"
+                            className={s.iconBtn}
+                            onClick={leave}
+                            aria-label="Fechar e sair do pagamento"
+                        >
+                            <FiX />
+                        </button>
+                    </header>
+                    {parts.progress && (
+                        <div className={s.progress} aria-hidden="true">
+                            {Array.from({ length: parts.progress.total }, (_, i) => (
+                                <span
+                                    key={i}
+                                    className={i <= parts.progress!.index ? s.progressDone : s.progressTodo}
+                                />
+                            ))}
+                        </div>
+                    )}
+                    <div className={s.body} ref={bodyRef}>
+                        <div className={s.bodyInner}>{parts.body}</div>
+                    </div>
+                    {(parts.footer || error) && (
+                        <footer className={s.foot}>
+                            <div className={s.footInner}>
+                                {error && (
+                                    <div
+                                        ref={errorRef}
+                                        className="alert alert-danger mb-0 py-2"
+                                        role="alert"
+                                    >
+                                        {error}
+                                    </div>
+                                )}
+                                {parts.footer}
+                            </div>
+                        </footer>
+                    )}
+                </section>
+            </div>,
+            document.body,
+        );
+    };
+
+    // ── Telas finais ──────────────────────────────────────────────────────
+    if (trialStarted || confirmed) {
+        const doneBody = trialStarted ? (
+            <>
+                <h2 className={s.doneTitle}>Seu teste do PRO começou!</h2>
+                <p>
+                    Você tem todos os recursos do PRO até{' '}
+                    <strong>{formatDate(trialStarted.pro_trial_ends_at)}</strong>. Sem cartão e
+                    sem cobrança: se não assinar, a conta volta ao plano gratuito sozinha, e o que
+                    você configurar fica guardado.
+                </p>
+            </>
+        ) : (
+            <>
+                <h2 className={s.doneTitle}>Pagamento confirmado!</h2>
+                <p>
+                    {produto === 'pro'
+                        ? 'Seu plano PRO está ativo. Aproveite todos os recursos.'
+                        : produto === 'personal-plus'
+                          ? 'Seu Personal Plus está ativo: alunos ilimitados, sua marca no app e o financeiro liberados.'
+                          : keepsPlan
+                            ? 'O plano que o seu personal montou voltou para você. Bora treinar!'
+                            : produto === 'plano'
                               ? 'Seu novo plano de treino está ativo. Bora treinar!'
                               : 'Seu Aluno Plus está ativo: sem anúncios, com a Substituição Inteligente de Exercícios e os links do Instagram e do TikTok.'}
+                </p>
+                {paidUntil && (
+                    <p className={s.hint}>
+                        Pago por PIX até{' '}
+                        <strong>{new Date(paidUntil).toLocaleDateString('pt-BR')}</strong>. O PIX
+                        não renova sozinho: avisamos 3 dias antes, e para continuar é só pagar um
+                        novo em Minha conta.
                     </p>
-                    {paidUntil && (
-                        <p className="small text-muted">
-                            Pago por PIX até{' '}
-                            <strong>{new Date(paidUntil).toLocaleDateString('pt-BR')}</strong>. O PIX
-                            não renova sozinho: avisamos 3 dias antes, e para continuar é só
-                            pagar um novo em Minha conta.
-                        </p>
-                    )}
-                    <button
-                        className="btn btn-gold mt-2"
-                        onClick={() =>
-                            router.push(
-                                isPersonalPlan ? '/' : '/meus-treinos',
-                            )
-                        }
-                    >
-                        {isPersonalPlan ? 'Ir para o início' : 'Ver meus treinos'}
-                    </button>
-                </div>
-            </div>
+                )}
+            </>
         );
+        const doneCta = trialStarted
+            ? { label: 'Ir para o painel', href: '/personal' }
+            : isPersonalPlan
+              ? { label: 'Ir para o início', href: '/' }
+              : { label: 'Ver meus treinos', href: '/meus-treinos' };
+        return renderSheet({
+            title: trialStarted ? 'Teste grátis' : 'Tudo certo',
+            body: (
+                <div className={s.done}>
+                    <FiCheckCircle className={s.doneIcon} aria-hidden="true" />
+                    {doneBody}
+                </div>
+            ),
+            footer: (
+                <button
+                    type="button"
+                    className={`btn btn-gold ${s.cta}`}
+                    onClick={() => router.push(doneCta.href)}
+                >
+                    {doneCta.label}
+                </button>
+            ),
+        });
     }
 
-    return (
-        <div className="pay-page">
-            <div className="pay-box">
-                <header className="pay-header">
-                    <Image
-                        src="/assets/images/logo.png"
-                        alt="logo"
-                        width={150}
-                        height={70}
-                    />
-                    <h1 className="h3">Pagamento</h1>
-                </header>
+    // ── Conteúdo de cada passo ────────────────────────────────────────────
+    let body: React.ReactNode = null;
+    let footer: React.ReactNode = null;
 
-                <div className="mb-3">
-                    <button
-                        className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2"
-                        onClick={() =>
-                            router.push(
-                                isPersonalPlan
-                                    ? '/personal'
-                                    : getStudentHomeRoute(),
-                            )
-                        }
-                    >
-                        <FiArrowLeft /> Voltar
-                    </button>
+    if (currentStep === 'plan') {
+        body = (
+            <>
+                <p className={s.lead}>
+                    Toque no plano que você quer. Sem fidelidade: cancele quando quiser.
+                </p>
+                <PersonalPlanLadder
+                    plusPrice={catalog?.personal_plus.value}
+                    proPrice={proMonthly}
+                    proFromMonthly={proFromMonthly}
+                    selected={produto === 'personal-plus' ? 'plus' : 'pro'}
+                    currentPlan={currentPlan}
+                    onSelect={selectPlan}
+                />
+                {produto === 'pro' && trial?.pro_trial_eligible && (
+                    <div className={s.callout} role="status">
+                        <div>
+                            <p className={s.calloutTitle}>Teste o PRO por 14 dias, de graça</p>
+                            <p className={s.calloutText}>
+                                Sem cartão e sem cobrança. Se não assinar até o fim, a conta volta
+                                ao plano gratuito sozinha. Vale uma vez por conta.
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            className="btn btn-outline-secondary btn-sm"
+                            onClick={handleStartTrial}
+                            disabled={loading}
+                        >
+                            Começar teste grátis
+                        </button>
+                    </div>
+                )}
+                {produto === 'pro' && trial?.pro_trial_active && (
+                    <div className="alert alert-info mb-0" role="status">
+                        Você está no teste grátis do PRO até{' '}
+                        <strong>{formatDate(trial.pro_trial_ends_at)}</strong> (
+                        {daysUntil(trial.pro_trial_ends_at)} dia(s)). Assine para não perder os
+                        recursos quando ele acabar.
+                    </div>
+                )}
+            </>
+        );
+        footer = (
+            <button
+                type="button"
+                className={`btn btn-gold ${s.cta}`}
+                onClick={goNext}
+                disabled={!catalog}
+            >
+                Continuar com o {produto === 'personal-plus' ? 'Plus' : 'PRO'}
+            </button>
+        );
+    } else if (currentStep === 'cycle') {
+        body = (
+            <>
+                <p className={s.lead}>
+                    Pagando mais meses de uma vez, o mês sai mais barato. O PRO é o mesmo em todos.
+                </p>
+                <div className={s.options} role="radiogroup" aria-label="Período do PRO">
+                    {(catalog?.pro ?? []).map((p) => {
+                        const key = p.cycle ?? '';
+                        const months = CYCLE_MONTHS[key] ?? 1;
+                        const perMonth = p.value / months;
+                        const saving =
+                            proMonthly && months > 1
+                                ? Math.floor((1 - p.value / (proMonthly * months)) * 100)
+                                : 0;
+                        const isSelected = cycle === key;
+                        return (
+                            <button
+                                key={key}
+                                type="button"
+                                role="radio"
+                                aria-checked={isSelected}
+                                className={`${s.option} ${isSelected ? s.optionSelected : ''}`}
+                                onClick={() => setCycle(key)}
+                            >
+                                <span className={s.radio} aria-hidden="true">
+                                    {isSelected && <FiCheck />}
+                                </span>
+                                <span className={s.optionMain}>
+                                    <span className={s.optionTop}>
+                                        <span className={s.optionName}>
+                                            {CYCLE_LABELS[key] ?? key}
+                                        </span>
+                                        {saving >= 1 && (
+                                            <span className={s.badgeSave}>
+                                                Economize {saving}%
+                                            </span>
+                                        )}
+                                    </span>
+                                    <span className={s.optionSub}>
+                                        {formatBRL(p.value)}, {CYCLE_CHARGE[key]}
+                                    </span>
+                                </span>
+                                <span className={s.optionAside}>
+                                    <strong>{formatBRL(perMonth)}</strong>
+                                    <span>por mês</span>
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
+            </>
+        );
+        footer = (
+            <button type="button" className={`btn btn-gold ${s.cta}`} onClick={goNext}>
+                Continuar
+            </button>
+        );
+    } else if (currentStep === 'indication') {
+        const option = (value: string, label: React.ReactNode, icon?: React.ReactNode) => {
+            const isSelected = indicationReceiver === value;
+            return (
+                <button
+                    key={value}
+                    type="button"
+                    role="radio"
+                    aria-checked={isSelected}
+                    className={`${s.option} ${s.optionCompact} ${isSelected ? s.optionSelected : ''}`}
+                    onClick={() => setIndicationReceiver(value)}
+                >
+                    <span className={s.radio} aria-hidden="true">
+                        {isSelected && <FiCheck />}
+                    </span>
+                    {icon && <span className={s.optionIcon}>{icon}</span>}
+                    <span className={s.optionName}>{label}</span>
+                </button>
+            );
+        };
+        body = (
+            <>
+                <div className={s.indicationHero}>
+                    <FiUsers className={s.indicationIcon} aria-hidden="true" />
+                    <p className={s.indicationText}>
+                        <strong>Alguém te indicou o Venafit?</strong> Escolha o nome abaixo: é assim
+                        que o parceiro ou profissional que indicou recebe o crédito pela
+                        indicação. Você não paga nada a mais por isso.
+                    </p>
+                </div>
+                <div className={s.optionGroups} role="radiogroup" aria-label="Como você conheceu o Venafit">
+                    {partners.length > 0 && (
+                        <div className={s.optionGroup}>
+                            <p className={s.groupLabel}>Fui indicado por</p>
+                            {partners.map((p) => option(p.code, p.name))}
+                        </div>
+                    )}
+                    <div className={s.optionGroup}>
+                        <p className={s.groupLabel}>Conheci pelas redes</p>
+                        {INDICATION_CHANNELS.map((c) =>
+                            option(c.value, c.label, <i className={c.icon} aria-hidden="true" />),
+                        )}
+                    </div>
+                    <div className={s.optionGroup}>
+                        {option(INDICATION_NONE, 'Ninguém me indicou')}
+                    </div>
+                </div>
+            </>
+        );
+        footer = (
+            <>
+                {!indicationReceiver && (
+                    <p className={s.footHint}>Escolha uma opção para continuar.</p>
+                )}
+                <button
+                    type="button"
+                    className={`btn btn-gold ${s.cta}`}
+                    onClick={goNext}
+                    disabled={!indicationReceiver}
+                >
+                    Continuar
+                </button>
+            </>
+        );
+    } else if (currentStep === 'review') {
+        const editable = !lockedByChoice;
+        body = (
+            <>
+                <div className={s.summary}>
+                    <p className={s.summaryProduct}>{productTitle}</p>
+                    <p className={s.summaryPrice}>
+                        <strong>{price != null ? formatBRL(price) : '—'}</strong>
+                        <span>{priceNote}</span>
+                    </p>
+                    {isPersonalPlan && (
+                        <dl className={s.summaryRows}>
+                            <SummaryRow
+                                label="Plano"
+                                value={produto === 'personal-plus' ? 'Plus' : 'PRO'}
+                                onEdit={editable ? () => goTo('plan') : undefined}
+                            />
+                            {produto === 'pro' && (
+                                <SummaryRow
+                                    label="Período"
+                                    value={CYCLE_LABELS[cycle] ?? cycle}
+                                    onEdit={editable ? () => goTo('cycle') : undefined}
+                                />
+                            )}
+                            <SummaryRow
+                                label="Indicação"
+                                value={indicationLabel || '—'}
+                                onEdit={editable ? () => goTo('indication') : undefined}
+                            />
+                        </dl>
+                    )}
                 </div>
 
-                {error && (
-                    <div className="alert alert-danger" role="alert">
-                        {error}
+                {unavailableReason ? (
+                    <div className="alert alert-info mb-0" role="status">
+                        {unavailableReason}
                     </div>
-                )}
-
-                {/* Comparação dos três planos: o Plus só se explica ao lado do
-                    que ele NÃO tem. Enquanto o PIX está em aberto, trocar de
-                    plano invalidaria a cobrança já gerada — daí o onSelect
-                    sair de cena nesse caso. */}
-                {isPersonalPlan && (
-                    <div className="pay-section">
-                        <PersonalPlanLadder
-                            plusPrice={catalog?.personal_plus.value}
-                            proPrice={catalog?.pro.find((p) => p.cycle === 'MONTHLY')?.value}
-                            selected={produto === 'personal-plus' ? 'plus' : 'pro'}
-                            currentPlan={currentPlan}
-                            onSelect={
-                                lockedByChoice || cardPending
-                                    ? undefined
-                                    : (plan) =>
-                                          router.push(
-                                              plan === 'plus'
-                                                  ? '/pagamento?produto=personal-plus'
-                                                  : '/pagamento?produto=pro',
-                                          )
-                            }
-                        />
-                    </div>
-                )}
-
-                {produto === 'pro' && trial?.pro_trial_eligible && (
-                    <div className="alert alert-success pay-section mb-0" role="status">
-                        <div className="pay-trial">
-                            <div className="pay-trial-text">
-                                <p className="fw-semibold mb-1">Teste o PRO por 14 dias, de graça</p>
-                                <p className="small">
-                                    Sem cartão e sem cobrança. Se não assinar até o fim, a conta
-                                    volta ao plano gratuito sozinha. Vale uma vez por conta.
-                                </p>
+                ) : (
+                    <>
+                        <div className={s.nextInfo}>
+                            {useGoogle ? (
+                                <>
+                                    <i className="fa-brands fa-google-play" aria-hidden="true"></i>
+                                    <p>
+                                        Ao continuar, abre a tela do <strong>Google Play</strong>{' '}
+                                        com as formas de pagamento.
+                                        {produto !== 'plano' &&
+                                            ' Quem nunca assinou nada no Venafit ganha 1 mês grátis: a cobrança só começa depois, e dá para cancelar antes pelo Google Play.'}
+                                    </p>
+                                </>
+                            ) : (
+                                <>
+                                    <i className="fa-solid fa-lock" aria-hidden="true"></i>
+                                    <p>
+                                        No próximo passo você escolhe{' '}
+                                        {methods.length > 1 ? 'PIX ou cartão' : 'o cartão'}.
+                                        Pagamento processado pelo Asaas.
+                                    </p>
+                                </>
+                            )}
+                        </div>
+                        {isPersonalPlan ? (
+                            <div>
+                                <button
+                                    type="button"
+                                    className={s.disclosure}
+                                    aria-expanded={benefitsOpen}
+                                    onClick={() => setBenefitsOpen((v) => !v)}
+                                >
+                                    <span>O que o plano desbloqueia ({benefits.length})</span>
+                                    <FiChevronDown
+                                        aria-hidden="true"
+                                        className={benefitsOpen ? s.chevronOpen : s.chevron}
+                                    />
+                                </button>
+                                {benefitsOpen && <BenefitList items={benefits} />}
                             </div>
+                        ) : (
+                            <div>
+                                <p className={s.sectionLabel}>O que você recebe</p>
+                                <BenefitList items={benefits} />
+                            </div>
+                        )}
+                        {produto === 'pro' && (
+                            <p className={s.hint}>
+                                Seus alunos registram a própria evolução (medidas e fotos) de
+                                graça. O plano alimentar fica liberado para os alunos vinculados a
+                                você.
+                            </p>
+                        )}
+                    </>
+                )}
+            </>
+        );
+        footer = unavailableReason ? (
+            <button type="button" className={`btn btn-outline-secondary ${s.cta}`} onClick={leave}>
+                Voltar
+            </button>
+        ) : useGoogle ? (
+            <button
+                type="button"
+                className={`btn btn-gold ${s.cta}`}
+                onClick={handleGooglePlay}
+                disabled={loading || !catalog || !googleChecked}
+            >
+                {loading ? spinner : 'Continuar para o pagamento'}
+            </button>
+        ) : (
+            <button
+                type="button"
+                className={`btn btn-gold ${s.cta}`}
+                onClick={goNext}
+                disabled={!catalog || !googleChecked}
+            >
+                {googleChecked ? 'Escolher forma de pagamento' : spinner}
+            </button>
+        );
+    } else if (currentStep === 'pay') {
+        const payLabel = `${produto === 'plano' ? 'Pagar' : 'Assinar'}${price != null ? ` · ${formatBRL(price)}` : ''}`;
+        body = (
+            <>
+                <div className={s.payTotal}>
+                    <span>{productTitle}</span>
+                    <strong>{price != null ? formatBRL(price) : '—'}</strong>
+                </div>
+                {altToken && !pix && (
+                    <p className={s.hint}>
+                        Você escolheu pagar direto ao Venafit. Escolha PIX ou cartão.
+                    </p>
+                )}
+                {!pix && !cardPending && methods.length > 1 && (
+                    <div className={s.methods} role="radiogroup" aria-label="Forma de pagamento">
+                        {methods.includes('pix') && (
                             <button
-                                className="btn btn-gold btn-sm"
-                                onClick={handleStartTrial}
-                                disabled={loading}
+                                type="button"
+                                role="radio"
+                                aria-checked={metodo === 'pix'}
+                                className={`${s.method} ${metodo === 'pix' ? s.methodSelected : ''}`}
+                                onClick={() => setMetodo('pix')}
                             >
-                                Começar teste grátis
+                                <i className="fa-solid fa-qrcode" aria-hidden="true"></i>
+                                PIX
+                            </button>
+                        )}
+                        {methods.includes('card') && (
+                            <button
+                                type="button"
+                                role="radio"
+                                aria-checked={metodo === 'card'}
+                                className={`${s.method} ${metodo === 'card' ? s.methodSelected : ''}`}
+                                onClick={() => setMetodo('card')}
+                            >
+                                <i className="fa-solid fa-credit-card" aria-hidden="true"></i>
+                                Cartão
+                            </button>
+                        )}
+                    </div>
+                )}
+
+                {metodo === 'pix' && !pix && (
+                    <p className={s.hint}>
+                        {isPersonalPlan ? (
+                            <>
+                                O PIX paga{' '}
+                                {produto === 'pro' && cycle === 'SEMIANNUALLY'
+                                    ? '6 meses'
+                                    : produto === 'pro' && cycle === 'YEARLY'
+                                      ? '12 meses'
+                                      : '1 mês'}{' '}
+                                e não renova sozinho: avisamos 3 dias antes do fim. Para cobrança
+                                automática todo mês, use o cartão.
+                            </>
+                        ) : (
+                            'Pagamento único. Assim que o PIX cair, o plano é liberado sozinho.'
+                        )}
+                    </p>
+                )}
+                {metodo === 'pix' && pix && (
+                    <div className={s.pixBox}>
+                        {pix.qrImageUrl && (
+                            // QR vem como data URI base64 do Asaas — <img> nativo,
+                            // next/image não otimiza data URIs.
+                            <img
+                                src={pix.qrImageUrl}
+                                alt="QR Code PIX"
+                                width={220}
+                                height={220}
+                                className={s.qr}
+                            />
+                        )}
+                        <p className={s.hint}>Escaneie o QR Code ou use o copia e cola:</p>
+                        <div className="input-group">
+                            <input
+                                className="form-control form-control-sm"
+                                readOnly
+                                value={pix.payload ?? ''}
+                                aria-label="Código PIX copia e cola"
+                            />
+                            <button
+                                type="button"
+                                className="btn btn-outline-secondary btn-sm"
+                                onClick={handleCopyPix}
+                            >
+                                {copied ? 'Copiado!' : 'Copiar'}
                             </button>
                         </div>
                     </div>
                 )}
-                {produto === 'pro' && trial?.pro_trial_active && (
-                    <div className="alert alert-info pay-section mb-0" role="status">
-                        Você está no teste grátis do PRO até{' '}
-                        <strong>{formatDate(trial.pro_trial_ends_at)}</strong> (
-                        {daysUntil(trial.pro_trial_ends_at)} dia(s)). Assine para não
-                        perder os recursos quando ele acabar.
+
+                {metodo === 'card' && cardPending && (
+                    <div className={s.pending}>
+                        {spinner}
+                        <p>
+                            O cartão foi aceito e a cobrança está em análise. O plano é ativado
+                            sozinho assim que ela for aprovada: pode fechar esta tela. Não assine de
+                            novo.
+                        </p>
                     </div>
                 )}
-
-                <div className="pay-grid">
-                    <aside className="pay-summary" aria-labelledby="summaryTitle">
-                        <h2 id="summaryTitle">Resumo do pedido</h2>
-                        <p className="pay-summary-product">{productTitle}</p>
-
-                        <p className="small text-muted mb-2">{benefitsTitle}</p>
-                        <ul className="pay-benefits">
-                            {benefits.map((b) => (
-                                <li key={b}>
-                                    <i className="fa-solid fa-circle-check" aria-hidden="true"></i>
-                                    <span>{b}</span>
-                                </li>
-                            ))}
-                        </ul>
-
-                        {produto === 'pro' && (
-                            <p className="small text-muted mb-3">
-                                Seus alunos registram a própria evolução
-                                (medidas e fotos) de graça. O plano
-                                alimentar fica liberado para os alunos
-                                vinculados a você.
+                {metodo === 'card' && !cardPending && (
+                    <>
+                        {produto === 'plus' && (
+                            <p className={s.hint}>
+                                Assinatura mensal no cartão de crédito. Cancele quando quiser em
+                                Minha conta.
                             </p>
                         )}
+                        <CardForm id={CARD_FORM_ID} disabled={loading} onSubmit={handleCardSubmit} />
+                    </>
+                )}
+            </>
+        );
+        footer =
+            metodo === 'pix' && !pix ? (
+                <button
+                    type="button"
+                    className={`btn btn-gold ${s.cta}`}
+                    onClick={handlePix}
+                    disabled={loading || !catalog}
+                >
+                    {loading ? spinner : 'Gerar QR Code PIX'}
+                </button>
+            ) : metodo === 'pix' && pix ? (
+                <p className={s.waiting} role="status">
+                    {spinner} Aguardando a confirmação do pagamento…
+                </p>
+            ) : metodo === 'card' && !cardPending ? (
+                <button
+                    type="submit"
+                    form={CARD_FORM_ID}
+                    className={`btn btn-gold ${s.cta}`}
+                    disabled={loading}
+                >
+                    {loading ? spinner : payLabel}
+                </button>
+            ) : null;
+    }
 
-                        {produto === 'pro' && catalog && (
-                            <div className="mb-3">
-                                <label htmlFor="cycleSelect" className="form-label">
-                                    Ciclo de cobrança
-                                </label>
-                                <select
-                                    id="cycleSelect"
-                                    className="form-select"
-                                    value={cycle}
-                                    disabled={lockedByChoice}
-                                    onChange={(e) => setCycle(e.target.value)}
-                                >
-                                    {catalog.pro.map((p) => (
-                                        <option key={p.cycle} value={p.cycle}>
-                                            {CYCLE_LABELS[p.cycle ?? ''] ?? p.cycle} —{' '}
-                                            {formatBRL(p.value)}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        )}
+    return renderSheet({
+        title: STEP_TITLES[currentStep],
+        progress: steps.length > 1 ? { index: stepIndex, total: steps.length } : undefined,
+        body,
+        footer,
+    });
+}
 
-                        {produto === 'pro' && (
-                            <div className="mb-3">
-                                <label
-                                    htmlFor="indicationSelect"
-                                    className="form-label"
-                                >
-                                    Como você conheceu a plataforma?
-                                </label>
-                                <select
-                                    id="indicationSelect"
-                                    className="form-select"
-                                    value={indicationReceiver}
-                                    disabled={lockedByChoice}
-                                    onChange={(e) =>
-                                        setIndicationReceiver(e.target.value)
-                                    }
-                                >
-                                    <option value={INDICATION_NONE}>
-                                        Nenhuma Indicação
-                                    </option>
-                                    <option value="instagram">Instagram</option>
-                                    <option value="facebook">Facebook</option>
-                                    <option value="youtube">YouTube</option>
-                                    {partners.map((p) => (
-                                        <option key={p.id} value={p.code}>
-                                            {p.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        )}
-                        <p className="pay-total">
-                            Total: {price != null ? formatBRL(price) : '—'}
-                            {produto === 'plus' && price != null ? ' por mês' : ''}
-                        </p>
-                    </aside>
-
-                    <div className="pay-checkout">
-                        {unavailableReason ? (
-                            <div className="alert alert-info" role="status">
-                                {unavailableReason}
-                            </div>
-                        ) : (
-                            <>
-                                {!pix && methods.length > 1 && (
-                                    <div className="pay-methods">
-                                        {methods.includes('pix') && (
-                                            <button
-                                                className={`btn btn-${metodo !== 'pix' ? 'outline-' : ''}gold`}
-                                                onClick={() => setMetodo('pix')}
-                                            >
-                                                <h6 className="mb-1">Pix</h6>
-                                                <i className="fa-solid fa-qrcode fa-lg"></i>
-                                            </button>
-                                        )}
-                                        {methods.includes('card') && (
-                                            <button
-                                                className={`btn btn-${metodo !== 'card' ? 'outline-' : ''}gold`}
-                                                onClick={() => setMetodo('card')}
-                                            >
-                                                <h6 className="mb-1">Cartão</h6>
-                                                <i className="fa-solid fa-credit-card fa-lg"></i>
-                                            </button>
-                                        )}
-                                        {methods.includes('google') && (
-                                            <button
-                                                className={`btn btn-${metodo !== 'google' ? 'outline-' : ''}gold`}
-                                                onClick={() => setMetodo('google')}
-                                            >
-                                                <h6 className="mb-1">Google Play</h6>
-                                                <i className="fa-brands fa-google-play fa-lg"></i>
-                                            </button>
-                                        )}
-                                    </div>
-                                )}
-                                {altToken && !pix && (
-                                    <p className="small text-muted mb-2">
-                                        Você escolheu pagar direto ao Venafit. Escolha PIX ou cartão
-                                        abaixo.
-                                    </p>
-                                )}
-                                {produto === 'plus' && metodo === 'card' && (
-                                    <p className="small text-muted mb-2">
-                                        Assinatura mensal no cartão de crédito. Cancele quando quiser
-                                        em Minha conta.
-                                    </p>
-                                )}
-
-                                {/* PIX */}
-                                {metodo === 'pix' && isPersonalPlan && !pix && (
-                                    <p className="small text-muted mt-3 mb-0">
-                                        O PIX paga{' '}
-                                        {produto === 'pro' && cycle === 'SEMIANNUALLY'
-                                            ? '6 meses'
-                                            : produto === 'pro' && cycle === 'YEARLY'
-                                              ? '12 meses'
-                                              : '1 mês'}{' '}
-                                        e não renova sozinho: avisamos 3 dias antes do fim. Para
-                                        cobrança automática todo mês, use o cartão.
-                                    </p>
-                                )}
-                                {metodo === 'pix' && (
-                                    <div className="text-center mt-3">
-                                        {!pix ? (
-                                            <button
-                                                className="btn btn-lg btn-gold w-100"
-                                                onClick={handlePix}
-                                                disabled={loading || !catalog}
-                                            >
-                                                {loading ? (
-                                                    <div className="spinner-border text-light" role="status">
-                                                        <span className="visually-hidden">Carregando…</span>
-                                                    </div>
-                                                ) : (
-                                                    'Gerar QR Code PIX'
-                                                )}
-                                            </button>
-                                        ) : (
-                                            <div>
-                                                {pix.qrImageUrl && (
-                                                    // QR vem como data URI base64 do Asaas — <img> nativo,
-                                                    // next/image não otimiza data URIs.
-                                                    // eslint-disable-next-line @next/next/no-img-element
-                                                    <img
-                                                        src={pix.qrImageUrl}
-                                                        alt="QR Code PIX"
-                                                        width={230}
-                                                        height={230}
-                                                        className="border rounded"
-                                                    />
-                                                )}
-                                                <p className="mt-3 mb-1 small text-muted">
-                                                    Escaneie o QR Code ou use o copia-e-cola:
-                                                </p>
-                                                <div className="input-group mb-2">
-                                                    <input
-                                                        className="form-control form-control-sm"
-                                                        readOnly
-                                                        value={pix.payload ?? ''}
-                                                    />
-                                                    <button
-                                                        className="btn btn-outline-gold btn-sm"
-                                                        onClick={handleCopyPix}
-                                                    >
-                                                        {copied ? 'Copiado!' : 'Copiar'}
-                                                    </button>
-                                                </div>
-                                                <div className="d-flex align-items-center justify-content-center gap-2 text-muted small">
-                                                    <div
-                                                        className="spinner-border spinner-border-sm"
-                                                        role="status"
-                                                    ></div>
-                                                    Aguardando confirmação do pagamento…
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-
-                                {/* Cartão de crédito — assinatura do personal (recorrente) */}
-                                {metodo === 'card' && isPersonalPlan && cardPending && (
-                                    <div className="text-center mt-3">
-                                        <div className="d-flex align-items-center justify-content-center gap-2 text-muted small">
-                                            <div
-                                                className="spinner-border spinner-border-sm"
-                                                role="status"
-                                            ></div>
-                                            Confirmando o pagamento…
-                                        </div>
-                                        <p className="small text-muted mt-2 mb-0">
-                                            O cartão foi aceito e a cobrança está em análise. O plano é
-                                            ativado sozinho assim que ela for aprovada: pode fechar esta
-                                            tela. Não assine de novo.
-                                        </p>
-                                    </div>
-                                )}
-                                {metodo === 'card' && isPersonalPlan && !cardPending && (
-                                    <CardForm
-                                        disabled={loading}
-                                        submitLabel="Assinar"
-                                        onSubmit={async (form) => {
-                                            setError('');
-                                            setLoading(true);
-                                            try {
-                                                const res = await subscribeProCard(
-                                                    cycle,
-                                                    form,
-                                                    indicationReceiver,
-                                                    produto === 'personal-plus'
-                                                        ? 'personal_plus'
-                                                        : 'pro',
-                                                    alt,
-                                                );
-                                                setLoading(false);
-                                                // Só plan_active é pagamento confirmado. "ACTIVE" é
-                                                // o status da assinatura (cartão validado), e foi ele
-                                                // que fez esta tela dizer "Seu Personal Plus está
-                                                // ativo" para quem continuou no free (2026-10-05).
-                                                if (res.plan_active) {
-                                                    updateSessionPlanType(
-                                                        produto === 'personal-plus'
-                                                            ? 'plus'
-                                                            : 'pro',
-                                                    );
-                                                    setConfirmed(true);
-                                                } else {
-                                                    setCardPending(true);
-                                                    startPolling();
-                                                }
-                                            } catch (err: unknown) {
-                                                setLoading(false);
-                                                setError(extractApiError(err));
-                                            }
-                                        }}
-                                    />
-                                )}
-
-                                {/* Cartão de crédito — compra avulsa de plano (única) */}
-                                {metodo === 'card' && produto === 'plano' && (
-                                    <CardForm
-                                        disabled={loading}
-                                        submitLabel="Pagar"
-                                        onSubmit={async (form) => {
-                                            setError('');
-                                            setLoading(true);
-                                            try {
-                                                const res = keepsPlan
-                                                    ? await purchaseLockedPlanCard(lockedPlanId, form, alt)
-                                                    : await purchaseLibraryPlanCard(templateId, form, alt);
-                                                setLoading(false);
-                                                if (res.applied) {
-                                                    setConfirmed(true);
-                                                } else {
-                                                    setError(
-                                                        res.message ||
-                                                            'Pagamento não aprovado. Tente outro cartão ou use PIX.',
-                                                    );
-                                                }
-                                            } catch (err: unknown) {
-                                                setLoading(false);
-                                                setError(extractApiError(err));
-                                            }
-                                        }}
-                                    />
-                                )}
-
-                                {/* Cartão de crédito — Aluno Plus (recorrente, só no site) */}
-                                {metodo === 'card' && produto === 'plus' && (
-                                    <CardForm
-                                        disabled={loading}
-                                        submitLabel="Assinar"
-                                        onSubmit={async (form) => {
-                                            setError('');
-                                            setLoading(true);
-                                            try {
-                                                const res = await subscribeStudentPlusCard(form, alt);
-                                                setLoading(false);
-                                                if (res.status === 'ACTIVE') {
-                                                    setConfirmed(true);
-                                                } else {
-                                                    startPolling();
-                                                }
-                                            } catch (err: unknown) {
-                                                setLoading(false);
-                                                setError(extractApiError(err));
-                                            }
-                                        }}
-                                    />
-                                )}
-
-                                {/* Google Play */}
-                                {metodo === 'google' && (
-                                    <div className="text-center mt-3">
-                                        <button
-                                            className="btn btn-lg btn-gold w-100"
-                                            onClick={handleGooglePlay}
-                                            disabled={loading || !catalog}
-                                        >
-                                            {loading ? (
-                                                <div className="spinner-border text-light" role="status">
-                                                    <span className="visually-hidden">Carregando…</span>
-                                                </div>
-                                            ) : (
-                                                'Continuar para o pagamento'
-                                            )}
-                                        </button>
-                                        <p className="small text-muted mt-2">
-                                            Na próxima tela o Google mostra como você pode pagar
-                                            {produto !== 'plano'
-                                                ? '. Quem nunca assinou nada no Venafit ganha 1 mês grátis: a assinatura só é cobrada depois, e você pode cancelar antes pelo Google Play'
-                                                : ''}
-                                            .
-                                        </p>
-                                    </div>
-                                )}
-                            </>
-                        )}
-                    </div>
-                </div>
-            </div>
+/** Linha do resumo, com o atalho para o passo onde aquilo foi escolhido. */
+function SummaryRow({ label, value, onEdit }: { label: string; value: string; onEdit?: () => void }) {
+    return (
+        <div className={s.summaryRow}>
+            <dt>{label}</dt>
+            <dd>
+                <span>{value}</span>
+                {onEdit && (
+                    <button type="button" className={s.linkBtn} onClick={onEdit} aria-label={`Alterar ${label.toLowerCase()}`}>
+                        Alterar
+                    </button>
+                )}
+            </dd>
         </div>
+    );
+}
+
+function BenefitList({ items }: { items: string[] }) {
+    return (
+        <ul className={s.benefits}>
+            {items.map((b) => (
+                <li key={b}>
+                    <FiCheck aria-hidden="true" />
+                    <span>{b}</span>
+                </li>
+            ))}
+        </ul>
     );
 }
 
@@ -969,15 +1313,32 @@ function extractApiError(
     return axiosMsg || fallback;
 }
 
+/** Mensagem da compra pelo Google Play. A da ponte nativa é técnica ("Produto
+ *  não encontrado no Google Play (0)") e não diz o que fazer; cancelar não é
+ *  erro, mas precisa de retorno, senão parece que o botão não fez nada. */
+function friendlyGooglePlayError(err: unknown): string {
+    const msg = err instanceof Error ? err.message : '';
+    if (msg === 'Compra cancelada') {
+        return 'Você fechou a tela do Google Play sem concluir. Nada foi cobrado: toque no botão para tentar de novo.';
+    }
+    if (msg.startsWith('Produto não encontrado') || msg.startsWith('Assinatura sem oferta')) {
+        return `Este plano não está disponível no Google Play agora. Atualize o app pela Play Store e tente de novo; se continuar, fale com o suporte. (${msg})`;
+    }
+    if (msg.includes('indisponível')) {
+        return 'O Google Play não respondeu. Confira se você está conectado à sua conta Google na Play Store e tente de novo.';
+    }
+    return extractApiError(err, msg || 'Falha na compra pelo Google Play.');
+}
+
 /** Formulário de cartão. Os dados são tokenizados/processados pelo gateway;
- *  nunca são logados nem persistidos localmente. O pai decide o que fazer com
- *  o formulário via onSubmit (assinatura PRO, Aluno Plus ou compra avulsa). */
+ *  nunca são logados nem persistidos localmente. O botão de enviar fica no
+ *  rodapé do passo (atributo form), sempre à vista. */
 function CardForm(props: {
+    id: string;
     disabled: boolean;
-    submitLabel: string;
     onSubmit: (form: CardSubscriptionForm) => Promise<void>;
 }) {
-    const { disabled, submitLabel, onSubmit } = props;
+    const { id, disabled, onSubmit } = props;
     const [form, setForm] = useState<CardSubscriptionForm>({
         card_holder_name: '',
         card_number: '',
@@ -1002,59 +1363,59 @@ function CardForm(props: {
     };
 
     const field = (
-        id: keyof CardSubscriptionForm,
+        fieldId: keyof CardSubscriptionForm,
         label: string,
         col = 'col-12',
         type = 'text',
+        inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'],
     ) => (
         <div className={col}>
             <div className="form-floating">
                 <input
                     type={type}
                     className="form-control"
-                    id={id}
+                    id={fieldId}
                     placeholder={label}
-                    value={form[id]}
-                    onChange={set(id)}
+                    value={form[fieldId]}
+                    onChange={set(fieldId)}
                     required
                     autoComplete="off"
+                    inputMode={inputMode}
                 />
-                <label htmlFor={id}>{label}</label>
+                <label htmlFor={fieldId}>{label}</label>
             </div>
         </div>
     );
 
     return (
-        <form className="row g-3 mt-2" onSubmit={submit}>
-            {field('card_number', 'Número do Cartão')}
-            {field('card_holder_name', 'Nome impresso no cartão')}
-            {field('card_expiry_month', 'Mês (MM)', 'col-4')}
-            {field('card_expiry_year', 'Ano (AAAA)', 'col-4')}
-            {field('card_ccv', 'CVV', 'col-4', 'password')}
-            <hr className="mt-4" />
-            {field('holder_name', 'Nome do titular', 'col-12 col-md-6')}
-            {field('holder_cpf', 'CPF do titular', 'col-12 col-md-6')}
-            {field('holder_email', 'E-mail', 'col-12 col-md-6', 'email')}
-            {field('holder_phone', 'Telefone', 'col-12 col-md-6')}
-            {field('holder_postal_code', 'CEP', 'col-6')}
-            {field('holder_address_num', 'Número (endereço)', 'col-6')}
-            <div className="col-12">
-                <button type="submit" className="btn btn-lg btn-gold w-100" disabled={disabled}>
-                    {disabled ? (
-                        <div className="spinner-border text-light" role="status">
-                            <span className="visually-hidden">Carregando…</span>
-                        </div>
-                    ) : (
-                        submitLabel
-                    )}
-                </button>
-            </div>
+        <form id={id} onSubmit={submit} className={s.cardForm}>
+            <fieldset disabled={disabled}>
+                <legend className={s.sectionLabel}>Dados do cartão</legend>
+                <div className="row g-3">
+                    {field('card_number', 'Número do cartão', 'col-12', 'text', 'numeric')}
+                    {field('card_holder_name', 'Nome impresso no cartão')}
+                    {field('card_expiry_month', 'Mês (MM)', 'col-4', 'text', 'numeric')}
+                    {field('card_expiry_year', 'Ano (AAAA)', 'col-4', 'text', 'numeric')}
+                    {field('card_ccv', 'CVV', 'col-4', 'password', 'numeric')}
+                </div>
+            </fieldset>
+            <fieldset disabled={disabled}>
+                <legend className={s.sectionLabel}>Dados do titular</legend>
+                <div className="row g-3">
+                    {field('holder_name', 'Nome do titular', 'col-12 col-md-6')}
+                    {field('holder_cpf', 'CPF do titular', 'col-12 col-md-6', 'text', 'numeric')}
+                    {field('holder_email', 'E-mail', 'col-12 col-md-6', 'email', 'email')}
+                    {field('holder_phone', 'Telefone', 'col-12 col-md-6', 'tel', 'tel')}
+                    {field('holder_postal_code', 'CEP', 'col-6', 'text', 'numeric')}
+                    {field('holder_address_num', 'Número (endereço)', 'col-6')}
+                </div>
+            </fieldset>
         </form>
     );
 }
 
 const Payment: React.FC = () => (
-    <Suspense fallback={<div className="pay-page text-center">Carregando…</div>}>
+    <Suspense fallback={<div className="text-center p-4">Carregando…</div>}>
         <PaymentPageInner />
     </Suspense>
 );
