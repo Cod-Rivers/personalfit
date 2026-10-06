@@ -469,8 +469,8 @@ export default function PeriodizacaoPage() {
                     <div className={s.tabs} role="tablist">
                         {(
                             [
-                                ['active', `Ativas (${active.length})`],
-                                ['archived', `Arquivadas (${archived.length})`],
+                                ['active', `Ativos (${active.length})`],
+                                ['archived', `Arquivados (${archived.length})`],
                                 ['trash', 'Lixeira'],
                             ] as [Tab, string][]
                         ).map(([key, label]) => (
@@ -557,7 +557,7 @@ export default function PeriodizacaoPage() {
                                             </span>
                                             {m.archived && (
                                                 <span className={s.badgeDraft}>
-                                                    Arquivada
+                                                    Arquivado
                                                 </span>
                                             )}
                                         </p>

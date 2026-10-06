@@ -873,3 +873,7 @@
 ## 2026-10-05 23:02 — River (via Claude Code)
 **Resumo:** Pronto: o card do aluno agora indica onde começar, e onde aparecia "Rotina" para o personal agora aparece "Treino". Backend e frontend passam no build, no tsc, no eslint e nos testes. Não testei no app de verdade e não fiz commit. **O card do aluno** - **Aluno sem treino:** aparece o selo vermelho **🏋️ Sem treino**, e o botão azul vira **"+ Montar treino"**. Ele abre a criação ali mesmo na lista, sem passar por outra tela. - **Aluno com treino:** o selo mostra **🏋️ Treino · até 30/11** (ou "Periodização · até…"), e o botão azul continua **"Treino do aluno"**. - O selo considera só os treinos…
 **Arquivos:** CiclosTab.tsx, NewMacrocycleModal.tsx, StudentViewPreview.tsx, StudentsTab.tsx, page.tsx, planningService.ts
+
+## 2026-10-06 05:59 — River (via Claude Code)
+**Resumo:** As três mudanças estão no ar: o selo de vencimento, o filtro de vencidos e a cópia de treino entre alunos. Também foram as mudanças da rodada anterior (botão "+ Montar treino" e "Rotina" virando "Treino"). Fiz commit e push nos dois repositórios (backend `8993b4e`, frontend `3ab7b25`). O deploy do backend sai sozinho com o push. Ainda não testei no app de verdade. **1. Selo de vencimento no card do aluno** - **🏋️ Treino vence em 5 dias** em amarelo, a partir de 7 dias antes do fim. Nos dois últimos dias aparece "vence amanhã" e "vence hoje". - **🏋️ Treino vencido em 30/09** em vermelho, quan…
+**Commits:** Cartão do aluno indica por onde começar o treino; "Rotina" vira "Treino"

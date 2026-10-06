@@ -943,7 +943,7 @@ const personalSections: HelpSection[] = [
                     <Link href="#personalizacao">Personalização</Link>,{' '}
                     <Link href="#autorregulacao-config">Autorregulação</Link>,{' '}
                     <Link href="#periodizacao-biblioteca">
-                        Minha Periodização / Treinos
+                        Minha Biblioteca de Treinos
                     </Link>{' '}
                     e a{' '}
                     <Link href="#biblioteca-publica">Biblioteca Pública</Link>.
@@ -991,11 +991,27 @@ const personalSections: HelpSection[] = [
                     vínculo ainda sem resposta),{' '}
                     <strong>Aguardando confirmação</strong> (o aluno ainda
                     precisa aceitar a reativação) ou <strong>Inativo</strong>.
+                </p>
+                <p className="mb-2">
+                    Ao lado fica o selo do treino: <strong>Sem treino</strong>,{' '}
+                    <strong>Treino vence em N dias</strong> (a partir de 7
+                    dias antes do término), <strong>Treino vencido</strong>{' '}
+                    ou o treino atual com a data de término. Quando o aluno
+                    não tem treino, o botão principal do cartão vira{' '}
+                    <strong>+ Montar treino</strong> e já abre a criação (veja{' '}
+                    <Link href="#periodizacao-aluno">Treino do aluno</Link>).
+                    Se algum aluno estiver com o treino vencido, aparece no
+                    topo da lista o filtro{' '}
+                    <strong>Todos / Treino vencido</strong>, para ver de uma vez
+                    quem precisa de treino novo.
+                </p>
+                <p className="mb-2">
                     Nos cartões você acessa{' '}
                     <strong>Treino do aluno</strong>, que abre o treino da
                     semana dele já pronto para ajustar e finalizar, além
                     de{' '}
-                    <Link href="#periodizacao-aluno">Periodização</Link>,{' '}
+                    <Link href="#periodizacao-aluno">Treinos</Link> (todos os
+                    treinos dele),{' '}
                     <Link href="#plano-alimentar-personal">
                         Plano Alimentar
                     </Link>
@@ -1416,41 +1432,43 @@ const personalSections: HelpSection[] = [
     },
     {
         id: 'periodizacao-biblioteca',
-        title: 'Minha Periodização / Treinos',
+        title: 'Minha Biblioteca de Treinos',
         body: (
             <>
                 <p className="mb-2">
                     Aqui ficam seus{' '}
                     <GlossaryLink id="template-modelo">
-                        ciclos reutilizáveis
+                        treinos prontos
                     </GlossaryLink>{' '}
-                    — monte uma vez e aplique em vários alunos. Em{' '}
-                    <strong>+ Novo Ciclo</strong> você cria o{' '}
-                    <GlossaryLink id="macrociclo">macrociclo</GlossaryLink>;
-                    depois use <strong>Configurar treinos</strong> para
-                    montar <GlossaryLink id="mesociclo">mesociclos</GlossaryLink>
-                    ,{' '}
-                    <GlossaryLink id="microciclo-periodo">
-                        microciclos
-                    </GlossaryLink>{' '}
-                    e os exercícios de cada treino.
+                    (iniciante, hipertrofia, emagrecimento...): monte uma vez
+                    e copie para quantos alunos quiser. Em{' '}
+                    <strong>+ Novo treino</strong> você cria um do zero e
+                    monta os treinos e exercícios no mesmo editor do aluno
+                    (veja{' '}
+                    <Link href="#montar-treino">Montar um treino passo a passo</Link>
+                    ). Também dá para trazer o treino de um aluno para cá com{' '}
+                    <strong>Salvar na biblioteca</strong>, na lista de treinos
+                    dele.
                 </p>
                 <p className="mb-2">
-                    Para cada ciclo você pode <strong>Aplicar</strong> a um
-                    aluno, <strong>Editar</strong> os dados (nome, objetivo,
+                    Em cada treino você pode <strong>Copiar para aluno</strong>,{' '}
+                    <strong>Editar</strong> os dados (nome, objetivo, pasta e
                     visibilidade), <strong>Duplicar</strong> ou{' '}
-                    <strong>Remover</strong>. O selo de usos mostra quantas
-                    vezes o ciclo já foi aplicado, e você pode ordenar por{' '}
-                    <strong>mais usados</strong>.
+                    <strong>Remover</strong>. As <strong>pastas</strong>{' '}
+                    organizam a biblioteca e viram filtro na hora de copiar. O
+                    selo de usos mostra quantas vezes o treino já foi copiado,
+                    e você pode ordenar por <strong>Mais usados primeiro</strong>.
+                    O aluno sempre recebe uma cópia: ajustar o treino dele não
+                    muda o da biblioteca.
                 </p>
                 <p className="mb-0">
                     Sobre a <strong>visibilidade</strong>: no plano gratuito,
-                    seus ciclos ficam disponíveis para revisão da equipe
+                    seus treinos ficam disponíveis para revisão da equipe
                     Venafit e podem entrar na{' '}
                     <Link href="#biblioteca-publica">Biblioteca Pública</Link>{' '}
                     (o selo mostra se estão Pendentes, Aprovados ou
                     Rejeitados). Com o <Link href="#plano-pro">PRO</Link> você
-                    pode manter os ciclos <strong>privados</strong>, só seus.
+                    pode manter os treinos <strong>privados</strong>, só seus.
                 </p>
             </>
         ),
@@ -1460,10 +1478,12 @@ const personalSections: HelpSection[] = [
         title: 'Biblioteca Pública',
         body: (
             <p className="mb-0">
-                Reúne ciclos que outros personals escolheram compartilhar e que
-                foram aprovados pela equipe Venafit. Você pode buscar por nome
-                ou objetivo e <strong>Aplicar</strong> um deles direto a um
-                aluno seu — um bom atalho para começar rápido e depois ajustar.
+                Reúne treinos prontos da equipe Venafit e de outros personals
+                que escolheram compartilhar e foram aprovados. Você pode buscar
+                por nome ou objetivo e <strong>Copiar para aluno</strong> —
+                um bom atalho para começar rápido e depois ajustar. Eles
+                também aparecem em <strong>Copiar da biblioteca</strong>, na
+                hora de criar o treino de um aluno.
             </p>
         ),
     },
@@ -1473,20 +1493,20 @@ const personalSections: HelpSection[] = [
         body: (
             <>
                 <p className="mb-2">
-                    O editor de treino é o mesmo na periodização do aluno, nos
-                    modelos de{' '}
+                    O editor é o mesmo no treino do aluno (simples ou
+                    periodização) e nos treinos de{' '}
                     <Link href="#periodizacao-biblioteca">
-                        Minha Periodização
-                    </Link>{' '}
-                    e no modo simples. Ele anda por etapas, mostradas no topo,
-                    com uma dica do que fazer em seguida:
+                        Minha Biblioteca de Treinos
+                    </Link>
+                    . Ele anda por etapas, mostradas no topo, com uma dica do
+                    que fazer em seguida:
                 </p>
                 <ol className="mb-2">
                     <li>
                         <strong>Fase</strong> (só na periodização): nome, fase,
                         duração e metodologia do{' '}
                         <GlossaryLink id="mesociclo">mesociclo</GlossaryLink>.
-                        Sem esses quatro campos a fase não é salva. No modo
+                        Sem esses quatro campos a fase não é salva. No treino
                         simples essa etapa não existe.
                     </li>
                     <li>
@@ -1531,9 +1551,58 @@ const personalSections: HelpSection[] = [
     },
     {
         id: 'periodizacao-aluno',
-        title: 'Periodização do aluno',
+        title: 'Treino do aluno',
         body: (
             <>
+                <p className="mb-2">
+                    <strong>Para começar o treino de um aluno:</strong> no
+                    cartão dele, toque em <strong>+ Montar treino</strong>{' '}
+                    (aparece quando ele está sem treino) ou em{' '}
+                    <strong>Treinos → + Criar treino</strong>. Escolha como
+                    começar:
+                </p>
+                <ul className="mb-2">
+                    <li>
+                        <strong>Treino simples</strong> (já vem marcado):
+                        treinos por dia da semana ou A/B/C, como uma ficha. É
+                        o caminho mais rápido.
+                    </li>
+                    <li>
+                        <strong>Copiar da biblioteca:</strong> parte de um
+                        treino de{' '}
+                        <Link href="#periodizacao-biblioteca">
+                            Minha Biblioteca de Treinos
+                        </Link>{' '}
+                        ou da{' '}
+                        <Link href="#biblioteca-publica">Biblioteca Pública</Link>
+                        .
+                    </li>
+                    <li>
+                        <strong>Copiar de outro aluno:</strong> usa um treino
+                        que você já montou para outro aluno, sem salvar na
+                        biblioteca antes. Só aparecem alunos ainda vinculados a
+                        você. As datas ficam em branco para você definir.
+                    </li>
+                    <li>
+                        <strong>Periodização:</strong> fases com semanas de
+                        ajuste, RPE e deload (veja o manual abaixo).
+                    </li>
+                </ul>
+                <p className="mb-2">
+                    Os dados vêm numa tela só e já preenchidos: nome sugerido,
+                    objetivo (opcional), início hoje, atalhos de 4, 8 ou 12
+                    semanas para o término, observações para o aluno e{' '}
+                    <strong>Arquivar quando terminar</strong>, que tira o
+                    treino do app do aluno sozinho depois da data final. Ao
+                    criar, o app abre direto em{' '}
+                    <strong>Treinos da semana</strong> para você adicionar os
+                    treinos e exercícios (veja{' '}
+                    <Link href="#montar-treino">Montar um treino passo a passo</Link>
+                    ). O treino já nasce ativo: o aluno vê assim que você
+                    adiciona os exercícios. Use{' '}
+                    <strong>Visão do aluno</strong> para conferir como ele vai
+                    ver.
+                </p>
                 <p className="mb-2">
                     O botão <strong>Treino do aluno</strong> no cartão dele
                     abre uma tela só, com o treino da semana corrente do{' '}
@@ -1574,26 +1643,28 @@ const personalSections: HelpSection[] = [
                     hora; sem internet, ela não muda e o app avisa.
                 </p>
                 <p className="mb-2">
-                    Pelo cartão do aluno em <strong>Periodização</strong>{' '}
-                    você vê os macrociclos dele. Crie um do zero em{' '}
-                    <strong>+ Novo Macrociclo</strong> ou parta de um modelo em{' '}
-                    <strong>De Modelo</strong>. Cada macrociclo tem
-                    objetivo, datas e status (<strong>Rascunho</strong>,{' '}
-                    <strong>Ativo</strong> ou <strong>Concluído</strong>).
+                    Pelo botão <strong>Treinos</strong> do cartão você vê
+                    todos os treinos do aluno, em três abas:{' '}
+                    <strong>Ativos</strong> (o que ele vê no app),{' '}
+                    <strong>Arquivados</strong> (saíram do app dele, mas
+                    continuam com você; dá para desarquivar) e{' '}
+                    <strong>Lixeira</strong>. <strong>Excluir</strong> manda o
+                    treino para a lixeira, onde ele fica 30 dias e pode ser
+                    restaurado; depois disso é apagado de vez.
                 </p>
                 <p className="mb-0">
-                    Ao abrir um macrociclo você organiza{' '}
+                    Na periodização, ao abrir o plano você organiza{' '}
                     <GlossaryLink id="mesociclo">mesociclos</GlossaryLink>,{' '}
                     <GlossaryLink id="microciclo-periodo">
                         microciclos
                     </GlossaryLink>{' '}
-                    e os treinos. Um bom macrociclo pode virar modelo
-                    reutilizável com <strong>Modelo</strong> — ele passa a
-                    aparecer na sua{' '}
+                    e os treinos. Um treino bom pode ir para a sua biblioteca
+                    com <strong>Salvar na biblioteca</strong> — ele passa a
+                    aparecer em{' '}
                     <Link href="#periodizacao-biblioteca">
-                        Minha Periodização / Treinos
-                    </Link>
-                    .
+                        Minha Biblioteca de Treinos
+                    </Link>{' '}
+                    para copiar para outros alunos.
                 </p>
                 <p className="mb-0">
                     Para tirar o máximo das semanas, veja o manual de{' '}
@@ -1742,8 +1813,8 @@ const personalSections: HelpSection[] = [
                     2. A estrutura da periodização
                 </h3>
                 <p className="mb-2">
-                    Na{' '}
-                    <Link href="#periodizacao-aluno">Periodização do aluno</Link>{' '}
+                    No{' '}
+                    <Link href="#periodizacao-aluno">Treino do aluno</Link>{' '}
                     (ou nos seus{' '}
                     <Link href="#periodizacao-biblioteca">
                         ciclos reutilizáveis
@@ -1967,9 +2038,10 @@ const personalSections: HelpSection[] = [
                 <h3 className="h6 mt-3 mb-2">Passo a passo resumido</h3>
                 <ol className="mb-2 ps-3">
                     <li>
-                        Crie o macrociclo do aluno em{' '}
-                        <strong>Periodização → + Novo Macrociclo</strong>{' '}
-                        (ou parta de um modelo).
+                        No cartão do aluno, toque em{' '}
+                        <strong>Treinos → + Criar treino</strong> e escolha{' '}
+                        <strong>Periodização</strong> (ou copie um treino da
+                        biblioteca).
                     </li>
                     <li>
                         Adicione mesociclos (fases) com fase, metodologia e

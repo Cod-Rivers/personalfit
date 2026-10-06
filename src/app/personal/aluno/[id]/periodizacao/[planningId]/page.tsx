@@ -37,7 +37,7 @@ import MesocycleFormModal from '@/app/personal/_shared/periodizacao/components/M
 import PlanningNextStep from '@/app/personal/_shared/periodizacao/components/PlanningNextStep';
 import WeeklyTargetPicker from '@/app/personal/_shared/periodizacao/components/WeeklyTargetPicker';
 import StudentViewPreview from '@/app/personal/_shared/periodizacao/components/StudentViewPreview';
-import { planKindLabel } from '@/app/personal/_shared/periodizacao/lib/routineDefaults';
+import { planKindLabel, planKindText } from '@/app/personal/_shared/periodizacao/lib/routineDefaults';
 import { currentCycle, weeklyTargetDays } from '@/libs/currentWeek';
 import HelpTooltip from '@/components/atoms/HelpTooltip';
 import { getGlossaryTerm } from '@/libs/glossaryContent';
@@ -206,11 +206,12 @@ export default function PeriodizacaoDetalhePage() {
         if (!justCreated.current || !macro) return;
         justCreated.current = false;
         const kind = planKindLabel(macro.planning_mode);
+        const { created } = planKindText(macro.planning_mode);
         if ((macro.mesocycles ?? []).length === 0) {
-            showSuccess(`${kind} criada. Agora monte os treinos.`);
+            showSuccess(`${kind} ${created}. Agora monte os treinos.`);
             openAddModal();
         } else {
-            showSuccess(`${kind} criada.`);
+            showSuccess(`${kind} ${created}.`);
         }
     }, [macro, openAddModal, showSuccess]);
 
@@ -459,7 +460,7 @@ export default function PeriodizacaoDetalhePage() {
                 <div className={s.summaryChips}>
                     <span className={statusClass}>
                         {macro.archived
-                            ? 'Arquivada'
+                            ? 'Arquivado'
                             : planKindLabel(macro.planning_mode)}
                     </span>
                     <span className={s.summaryChip}>

@@ -26,6 +26,7 @@ import {
     endDateForWeeks,
     matchingShortcut,
     planKindLabel,
+    planKindText,
     type PlanningMode,
 } from '../lib/routineDefaults';
 import s from '../builder.module.css';
@@ -340,7 +341,7 @@ export default function NewMacrocycleModal({
               ? 'Copiar da biblioteca'
               : current === 'student'
                 ? 'Copiar de outro aluno'
-                : `Dados da ${planKindLabel(planningMode).toLowerCase()}`;
+                : `Dados ${planKindText(planningMode).of}`;
 
     const footer =
         current === 'mode' ? (

@@ -399,12 +399,12 @@ export default function PersonalDashboard() {
                             onClick={() => setTab('ciclos')}
                         >
                             <FiBookOpen className={s.tabIcon} />
-                            Minha Periodização / Treinos
+                            Minha Biblioteca de Treinos
                         </button>
                         <HelpTooltip
-                            text="Seus ciclos reutilizáveis: monte um modelo de treino uma vez e aplique em quantos alunos quiser."
+                            text="Seus treinos prontos: monte uma vez e copie para quantos alunos quiser."
                             href="/ajuda#periodizacao-biblioteca"
-                            label="Ajuda sobre Minha Periodização / Treinos"
+                            label="Ajuda sobre Minha Biblioteca de Treinos"
                         />
                     </span>
                     <span className={s.tabSlot}>
@@ -418,7 +418,7 @@ export default function PersonalDashboard() {
                             Biblioteca Pública
                         </button>
                         <HelpTooltip
-                            text="Ciclos prontos publicados no Venafit, que você copia para a sua biblioteca e adapta como quiser."
+                            text="Treinos prontos publicados no Venafit, que você copia para um aluno e adapta como quiser."
                             href="/ajuda#biblioteca-publica"
                             label="Ajuda sobre a Biblioteca Pública"
                         />

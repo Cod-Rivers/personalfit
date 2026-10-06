@@ -9,7 +9,7 @@ import {
 describe('routineDefaults', () => {
     it('nomeia o plano pelo modo e pelo mês', () => {
         const oct = new Date(2026, 9, 5);
-        expect(defaultPlanName('simple', oct)).toBe('Rotina de outubro');
+        expect(defaultPlanName('simple', oct)).toBe('Treino de outubro');
         expect(defaultPlanName('periodized', oct)).toBe(
             'Periodização de outubro',
         );

@@ -23,13 +23,25 @@ const MONTHS = [
     'dezembro',
 ];
 
-/** Como cada modo se chama para o personal. "Rotina" é o termo da ficha de
- * academia; macrociclo/mesociclo só aparecem dentro da periodização. */
+/** Como cada modo se chama para o personal. "Treino" é o termo da ficha de
+ * academia (o personal achou "rotina" vago); macrociclo/mesociclo só
+ * aparecem dentro da periodização. */
 export function planKindLabel(mode: PlanningMode | undefined): string {
-    return mode === 'simple' ? 'Rotina' : 'Periodização';
+    return mode === 'simple' ? 'Treino' : 'Periodização';
 }
 
-/** "Rotina de outubro", "Periodização de outubro". */
+/** O mesmo rótulo com a concordância que a frase pede: "Dados do treino",
+ * "Periodização criada". */
+export function planKindText(mode: PlanningMode | undefined): {
+    of: string;
+    created: string;
+} {
+    return mode === 'simple'
+        ? { of: 'do treino', created: 'criado' }
+        : { of: 'da periodização', created: 'criada' };
+}
+
+/** "Treino de outubro", "Periodização de outubro". */
 export function defaultPlanName(mode: PlanningMode, today: Date): string {
     return `${planKindLabel(mode)} de ${MONTHS[today.getMonth()]}`;
 }
