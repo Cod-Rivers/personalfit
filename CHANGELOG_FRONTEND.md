@@ -877,3 +877,7 @@
 ## 2026-10-06 05:59 — River (via Claude Code)
 **Resumo:** As três mudanças estão no ar: o selo de vencimento, o filtro de vencidos e a cópia de treino entre alunos. Também foram as mudanças da rodada anterior (botão "+ Montar treino" e "Rotina" virando "Treino"). Fiz commit e push nos dois repositórios (backend `8993b4e`, frontend `3ab7b25`). O deploy do backend sai sozinho com o push. Ainda não testei no app de verdade. **1. Selo de vencimento no card do aluno** - **🏋️ Treino vence em 5 dias** em amarelo, a partir de 7 dias antes do fim. Nos dois últimos dias aparece "vence amanhã" e "vence hoje". - **🏋️ Treino vencido em 30/09** em vermelho, quan…
 **Commits:** Cartão do aluno indica por onde começar o treino; "Rotina" vira "Treino"
+
+## 2026-10-06 08:10 — River (via Claude Code)
+**Resumo:** Ajustei a aba e a Central de Ajuda, e já fiz commit e push (`9b83537`). O tsc e o eslint passaram, e os 637 testes também. Ainda não testei no app de verdade. **A aba:** "Minha Periodização / Treinos" virou **"Minha Biblioteca de Treinos"**, que combina com os botões "Copiar da biblioteca" e "Salvar na biblioteca". Os "?" dela e da Biblioteca Pública agora falam em treinos. **Uma coisa que tinha escapado na rodada anterior:** o nome sugerido de um treino novo ainda era "Rotina de outubro", e o botão do modal ainda dizia "Criar rotina". Agora são **"Treino de outubro"** e **"Criar treino"**. As…
+**Commits:** Ajuda e aba da biblioteca acompanham o fluxo novo de treino
