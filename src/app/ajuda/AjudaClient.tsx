@@ -3517,6 +3517,13 @@ const personalSections: HelpSection[] = [
                     Play Store.
                 </p>
                 <p className="mb-2">
+                    <strong>Cancelar:</strong> vale igual para o PRO e o Plus. As
+                    cobranças param na hora, o plano continua até o fim do período
+                    já pago e, depois, a conta volta ao gratuito. Se você tinha
+                    escolhido descer para o Plus e cancela antes da troca, a troca
+                    também é desfeita.
+                </p>
+                <p className="mb-2">
                     <strong>Cartão ou PIX:</strong> no cartão, a assinatura renova
                     sozinha a cada ciclo até você cancelar. O PIX paga um período (1
                     mês; no PRO, também 6 ou 12 meses) e não renova: avisamos 3 dias

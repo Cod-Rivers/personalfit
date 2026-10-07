@@ -149,7 +149,10 @@ export interface ProPlanStatus {
     is_pro?: boolean;
     has_active_subscription?: boolean;
     subscription_cycle?: string;
-    /** ISO: PRO cancelado que ainda vale até esta data. */
+    /** 'GOOGLE_PLAY' quando a assinatura foi feita pela loja: cancelar e trocar
+     *  de plano só pela Play Store (o backend recusa os dois). */
+    subscription_billing_type?: string;
+    /** ISO: plano (PRO ou Plus) cancelado que ainda vale até esta data. */
     pro_access_until?: string;
     /** Troca de plano agendada (hoje só 'plus'): o plano muda em
      *  `plan_change_at` e até lá o atual continua valendo. */

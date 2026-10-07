@@ -9,6 +9,7 @@ import {
     getProPlanStatus,
     switchToPersonalPlus,
 } from '@/libs/paymentService';
+import { PLAY_SUBSCRIPTIONS_URL } from '@/libs/androidApp';
 import { planRank, updateSessionPlanType } from '@/libs/session';
 
 const CYCLE_LABELS: Record<string, string> = {
@@ -75,6 +76,10 @@ export default function ProPlanCard() {
     const isPlus = rank >= 1;
     const cycle = status.subscription_cycle ? CYCLE_LABELS[status.subscription_cycle] : '';
     const planLabel = PLAN_LABELS[status.plan_type ?? 'free'] ?? 'Gratuito';
+    // Assinatura da Play Store: o backend recusa cancelar e trocar de plano
+    // (quem cobra é a loja), então a tela leva para a Play Store em vez de
+    // oferecer botões que dariam erro.
+    const viaGooglePlay = status.subscription_billing_type === 'GOOGLE_PLAY';
 
     const errorMessage = (err: unknown, fallback: string): string => {
         const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
@@ -104,12 +109,13 @@ export default function ProPlanCard() {
     };
 
     const handleCancel = async () => {
-        if (
-            !confirm(
-                `Cancelar o ${planLabel}? Nada mais será cobrado, e você continua com o plano até o fim do período já pago. Depois, a conta volta ao plano gratuito (até 3 alunos).`,
-            )
-        )
-            return;
+        // Com a troca para o Plus agendada, cancelar desfaz a troca também: o
+        // personal precisa saber que não vai mais para o Plus, e sim para o
+        // gratuito.
+        const message = status.plan_change_to
+            ? `Cancelar a assinatura? A mudança para o ${PLAN_LABELS[status.plan_change_to] ?? status.plan_change_to} também é desfeita: nada mais será cobrado, você continua no ${planLabel} até o fim do período já pago e, depois, a conta volta ao plano gratuito (até 3 alunos).`
+            : `Cancelar o ${planLabel}? Nada mais será cobrado, e você continua com o plano até o fim do período já pago. Depois, a conta volta ao plano gratuito (até 3 alunos).`;
+        if (!confirm(message)) return;
         setBusy(true);
         setError('');
         try {
@@ -210,8 +216,10 @@ export default function ProPlanCard() {
                 ) : isPlus && status.has_active_subscription ? (
                     <>
                         <p className="text-secondary mb-3" style={{ fontSize: '0.9rem' }}>
-                            Assinatura {cycle || 'ativa'}. Se cancelar, as cobranças param na
-                            hora e você mantém o plano até o fim do período já pago.
+                            Assinatura {cycle || 'ativa'}.{' '}
+                            {viaGooglePlay
+                                ? 'Feita pelo Google Play: para cancelar ou trocar de plano, use as assinaturas da Play Store.'
+                                : 'Se cancelar, as cobranças param na hora e você mantém o plano até o fim do período já pago.'}
                         </p>
                         <div className="d-flex flex-wrap gap-2">
                             {/* Subir para o PRO é um checkout novo (produto
@@ -224,17 +232,28 @@ export default function ProPlanCard() {
                                     Subir para o PRO
                                 </button>
                             )}
-                            <button
-                                className="btn btn-outline-secondary"
-                                onClick={() =>
-                                    isPro && !status.plan_change_to
-                                        ? setOfferingPlus(true)
-                                        : handleCancel()
-                                }
-                                disabled={busy}
-                            >
-                                {busy ? 'Processando...' : 'Cancelar assinatura'}
-                            </button>
+                            {viaGooglePlay ? (
+                                <a
+                                    className="btn btn-outline-secondary"
+                                    href={PLAY_SUBSCRIPTIONS_URL}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    Gerenciar na Play Store
+                                </a>
+                            ) : (
+                                <button
+                                    className="btn btn-outline-secondary"
+                                    onClick={() =>
+                                        isPro && !status.plan_change_to
+                                            ? setOfferingPlus(true)
+                                            : handleCancel()
+                                    }
+                                    disabled={busy}
+                                >
+                                    {busy ? 'Processando...' : 'Cancelar assinatura'}
+                                </button>
+                            )}
                         </div>
                     </>
                 ) : status.prepaid_until ? (

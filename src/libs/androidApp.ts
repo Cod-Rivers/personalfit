@@ -5,6 +5,10 @@ export const ANDROID_APP_LIVE = true;
 const ANDROID_APP_PACKAGE = 'com.codriverslabs.venafit';
 export const ANDROID_PLAY_STORE_URL = `https://play.google.com/store/apps/details?id=${ANDROID_APP_PACKAGE}`;
 
+/** Assinaturas da conta na Play Store, já filtradas pelo app: é por lá que se
+ *  cancela ou troca de plano uma assinatura feita pelo Google Play. */
+export const PLAY_SUBSCRIPTIONS_URL = `https://play.google.com/store/account/subscriptions?package=${ANDROID_APP_PACKAGE}`;
+
 /** MainActivity.kt anexa esse token ao User-Agent do WebView do app nativo. */
 const APP_WEBVIEW_UA_MARKER = 'VenafitApp/';
 
