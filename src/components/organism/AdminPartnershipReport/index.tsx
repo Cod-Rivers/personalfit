@@ -18,9 +18,13 @@ import {
     createPartnerExpense,
     deletePartnerExpense,
     getAllReferralPartners,
+    getProgramSettings,
+    type ProgramSettings,
     getPartnershipReport,
 } from '@/libs/referralPartnerService';
 import s from './AdminPartnershipReport.module.css';
+import PayoutSettingsCard from './PayoutSettingsCard';
+import { PRESETS, presetRange, ymd, type Preset } from '@/libs/periodPresets';
 import {
     CYCLE_LABEL,
     KIND_LABEL,
@@ -38,52 +42,6 @@ const PartnershipMonthlyChart = dynamic(
         loading: () => <div style={{ height: 240 }} />,
     },
 );
-
-/* ───────── datas (sempre AAAA-MM-DD no fuso do navegador) ───────── */
-
-function ymd(d: Date): string {
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${d.getFullYear()}-${m}-${day}`;
-}
-
-type Preset = 'month' | 'last-month' | '90d' | 'year' | 'custom';
-
-const PRESETS: { value: Preset; label: string }[] = [
-    { value: 'month', label: 'Este mês' },
-    { value: 'last-month', label: 'Mês passado' },
-    { value: '90d', label: 'Últimos 90 dias' },
-    { value: 'year', label: 'Este ano' },
-    { value: 'custom', label: 'Personalizado' },
-];
-
-function presetRange(p: Preset): { from: string; to: string } | null {
-    const now = new Date();
-    switch (p) {
-        case 'month':
-            return {
-                from: ymd(new Date(now.getFullYear(), now.getMonth(), 1)),
-                to: ymd(now),
-            };
-        case 'last-month':
-            return {
-                from: ymd(new Date(now.getFullYear(), now.getMonth() - 1, 1)),
-                to: ymd(new Date(now.getFullYear(), now.getMonth(), 0)),
-            };
-        case '90d': {
-            const from = new Date(now);
-            from.setDate(from.getDate() - 89);
-            return { from: ymd(from), to: ymd(now) };
-        }
-        case 'year':
-            return {
-                from: ymd(new Date(now.getFullYear(), 0, 1)),
-                to: ymd(now),
-            };
-        default:
-            return null;
-    }
-}
 
 /* ───────── exportação ───────── */
 
@@ -180,6 +138,15 @@ export default function AdminPartnershipReport() {
     });
     const [expenseError, setExpenseError] = useState('');
     const [savingExpense, setSavingExpense] = useState(false);
+
+    // Regras de repasse (valor mínimo e dia), as mesmas do painel do parceiro.
+    const [payoutSettings, setPayoutSettings] =
+        useState<ProgramSettings | null>(null);
+    useEffect(() => {
+        getProgramSettings()
+            .then(setPayoutSettings)
+            .catch(() => setPayoutSettings(null));
+    }, []);
 
     useEffect(() => {
         getAllReferralPartners()
@@ -307,6 +274,13 @@ export default function AdminPartnershipReport() {
 
     const sum = report?.summary;
     const holdDays = report?.commission_hold_days ?? 30;
+    // Saldo por parceiro: o negativo de um (estorno depois do repasse, a
+    // descontar no próximo) não abate o que se deve a outro.
+    const partnerRows = (report?.rows ?? []).filter(
+        (r) => r.kind === 'partner',
+    );
+    const toPay = partnerRows.reduce((t, r) => t + Math.max(r.due, 0), 0);
+    const toDeduct = partnerRows.reduce((t, r) => t - Math.min(r.due, 0), 0);
     const costs = sum ? sum.commission + sum.other_expenses : 0;
 
     return (
@@ -434,6 +408,11 @@ export default function AdminPartnershipReport() {
                 </p>
             )}
 
+            <PayoutSettingsCard
+                settings={payoutSettings}
+                onSaved={setPayoutSettings}
+            />
+
             {error && (
                 <div className={s.errorMsg} role="alert">
                     {error}
@@ -473,12 +452,12 @@ export default function AdminPartnershipReport() {
                         </div>
                         <div className={s.kpi}>
                             <p className={s.kpiLabel}>A repassar</p>
-                            <p className={s.kpiValue}>
-                                {money(Math.max(sum.due, 0))}
-                            </p>
+                            <p className={s.kpiValue}>{money(toPay)}</p>
                             <p className={s.kpiSub}>
                                 em carência {money(sum.holding)} · todas as
                                 datas
+                                {toDeduct > 0 &&
+                                    ` · a descontar ${money(toDeduct)} (estornos já repassados)`}
                             </p>
                         </div>
                         <div className={s.kpi}>
@@ -572,6 +551,7 @@ export default function AdminPartnershipReport() {
                         ) : (
                             <OriginBreakdown
                                 rows={report.rows}
+                                minPayout={payoutSettings?.min_payout ?? 0}
                                 onPayout={(r) =>
                                     openExpense({
                                         origin: `partner:${r.partner_id}`,

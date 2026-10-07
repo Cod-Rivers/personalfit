@@ -1,0 +1,399 @@
+.section {
+    margin-bottom: var(--space-6, 24px);
+}
+
+.sectionHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.h2 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 12px;
+}
+
+.h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0.04em;
+}
+
+.muted {
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    margin: 4px 0 0;
+    line-height: 1.45;
+}
+
+.strong {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.negative {
+    color: var(--coral-dim);
+}
+
+.empty {
+    color: var(--text-secondary);
+    font-size: 0.9375rem;
+    text-align: center;
+    padding: 24px 8px;
+    margin: 0;
+    line-height: 1.5;
+}
+
+.error,
+.notice {
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 0.875rem;
+    margin-bottom: 16px;
+    line-height: 1.45;
+    color: var(--text-primary);
+}
+
+.error {
+    background: rgba(255, 107, 107, 0.12);
+    border: 1px solid var(--coral);
+}
+
+.notice {
+    background: var(--surface-2);
+    border: 1px solid var(--border-mid);
+}
+
+.refreshing {
+    opacity: 0.6;
+    transition: opacity 0.15s;
+}
+
+/* ── Saldo ── */
+.cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+}
+
+.card {
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    padding: 14px 16px;
+    min-width: 0;
+}
+
+.cardMain {
+    border-color: var(--mint-text);
+}
+
+.cardLabel {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.cardValue {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 4px 0 2px;
+    font-variant-numeric: tabular-nums;
+}
+
+.cardSub {
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.4;
+}
+
+.rule {
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin: 12px 0 0;
+}
+
+/* ── Período ── */
+.select {
+    background: var(--surface-1);
+    border: 1px solid var(--border-mid);
+    color: var(--text-primary);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 1rem;
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin: 12px 0 0;
+}
+
+.stats > div {
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 10px 12px;
+}
+
+.stats dt {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.stats dd {
+    margin: 4px 0 0;
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 480px) {
+    .stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+/* ── Abas ── */
+.tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.tab,
+.tabActive {
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+.tab {
+    background: transparent;
+    border: 1px solid var(--border-mid);
+    color: var(--text-secondary);
+}
+
+.tabActive {
+    background: var(--mint);
+    border: 1px solid var(--mint);
+    color: var(--btn-text);
+    font-weight: 600;
+}
+
+/* ── Vendas ── */
+.list {
+    list-style: none;
+    margin: 0 0 24px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.item {
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    padding: 12px 14px;
+}
+
+.itemRefunded {
+    opacity: 0.7;
+}
+
+.itemHead > div:first-child {
+    min-width: 0;
+}
+
+.itemFoot {
+    margin-top: 6px;
+}
+
+.itemFoot:empty {
+    display: none;
+}
+
+.itemHead {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.itemTitle {
+    margin: 0;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.itemValue {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    flex: 0 0 auto;
+}
+
+.itemCommission {
+    margin: 0;
+    font-size: 1.0625rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Situação da comissão: sempre com texto, nunca só a cor. */
+.chip {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    border-radius: 999px;
+    padding: 1px 8px;
+    border: 1px solid currentColor;
+    white-space: nowrap;
+}
+
+.chipGood {
+    color: var(--mint-text);
+}
+
+.chipWait {
+    color: var(--amber-text);
+}
+
+.chipBad {
+    color: var(--coral-dim);
+}
+
+/* ── Pagamentos ── */
+.printRow {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 8px;
+}
+
+.year {
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+}
+
+.yearHead {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.yearHead p {
+    margin: 0;
+}
+
+.payments {
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 0;
+}
+
+.payments li {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 12px;
+    padding: 8px 0;
+    border-top: 1px solid var(--border-subtle);
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+.payments li .muted {
+    margin: 0;
+}
+
+/* ── Links ── */
+.linkRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.btnGhost {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: 1px solid var(--border-mid);
+    color: var(--text-primary);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+.btnGhost:hover {
+    border-color: var(--mint);
+}
+
+@media print {
+    .tabs,
+    .printRow,
+    .linkRow {
+        display: none;
+    }
+}
+
+/* Extrato: um cartão por mês (cabe em 360px sem rolar de lado). */
+.statementGrid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px 12px;
+    margin: 8px 0 0;
+}
+
+.statementGrid dt {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.statementGrid dd {
+    margin: 2px 0 0;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 480px) {
+    .statementGrid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+.linksSection {
+    margin-top: 24px;
+}

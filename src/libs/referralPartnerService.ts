@@ -19,7 +19,8 @@ export interface CommissionRule {
     commission_base?: CommissionBase;
 }
 
-/** "15% na 1ª compra · 10% nas renovações · sobre o líquido". */
+/** "15% na 1ª compra · 10% nas renovações do mensal · sobre o líquido".
+ *  Renovação de plano semestral/anual não comissiona (só a 1ª compra). */
 export function describeCommission(r: CommissionRule): string {
     const fixed = r.commission_type === 'fixed';
     const fmt = (v: number) =>
@@ -28,7 +29,7 @@ export function describeCommission(r: CommissionRule): string {
             : `${v.toLocaleString('pt-BR')}%`;
     const renewal =
         r.renewal_commission_value > 0
-            ? `${fmt(r.renewal_commission_value)} nas renovações${r.renewal_months > 0 ? ` por ${r.renewal_months} meses` : ''}`
+            ? `${fmt(r.renewal_commission_value)} nas renovações do mensal${r.renewal_months > 0 ? ` por ${r.renewal_months} meses` : ''}`
             : 'sem comissão nas renovações';
     const base = fixed
         ? ''
@@ -53,6 +54,9 @@ export interface ReferralPartner {
     commission_base?: CommissionBase;
     notes?: string;
     is_active: boolean;
+    /** Conta do Venafit que acessa o painel do parceiro (ausente = sem acesso). */
+    account_name?: string;
+    account_email?: string;
     created_at: string;
     updated_at: string;
 }
@@ -272,6 +276,8 @@ export interface PartnershipSale {
     cycle?: string;
     gateway: string;
     kind: SaleKind;
+    /** Parcela de um pagamento parcelado (1, 2, …); ausente fora dele. */
+    installment_number?: number;
     status: 'confirmed' | 'refunded';
     gross: number;
     net: number;
@@ -365,4 +371,117 @@ export async function deletePartnerExpense(id: string): Promise<void> {
  *  código como primeiro toque (libs/acquisition.ts). */
 export function partnerSiteLink(origin: string, code: string): string {
     return `${origin.replace(/\/$/, '')}/cadastro?ref=${encodeURIComponent(code)}`;
+}
+
+/* ───────── Programa de parceiros: regras de repasse e painel ───────── */
+
+export interface ProgramSettings {
+    min_payout: number;
+    /** Dia do mês (1–28) até o qual o repasse é pago. */
+    payout_day: number;
+    /** AAAA-MM-DD */
+    next_payout: string;
+    hold_days: number;
+}
+
+/** Admin: regras de repasse do programa. */
+export async function getProgramSettings(): Promise<ProgramSettings> {
+    const res = await Api.get<ProgramSettings>('/referral-partners/settings');
+    return res.data;
+}
+
+/** Admin: salva valor mínimo e dia do repasse. */
+export async function saveProgramSettings(
+    minPayout: number,
+    payoutDay: number,
+): Promise<ProgramSettings> {
+    const res = await Api.put<ProgramSettings>('/referral-partners/settings', {
+        min_payout: minPayout,
+        payout_day: payoutDay,
+    });
+    return res.data;
+}
+
+/** Admin: libera o painel à conta do Venafit com esse e-mail de login. */
+export async function linkPartnerAccount(
+    partnerId: string,
+    email: string,
+): Promise<{ account_name: string; account_email: string }> {
+    const res = await Api.put<{ account_name: string; account_email: string }>(
+        `/referral-partners/${partnerId}/account`,
+        { email },
+    );
+    return res.data;
+}
+
+/** Admin: tira o acesso ao painel. */
+export async function unlinkPartnerAccount(partnerId: string): Promise<void> {
+    await Api.delete(`/referral-partners/${partnerId}/account`);
+}
+
+export interface PartnerPanelSale {
+    ref: string;
+    occurred_at: string;
+    product: string;
+    cycle?: string;
+    gateway: string;
+    kind: SaleKind;
+    installment_number?: number;
+    status: 'confirmed' | 'refunded';
+    gross: number;
+    net: number;
+    net_estimated: boolean;
+    commission_type?: CommissionType;
+    commission_value: number;
+    commission_base?: CommissionBase;
+    commission: number;
+    commission_status: CommissionStatus;
+    /** AAAA-MM-DD */
+    release_at: string;
+}
+
+export interface PartnerPanel {
+    partner: CommissionRule & {
+        name: string;
+        code: string;
+        is_active: boolean;
+    };
+    settings: ProgramSettings;
+    from: string;
+    to: string;
+    period: {
+        signups: number;
+        trials: number;
+        purchases: number;
+        renewals: number;
+        refunds: number;
+        commission: number;
+    };
+    /** Todas as datas. due < 0 = estorno já repassado, a descontar. */
+    balance: { holding: number; available: number; paid: number; due: number };
+    sales: PartnerPanelSale[];
+    statements: {
+        month: string;
+        generated: number;
+        voided: number;
+        paid: number;
+        balance: number;
+    }[];
+    years: {
+        year: number;
+        total: number;
+        payments: { date: string; amount: number; description?: string }[];
+    }[];
+}
+
+/** O painel do parceiro vinculado à conta logada (404 se não há). */
+export async function getMyPartnerPanel(
+    from?: string,
+    to?: string,
+): Promise<PartnerPanel> {
+    const params: Record<string, string> = {};
+    if (from) params.from = from;
+    if (to) params.to = to;
+    const res = await Api.get<PartnerPanel>('/me/partner', { params });
+    return res.data;
 }

@@ -74,25 +74,47 @@ function OriginName({ row }: { row: PartnershipRow }) {
     );
 }
 
+/** Saldo a repassar; negativo = estorno de comissão já repassada, que
+ *  sai do próximo repasse. */
+function DueValue({ due }: { due: number }) {
+    if (due >= 0) return <span className={s.strong}>{money(due)}</span>;
+    return (
+        <>
+            <span className={s.negative}>{money(due)}</span>
+            <div className={s.originMeta}>desconta no próximo repasse</div>
+        </>
+    );
+}
+
 /* ───────── Por origem ───────── */
 
 export function OriginBreakdown({
     rows,
     onPayout,
+    minPayout = 0,
 }: {
     rows: PartnershipRow[];
     onPayout: (row: PartnershipRow) => void;
+    /** Valor mínimo de repasse do programa: abaixo dele o saldo acumula. */
+    minPayout?: number;
 }) {
     const hasPartners = rows.some((r) => r.kind === 'partner');
     const payoutButton = (r: PartnershipRow) =>
         r.kind === 'partner' && r.partner_id && r.due > 0 ? (
-            <button
-                type="button"
-                className={s.btnSmall}
-                onClick={() => onPayout(r)}
-            >
-                Registrar repasse
-            </button>
+            <span className={s.payoutAction}>
+                <button
+                    type="button"
+                    className={s.btnSmall}
+                    onClick={() => onPayout(r)}
+                >
+                    Registrar repasse
+                </button>
+                {r.due < minPayout && (
+                    <span className={s.originMeta}>
+                        abaixo do mínimo de {money(minPayout)}
+                    </span>
+                )}
+            </span>
         ) : null;
 
     return (
@@ -149,9 +171,7 @@ export function OriginBreakdown({
                                     <td className={s.num}>
                                         {r.kind === 'partner' ? (
                                             <>
-                                                <span className={s.strong}>
-                                                    {money(r.due)}
-                                                </span>
+                                                <DueValue due={r.due} />
                                                 {r.holding > 0 && (
                                                     <div
                                                         className={s.originMeta}
@@ -219,7 +239,9 @@ export function OriginBreakdown({
                             {r.kind === 'partner' && (
                                 <div>
                                     <dt>A repassar</dt>
-                                    <dd>{money(r.due)}</dd>
+                                    <dd>
+                                        <DueValue due={r.due} />
+                                    </dd>
                                 </div>
                             )}
                         </dl>
@@ -289,7 +311,10 @@ function productLine(x: PartnershipSale): string {
 }
 
 function saleMeta(x: PartnershipSale): string {
-    return `${KIND_LABEL[x.kind]} · ${labelOf(SALE_GATEWAYS, x.gateway)}${x.status === 'refunded' ? ' · estornada' : ''}`;
+    const parcela = x.installment_number
+        ? ` · parcela ${x.installment_number}`
+        : '';
+    return `${KIND_LABEL[x.kind]}${parcela} · ${labelOf(SALE_GATEWAYS, x.gateway)}${x.status === 'refunded' ? ' · estornada' : ''}`;
 }
 
 function NetValue({ sale }: { sale: PartnershipSale }) {

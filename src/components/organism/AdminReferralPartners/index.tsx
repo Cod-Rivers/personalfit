@@ -24,6 +24,7 @@ import {
 } from '@/libs/referralPartnerService';
 import { playStoreUrl } from '@/libs/androidApp';
 import Modal from '@/components/system/Modal';
+import PartnerAccessModal from './PartnerAccessModal';
 import styles from './AdminReferralPartners.module.css';
 
 /** Código do parceiro novo: sorteado pelo servidor ou escolhido pelo admin. */
@@ -221,6 +222,8 @@ export default function AdminReferralPartners() {
     // Código e links de rastreio para mandar ao parceiro: o do site abre o app
     // se ele estiver instalado; o da Play Store leva o código pela instalação.
     const [copied, setCopied] = useState('');
+    // Parceiro com o modal de acesso ao painel aberto.
+    const [accessTarget, setAccessTarget] = useState<ReferralPartner | null>(null);
     const copyText = async (key: string, text: string) => {
         try {
             await navigator.clipboard.writeText(text);
@@ -380,6 +383,9 @@ export default function AdminReferralPartners() {
                                             <td className={styles.contact}>
                                                 {partner.email || '—'}
                                                 {partner.phone ? ` · ${partner.phone}` : ''}
+                                                {partner.account_email && (
+                                                    <div>Painel: {partner.account_email}</div>
+                                                )}
                                             </td>
                                             <td>
                                                 <code className={styles.code}>
@@ -410,6 +416,12 @@ export default function AdminReferralPartners() {
                                                         Editar
                                                     </button>
                                                     <button
+                                                        onClick={() => setAccessTarget(partner)}
+                                                        className={styles.btnEdit}
+                                                    >
+                                                        Painel
+                                                    </button>
+                                                    <button
                                                         onClick={() => toggleActive(partner)}
                                                         className={
                                                             partner.is_active
@@ -431,6 +443,12 @@ export default function AdminReferralPartners() {
                     )}
                 </>
             )}
+
+            <PartnerAccessModal
+                partner={accessTarget}
+                onClose={() => setAccessTarget(null)}
+                onChanged={() => void fetchPartners()}
+            />
 
             <Modal
                 open={showForm}
@@ -713,14 +731,15 @@ export default function AdminReferralPartners() {
                                     }
                                 />
                                 <small className={styles.smallHint}>
-                                    Também vale para compras avulsas (plano da
-                                    biblioteca).
+                                    Vale para os planos do personal e para o
+                                    plano da biblioteca. O Aluno Plus não gera
+                                    comissão.
                                 </small>
                             </div>
 
                             <div className={styles.row}>
                                 <label className={styles.label} htmlFor="rp_renewal">
-                                    Comissão em cada renovação (
+                                    Comissão em cada renovação do mensal (
                                     {form.commission_type === 'percentage' ? '%' : 'R$'})
                                 </label>
                                 <input
@@ -744,8 +763,9 @@ export default function AdminReferralPartners() {
                                     }
                                 />
                                 <small className={styles.smallHint}>
-                                    0 = só a primeira compra de cada cliente gera
-                                    comissão.
+                                    Só no plano mensal: semestral e anual recebem apenas a
+                                    comissão da 1ª compra (sobre o pacote inteiro). 0 = só a
+                                    primeira compra de cada cliente gera comissão.
                                 </small>
                             </div>
 
@@ -843,6 +863,11 @@ export default function AdminReferralPartners() {
                                     Parceiro ativo (o código é aceito no pagamento)
                                 </label>
                             </div>
+                            <small className={styles.smallHint}>
+                                Inativo: o código deixa de valer e o parceiro
+                                não recebe mais nenhuma comissão, nem das
+                                renovações dos clientes que já trouxe.
+                            </small>
                         </form>
                     </>
                 )}

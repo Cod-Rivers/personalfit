@@ -61,7 +61,7 @@ describe('describeCommission', () => {
                 renewal_commission_value: DEFAULT_RENEWAL_COMMISSION,
                 renewal_months: 0,
             }),
-        ).toBe('15% na 1ª compra · 10% nas renovações · sobre o líquido');
+        ).toBe('15% na 1ª compra · 10% nas renovações do mensal · sobre o líquido');
     });
 
     it('prazo, base bruta e renovação zerada', () => {
@@ -73,7 +73,7 @@ describe('describeCommission', () => {
                 renewal_months: 12,
                 commission_base: 'gross',
             }),
-        ).toBe('12,5% na 1ª compra · 5% nas renovações por 12 meses · sobre o bruto');
+        ).toBe('12,5% na 1ª compra · 5% nas renovações do mensal por 12 meses · sobre o bruto');
         expect(
             describeCommission({
                 commission_type: 'percentage',
@@ -92,6 +92,6 @@ describe('describeCommission', () => {
                 renewal_commission_value: 5,
                 renewal_months: 0,
             }).replace(/ /g, ' '),
-        ).toBe('R$ 20,00 na 1ª compra · R$ 5,00 nas renovações');
+        ).toBe('R$ 20,00 na 1ª compra · R$ 5,00 nas renovações do mensal');
     });
 });

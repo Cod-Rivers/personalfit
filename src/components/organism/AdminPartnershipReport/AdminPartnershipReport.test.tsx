@@ -49,6 +49,7 @@ vi.mock('@/libs/referralPartnerService', async (importOriginal) => {
         getPartnershipReport: vi.fn(),
         createPartnerExpense: vi.fn().mockResolvedValue({}),
         deletePartnerExpense: vi.fn(),
+        getProgramSettings: vi.fn().mockResolvedValue({ min_payout: 50, payout_day: 15, next_payout: '2026-11-15', hold_days: 30 }),
     };
 });
 
