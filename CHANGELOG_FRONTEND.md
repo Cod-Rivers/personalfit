@@ -893,3 +893,16 @@
 ## 2026-10-06 08:53 — River (via Claude Code)
 **Resumo:** Corrigi tudo, mas ainda não fiz commit. No app, nada muda até eu fazer o push, que é o que dispara o deploy do backend e do site. Rodei tsc, eslint, os 641 testes do front e os testes do backend, e conferi as telas em screenshots a 360px nos dois temas. No celular de verdade ainda não testei. **"Produto não encontrado no Google Play".** Suas assinaturas estão certas: conferi pela API do Play e o PRO mensal, semestral e anual estão ativos, com o preço novo e com o mês grátis. O erro estava no backend, que pedia ao Google os IDs `pro_monthly_v2`, `pro_semiannual_v2` e `pro_yearly_v2`, e esses pr…
 **Arquivos:** PersonalPlanLadder.tsx, pagamento.module.css, page.test.tsx, page.tsx, paymentService.ts, personalPlanLadder.module.css, styles.css
+
+## 2026-10-06 09:03 — River (via Claude Code)
+**Resumo:** Já está no ar: os dois deploys terminaram com sucesso, e o backend de produção já oferece ao app os planos do PRO que existem no Google Play (`pro_monthly`, `pro_semiannual` e `pro_yearly`). Para ver no celular, feche o app por completo e abra de novo. Depois toque em "Conhecer o PRO": a tela agora vai por passos (Plano, Período, Indicação, Resumo), e o botão "Continuar para o pagamento" deve abrir a tela de compra do Google Play. Se o aviso "Produto não encontrado" ainda aparecer, atualize o app pela Play Store e tente de novo; se continuar, me mande um print. Se a sua conta Google nunca assi…
+**Commits:** Pagamento vira checkout em passos, em tela cheia | Atualiza changelog
+
+## 2026-10-06 11:18 — River (via Claude Code)
+**Resumo:** A regra **15% na primeira compra e 10% em todas as renovações** ficou como padrão. Continua tudo **sem commit**. **Como funciona** - Cada parceiro tem quatro campos de comissão: valor na 1ª compra, valor em cada renovação, prazo das renovações e base do cálculo. Parceiro novo já abre com 15% / 10% / sem limite / líquido. - O valor da 1ª compra também vale para compras avulsas (plano da biblioteca). Renovação em 0 significa que só a 1ª compra dá comissão. - O prazo pode ser "sem limite", 6, 12 ou 24 meses, contados a partir da primeira compra paga do cliente. - Continua dando para usar valor fi…
+**Arquivos:** AdminPartnershipReport, AdminReferralPartners.module.css, CHANGELOG_FRONTEND.md, InstallPwaPrompt.tsx, acquisition.ts, admin.module.css, androidApp.ts, index.tsx, page.test.tsx, page.tsx, referralPartnerService.test.ts, referralPartnerService.ts
+
+## 2026-10-06 20:25 — River (via Claude Code)
+**Resumo:** Liberei **2,57 GB**. O disco estava com 0 GB livres e agora tem 2,57 GB. **O que apaguei** (tudo se recria sozinho): - Temp do usuário e Temp do Windows - Cache do npm (1,8 GB) e do pip - INetCache e CrashDumps **O que não consegui apagar:** o cache de download do Windows Update, que tem 2,4 GB. Parar o serviço exige PowerShell como administrador. Em um terminal de administrador, rode: ```powershell Stop-Service wuauserv -Force; Remove-Item C:\Windows\SoftwareDistribution\Download\* -Recurse -Force; Start-Service wuauserv ``` **O que deixei de fora, porque não tenho certeza de que você quer ap…
+**Arquivos:** AjudaClient.tsx, ProPlanCard.tsx, paymentService.ts
+**Commits:** Banner do Android no navegador passa a levar à Play Store
