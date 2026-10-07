@@ -57,6 +57,27 @@
     letter-spacing: -0.02em;
 }
 
+/* Quem chega pelo link de um parceiro: confirmação de quem indicou */
+.signup_referral {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    width: 100%;
+    margin: var(--space-2) 0 0;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--mint);
+    border-radius: var(--radius-md);
+    background: var(--mint-glow);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    line-height: 1.4;
+}
+
+.signup_referral svg {
+    flex-shrink: 0;
+    color: var(--mint-text);
+}
+
 .btn-gold {
     width: 100%;
     padding: 12px;

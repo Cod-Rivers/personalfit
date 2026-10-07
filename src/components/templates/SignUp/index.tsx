@@ -1,7 +1,7 @@
 ﻿'use client';
 import { useTranslations } from 'next-intl';
-import React, { FC, useState } from 'react';
-import { FiUser, FiBriefcase } from 'react-icons/fi';
+import React, { FC, useEffect, useState } from 'react';
+import { FiUser, FiBriefcase, FiCheckCircle } from 'react-icons/fi';
 import Input from '@/components/molecules/Input';
 import BackButton from '@/components/molecules/BackButton';
 import Image from 'next/image';
@@ -14,6 +14,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { signUpSchema, SignUpFormData } from '@/libs/validation/authSchemas';
 import { formatCpfInput } from '@/libs/formatters';
 import { readAcquisitionRef } from '@/libs/acquisition';
+import { checkReferralCode, type ReferralCodeConfirmation } from '@/libs/referralPartnerService';
 import { trackSignUp } from '@/libs/analytics';
 
 const TSignUp: FC = () => {
@@ -23,6 +24,28 @@ const TSignUp: FC = () => {
     const [cpfConflict, setCpfConflict] = useState<boolean>(false);
     const [role, setRole] = useState<'personal' | 'student'>('student');
     const [acceptedTerms, setAcceptedTerms] = useState<boolean>(false);
+    const [referral, setReferral] = useState<ReferralCodeConfirmation | null>(null);
+
+    // Chegou pelo link de um parceiro: o código confirma que a parceria
+    // existe e mostra de quem é a indicação. O ref da URL cobre a primeira
+    // visita, se este efeito rodar antes do AcquisitionCapture guardar o
+    // primeiro toque. Ref que não é parceiro ("share_card") não mostra nada.
+    useEffect(() => {
+        const ref =
+            readAcquisitionRef() ?? new URLSearchParams(window.location.search).get('ref');
+        if (!ref) return;
+        let cancelled = false;
+        checkReferralCode(ref)
+            .then((found) => {
+                if (!cancelled) setReferral(found);
+            })
+            .catch(() => {
+                // Sem confirmação, sem faixa: o cadastro segue igual.
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     const {
         register,
@@ -82,6 +105,15 @@ const TSignUp: FC = () => {
                     height={95}
                 />
                 <h1>{t('title')}</h1>
+                {referral && (
+                    <p className="signup_referral" role="status">
+                        <FiCheckCircle aria-hidden="true" />
+                        <span>
+                            Você chegou pela indicação de{' '}
+                            <strong>{referral.partner_name}</strong>.
+                        </span>
+                    </p>
+                )}
                 <form
                     onSubmit={handleSubmit(submit)}
                     className="w-100 d-flex flex-column gap-4 my-3"

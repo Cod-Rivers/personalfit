@@ -150,7 +150,7 @@
     color: #fff;
 }
 
-.btnDelete {
+.btnDeactivate {
     background: transparent;
     border: 1px solid var(--coral);
     color: var(--coral);
@@ -161,9 +161,23 @@
     transition: background 0.15s;
 }
 
-.btnDelete:hover {
+.btnDeactivate:hover {
     background: var(--coral);
     color: #fff;
+}
+
+/* Busca + "mostrar inativos" acima da tabela */
+.filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-4);
+    margin-bottom: var(--space-3);
+}
+
+.filters .input {
+    flex: 1 1 14rem;
+    max-width: 20rem;
 }
 
 .overlay {
@@ -305,4 +319,135 @@
 .btnSave:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+/* Links de rastreio do parceiro (copiar para mandar a ele) */
+.linkBtns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 6px;
+}
+
+.btnLink {
+    background: transparent;
+    border: 1px dashed var(--border-mid);
+    color: var(--text-secondary);
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-size: 0.6875rem;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.btnLink:hover {
+    border-color: var(--mint);
+    color: var(--mint);
+}
+
+/* Código de indicação no formulário: gerado × escolhido */
+fieldset.row {
+    border: 0;
+    margin: 0;
+    padding: 0;
+    min-width: 0;
+}
+
+fieldset.row legend {
+    float: none;
+    width: auto;
+    margin: 0;
+    padding: 0;
+}
+
+.codeModes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.codeMode,
+.codeModeActive {
+    flex: 1 1 10rem;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border-mid);
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.codeModeActive {
+    border-color: var(--mint);
+    background: var(--mint-glow);
+    font-weight: 600;
+}
+
+.codeInput {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.codeOk,
+.codeBad {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.codeOk {
+    color: var(--mint-text);
+}
+
+.codeBad {
+    color: var(--coral-dim);
+}
+
+.codeReadonly {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+/* Depois de criar: o código em destaque, pronto para copiar */
+.createdBox {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-3);
+    text-align: center;
+}
+
+.createdIcon {
+    font-size: 2.5rem;
+    color: var(--mint-text);
+}
+
+.createdText {
+    margin: 0;
+    font-size: 0.9375rem;
+    color: var(--text-primary);
+}
+
+.createdCode {
+    padding: var(--space-2) var(--space-4);
+    border: 2px dashed var(--mint);
+    border-radius: var(--radius-md);
+    background: var(--mint-glow);
+    color: var(--text-primary);
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    word-break: break-all;
+}
+
+.createdBox .linkBtns {
+    justify-content: center;
 }

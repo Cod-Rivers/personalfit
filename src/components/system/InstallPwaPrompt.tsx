@@ -6,10 +6,11 @@ import { FiX, FiUpload } from 'react-icons/fi';
 import ExternalLink from '@/components/atoms/ExternalLink';
 import {
     ANDROID_APP_LIVE,
-    ANDROID_PLAY_STORE_URL,
     isAndroidBrowser,
     isInsideNativeApp,
+    playStoreUrl,
 } from '@/libs/androidApp';
+import { readAcquisitionRef } from '@/libs/acquisition';
 import s from './InstallPwaPrompt.module.css';
 
 const DISMISS_KEY = 'venafit_install_prompt_dismissed_at';
@@ -152,7 +153,7 @@ export default function InstallPwaPrompt() {
                         treino offline e widget de calendário.
                     </p>
                     <ExternalLink
-                        href={ANDROID_PLAY_STORE_URL}
+                        href={playStoreUrl(readAcquisitionRef())}
                         className={s.installBtn}
                         onClick={dismiss}
                     >

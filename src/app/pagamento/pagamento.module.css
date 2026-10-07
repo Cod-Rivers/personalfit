@@ -368,6 +368,77 @@
     line-height: 1.45;
 }
 
+/* Código de indicação: aparece sob a opção "Tenho um código" */
+.codeBox {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-lg);
+    background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
+}
+
+.codeLabel {
+    margin: 0;
+    font-size: var(--font-sm);
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+
+.codeRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.codeInput {
+    flex: 1 1 10rem;
+    min-width: 0;
+    font-size: 1rem !important; /* 16px: abaixo disso o iOS dá zoom ao focar */
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.codeInput::placeholder {
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+.codeApply {
+    flex: 0 0 auto;
+    min-width: 6rem;
+}
+
+.codeOk,
+.codeBad,
+.codeHint {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--font-sm);
+    line-height: 1.4;
+}
+
+.codeOk {
+    color: var(--mint-text);
+}
+
+.codeBad {
+    color: var(--coral-dim);
+    font-weight: 600;
+}
+
+.codeHint {
+    color: var(--text-muted);
+}
+
+.codeOk svg,
+.codeBad svg {
+    flex-shrink: 0;
+}
+
 /* ── Teste grátis ────────────────────────────────────────────────────── */
 
 .callout {

@@ -41,6 +41,7 @@ import {
     FiLink,
     FiChevronLeft,
     FiChevronRight,
+    FiDollarSign,
 } from 'react-icons/fi';
 import type { IconType } from 'react-icons';
 
@@ -55,6 +56,10 @@ const AdminAdvertisements = dynamic(
 );
 const AdminReferralPartners = dynamic(
     () => import('@/components/organism/AdminReferralPartners'),
+    { ssr: false, loading: () => <div className="text-center py-4">Carregando…</div> },
+);
+const AdminPartnershipReport = dynamic(
+    () => import('@/components/organism/AdminPartnershipReport'),
     { ssr: false, loading: () => <div className="text-center py-4">Carregando…</div> },
 );
 const AdminSubscriptionChart = dynamic(
@@ -72,6 +77,7 @@ type Section =
     | 'users'
     | 'ads'
     | 'referral-partners'
+    | 'partnerships'
     | 'poses'
     | 'relatorios'
     | 'diagnostics';
@@ -145,6 +151,12 @@ export default function AdminDashboard() {
             key: 'referral-partners',
             label: 'Parceiros de Indicação',
             icon: FiShare2,
+            fullAdminOnly: true,
+        },
+        {
+            key: 'partnerships',
+            label: 'Parcerias: resultados',
+            icon: FiDollarSign,
             fullAdminOnly: true,
         },
         {
@@ -240,6 +252,7 @@ export default function AdminDashboard() {
                 {section === 'referral-partners' && (
                     <AdminReferralPartners />
                 )}
+                {section === 'partnerships' && <AdminPartnershipReport />}
                 {section === 'relatorios' && <RelatoriosSection />}
                 {section === 'diagnostics' && <DiagnosticsSection />}
             </main>

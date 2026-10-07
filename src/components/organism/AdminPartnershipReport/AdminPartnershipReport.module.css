@@ -1,0 +1,541 @@
+.container {
+    padding: 8px 0;
+    min-width: 0;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.hint {
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin: 0 0 16px;
+    max-width: 72ch;
+}
+
+/* ── Filtros ── */
+.filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-end;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    flex: 1 1 150px;
+}
+
+.fieldLabel {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.fieldHint {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+.input {
+    width: 100%;
+    background: var(--surface-1);
+    border: 1px solid var(--border-mid);
+    color: var(--text-primary);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 1rem;
+}
+
+.input:focus-visible {
+    outline: 2px solid var(--mint);
+    outline-offset: 1px;
+}
+
+.rangeNote {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin: 8px 0 16px;
+}
+
+/* ── Indicadores ── */
+.kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.kpi {
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    padding: 14px 16px;
+    min-width: 0;
+}
+
+.kpiLabel {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.kpiValue {
+    font-size: 1.375rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 4px 0 2px;
+    font-variant-numeric: tabular-nums;
+}
+
+.kpiSub {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.4;
+}
+
+.negative {
+    color: var(--coral-dim);
+}
+
+.strong {
+    font-weight: 600;
+}
+
+/* ── Cartões e tabelas ── */
+.card {
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 16px;
+    min-width: 0;
+}
+
+.cardHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.cardTitle {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 12px;
+}
+
+.cardHeader .cardTitle {
+    margin: 0;
+}
+
+.tableWrap {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table {
+    width: 100%;
+    min-width: 640px;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+}
+
+.table th {
+    text-align: left;
+    padding: 8px 10px;
+    background: var(--surface-2);
+    color: var(--text-secondary);
+    font-weight: 600;
+    border-bottom: 1px solid var(--border-mid);
+    white-space: nowrap;
+}
+
+.table td {
+    padding: 10px;
+    border-bottom: 1px solid var(--border-subtle);
+    color: var(--text-primary);
+    vertical-align: top;
+}
+
+.table .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.rowRefunded td {
+    color: var(--text-muted);
+}
+
+.originName {
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.originMeta {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.originMeta code {
+    font-size: 0.75rem;
+    background: var(--surface-2);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+.inactiveTag {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    border: 1px solid var(--border-mid);
+    border-radius: 999px;
+    padding: 0 6px;
+}
+
+.estimate {
+    text-decoration: none;
+    color: var(--text-muted);
+    margin-right: 2px;
+    cursor: help;
+}
+
+.muted {
+    color: var(--text-muted);
+}
+
+/* Situação da comissão: sempre com texto, nunca só a cor. */
+.chip {
+    display: inline-block;
+    margin-top: 4px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    border-radius: 999px;
+    padding: 1px 8px;
+    border: 1px solid currentColor;
+    white-space: nowrap;
+}
+
+.chipGood {
+    color: var(--mint-text);
+}
+
+.chipWait {
+    color: var(--amber-text);
+}
+
+.chipBad {
+    color: var(--coral-dim);
+}
+
+.empty,
+.loading {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    text-align: center;
+    padding: 24px 0;
+    margin: 0;
+}
+
+.refreshing {
+    opacity: 0.6;
+    transition: opacity 0.15s;
+}
+
+.errorMsg {
+    background: rgba(255, 107, 107, 0.12);
+    border: 1px solid var(--coral);
+    color: var(--text-primary);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 0.8125rem;
+    margin-bottom: 12px;
+}
+
+/* ── Abas ── */
+.tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.tab,
+.tabActive {
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 0.8125rem;
+    cursor: pointer;
+}
+
+.tab {
+    background: transparent;
+    border: 1px solid var(--border-mid);
+    color: var(--text-secondary);
+}
+
+.tabActive {
+    background: var(--mint);
+    border: 1px solid var(--mint);
+    color: var(--btn-text);
+    font-weight: 600;
+}
+
+/* ── Botões ── */
+.btnPrimary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--mint);
+    color: var(--btn-text);
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.btnPrimary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btnGhost {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: 1px solid var(--border-mid);
+    color: var(--text-secondary);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 0.8125rem;
+    cursor: pointer;
+}
+
+.btnGhost:hover {
+    border-color: var(--mint);
+    color: var(--text-primary);
+}
+
+.btnSmall {
+    background: transparent;
+    border: 1px solid var(--mint-text);
+    color: var(--mint-text);
+    border-radius: 6px;
+    padding: 3px 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.btnIcon {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    padding: 6px;
+    min-width: 32px;
+    min-height: 32px;
+    cursor: pointer;
+    border-radius: 6px;
+}
+
+.btnIcon:hover {
+    color: var(--coral-dim);
+}
+
+/* ── Formulário do gasto ── */
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.formRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+/* ── Listas responsivas: tabela com espaço, cartões sem ──
+   A largura que manda é a do cartão (coluna do admin ou celular), não a
+   da tela: por isso container query. Sem suporte, fica a tabela rolável. */
+.responsive {
+    container-type: inline-size;
+}
+
+.narrowOnly {
+    display: none;
+}
+
+@container (max-width: 819px) {
+    .wideOnly {
+        display: none;
+    }
+
+    .narrowOnly {
+        display: flex;
+    }
+}
+
+.colOrigin {
+    min-width: 160px;
+}
+
+.colText {
+    min-width: 130px;
+}
+
+.nowrap {
+    white-space: nowrap;
+}
+
+.cardList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.itemCard {
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+}
+
+.itemHead,
+.itemFoot {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    width: 100%;
+}
+
+.itemFoot {
+    align-items: flex-end;
+}
+
+.itemTitle {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.itemAside {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    flex: 0 0 auto;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.itemAsideLabel {
+    font-size: 0.6875rem;
+    color: var(--text-muted);
+}
+
+.itemCommission {
+    text-align: right;
+    font-size: 0.8125rem;
+    font-variant-numeric: tabular-nums;
+    flex: 0 0 auto;
+}
+
+.metrics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px 12px;
+    margin: 0;
+    width: 100%;
+}
+
+.metrics dt {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.metrics dd {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Legenda do gráfico mensal */
+.legend {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    margin: 0 0 8px;
+    padding: 0;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.legend li {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    flex: 0 0 auto;
+}
+
+/* Cartão largo (desktop estreito): os seis números numa linha só. */
+@container (min-width: 560px) {
+    .metrics {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+}
+
+/* Na coluna do formulário a base de 150px do .field viraria altura. */
+.form > .field {
+    flex: none;
+}

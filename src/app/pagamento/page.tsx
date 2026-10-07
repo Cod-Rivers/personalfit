@@ -2,7 +2,16 @@
 import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FiArrowLeft, FiCheck, FiCheckCircle, FiChevronDown, FiUsers, FiX } from 'react-icons/fi';
+import axios from 'axios';
+import {
+    FiAlertCircle,
+    FiArrowLeft,
+    FiCheck,
+    FiCheckCircle,
+    FiChevronDown,
+    FiUsers,
+    FiX,
+} from 'react-icons/fi';
 
 import s from './pagamento.module.css';
 import {
@@ -31,9 +40,11 @@ import {
     verifyGooglePlayPurchase,
 } from '@/libs/paymentService';
 import {
-    ReferralPartnerPublic,
-    getActiveReferralPartners,
+    type ReferralCodeConfirmation,
+    checkReferralCode,
+    normalizeReferralCode,
 } from '@/libs/referralPartnerService';
+import { readAcquisitionRef } from '@/libs/acquisition';
 import PersonalPlanLadder, { type LadderPlan } from '@/components/features/PersonalPlanLadder';
 import {
     getStudentHomeRoute,
@@ -49,8 +60,11 @@ import { useCloseOnBack } from '@/hooks/useCloseOnBack';
 // Valor fixo para "sem indicação" — usado tanto aqui quanto interpretado no
 // backend/estatísticas (ver ReferralPartnerController.GetIndicationStats).
 const INDICATION_NONE = 'none';
+// Opção "Tenho um código de indicação". Não é enviada ao backend: o que vai
+// é o código, depois de confirmado pela rota pública.
+const INDICATION_CODE = 'code';
 
-// Origens fixas de "como conheceu", além dos parceiros cadastrados.
+// Origens fixas de "como conheceu", além do código de um parceiro.
 const INDICATION_CHANNELS = [
     { value: 'instagram', label: 'Instagram', icon: 'fa-brands fa-instagram' },
     { value: 'facebook', label: 'Facebook', icon: 'fa-brands fa-facebook' },
@@ -241,10 +255,18 @@ function PaymentPageInner() {
     // Asaas. Vai junto da compra para o backend informar o Google. '' = não
     // escolheu (ou está no site).
     const [altToken, setAltToken] = useState('');
-    const [partners, setPartners] = useState<ReferralPartnerPublic[]>([]);
+    // Resposta de "como você conheceu": uma origem fixa ou INDICATION_CODE.
     // '' = ainda não respondeu. A resposta é obrigatória (com "Ninguém me
     // indicou" valendo como resposta): é dela que sai a comissão do parceiro.
-    const [indicationReceiver, setIndicationReceiver] = useState('');
+    const [indicationChoice, setIndicationChoice] = useState('');
+    // Código de indicação: o digitado e o confirmado pelo servidor. Só o
+    // confirmado vale como resposta — é ele que prova que a parceria existe.
+    const [codeInput, setCodeInput] = useState('');
+    const [confirmedCode, setConfirmedCode] = useState<ReferralCodeConfirmation | null>(null);
+    const [codeCheck, setCodeCheck] = useState<'idle' | 'checking' | 'notFound' | 'failed'>('idle');
+    const [codeCheckError, setCodeCheckError] = useState('');
+    const indicationReceiver =
+        indicationChoice === INDICATION_CODE ? (confirmedCode?.code ?? '') : indicationChoice;
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [pix, setPix] = useState<PixData | null>(null);
@@ -288,11 +310,6 @@ function PaymentPageInner() {
                 .then(setGoogleAvailable)
                 .finally(() => setGoogleChecked(true));
         }
-        // Lista de parceiros é só um complemento das opções de indicação — se
-        // falhar, o checkout continua normalmente com apenas as opções fixas.
-        getActiveReferralPartners()
-            .then(setPartners)
-            .catch(() => setPartners([]));
         return () => {
             if (pollingRef.current) clearInterval(pollingRef.current);
         };
@@ -315,6 +332,67 @@ function PaymentPageInner() {
         }
         // Plus↔PRO não muda a resposta do teste: depende só do tipo de produto.
     }, [isPersonalPlan, isStudentPlus]);
+
+    // Chegou pelo link de um parceiro (?ref= do primeiro acesso, ou o Install
+    // Referrer da Play Store): se o ref for o código de um parceiro ativo, a
+    // resposta já vem marcada e confirmada, e a pessoa ainda pode trocar. Ref
+    // que não é parceiro ("share_card") não marca nada. Uma vez por visita, e
+    // só nos planos do personal (únicos com o passo de indicação).
+    const refChecked = useRef(false);
+    useEffect(() => {
+        if (!isPersonalPlan || refChecked.current) return;
+        refChecked.current = true;
+        const ref = readAcquisitionRef();
+        if (!ref) return;
+        checkReferralCode(ref)
+            .then((found) => {
+                if (!found) return;
+                setIndicationChoice((current) => current || INDICATION_CODE);
+                setCodeInput(found.code);
+                setConfirmedCode(found);
+            })
+            .catch(() => {
+                // Sem confirmação, sem pré-marcação: a pessoa digita ou escolhe.
+            });
+    }, [isPersonalPlan]);
+
+    /** O servidor recusou o código na hora de pagar (parceiro desativado no
+     *  meio-tempo): o passo de indicação volta a pedir um código válido. */
+    const dropRefusedCode = (err: unknown) => {
+        if (apiErrorCode(err) !== 'referral_code_not_found') return;
+        setConfirmedCode(null);
+        setCodeCheck('notFound');
+    };
+
+    /** Confere o código digitado na rota pública. true = confirmado. */
+    const applyCode = async (): Promise<boolean> => {
+        const code = normalizeReferralCode(codeInput);
+        if (!code) return false;
+        setCodeCheck('checking');
+        setCodeCheckError('');
+        setConfirmedCode(null);
+        try {
+            const found = await checkReferralCode(code);
+            if (!found) {
+                setCodeCheck('notFound');
+                return false;
+            }
+            setConfirmedCode(found);
+            setCodeInput(found.code);
+            setCodeCheck('idle');
+            return true;
+        } catch (err: unknown) {
+            setCodeCheck('failed');
+            setCodeCheckError(
+                axios.isAxiosError(err) && !err.response
+                    ? 'Sem conexão para conferir o código. Verifique a internet e tente de novo.'
+                    : axios.isAxiosError(err) && err.response?.status === 429
+                      ? 'Muitas tentativas seguidas. Aguarde um minuto e tente de novo.'
+                      : 'Não foi possível conferir o código agora. Tente de novo.',
+            );
+            return false;
+        }
+    };
 
     // Tela cheia: a página de trás não rola enquanto o checkout está aberto.
     // No Safari iOS o teclado encolhe só o visual viewport; espelhar a altura
@@ -453,11 +531,14 @@ function PaymentPageInner() {
                   ? PLANO_BENEFITS
                   : PLUS_BENEFITS;
     const indicationLabel =
-        indicationReceiver === INDICATION_NONE
-            ? 'Ninguém me indicou'
-            : (INDICATION_CHANNELS.find((c) => c.value === indicationReceiver)?.label ??
-              partners.find((p) => p.code === indicationReceiver)?.name ??
-              indicationReceiver);
+        indicationChoice === INDICATION_CODE
+            ? confirmedCode
+                ? `${confirmedCode.partner_name} (código ${confirmedCode.code})`
+                : ''
+            : indicationChoice === INDICATION_NONE
+              ? 'Ninguém me indicou'
+              : (INDICATION_CHANNELS.find((c) => c.value === indicationChoice)?.label ??
+                indicationChoice);
 
     // Motivo para não vender agora (produto fora de venda ou fora do perfil).
     const unavailableReason =
@@ -569,6 +650,7 @@ function PaymentPageInner() {
             }
             startPolling();
         } catch (err: unknown) {
+            dropRefusedCode(err);
             setError(extractApiError(err, 'Erro ao gerar cobrança PIX. Tente novamente.'));
         } finally {
             setLoading(false);
@@ -663,6 +745,7 @@ function PaymentPageInner() {
                 }
             }
         } catch (err: unknown) {
+            dropRefusedCode(err);
             setError(extractApiError(err));
         } finally {
             setLoading(false);
@@ -946,7 +1029,7 @@ function PaymentPageInner() {
         );
     } else if (currentStep === 'indication') {
         const option = (value: string, label: React.ReactNode, icon?: React.ReactNode) => {
-            const isSelected = indicationReceiver === value;
+            const isSelected = indicationChoice === value;
             return (
                 <button
                     key={value}
@@ -954,7 +1037,7 @@ function PaymentPageInner() {
                     role="radio"
                     aria-checked={isSelected}
                     className={`${s.option} ${s.optionCompact} ${isSelected ? s.optionSelected : ''}`}
-                    onClick={() => setIndicationReceiver(value)}
+                    onClick={() => setIndicationChoice(value)}
                 >
                     <span className={s.radio} aria-hidden="true">
                         {isSelected && <FiCheck />}
@@ -964,23 +1047,121 @@ function PaymentPageInner() {
                 </button>
             );
         };
+        const codeChosen = indicationChoice === INDICATION_CODE;
+        const typedCode = normalizeReferralCode(codeInput);
+        // Código digitado e ainda não conferido: "Continuar" confere e segue,
+        // sem a pessoa precisar achar o "Aplicar".
+        const canApply =
+            codeChosen &&
+            !confirmedCode &&
+            typedCode !== '' &&
+            codeCheck !== 'checking' &&
+            codeCheck !== 'notFound';
+        const continueIndication = async () => {
+            if (indicationReceiver) {
+                goNext();
+                return;
+            }
+            if (canApply && (await applyCode())) goNext();
+        };
+        const footHint = !indicationChoice
+            ? 'Escolha uma opção para continuar.'
+            : codeChosen && !confirmedCode && !typedCode
+              ? 'Digite o código que você recebeu.'
+              : codeChosen && codeCheck === 'notFound'
+                ? 'Confira o código ou escolha outra opção.'
+                : '';
         body = (
             <>
                 <div className={s.indicationHero}>
                     <FiUsers className={s.indicationIcon} aria-hidden="true" />
                     <p className={s.indicationText}>
-                        <strong>Alguém te indicou o Venafit?</strong> Escolha o nome abaixo: é assim
-                        que o parceiro ou profissional que indicou recebe o crédito pela
-                        indicação. Você não paga nada a mais por isso.
+                        <strong>Alguém te indicou o Venafit?</strong> Digite o código de
+                        indicação que você recebeu: é assim que o parceiro ou profissional que
+                        indicou recebe o crédito pela indicação. Você não paga nada a mais por
+                        isso.
                     </p>
                 </div>
                 <div className={s.optionGroups} role="radiogroup" aria-label="Como você conheceu o Venafit">
-                    {partners.length > 0 && (
-                        <div className={s.optionGroup}>
-                            <p className={s.groupLabel}>Fui indicado por</p>
-                            {partners.map((p) => option(p.code, p.name))}
-                        </div>
-                    )}
+                    <div className={s.optionGroup}>
+                        <p className={s.groupLabel}>Fui indicado</p>
+                        {option(INDICATION_CODE, 'Tenho um código de indicação')}
+                        {codeChosen && (
+                            <div className={s.codeBox}>
+                                <label htmlFor="referralCode" className={s.codeLabel}>
+                                    Código de indicação
+                                </label>
+                                <div className={s.codeRow}>
+                                    <input
+                                        id="referralCode"
+                                        type="text"
+                                        className={`form-control ${s.codeInput}`}
+                                        placeholder="Ex.: JOAO10"
+                                        autoComplete="off"
+                                        autoCapitalize="characters"
+                                        spellCheck={false}
+                                        maxLength={40}
+                                        aria-describedby="referralCodeStatus"
+                                        aria-invalid={codeCheck === 'notFound'}
+                                        value={codeInput}
+                                        onChange={(e) => {
+                                            setCodeInput(e.target.value);
+                                            setConfirmedCode(null);
+                                            setCodeCheck('idle');
+                                            setCodeCheckError('');
+                                        }}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                void applyCode();
+                                            }
+                                        }}
+                                    />
+                                    <button
+                                        type="button"
+                                        className={`btn btn-outline-secondary ${s.codeApply}`}
+                                        onClick={() => void applyCode()}
+                                        disabled={!typedCode || codeCheck === 'checking' || !!confirmedCode}
+                                    >
+                                        {codeCheck === 'checking' ? spinner : 'Aplicar'}
+                                    </button>
+                                </div>
+                                <p
+                                    id="referralCodeStatus"
+                                    role="status"
+                                    aria-live="polite"
+                                    className={
+                                        confirmedCode
+                                            ? s.codeOk
+                                            : codeCheck === 'notFound' || codeCheck === 'failed'
+                                              ? s.codeBad
+                                              : s.codeHint
+                                    }
+                                >
+                                    {confirmedCode ? (
+                                        <>
+                                            <FiCheckCircle aria-hidden="true" />
+                                            <span>
+                                                Indicação de <strong>{confirmedCode.partner_name}</strong>
+                                            </span>
+                                        </>
+                                    ) : codeCheck === 'notFound' ? (
+                                        <>
+                                            <FiAlertCircle aria-hidden="true" />
+                                            <span>Código não encontrado. Confira com quem te indicou.</span>
+                                        </>
+                                    ) : codeCheck === 'failed' ? (
+                                        <>
+                                            <FiAlertCircle aria-hidden="true" />
+                                            <span>{codeCheckError}</span>
+                                        </>
+                                    ) : (
+                                        'Maiúsculas, espaços e hífens não fazem diferença.'
+                                    )}
+                                </p>
+                            </div>
+                        )}
+                    </div>
                     <div className={s.optionGroup}>
                         <p className={s.groupLabel}>Conheci pelas redes</p>
                         {INDICATION_CHANNELS.map((c) =>
@@ -995,14 +1176,12 @@ function PaymentPageInner() {
         );
         footer = (
             <>
-                {!indicationReceiver && (
-                    <p className={s.footHint}>Escolha uma opção para continuar.</p>
-                )}
+                {footHint && <p className={s.footHint}>{footHint}</p>}
                 <button
                     type="button"
                     className={`btn btn-gold ${s.cta}`}
-                    onClick={goNext}
-                    disabled={!indicationReceiver}
+                    onClick={() => void continueIndication()}
+                    disabled={!indicationReceiver && !canApply}
                 >
                     Continuar
                 </button>
@@ -1305,10 +1484,19 @@ function BenefitList({ items }: { items: string[] }) {
 }
 
 /** Extrai a mensagem de erro da API (axios) com um fallback amigável. */
+function apiErrorCode(err: unknown): string | undefined {
+    return (err as { response?: { data?: { code?: string } } })?.response?.data?.code;
+}
+
 function extractApiError(
     err: unknown,
     fallback = 'Erro ao processar pagamento. Verifique os dados do cartão.',
 ): string {
+    // PIX e cartão recusam, antes de cobrar, código de parceiro desativado
+    // entre a confirmação no passo de indicação e o pagamento.
+    if (apiErrorCode(err) === 'referral_code_not_found') {
+        return 'O código de indicação não vale mais. Volte ao passo "Como você conheceu o Venafit?" e confira o código ou escolha outra opção. Nada foi cobrado.';
+    }
     const axiosMsg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
     return axiosMsg || fallback;
 }

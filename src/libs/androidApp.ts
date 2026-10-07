@@ -9,6 +9,16 @@ export const ANDROID_PLAY_STORE_URL = `https://play.google.com/store/apps/detail
  *  cancela ou troca de plano uma assinatura feita pelo Google Play. */
 export const PLAY_SUBSCRIPTIONS_URL = `https://play.google.com/store/account/subscriptions?package=${ANDROID_APP_PACKAGE}`;
 
+/** Ficha da Play Store levando o código de quem indicou (`ref`). O app lê o
+ *  `referrer` na primeira abertura (Install Referrer, ver InstallReferrer.kt)
+ *  e o guarda como o `?ref=` do site: sem isso, quem chega pelo link de um
+ *  parceiro e instala o app perde a origem. */
+export function playStoreUrl(ref?: string | null): string {
+    const code = ref?.trim();
+    if (!code) return ANDROID_PLAY_STORE_URL;
+    return `${ANDROID_PLAY_STORE_URL}&referrer=${encodeURIComponent(`ref=${code}`)}`;
+}
+
 /** MainActivity.kt anexa esse token ao User-Agent do WebView do app nativo. */
 const APP_WEBVIEW_UA_MARKER = 'VenafitApp/';
 

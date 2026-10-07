@@ -7,10 +7,14 @@
  *  `/cadastro` → vai junto no POST /users como `ref` (ver
  *  commands.RegisterUser.Ref no backend) → vira `user.AcquisitionRef`.
  *
- *  Deliberadamente separado de `indicationReceiver` (app/pagamento): aquele
- *  é a atribuição de COMISSÃO de parceiro, escolhida manualmente no
- *  checkout. Este é só a origem do clique, para medir canal — nunca decide
- *  comissão sozinho.
+ *  Separado de `indicationReceiver` (app/pagamento), a resposta do checkout.
+ *  No relatório de parcerias (backend: referralpartner.ResolveAttribution) a
+ *  resposta do checkout vence; este ref só atribui a venda quando a pessoa
+ *  não respondeu (o aluno não passa por esse passo) E o valor é o código de
+ *  um parceiro cadastrado. No checkout, ele pré-marca o parceiro.
+ *
+ *  No app, quem instala pela Play Store com `&referrer=ref%3DCODIGO` recebe
+ *  o mesmo valor neste storage, gravado pelo app (InstallReferrer.kt).
  *
  *  Primeiro toque, não último: se a pessoa passar por dois links diferentes
  *  antes de se cadastrar, vale o primeiro (o valor já salvo não é
@@ -33,9 +37,9 @@ export function captureAcquisitionRef(search: string): void {
         const ref = new URLSearchParams(search).get('ref');
         if (!ref) return;
 
-        // Sem toLowerCase: códigos de parceiro aceitam maiúsculas e são
-        // comparados exatamente (IndicationReceiver guarda o `code` como
-        // foi cadastrado). Normalizar aqui quebraria o cruzamento depois.
+        // Guardado como veio: nem todo ref é código de parceiro ("share_card"
+        // é canal). Quem compara com o parceiro normaliza os dois lados
+        // (normalizeReferralCode aqui, NormalizeCode no backend).
         const trimmed = ref.trim().slice(0, 60);
         if (!trimmed) return;
 
