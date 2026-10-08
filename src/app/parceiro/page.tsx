@@ -43,6 +43,7 @@ import {
 } from '@/libs/storeService';
 import { acceptAuthorTerms } from '@/libs/referralPartnerService';
 import Modal from '@/components/system/Modal';
+import HelpTooltip from '@/components/atoms/HelpTooltip';
 import PublishProgramModal from '@/components/organism/PublishProgramModal';
 import {
     AUTHOR_TERMS_VERSION,
@@ -618,6 +619,16 @@ function PartnerPanelPage() {
                             </>
                         ))}
 
+                    {tab === 'programs' && (
+                        <p className={s.muted}>
+                            Seus programas na loja{' '}
+                            <HelpTooltip
+                                label="Ajuda sobre Meus programas"
+                                text="A situação de cada programa (em revisão, à venda, pausado, recusado com o motivo). Alterar manda uma versão nova para revisão; a vitrine segue com a aprovada. Pausar tira da vitrine. Programas novos você envia em Minha Biblioteca de Treinos, com Vender na loja."
+                                href="/ajuda#loja-passo-a-passo"
+                            />
+                        </p>
+                    )}
                     {tab === 'programs' &&
                         (programRows.length === 0 ? (
                             <p className={s.empty}>

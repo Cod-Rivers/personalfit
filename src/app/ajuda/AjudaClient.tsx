@@ -1543,6 +1543,65 @@ const personalSections: HelpSection[] = [
         ),
     },
     {
+        id: 'loja-passo-a-passo',
+        title: 'Criar um plano para vender na loja: passo a passo',
+        body: (
+            <>
+                <p className="mb-2">
+                    Onde fica no painel do personal: na{' '}
+                    <strong>Área do Personal</strong>, aba{' '}
+                    <strong>Minha Biblioteca de Treinos</strong>. É ali que
+                    você monta o plano e o envia para a loja. As vendas e a
+                    situação de cada programa ficam no{' '}
+                    <Link href="/parceiro">painel do parceiro</Link>.
+                </p>
+                <ol className="mb-2 ps-3">
+                    <li>
+                        <strong>Candidate-se (só na primeira vez):</strong> em
+                        Minha Biblioteca de Treinos, no fim da lista, toque em{' '}
+                        <strong>Venda seus treinos na loja: veja como</strong>{' '}
+                        (ou abra <Link href="/loja/vender">/loja/vender</Link>).
+                        Informe o CREF e o que pretende vender. A equipe confere
+                        e responde por e-mail.
+                    </li>
+                    <li>
+                        <strong>Aceite o Termo do Autor:</strong> aprovado,
+                        abra o <Link href="/parceiro">painel do parceiro</Link>{' '}
+                        e toque em <strong>Ler e aceitar o termo</strong>.
+                    </li>
+                    <li>
+                        <strong>Monte o plano:</strong> em Minha Biblioteca de
+                        Treinos, toque em <strong>+ Novo treino</strong> e
+                        depois em <strong>Montar treinos</strong>. São pelo
+                        menos 2 treinos, todos com exercícios e todo exercício
+                        com vídeo. Exercício que não existe no app: no buscador,
+                        use <strong>Criar exercício com meu vídeo</strong>.
+                    </li>
+                    <li>
+                        <strong>Envie para a loja:</strong> no card do treino,
+                        toque em <strong>Vender na loja</strong>. Preencha a
+                        ficha (título, resumo, nível, objetivos, local,
+                        descrição) e escolha o preço. O formulário mostra as
+                        checagens; corrija o que impedir o envio e toque em{' '}
+                        <strong>Enviar para revisão</strong>.
+                    </li>
+                    <li>
+                        <strong>Acompanhe:</strong> o card do treino mostra{' '}
+                        &quot;Loja: Em revisão&quot;. A resposta chega por
+                        e-mail. Aprovado, o programa entra na loja; em{' '}
+                        <strong>Meus programas</strong>, no painel do parceiro,
+                        você envia a capa, copia o link de divulgação, pausa ou
+                        envia alterações.
+                    </li>
+                </ol>
+                <p className="mb-0">
+                    Os botões &quot;Vender na loja&quot; só aparecem depois que
+                    a candidatura é aprovada.
+                </p>
+            </>
+        ),
+    },
+    {
         id: 'loja-autor',
         title: 'Vender seus programas na loja',
         body: (

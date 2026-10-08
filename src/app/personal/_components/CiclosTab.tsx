@@ -27,6 +27,7 @@ import PublishProgramModal from '@/components/organism/PublishProgramModal';
 import type { Student } from '@/hooks/usePersonalStudents';
 import type { MacrocycleResponse } from '@/libs/planningService';
 import Modal from '@/components/system/Modal';
+import HelpTooltip from '@/components/atoms/HelpTooltip';
 import s from '../personal.module.css';
 
 interface Props {
@@ -332,7 +333,21 @@ export default function CiclosTab({ view, students, planType = 'free', onBack }:
                             <FiGlobe /> Biblioteca Pública
                         </>
                     ) : (
-                        'Minha biblioteca de treinos'
+                        <>
+                            Minha biblioteca de treinos{' '}
+                            <HelpTooltip
+                                label="Ajuda sobre vender na loja"
+                                title="Vender seus treinos na loja"
+                                text="Os treinos daqui podem virar programas à venda na loja de treinos, com a sua parte em cada venda."
+                                steps={[
+                                    'Candidate-se em "Venda seus treinos na loja", no fim da lista (só na primeira vez).',
+                                    'Aprovado, aceite o Termo do Autor no painel do parceiro.',
+                                    'Monte o treino: pelo menos 2 treinos, todo exercício com vídeo.',
+                                    'No card do treino, toque em Vender na loja, preencha a ficha e envie para revisão.',
+                                ]}
+                                href="/ajuda#loja-passo-a-passo"
+                            />
+                        </>
                     )}
                 </h2>
                 {isPublic ? (

@@ -6,6 +6,7 @@ import Page from './page';
 import { acceptAuthorTerms, getMyPartnerPanel, type PartnerPanel } from '@/libs/referralPartnerService';
 import { listMyStorePrograms, runMyStoreProgramAction, type AdminStoreProgram } from '@/libs/storeService';
 
+vi.mock('@/components/atoms/HelpTooltip', () => ({ default: () => null }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), back: vi.fn(), replace: vi.fn() }) }));
 vi.mock('@/hooks/useAuthGuard', () => ({ useAuthGuard: () => ({ checking: false, authorized: true, user: { id: 'u1' } }) }));
 vi.mock('@/libs/referralPartnerService', async (importOriginal) => {

@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { isAxiosError } from 'axios';
 import Modal from '@/components/system/Modal';
+import HelpTooltip from '@/components/atoms/HelpTooltip';
 import StoreListingFields from '@/components/organism/StoreListingFields';
 import {
     authorProgramActions,
@@ -210,7 +211,20 @@ export default function PublishProgramModal({
     const issues = blockers.length ? blockers : (check?.issues ?? []);
 
     return (
-        <Modal open={open} onClose={onClose} title={title}>
+        <Modal
+            open={open}
+            onClose={onClose}
+            title={
+                <>
+                    {title}{' '}
+                    <HelpTooltip
+                        label="Ajuda sobre o envio para a loja"
+                        text="A equipe revisa cada programa antes de ir à venda. Impede o envio: menos de 2 treinos, treino vazio, exercício sem vídeo ou com link do YouTube, Vimeo, Instagram ou TikTok. A descrição não pode prometer resultado."
+                        href="/ajuda#loja-passo-a-passo"
+                    />
+                </>
+            }
+        >
             {done ? (
                 <div className={s.form} aria-live="polite">
                     <div className={s.okMsg}>

@@ -12,6 +12,7 @@ import {
     type AuthorStoreMeta,
 } from '@/libs/storeService';
 
+vi.mock('@/components/atoms/HelpTooltip', () => ({ default: () => null }));
 vi.mock('next/navigation', () => ({
     useRouter: () => ({ push: vi.fn(), back: vi.fn(), replace: vi.fn() }),
 }));

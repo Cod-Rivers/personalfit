@@ -926,3 +926,11 @@
 ## 2026-10-08 10:15 — River (via Claude Code)
 **Resumo:** Registrei como pendência **-48** no topo de [TAREFAS_PENDENTES.md](Todo/TAREFAS_PENDENTES.md#L11), marcada como "só plano, nada implementado". Os 16 itens estão lá, separados nas 3 fases. O detalhe completo está num plano novo, [PLANO_FUNIL_DE_VENDAS.md](Todo/PLANO_FUNIL_DE_VENDAS.md). Ele traz a pesquisa com os números e as fontes, o que o app já tem em cada etapa, os 5 pontos onde o funil vaza, o que cada item reaproveita, o plano que o libera, a métrica e os cuidados com LGPD e spam. Também mexi em duas coisas: - **Item -1.4 (converter participante do desafio em aluno):** marquei como absor…
 **Arquivos:** CiclosTab.tsx, PublishProgramModal, StoreListingFields, page.tsx, parceiro.module.css, storeAuthor.test.ts, useAuthorStorePrograms.ts, usePersonalTemplates.ts
+
+## 2026-10-08 15:17 — River (via Claude Code)
+**Resumo:** Commit e push feitos nos três repositórios, com o backend primeiro. | Repositório | Commit | Branch | |---|---|---| | `Personal-fit-Back` | `2018913` | `main` | | `personalfit` | `d26bcb0` | `master` | | `VenafitApp` | `24a7a24` (só o changelog) | `main` | Cada repositório teve um único commit com tudo da loja de treinos (fases 0 a 3), não um commit por fase. Como o deploy é automático no push, acompanhe os builds no Cloud Build. Os pontos de atenção: - Sem a migração `go run ./cmd/migrate-store-programs -apply`, a `/loja` fica vazia em produção. - Os produtos `program_*` ainda não existem no …
+**Commits:** Loja de treinos: fases 0 a 3 (vitrine, autor, páginas públicas)
+
+## 2026-10-08 15:19 — River (via Claude Code)
+**Resumo:** Combinado: não rode a migração `cmd/migrate-store-programs`. Nada no código precisa mudar. - **Vitrine:** a `/loja` abre vazia até o primeiro autor publicar um programa. - **Os 20 "Estilo X":** sem a migração, eles não aparecem na `/loja`. Continuam existindo no banco e na biblioteca pública dos personais. A rota antiga ainda os vende, na faixa padrão de R$ 29,90. Se eram só exemplos, o mais limpo é apagá-los do banco ou despublicá-los. Quer que eu faça isso? - **Documentação:** registrei a migração como dispensada no plano, em `TAREFAS_PENDENTES.md`, em `TESTES_A_FAZER.md` e na memória. Essas…
+**Arquivos:** CHANGELOG_FRONTEND.md
