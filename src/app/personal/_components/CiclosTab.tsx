@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
     FiGlobe,
@@ -13,8 +14,16 @@ import {
     FiArrowLeft,
     FiBookOpen,
     FiFolder,
+    FiShoppingBag,
 } from 'react-icons/fi';
 import { usePersonalTemplates } from '@/hooks/usePersonalTemplates';
+import { useAuthorStorePrograms } from '@/hooks/useAuthorStorePrograms';
+import {
+    authorProgramActions,
+    programFromSource,
+    type AdminStoreProgram,
+} from '@/libs/storeService';
+import PublishProgramModal from '@/components/organism/PublishProgramModal';
 import type { Student } from '@/hooks/usePersonalStudents';
 import type { MacrocycleResponse } from '@/libs/planningService';
 import Modal from '@/components/system/Modal';
@@ -28,6 +37,65 @@ interface Props {
 }
 
 type SortMode = 'recent' | 'usage';
+
+type PublishTarget = {
+    template?: { id: string; name: string };
+    program?: AdminStoreProgram;
+};
+
+/** Situação, na loja de treinos, do programa que saiu do treino (autor). */
+function StoreBadge({ program }: { program?: AdminStoreProgram }) {
+    if (!program) return null;
+    return (
+        <span
+            className={s.badgeMesocycles}
+            style={{ background: 'var(--mint-glow)', color: 'var(--mint-text)' }}
+            title="Situação na loja de treinos"
+        >
+            <FiShoppingBag aria-hidden /> Loja:{' '}
+            {authorProgramActions(program).label}
+        </span>
+    );
+}
+
+/** O envio para a loja a partir do treino: o primeiro, o reenvio ou a
+ *  alteração; com o programa na fila, o painel. */
+function StoreAction({
+    template,
+    program,
+    onOpen,
+}: {
+    template: MacrocycleResponse;
+    program?: AdminStoreProgram;
+    onOpen: (target: PublishTarget) => void;
+}) {
+    if (!program) {
+        return (
+            <button
+                onClick={() =>
+                    onOpen({ template: { id: template.id, name: template.name || '' } })
+                }
+                className={s.btnEdit}
+            >
+                <FiShoppingBag /> Vender na loja
+            </button>
+        );
+    }
+    const mode = authorProgramActions(program).submitMode;
+    if (!mode) {
+        return (
+            <Link href="/parceiro" className={s.btnCancel}>
+                <FiShoppingBag /> Ver no painel
+            </Link>
+        );
+    }
+    return (
+        <button onClick={() => onOpen({ program })} className={s.btnEdit}>
+            <FiShoppingBag />{' '}
+            {mode === 'revision' ? 'Loja: enviar alteração' : 'Loja: enviar para revisão'}
+        </button>
+    );
+}
 
 /** "Rotina · 3 treinos", "Periodização · 2 fases". */
 function templateSummary(tpl: MacrocycleResponse): string {
@@ -60,18 +128,30 @@ export default function CiclosTab({ view, students, planType = 'free', onBack }:
         handleTplDelete,
         duplicateTpl,
         duplicatingId,
+        fetchTemplates,
     } = usePersonalTemplates(view);
 
     const isPublic = view === 'public';
+
+    // Loja de treinos (fase 2): o autor manda um treino da biblioteca para a
+    // loja e vê a situação de cada um que já foi. O autor também mantém
+    // treinos privados mesmo sem o PRO (o backend aceita: AuthorAccounts).
+    const {
+        isAuthor,
+        programs: storePrograms,
+        reload: reloadStore,
+    } = useAuthorStorePrograms(!isPublic);
+    const canKeepPrivate = isPro || isAuthor;
+    const [publishing, setPublishing] = useState<PublishTarget | null>(null);
 
     // No plano free, ciclos nunca podem ficar privados — força o valor mesmo
     // para registros legados criados antes dessa regra existir, já que o
     // dropdown de "Privado" fica oculto e o personal não tem como escolhê-lo.
     useEffect(() => {
-        if (modal === 'tplEdit' && !isPro) {
+        if (modal === 'tplEdit' && !canKeepPrivate) {
             setTplForm((prev) => ({ ...prev, is_public: true }));
         }
-    }, [modal, isPro, setTplForm]);
+    }, [modal, canKeepPrivate, setTplForm]);
 
     const [search, setSearch] = useState('');
     const [sortMode, setSortMode] = useState<SortMode>('recent');
@@ -164,6 +244,11 @@ export default function CiclosTab({ view, students, planType = 'free', onBack }:
                                       : 'Pendente de revisão'}
                             </span>
                         )}
+                        {!isPublic && isAuthor && (
+                            <StoreBadge
+                                program={programFromSource(storePrograms, tpl.id)}
+                            />
+                        )}
                         {(tpl.usage_count ?? 0) > 0 && (
                             <span
                                 className={s.badgeMesocycles}
@@ -223,12 +308,19 @@ export default function CiclosTab({ view, students, planType = 'free', onBack }:
                             >
                                 <FiTrash2 /> Remover
                             </button>
+                            {isAuthor && (
+                                <StoreAction
+                                    template={tpl}
+                                    program={programFromSource(storePrograms, tpl.id)}
+                                    onOpen={setPublishing}
+                                />
+                            )}
                         </>
                     )}
                 </div>
             </div>
         ),
-        [isPublic, openApply, openEdit, openDelete, duplicateTpl, duplicatingId, router],
+        [isPublic, isAuthor, storePrograms, openApply, openEdit, openDelete, duplicateTpl, duplicatingId, router],
     );
 
     return (
@@ -337,6 +429,25 @@ export default function CiclosTab({ view, students, planType = 'free', onBack }:
                     {visibleTemplates.map((tpl) => renderTemplateCard(tpl))}
                 </div>
             )}
+
+            {!isPublic && !isAuthor && !tplLoading && (
+                <p className={s.confirmText}>
+                    Profissional com CREF? Venda seus treinos na loja do
+                    Venafit: <Link href="/loja/vender">veja como</Link>.
+                </p>
+            )}
+
+            <PublishProgramModal
+                open={!!publishing}
+                template={publishing?.template}
+                program={publishing?.program}
+                onClose={() => setPublishing(null)}
+                onDone={() => {
+                    void reloadStore();
+                    // O envio pode tirar o treino da biblioteca pública.
+                    void fetchTemplates();
+                }}
+            />
 
             {/* ── Template Apply Modal ── */}
             <Modal
@@ -465,7 +576,7 @@ export default function CiclosTab({ view, students, planType = 'free', onBack }:
                     <label className={s.formLabel}>
                         Visibilidade
                     </label>
-                    {isPro ? (
+                    {canKeepPrivate ? (
                         <select
                             value={String(tplForm.is_public || false)}
                             onChange={(e) =>

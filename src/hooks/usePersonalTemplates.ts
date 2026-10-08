@@ -185,5 +185,6 @@ export function usePersonalTemplates(view: 'own' | 'public') {
         handleTplDelete,
         duplicateTpl,
         duplicatingId,
+        fetchTemplates,
     };
 }

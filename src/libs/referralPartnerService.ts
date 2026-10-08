@@ -57,8 +57,112 @@ export interface ReferralPartner {
     /** Conta do Venafit que acessa o painel do parceiro (ausente = sem acesso). */
     account_name?: string;
     account_email?: string;
+    /** Bloco de autor da loja de programas (ausente = parceiro comum). */
+    author?: AuthorBlock;
     created_at: string;
     updated_at: string;
+}
+
+/** Percentuais padrão do autor (decisão 1 do plano da loja). Precisam ficar
+ *  em sincronia com Default*Share em domain/referralpartner/author.go. */
+export const DEFAULT_AUTHOR_STORE_SHARE = 70;
+export const DEFAULT_AUTHOR_DIRECT_SHARE = 85;
+
+/** UFs aceitas no CREF. */
+export const BRAZILIAN_STATES = [
+    'AC',
+    'AL',
+    'AP',
+    'AM',
+    'BA',
+    'CE',
+    'DF',
+    'ES',
+    'GO',
+    'MA',
+    'MT',
+    'MS',
+    'MG',
+    'PA',
+    'PB',
+    'PR',
+    'PE',
+    'PI',
+    'RJ',
+    'RN',
+    'RS',
+    'RO',
+    'RR',
+    'SC',
+    'SP',
+    'SE',
+    'TO',
+];
+
+/** Bloco de autor da loja (AuthorResponse no backend). */
+export interface AuthorBlock {
+    enabled: boolean;
+    public_name: string;
+    bio?: string;
+    specialties: string[];
+    /** "012345-G" */
+    cref: string;
+    cref_state: string;
+    /** "CREF 012345-G/SP" */
+    cref_label: string;
+    /** Quando o admin conferiu o CREF (ausente = não conferido). */
+    cref_verified_at?: string;
+    store_share: number;
+    direct_share: number;
+    terms_version?: string;
+    terms_accepted_at?: string;
+    /** "panel": o autor aceitou no painel; "admin": a equipe registrou o
+     *  termo assinado fora do app. */
+    terms_accepted_via?: 'panel' | 'admin';
+    photo_key?: string;
+    photo_url?: string;
+    /** Loja ligada, parceria ativa, CREF conferido e termo aceito. */
+    can_publish: boolean;
+}
+
+export interface AuthorRequest {
+    enabled: boolean;
+    public_name: string;
+    bio: string;
+    specialties: string[];
+    cref: string;
+    cref_state: string;
+    cref_verified: boolean;
+    store_share: number;
+    direct_share: number;
+    terms_accepted: boolean;
+    photo_key: string;
+}
+
+/** Admin: grava o bloco de autor do parceiro. */
+export async function updatePartnerAuthor(
+    partnerId: string,
+    data: AuthorRequest,
+): Promise<ReferralPartner> {
+    const res = await Api.put<ReferralPartner>(
+        `/referral-partners/${partnerId}/author`,
+        data,
+    );
+    return res.data;
+}
+
+/** Admin: URL assinada para enviar a foto do autor direto ao R2. */
+export async function getAuthorPhotoUploadUrl(
+    partnerId: string,
+    contentType: string,
+): Promise<{ key: string; upload_url: string; public_url: string }> {
+    const res = await Api.post(
+        `/referral-partners/${partnerId}/author/photo-upload-url`,
+        {
+            content_type: contentType,
+        },
+    );
+    return res.data;
 }
 
 export interface CreateReferralPartnerRequest {
@@ -83,7 +187,10 @@ export interface CreateReferralPartnerRequest {
 
 /** A edição não tem código: ele não muda depois de criado (está nos links já
  *  enviados e nos clientes que o usaram). */
-export type UpdateReferralPartnerRequest = Omit<CreateReferralPartnerRequest, 'code'>;
+export type UpdateReferralPartnerRequest = Omit<
+    CreateReferralPartnerRequest,
+    'code'
+>;
 
 /** Admin: lista todos os parceiros de indicação */
 export async function getAllReferralPartners(): Promise<ReferralPartner[]> {
@@ -118,7 +225,9 @@ export interface ReferralCodeConfirmation {
  * um caso do outro). Sem rede, limite estourado e erro do servidor são
  * lançados, para a tela não dizer "código não encontrado" à toa.
  */
-export async function checkReferralCode(raw: string): Promise<ReferralCodeConfirmation | null> {
+export async function checkReferralCode(
+    raw: string,
+): Promise<ReferralCodeConfirmation | null> {
     const code = normalizeReferralCode(raw);
     if (!code) return null;
     try {
@@ -127,14 +236,19 @@ export async function checkReferralCode(raw: string): Promise<ReferralCodeConfir
         );
         return res.data;
     } catch (err) {
-        if (axios.isAxiosError(err) && err.response?.status === 404) return null;
+        if (axios.isAxiosError(err) && err.response?.status === 404)
+            return null;
         throw err;
     }
 }
 
 /** Precisa ficar em sincronia com CodeAvailability em
  *  Personal-fit-Back/internal/application/referralpartner/queries/referral-code.go. */
-export type CodeAvailabilityStatus = 'available' | 'taken' | 'reserved' | 'invalid';
+export type CodeAvailabilityStatus =
+    | 'available'
+    | 'taken'
+    | 'reserved'
+    | 'invalid';
 
 /** Admin: diz se o código escolhido pode ser usado num parceiro novo
  *  ("taken" inclui os parceiros inativos: o código nunca volta a ficar livre). */
@@ -253,6 +367,8 @@ export interface PartnershipRow {
     gross: number;
     net: number;
     commission: number;
+    /** Parte dos autores nas vendas de programas desta origem (custo, separado da comissão). */
+    author_share: number;
     commission_paid: number;
     other_expenses: number;
     result: number;
@@ -268,7 +384,7 @@ export interface PartnershipSale {
     occurred_at: string;
     origin_key: string;
     origin_label: string;
-    attribution_source?: 'checkout' | 'link';
+    attribution_source?: 'checkout' | 'link' | 'sale_link';
     user_id: string;
     user_name: string;
     user_email: string;
@@ -284,6 +400,11 @@ export interface PartnershipSale {
     net_estimated: boolean;
     commission: number;
     commission_status: CommissionStatus;
+    /** Venda de programa da loja. */
+    program_title?: string;
+    author_name?: string;
+    author_amount?: number;
+    direct_sale?: boolean;
 }
 
 export interface PartnerExpense {
@@ -302,7 +423,25 @@ export interface PartnershipMonth {
     gross: number;
     net: number;
     commission: number;
+    author_share: number;
     other_expenses: number;
+}
+
+/** Linha da tabela por programa da loja. */
+export interface PartnershipProgram {
+    program_id: string;
+    title: string;
+    author_id?: string;
+    author_name?: string;
+    sales: number;
+    direct_sales: number;
+    refunds: number;
+    gross: number;
+    net: number;
+    commission: number;
+    author_share: number;
+    /** Líquido − comissão − parte do autor. */
+    venafit: number;
 }
 
 export interface PartnershipReport {
@@ -314,6 +453,7 @@ export interface PartnershipReport {
     sales: PartnershipSale[];
     expenses: PartnerExpense[];
     months: PartnershipMonth[];
+    programs: PartnershipProgram[];
 }
 
 export interface PartnershipReportFilters {
@@ -435,16 +575,60 @@ export interface PartnerPanelSale {
     commission_value: number;
     commission_base?: CommissionBase;
     commission: number;
+    /** "referral" (indicou), "author" (programa dele) ou "direct" (os dois). */
+    role: PanelSaleRole;
+    /** O que a venda deve ao parceiro (comissão + parte de autor). */
+    amount: number;
+    program_title?: string;
+    author_share_value?: number;
+    author_amount?: number;
     commission_status: CommissionStatus;
     /** AAAA-MM-DD */
     release_at: string;
 }
+
+export type PanelSaleRole = 'referral' | 'author' | 'direct';
+
+/** Linha da aba "Meus programas" do autor. */
+export interface PartnerPanelProgram {
+    id: string;
+    title: string;
+    status: StoreProgramStatus;
+    price: number;
+    sales: number;
+    revenue: number;
+    rating_avg: number;
+    rating_count: number;
+}
+
+export type StoreProgramStatus =
+    | 'draft'
+    | 'pending'
+    | 'published'
+    | 'rejected'
+    | 'paused'
+    | 'retired';
 
 export interface PartnerPanel {
     partner: CommissionRule & {
         name: string;
         code: string;
         is_active: boolean;
+        /** Bloco de autor (ausente = parceiro comum). */
+        author?: {
+            enabled: boolean;
+            public_name: string;
+            cref: string;
+            store_share: number;
+            direct_share: number;
+            can_publish: boolean;
+            /** O que falta para publicar: o CREF conferido pela equipe e o
+             *  aceite da versão em vigor do Termo do Autor. */
+            cref_verified: boolean;
+            terms_accepted: boolean;
+            /** Versão em vigor do termo (mandada de volta no aceite). */
+            terms_version: string;
+        };
     };
     settings: ProgramSettings;
     from: string;
@@ -455,7 +639,12 @@ export interface PartnerPanel {
         purchases: number;
         renewals: number;
         refunds: number;
+        /** Vendas dos programas do autor (vitrine ou diretas). */
+        program_sales: number;
+        /** Comissão de indicação. */
         commission: number;
+        /** Parte do autor nos programas dele. */
+        author_earnings: number;
     };
     /** Todas as datas. due < 0 = estorno já repassado, a descontar. */
     balance: { holding: number; available: number; paid: number; due: number };
@@ -463,6 +652,8 @@ export interface PartnerPanel {
     statements: {
         month: string;
         generated: number;
+        generated_referral: number;
+        generated_programs: number;
         voided: number;
         paid: number;
         balance: number;
@@ -472,6 +663,8 @@ export interface PartnerPanel {
         total: number;
         payments: { date: string; amount: number; description?: string }[];
     }[];
+    /** Aba "Meus programas" (só autor). */
+    programs: PartnerPanelProgram[];
 }
 
 /** O painel do parceiro vinculado à conta logada (404 se não há). */
@@ -484,4 +677,13 @@ export async function getMyPartnerPanel(
     if (to) params.to = to;
     const res = await Api.get<PartnerPanel>('/me/partner', { params });
     return res.data;
+}
+
+/** POST /me/partner/author-terms — o autor aceita, no painel, a versão do
+ *  Termo do Autor que leu (409 se o termo mudou desde então). */
+export async function acceptAuthorTerms(
+    version: string,
+): Promise<{ terms_version: string; can_publish: boolean }> {
+    const { data } = await Api.post('/me/partner/author-terms', { version });
+    return data;
 }

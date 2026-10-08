@@ -582,15 +582,21 @@ export default function PeriodizacaoPage() {
                                         >
                                             <FiEdit3 /> Editar
                                         </button>
-                                        <button
-                                            className={s.btnSecondary}
-                                            disabled={!online}
-                                            onClick={(e) =>
-                                                openLibraryModal(e, m)
-                                            }
-                                        >
-                                            <FiBookmark /> Salvar na biblioteca
-                                        </button>
+                                        {/* O plano que o aluno comprou na loja
+                                            não vai para a biblioteca do
+                                            personal (o servidor recusa). */}
+                                        {m.category !== 'celebrity' && (
+                                            <button
+                                                className={s.btnSecondary}
+                                                disabled={!online}
+                                                onClick={(e) =>
+                                                    openLibraryModal(e, m)
+                                                }
+                                            >
+                                                <FiBookmark /> Salvar na
+                                                biblioteca
+                                            </button>
+                                        )}
                                         <button
                                             className={s.btnSecondary}
                                             disabled={!online || busyId === m.id}

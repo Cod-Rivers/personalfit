@@ -755,6 +755,11 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                             <h3 className={styles.exerciseTitle}>
                                 {exercise.name}
                             </h3>
+                            {exercise.video_credit && (
+                                <p className={styles.videoCredit}>
+                                    {exercise.video_credit}
+                                </p>
+                            )}
                             {onStartCircuit && (
                                 <div className={styles.circuitCallout}>
                                     <span>

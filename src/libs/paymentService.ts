@@ -370,6 +370,8 @@ export async function verifyGooglePlayPurchase(
     lockedPlanId?: string,
     /** "Como você conheceu", nos planos do personal (mesmo valor do PIX/cartão). */
     indicationReceiver?: string,
+    /** Programa da loja (o produto é o da faixa dele) e o ?ref= do link. */
+    store?: { programId: string; ref?: string | null },
 ): Promise<GooglePlayVerifyResponse> {
     const res = await Api.post<GooglePlayVerifyResponse>('/billing/google/verify', {
         product_id: productId,
@@ -378,6 +380,8 @@ export async function verifyGooglePlayPurchase(
         ...(templateId ? { template_id: templateId } : {}),
         ...(lockedPlanId ? { locked_plan_id: lockedPlanId } : {}),
         ...(indicationReceiver ? { indication_receiver: indicationReceiver } : {}),
+        ...(store?.programId ? { program_id: store.programId } : {}),
+        ...(store?.ref ? { ref: store.ref } : {}),
     });
     return res.data;
 }

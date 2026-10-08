@@ -360,18 +360,73 @@ const studentSections: HelpSection[] = [
     },
     {
         id: 'escolher-plano',
-        title: 'Escolher um plano pronto',
+        title: 'Loja de treinos',
         body: (
-            <p className="mb-0">
-                Em Meus Treinos, no cartão <strong>Treine como os famosos</strong>{' '}
-                (Loja de planos), você pode comprar um modelo de treino pronto.
-                Ele entra como o seu plano atual. Se você tem personal, o plano
-                que ele montou continua valendo e fica em{' '}
-                <strong>Trocar plano</strong>; sem personal, o plano novo
-                substitui o anterior. Cada plano é uma compra avulsa e pode ser
-                baixado para treinar offline. Se o seu personal tem o plano PRO,
-                a loja não aparece: o seu treino vem dele.
-            </p>
+            <>
+                <p className="mb-2">
+                    Em Meus Treinos, no cartão{' '}
+                    <strong>Programas de profissionais</strong>, toque em{' '}
+                    <strong>Ver os programas</strong>. A loja reúne programas
+                    completos montados por profissionais de Educação Física, com
+                    o <strong>CREF</strong> conferido pela equipe do Venafit, e a{' '}
+                    <strong>Coleção Venafit</strong>, montada pela nossa equipe.
+                </p>
+                <ul className="mb-2 ps-3">
+                    <li>
+                        Cada programa mostra o autor, as estrelas de quem já
+                        comprou, o preço, o nível, quantos dias por semana, por
+                        quantas semanas e onde se treina (academia, halteres em
+                        casa ou peso do corpo). Dá para filtrar e ordenar por
+                        destaques, mais vendidos, mais bem avaliados ou mais
+                        novos.
+                    </li>
+                    <li>
+                        A página do programa mostra a descrição, para quem é,
+                        os pré-requisitos e a estrutura: os treinos, quantos
+                        exercícios e os grupos musculares de cada um. As séries
+                        e repetições aparecem depois da compra.
+                    </li>
+                    <li>
+                        O pagamento é único (PIX, cartão ou Google Play) e o
+                        programa entra como o seu plano atual, com &quot;por
+                        Fulano · CREF&quot; no cartão do plano. Se você tem
+                        personal, o plano que ele montou continua valendo e
+                        fica em <strong>Trocar plano</strong>; sem personal, o
+                        programa novo substitui o anterior. Ele é seu para
+                        sempre e pode ser baixado para treinar offline.
+                    </li>
+                    <li>
+                        <strong>Coleções:</strong> no topo da loja, linhas com
+                        programas escolhidos pela equipe (&quot;Treinar em
+                        casa&quot;, &quot;Para começar&quot;). A loja e a página
+                        de cada programa abrem até sem login, para você mandar o
+                        link para alguém; a compra pede a conta.
+                    </li>
+                    <li>
+                        <strong>Versão nova:</strong> quando o autor atualiza o
+                        programa, você recebe um aviso e o cartão do plano
+                        mostra <strong>Usar a versão nova</strong>. Sem pagar
+                        de novo, a versão nova vira o plano atual, e o anterior
+                        fica no histórico, com os treinos e as cargas que você
+                        registrou.
+                    </li>
+                    <li>
+                        <strong>Avaliação:</strong> em Meus Treinos, ao avaliar
+                        um programa comprado, você pode marcar{' '}
+                        <strong>Mostrar meu comentário na página do
+                        programa</strong>. Ele aparece só com o seu primeiro
+                        nome e o selo &quot;Compra verificada&quot;, depois da
+                        revisão da equipe. Sem marcar, o comentário fica só para
+                        a equipe e para o autor ver a nota.
+                    </li>
+                </ul>
+                <p className="mb-0">
+                    O programa é genérico: não substitui uma avaliação
+                    individual. Se você tem alguma condição de saúde, procure um
+                    médico antes de começar. Se o seu personal tem o plano PRO,
+                    a loja não aparece: o seu treino vem dele.
+                </p>
+            </>
         ),
     },
     {
@@ -1485,6 +1540,109 @@ const personalSections: HelpSection[] = [
                 também aparecem em <strong>Copiar da biblioteca</strong>, na
                 hora de criar o treino de um aluno.
             </p>
+        ),
+    },
+    {
+        id: 'loja-autor',
+        title: 'Vender seus programas na loja',
+        body: (
+            <>
+                <p className="mb-2">
+                    Profissionais de Educação Física com <strong>CREF
+                    ativo</strong> podem vender programas de treino na loja do
+                    aluno. O autor é um parceiro do Venafit com a loja ligada:
+                    usa o mesmo código, o mesmo painel (<code>/parceiro</code>)
+                    e o mesmo repasse mensal da parceria. Não precisa ter o
+                    PRO. Para começar, candidate-se em{' '}
+                    <Link href="/loja/vender">Vender seus treinos</Link>: a
+                    equipe confere o CREF na consulta pública do CONFEF e
+                    responde por e-mail. Aprovado, aceite o{' '}
+                    <Link href="/loja/termo-do-autor">Termo do Autor</Link> no
+                    painel.
+                </p>
+                <ul className="mb-2 ps-3">
+                    <li>
+                        <strong>Como publicar:</strong> monte o programa em
+                        Minha Biblioteca de Treinos e use{' '}
+                        <strong>Vender na loja</strong> no card do treino.
+                        Escreva a ficha (descrição, nível, objetivos, local e
+                        preço), confira as checagens e envie. O programa entra
+                        na fila de revisão da equipe, e a resposta chega por
+                        e-mail. Se o treino estava na Biblioteca Pública, ele
+                        sai de lá e fica só com você.
+                    </li>
+                    <li>
+                        <strong>O que vai à venda é uma cópia congelada:</strong>{' '}
+                        você continua editando o seu treino, e a loja não muda
+                        sozinha. Para mudar um programa já aprovado (ficha,
+                        preço, capa ou o conteúdo do treino), use{' '}
+                        <strong>Loja: enviar alteração</strong> no card do
+                        treino ou <strong>Alterar</strong> em Meus programas,
+                        no painel. A vitrine continua com a versão aprovada até
+                        a equipe revisar, e quem já comprou fica com a versão
+                        que comprou. O preço muda no máximo uma vez a cada 30
+                        dias.
+                    </li>
+                    <li>
+                        <strong>Recusado?</strong> O motivo aparece no painel e
+                        no e-mail. Ajuste o treino e use{' '}
+                        <strong>Enviar para revisão</strong> de novo. Enquanto
+                        está na fila, dá para cancelar o envio.
+                    </li>
+                    <li>
+                        <strong>Pausar:</strong> em Meus programas, no painel,{' '}
+                        <strong>Pausar</strong> tira o programa da vitrine, e{' '}
+                        <strong>Voltar à vitrine</strong> o devolve. Um
+                        programa pausado pela equipe só volta pela equipe.
+                    </li>
+                    <li>
+                        <strong>Exercício que não existe no app:</strong> no
+                        buscador de exercícios do editor, use{' '}
+                        <strong>Criar exercício com meu vídeo</strong>. O
+                        exercício fica em Meus exercícios. Na publicação, o
+                        vídeo é copiado para a pasta do programa: apagar ou
+                        trocar o original não tira o vídeo de quem comprou.
+                    </li>
+                    <li>
+                        <strong>Vídeo para a biblioteca do app:</strong> em Meus
+                        exercícios, <strong>Oferecer à biblioteca</strong>{' '}
+                        autoriza a equipe a levar aquele vídeo para a biblioteca
+                        geral, com o crédito &quot;Vídeo: seu nome · seu
+                        CREF&quot;, que aparece para todo aluno que treinar
+                        com ele. Dá para retirar a oferta até a equipe levar o
+                        vídeo; trocar o vídeo apaga a autorização.
+                    </li>
+                    <li>
+                        <strong>Comentários:</strong> a página do programa
+                        mostra os comentários de quem comprou e autorizou, com o
+                        primeiro nome, depois da revisão da equipe.
+                    </li>
+                    <li>
+                        <strong>O que impede publicar:</strong> menos de 2
+                        treinos, treino vazio, exercício sem vídeo e link
+                        externo (YouTube, Vimeo, Instagram, TikTok). Vídeo que
+                        só toca depois de baixar inteiro gera um aviso: exporte
+                        de novo com a opção de otimizar para a web.
+                    </li>
+                    <li>
+                        <strong>Quanto você recebe:</strong> uma parte do valor
+                        líquido de cada venda (padrão: 70% pela vitrine da loja
+                        e 85% quando você mesmo traz o comprador, pelo seu link
+                        ou código). A venda entra no painel em carência de 30
+                        dias; estorno anula a sua parte.
+                    </li>
+                    <li>
+                        <strong>Divulgar:</strong> em{' '}
+                        <strong>Meus programas</strong>, no painel do
+                        parceiro, copie o link de cada programa. O link da sua
+                        vitrine na loja é <code>/loja/autor/SEU-CODIGO</code>.
+                    </li>
+                </ul>
+                <p className="mb-0">
+                    Quem comprou nunca perde o plano, mesmo que o programa saia
+                    da loja. O painel não mostra nenhum dado de quem comprou.
+                </p>
+            </>
         ),
     },
     {

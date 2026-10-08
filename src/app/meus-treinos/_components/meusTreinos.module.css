@@ -429,3 +429,22 @@
     flex: 1;
     min-width: 14rem;
 }
+
+/* Versão nova do programa comprado (loja, fase 3). */
+.updateBox {
+    display: flex;
+    gap: var(--space-3);
+    align-items: flex-start;
+    margin-top: var(--space-3);
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    background: var(--mint-glow);
+    border: 1px solid var(--mint-dim);
+    color: var(--mint-text);
+}
+
+.updateTitle {
+    margin: 0;
+    font-weight: 700;
+    color: var(--text-primary);
+}

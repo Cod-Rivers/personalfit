@@ -42,6 +42,7 @@ import {
     FiChevronLeft,
     FiChevronRight,
     FiDollarSign,
+    FiShoppingBag,
 } from 'react-icons/fi';
 import type { IconType } from 'react-icons';
 
@@ -58,6 +59,10 @@ const AdminReferralPartners = dynamic(
     () => import('@/components/organism/AdminReferralPartners'),
     { ssr: false, loading: () => <div className="text-center py-4">Carregando…</div> },
 );
+const AdminStore = dynamic(() => import('@/components/organism/AdminStore'), {
+    ssr: false,
+    loading: () => <div className="text-center py-4">Carregando…</div>,
+});
 const AdminPartnershipReport = dynamic(
     () => import('@/components/organism/AdminPartnershipReport'),
     { ssr: false, loading: () => <div className="text-center py-4">Carregando…</div> },
@@ -78,6 +83,7 @@ type Section =
     | 'ads'
     | 'referral-partners'
     | 'partnerships'
+    | 'store'
     | 'poses'
     | 'relatorios'
     | 'diagnostics';
@@ -157,6 +163,12 @@ export default function AdminDashboard() {
             key: 'partnerships',
             label: 'Parcerias: resultados',
             icon: FiDollarSign,
+            fullAdminOnly: true,
+        },
+        {
+            key: 'store',
+            label: 'Loja de treinos',
+            icon: FiShoppingBag,
             fullAdminOnly: true,
         },
         {
@@ -253,6 +265,7 @@ export default function AdminDashboard() {
                     <AdminReferralPartners />
                 )}
                 {section === 'partnerships' && <AdminPartnershipReport />}
+                {section === 'store' && <AdminStore />}
                 {section === 'relatorios' && <RelatoriosSection />}
                 {section === 'diagnostics' && <DiagnosticsSection />}
             </main>

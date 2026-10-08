@@ -13,6 +13,11 @@ export interface MyRating {
     stars: number;
     comment: string;
     created_at: string;
+    /** Plano comprado na loja: o comentário pode ir para a página do
+     *  programa (public) e a situação da moderação. */
+    store_program_id?: string;
+    public?: boolean;
+    moderation?: 'pending' | 'approved' | 'rejected';
 }
 
 export async function submitRating(body: {
@@ -20,6 +25,9 @@ export async function submitRating(body: {
     target_type: 'macrocycle' | 'mesocycle' | 'microcycle';
     stars: number;
     comment?: string;
+    /** Autoriza mostrar o comentário na página do programa da loja, com o
+     *  primeiro nome (só plano comprado na loja; passa pela moderação). */
+    public_consent?: boolean;
 }): Promise<void> {
     await Api.post('/ratings', body);
 }

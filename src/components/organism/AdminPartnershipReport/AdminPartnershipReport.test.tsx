@@ -73,6 +73,7 @@ const row: PartnershipRow = {
     gross: 159.6,
     net: 135.66,
     commission: 11.97,
+    author_share: 0,
     commission_paid: 0,
     other_expenses: 50,
     result: 73.69,
@@ -111,12 +112,14 @@ const REPORT: PartnershipReport = {
         },
     ],
     expenses: [],
+    programs: [],
     months: [
         {
             month: '2026-10',
             gross: 159.6,
             net: 135.66,
             commission: 11.97,
+            author_share: 0,
             other_expenses: 50,
         },
     ],

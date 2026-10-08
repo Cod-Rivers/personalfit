@@ -1,8 +1,16 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { isAxiosError } from 'axios';
-import { FiCopy, FiPrinter, FiShare2 } from 'react-icons/fi';
+import {
+    FiCopy,
+    FiEdit3,
+    FiPause,
+    FiPlay,
+    FiPrinter,
+    FiShare2,
+} from 'react-icons/fi';
 import FollowUpPage from '@/components/templates/FollowUpPage';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import {
@@ -23,6 +31,23 @@ import {
 } from '@/components/organism/AdminPartnershipReport/PartnershipLists';
 import { PRESETS, presetRange, type Preset } from '@/libs/periodPresets';
 import { playStoreUrl } from '@/libs/androidApp';
+import {
+    authorProgramActions,
+    authorShareLink,
+    listMyStorePrograms,
+    programShareLink,
+    runMyStoreProgramAction,
+    STORE_STATUS_LABEL,
+    type AdminStoreProgram,
+    type MyStoreProgramAction,
+} from '@/libs/storeService';
+import { acceptAuthorTerms } from '@/libs/referralPartnerService';
+import Modal from '@/components/system/Modal';
+import PublishProgramModal from '@/components/organism/PublishProgramModal';
+import {
+    AUTHOR_TERMS_VERSION,
+    AuthorTermsText,
+} from '@/app/loja/_components/AuthorTerms';
 import s from './parceiro.module.css';
 
 const MONTHS = [
@@ -43,8 +68,12 @@ const monthName = (key: string) =>
     `${MONTHS[Number(key.slice(5, 7)) - 1] ?? key.slice(5, 7)} de ${key.slice(0, 4)}`;
 
 /** "15% sobre R$ 33,91 (líquido)" — a conta de cada comissão, para o
- *  parceiro refazer sozinho. */
+ *  parceiro refazer sozinho. Na venda de programa dele, a conta é a da
+ *  parte do autor. */
 function commissionMath(x: PartnerPanelSale): string {
+    if (x.role !== 'referral' && x.author_share_value) {
+        return `sua parte: ${x.author_share_value.toLocaleString('pt-BR')}% sobre ${money(x.net)} (líquido)`;
+    }
     if (x.commission <= 0) return '';
     if (x.commission_type === 'fixed') return 'valor fixo por venda';
     const base = x.commission_base === 'gross' ? x.gross : x.net;
@@ -70,16 +99,38 @@ function StatusChip({ sale }: { sale: PartnerPanelSale }) {
     }
 }
 
+const ROLE_LABEL: Record<PartnerPanelSale['role'], string> = {
+    referral: 'Indicação',
+    author: 'Venda de programa',
+    direct: 'Venda direta do seu programa',
+};
+
 function PartnerPanelPage() {
-    const { checking } = useAuthGuard();
+    const { checking, user } = useAuthGuard();
     const [preset, setPreset] = useState<Preset>('month');
     const [range, setRange] = useState(() => presetRange('month')!);
     const [panel, setPanel] = useState<PartnerPanel | null>(null);
     const [notPartner, setNotPartner] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(true);
-    const [tab, setTab] = useState<'sales' | 'statement' | 'payments'>('sales');
+    const [tab, setTab] = useState<
+        'sales' | 'statement' | 'payments' | 'programs'
+    >('sales');
     const [copied, setCopied] = useState('');
+    // Loja (fase 2): os programas do autor com a situação completa (envio,
+    // alteração em revisão, quem pausou), o formulário de envio e o aceite
+    // do Termo do Autor.
+    const [myPrograms, setMyPrograms] = useState<AdminStoreProgram[] | null>(
+        null,
+    );
+    const [editing, setEditing] = useState<AdminStoreProgram | null>(null);
+    const [actionBusy, setActionBusy] = useState(false);
+    const [actionMsg, setActionMsg] = useState('');
+    const [termsOpen, setTermsOpen] = useState(false);
+    const [termsChecked, setTermsChecked] = useState(false);
+    const [termsBusy, setTermsBusy] = useState(false);
+    const [termsError, setTermsError] = useState('');
+    const isAuthor = !!panel?.partner.author;
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -102,6 +153,67 @@ function PartnerPanelPage() {
     useEffect(() => {
         if (!checking) void load();
     }, [checking, load]);
+
+    // 403 (autor com a loja desligada, ou conta que não é de personal): a
+    // aba mostra só as vendas, sem as ações.
+    const loadMyPrograms = useCallback(async () => {
+        try {
+            setMyPrograms(await listMyStorePrograms());
+        } catch {
+            setMyPrograms(null);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (isAuthor) void loadMyPrograms();
+    }, [isAuthor, loadMyPrograms]);
+
+    const runAction = async (
+        p: AdminStoreProgram,
+        action: MyStoreProgramAction,
+    ) => {
+        setActionBusy(true);
+        setActionMsg('');
+        try {
+            await runMyStoreProgramAction(p.id, action);
+            setActionMsg(
+                {
+                    'cancel-review': 'Envio cancelado.',
+                    pause: 'Programa pausado: saiu da vitrine.',
+                    resume: 'Programa de volta à vitrine.',
+                }[action],
+            );
+            await Promise.all([loadMyPrograms(), load()]);
+        } catch (err) {
+            setActionMsg(
+                (isAxiosError(err) &&
+                    (err.response?.data as { error?: string })?.error) ||
+                    'Não deu certo. Tente de novo.',
+            );
+        } finally {
+            setActionBusy(false);
+        }
+    };
+
+    // Manda a versão que a pessoa LEU: se o termo mudou no servidor desde
+    // então (app antigo em cache), o aceite é recusado.
+    const acceptTerms = async () => {
+        setTermsBusy(true);
+        setTermsError('');
+        try {
+            await acceptAuthorTerms(AUTHOR_TERMS_VERSION);
+            setTermsOpen(false);
+            await Promise.all([load(), loadMyPrograms()]);
+        } catch (err) {
+            setTermsError(
+                (isAxiosError(err) &&
+                    (err.response?.data as { error?: string })?.error) ||
+                    'Não foi possível registrar o aceite. Tente de novo.',
+            );
+        } finally {
+            setTermsBusy(false);
+        }
+    };
 
     const choosePreset = (p: Preset) => {
         setPreset(p);
@@ -132,6 +244,12 @@ function PartnerPanelPage() {
                     você é parceiro, peça à equipe do Venafit para liberar o
                     painel para o e-mail com que você entra no app.
                 </p>
+                {user?.role === 'personal' && (
+                    <p className={s.empty}>
+                        Profissional com CREF? Venda seus treinos na loja do
+                        Venafit: <Link href="/loja/vender">veja como</Link>.
+                    </p>
+                )}
             </FollowUpPage>
         );
     }
@@ -139,6 +257,11 @@ function PartnerPanelPage() {
     const bal = panel?.balance;
     const settings = panel?.settings;
     const due = bal?.due ?? 0;
+    const author = panel?.partner.author;
+    const programRows = (panel?.programs ?? []).map((pr) => ({
+        pr,
+        mine: myPrograms?.find((m) => m.id === pr.id),
+    }));
 
     return (
         <FollowUpPage
@@ -163,6 +286,29 @@ function PartnerPanelPage() {
 
             {panel && bal && settings && (
                 <div className={loading ? s.refreshing : undefined}>
+                    {author && !author.terms_accepted && (
+                        <div className={s.notice} role="status">
+                            <strong>Para vender na loja,</strong> leia e aceite
+                            o Termo do Autor.
+                            {!author.cref_verified &&
+                                ' A equipe ainda vai conferir o seu CREF.'}
+                            {author.terms_version !== AUTHOR_TERMS_VERSION &&
+                                ' O termo foi atualizado: recarregue a página antes de ler.'}
+                            <div className={s.itemFoot}>
+                                <button
+                                    type="button"
+                                    className={s.btnGhost}
+                                    onClick={() => {
+                                        setTermsChecked(false);
+                                        setTermsError('');
+                                        setTermsOpen(true);
+                                    }}
+                                >
+                                    Ler e aceitar o termo
+                                </button>
+                            </div>
+                        </div>
+                    )}
                     {!panel.partner.is_active && (
                         <div className={s.notice} role="status">
                             Esta parceria está encerrada: o código não é mais
@@ -217,6 +363,18 @@ function PartnerPanelPage() {
                             {settings.payout_day}, a partir de{' '}
                             {money(settings.min_payout)} liberados.
                         </p>
+                        {author && (
+                            <p className={s.rule}>
+                                <strong>Como autor ({author.cref}):</strong>{' '}
+                                {author.store_share.toLocaleString('pt-BR')}% do
+                                líquido em cada venda dos seus programas pela
+                                vitrine da loja, e{' '}
+                                {author.direct_share.toLocaleString('pt-BR')}%
+                                quando você traz o comprador (link ou código).
+                                Na venda direta não há comissão de indicação
+                                além disso. Mesma carência e mesmo repasse.
+                            </p>
+                        )}
                     </section>
 
                     <section className={s.section} aria-labelledby="periodo">
@@ -269,6 +427,22 @@ function PartnerPanelPage() {
                                 <dt>Comissão gerada</dt>
                                 <dd>{money(panel.period.commission)}</dd>
                             </div>
+                            {author && (
+                                <>
+                                    <div>
+                                        <dt>Vendas dos seus programas</dt>
+                                        <dd>{panel.period.program_sales}</dd>
+                                    </div>
+                                    <div>
+                                        <dt>Sua parte nos programas</dt>
+                                        <dd>
+                                            {money(
+                                                panel.period.author_earnings,
+                                            )}
+                                        </dd>
+                                    </div>
+                                </>
+                            )}
                         </dl>
                     </section>
 
@@ -276,6 +450,14 @@ function PartnerPanelPage() {
                         {(
                             [
                                 ['sales', `Vendas (${panel.sales.length})`],
+                                ...(author
+                                    ? ([
+                                          [
+                                              'programs',
+                                              `Meus programas (${panel.programs.length})`,
+                                          ],
+                                      ] as const)
+                                    : []),
                                 ['statement', 'Extrato mensal'],
                                 ['payments', 'Pagamentos recebidos'],
                             ] as const
@@ -306,15 +488,22 @@ function PartnerPanelPage() {
                                         <div className={s.itemHead}>
                                             <div>
                                                 <p className={s.itemTitle}>
-                                                    {labelOf(
-                                                        SALE_PRODUCTS,
-                                                        x.product,
-                                                    )}
+                                                    {x.program_title
+                                                        ? `Programa ${x.program_title}`
+                                                        : labelOf(
+                                                              SALE_PRODUCTS,
+                                                              x.product,
+                                                          )}
                                                     {x.cycle &&
                                                     CYCLE_LABEL[x.cycle]
                                                         ? ` ${CYCLE_LABEL[x.cycle]}`
                                                         : ''}
                                                 </p>
+                                                {author && (
+                                                    <p className={s.muted}>
+                                                        {ROLE_LABEL[x.role]}
+                                                    </p>
+                                                )}
                                                 <p className={s.muted}>
                                                     {fmtDate(x.occurred_at)} ·{' '}
                                                     {KIND_LABEL[x.kind]}
@@ -331,8 +520,8 @@ function PartnerPanelPage() {
                                             </div>
                                             <div className={s.itemValue}>
                                                 <p className={s.itemCommission}>
-                                                    {x.commission > 0
-                                                        ? money(x.commission)
+                                                    {x.amount > 0
+                                                        ? money(x.amount)
                                                         : '—'}
                                                 </p>
                                             </div>
@@ -371,6 +560,29 @@ function PartnerPanelPage() {
                                                         {money(m.generated)}
                                                     </dd>
                                                 </div>
+                                                {author && (
+                                                    <>
+                                                        <div>
+                                                            <dt>Indicação</dt>
+                                                            <dd>
+                                                                {money(
+                                                                    m.generated_referral,
+                                                                )}
+                                                            </dd>
+                                                        </div>
+                                                        <div>
+                                                            <dt>
+                                                                Venda de
+                                                                programa
+                                                            </dt>
+                                                            <dd>
+                                                                {money(
+                                                                    m.generated_programs,
+                                                                )}
+                                                            </dd>
+                                                        </div>
+                                                    </>
+                                                )}
                                                 <div>
                                                     <dt>Anulada</dt>
                                                     <dd>
@@ -402,6 +614,226 @@ function PartnerPanelPage() {
                                     estornos registrados no mês. Saldo: o que
                                     ainda não foi repassado no fim do mês,
                                     incluindo o que está em carência.
+                                </p>
+                            </>
+                        ))}
+
+                    {tab === 'programs' &&
+                        (programRows.length === 0 ? (
+                            <p className={s.empty}>
+                                Você ainda não tem programas na loja. Em Minha
+                                biblioteca, use &ldquo;Vender na loja&rdquo; no
+                                treino que você quer vender.
+                            </p>
+                        ) : (
+                            <>
+                                {actionMsg && (
+                                    <div className={s.notice} role="status">
+                                        {actionMsg}
+                                    </div>
+                                )}
+                                <ul className={s.list}>
+                                    {programRows.map(({ pr, mine }) => {
+                                        const acts = mine
+                                            ? authorProgramActions(mine)
+                                            : null;
+                                        return (
+                                            <li key={pr.id} className={s.item}>
+                                                <div className={s.itemHead}>
+                                                    <div>
+                                                        <p
+                                                            className={
+                                                                s.itemTitle
+                                                            }
+                                                        >
+                                                            {pr.title}
+                                                        </p>
+                                                        <p className={s.muted}>
+                                                            {acts?.label ??
+                                                                STORE_STATUS_LABEL[
+                                                                    pr.status
+                                                                ]}{' '}
+                                                            · {money(pr.price)}
+                                                            {pr.rating_count > 0
+                                                                ? ` · ★ ${pr.rating_avg.toLocaleString('pt-BR')} (${pr.rating_count})`
+                                                                : ''}
+                                                        </p>
+                                                    </div>
+                                                    <div
+                                                        className={s.itemValue}
+                                                    >
+                                                        <p
+                                                            className={
+                                                                s.itemCommission
+                                                            }
+                                                        >
+                                                            {money(pr.revenue)}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <p className={s.muted}>
+                                                    {pr.sales}{' '}
+                                                    {pr.sales === 1
+                                                        ? 'venda'
+                                                        : 'vendas'}{' '}
+                                                    sem estorno, desde o início.
+                                                </p>
+                                                {acts?.rejection && (
+                                                    <p className={s.muted}>
+                                                        <strong>
+                                                            {pr.status ===
+                                                            'rejected'
+                                                                ? 'Motivo da recusa: '
+                                                                : 'Última alteração recusada: '}
+                                                        </strong>
+                                                        {acts.rejection}
+                                                    </p>
+                                                )}
+                                                {mine?.revision && (
+                                                    <p className={s.muted}>
+                                                        Alteração enviada em{' '}
+                                                        {fmtDate(
+                                                            mine.revision
+                                                                .submitted_at,
+                                                        )}
+                                                        : a vitrine segue com a
+                                                        versão aprovada até a
+                                                        revisão.
+                                                    </p>
+                                                )}
+                                                <div className={s.itemFoot}>
+                                                    {pr.status ===
+                                                        'published' && (
+                                                        <button
+                                                            type="button"
+                                                            className={
+                                                                s.btnGhost
+                                                            }
+                                                            onClick={() =>
+                                                                copy(
+                                                                    `program-${pr.id}`,
+                                                                    programShareLink(
+                                                                        window
+                                                                            .location
+                                                                            .origin,
+                                                                        pr.id,
+                                                                        panel
+                                                                            .partner
+                                                                            .code,
+                                                                    ),
+                                                                )
+                                                            }
+                                                        >
+                                                            <FiCopy
+                                                                aria-hidden
+                                                            />{' '}
+                                                            {copied ===
+                                                            `program-${pr.id}`
+                                                                ? 'Copiado!'
+                                                                : 'Copiar link do programa'}
+                                                        </button>
+                                                    )}
+                                                    {mine &&
+                                                        acts?.submitMode && (
+                                                            <button
+                                                                type="button"
+                                                                className={
+                                                                    s.btnGhost
+                                                                }
+                                                                disabled={
+                                                                    actionBusy
+                                                                }
+                                                                onClick={() =>
+                                                                    setEditing(
+                                                                        mine,
+                                                                    )
+                                                                }
+                                                            >
+                                                                <FiEdit3
+                                                                    aria-hidden
+                                                                />{' '}
+                                                                {acts.submitMode ===
+                                                                'revision'
+                                                                    ? 'Alterar'
+                                                                    : 'Enviar para revisão'}
+                                                            </button>
+                                                        )}
+                                                    {mine &&
+                                                        acts?.canCancelReview && (
+                                                            <button
+                                                                type="button"
+                                                                className={
+                                                                    s.btnGhost
+                                                                }
+                                                                disabled={
+                                                                    actionBusy
+                                                                }
+                                                                onClick={() =>
+                                                                    void runAction(
+                                                                        mine,
+                                                                        'cancel-review',
+                                                                    )
+                                                                }
+                                                            >
+                                                                Cancelar envio
+                                                            </button>
+                                                        )}
+                                                    {mine && acts?.canPause && (
+                                                        <button
+                                                            type="button"
+                                                            className={
+                                                                s.btnGhost
+                                                            }
+                                                            disabled={
+                                                                actionBusy
+                                                            }
+                                                            onClick={() =>
+                                                                void runAction(
+                                                                    mine,
+                                                                    'pause',
+                                                                )
+                                                            }
+                                                        >
+                                                            <FiPause
+                                                                aria-hidden
+                                                            />{' '}
+                                                            Pausar
+                                                        </button>
+                                                    )}
+                                                    {mine &&
+                                                        acts?.canResume && (
+                                                            <button
+                                                                type="button"
+                                                                className={
+                                                                    s.btnGhost
+                                                                }
+                                                                disabled={
+                                                                    actionBusy
+                                                                }
+                                                                onClick={() =>
+                                                                    void runAction(
+                                                                        mine,
+                                                                        'resume',
+                                                                    )
+                                                                }
+                                                            >
+                                                                <FiPlay
+                                                                    aria-hidden
+                                                                />{' '}
+                                                                Voltar à vitrine
+                                                            </button>
+                                                        )}
+                                                </div>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                                <p className={s.muted}>
+                                    Receita: a sua parte nas vendas sem estorno.
+                                    Quem compra pelo seu link conta como venda
+                                    direta. Nenhum dado de quem comprou aparece
+                                    aqui. Pausar tira o programa da vitrine;
+                                    quem comprou continua com o plano.
                                 </p>
                             </>
                         ))}
@@ -456,7 +888,10 @@ function PartnerPanelPage() {
                             </>
                         ))}
 
-                    <section className={`${s.section} ${s.linksSection}`} aria-labelledby="links">
+                    <section
+                        className={`${s.section} ${s.linksSection}`}
+                        aria-labelledby="links"
+                    >
                         <h2 id="links" className={s.h2}>
                             Seus links
                         </h2>
@@ -498,10 +933,85 @@ function PartnerPanelPage() {
                                     ? 'Copiado!'
                                     : 'Copiar link da Play Store'}
                             </button>
+                            {author && (
+                                <button
+                                    type="button"
+                                    className={s.btnGhost}
+                                    onClick={() =>
+                                        copy(
+                                            'author',
+                                            authorShareLink(
+                                                window.location.origin,
+                                                panel.partner.code,
+                                            ),
+                                        )
+                                    }
+                                >
+                                    <FiCopy aria-hidden />{' '}
+                                    {copied === 'author'
+                                        ? 'Copiado!'
+                                        : 'Copiar link da sua vitrine na loja'}
+                                </button>
+                            )}
                         </div>
                     </section>
                 </div>
             )}
+
+            <Modal
+                open={termsOpen}
+                onClose={() => setTermsOpen(false)}
+                title="Termo do Autor"
+                footer={
+                    <>
+                        <button
+                            type="button"
+                            className={s.btnGhost}
+                            onClick={() => setTermsOpen(false)}
+                        >
+                            Agora não
+                        </button>
+                        <button
+                            type="button"
+                            className={s.btnPrimary}
+                            disabled={!termsChecked || termsBusy}
+                            onClick={() => void acceptTerms()}
+                        >
+                            {termsBusy ? 'Registrando…' : 'Aceitar'}
+                        </button>
+                    </>
+                }
+            >
+                <div className={s.terms}>
+                    <AuthorTermsText />
+                </div>
+                {termsError && (
+                    <div className={s.error} role="alert">
+                        {termsError}
+                    </div>
+                )}
+                <label className={s.termsCheck}>
+                    <input
+                        type="checkbox"
+                        checked={termsChecked}
+                        onChange={(e) => setTermsChecked(e.target.checked)}
+                    />
+                    <span>
+                        Li e aceito o Termo do Autor (versão{' '}
+                        {AUTHOR_TERMS_VERSION}).
+                    </span>
+                </label>
+            </Modal>
+
+            <PublishProgramModal
+                open={!!editing}
+                program={editing ?? undefined}
+                onClose={() => setEditing(null)}
+                onDone={() => {
+                    void loadMyPrograms();
+                    void load();
+                }}
+            />
         </FollowUpPage>
     );
 }

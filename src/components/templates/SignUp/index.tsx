@@ -75,7 +75,14 @@ const TSignUp: FC = () => {
         try {
             await Api.post('/users', payload);
             trackSignUp(role);
-            window.location.href = '/';
+            // Veio de uma página que pede conta (ex.: comprar um programa da
+            // loja sem login): o login devolve a pessoa para lá. Só caminho
+            // interno (evita open redirect), como no Login.
+            const next = new URLSearchParams(window.location.search).get('redirect');
+            window.location.href =
+                next && next.startsWith('/') && !next.startsWith('//')
+                    ? `/?reason=signup_done&redirect=${encodeURIComponent(next)}`
+                    : '/';
         } catch (error: unknown) {
             const responseData = (
                 error as {

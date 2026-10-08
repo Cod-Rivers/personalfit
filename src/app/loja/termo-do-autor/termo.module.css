@@ -1,0 +1,41 @@
+/* Termo do Autor: texto longo de leitura. */
+
+.page {
+    max-width: 50rem;
+    margin: 0 auto;
+    padding: var(--space-6) var(--space-4) var(--space-8);
+    color: var(--text-primary);
+}
+
+.title {
+    margin: 0 0 var(--space-1);
+    font-size: 1.6rem;
+    font-weight: 700;
+}
+
+.meta {
+    margin: 0 0 var(--space-5);
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.text section {
+    margin-bottom: var(--space-5);
+}
+
+.text h2 {
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin: 0 0 var(--space-2);
+}
+
+.text p,
+.text li {
+    line-height: 1.6;
+    color: var(--text-secondary);
+}
+
+.text ul {
+    padding-left: 1.2rem;
+    margin: 0;
+}

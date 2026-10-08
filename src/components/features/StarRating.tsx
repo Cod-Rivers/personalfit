@@ -10,6 +10,9 @@ interface StarRatingProps {
     onSubmit: (stars: number, comment: string) => Promise<void>;
     onCancel?: () => void;
     disabled?: boolean;
+    /** Conteúdo entre o comentário e os botões (ex.: a autorização de
+     *  publicar o comentário na loja). */
+    extra?: React.ReactNode;
 }
 
 /** Estrelas de 1 a 5 + comentário opcional. Quem chama decide o que fazer
@@ -22,6 +25,7 @@ export default function StarRating({
     onSubmit,
     onCancel,
     disabled = false,
+    extra,
 }: StarRatingProps) {
     const [stars, setStars] = useState(initialValue);
     const [hover, setHover] = useState(0);
@@ -78,6 +82,7 @@ export default function StarRating({
                 maxLength={500}
                 rows={2}
             />
+            {extra}
             <div className="d-flex gap-2 flex-wrap">
                 <button
                     type="button"

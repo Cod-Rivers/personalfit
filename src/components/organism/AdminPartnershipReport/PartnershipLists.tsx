@@ -158,7 +158,14 @@ export function OriginBreakdown({
                                     )}
                                 </td>
                                 <td className={s.num}>{money(r.net)}</td>
-                                <td className={s.num}>{money(r.commission)}</td>
+                                <td className={s.num}>
+                                    {money(r.commission)}
+                                    {r.author_share > 0 && (
+                                        <div className={s.originMeta}>
+                                            + autores {money(r.author_share)}
+                                        </div>
+                                    )}
+                                </td>
                                 <td className={s.num}>
                                     {money(r.other_expenses)}
                                 </td>
@@ -232,6 +239,12 @@ export function OriginBreakdown({
                                 <dt>Comissão</dt>
                                 <dd>{money(r.commission)}</dd>
                             </div>
+                            {r.author_share > 0 && (
+                                <div>
+                                    <dt>Parte dos autores</dt>
+                                    <dd>{money(r.author_share)}</dd>
+                                </div>
+                            )}
                             <div>
                                 <dt>Outros gastos</dt>
                                 <dd>{money(r.other_expenses)}</dd>
@@ -305,6 +318,12 @@ function CommissionCell({
 }
 
 function productLine(x: PartnershipSale): string {
+    if (x.program_title) {
+        const author = x.author_name
+            ? ` · ${x.author_name} ${money(x.author_amount ?? 0)}${x.direct_sale ? ' (direta)' : ''}`
+            : ' · Coleção Venafit';
+        return `Programa ${x.program_title}${author}`;
+    }
     const cycle =
         x.cycle && CYCLE_LABEL[x.cycle] ? ` ${CYCLE_LABEL[x.cycle]}` : '';
     return `${labelOf(SALE_PRODUCTS, x.product)}${cycle}`;

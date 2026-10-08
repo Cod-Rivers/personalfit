@@ -297,3 +297,10 @@
 .timerSound {
     margin-top: var(--space-2);
 }
+
+/* Crédito do vídeo da biblioteca que veio de um autor da loja. */
+.videoCredit {
+    margin: -2px 0 8px;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}

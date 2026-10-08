@@ -25,6 +25,7 @@ import {
 import { playStoreUrl } from '@/libs/androidApp';
 import Modal from '@/components/system/Modal';
 import PartnerAccessModal from './PartnerAccessModal';
+import AuthorBlockModal from './AuthorBlockModal';
 import styles from './AdminReferralPartners.module.css';
 
 /** Código do parceiro novo: sorteado pelo servidor ou escolhido pelo admin. */
@@ -224,6 +225,7 @@ export default function AdminReferralPartners() {
     const [copied, setCopied] = useState('');
     // Parceiro com o modal de acesso ao painel aberto.
     const [accessTarget, setAccessTarget] = useState<ReferralPartner | null>(null);
+    const [authorTarget, setAuthorTarget] = useState<ReferralPartner | null>(null);
     const copyText = async (key: string, text: string) => {
         try {
             await navigator.clipboard.writeText(text);
@@ -386,6 +388,16 @@ export default function AdminReferralPartners() {
                                                 {partner.account_email && (
                                                     <div>Painel: {partner.account_email}</div>
                                                 )}
+                                                {partner.author && (
+                                                    <div>
+                                                        Autor: {partner.author.cref_label}
+                                                        {partner.author.can_publish
+                                                            ? ' · pode publicar'
+                                                            : partner.author.enabled
+                                                              ? ' · falta CREF conferido ou termo'
+                                                              : ' · loja desligada'}
+                                                    </div>
+                                                )}
                                             </td>
                                             <td>
                                                 <code className={styles.code}>
@@ -422,6 +434,12 @@ export default function AdminReferralPartners() {
                                                         Painel
                                                     </button>
                                                     <button
+                                                        onClick={() => setAuthorTarget(partner)}
+                                                        className={styles.btnEdit}
+                                                    >
+                                                        Autor
+                                                    </button>
+                                                    <button
                                                         onClick={() => toggleActive(partner)}
                                                         className={
                                                             partner.is_active
@@ -448,6 +466,12 @@ export default function AdminReferralPartners() {
                 partner={accessTarget}
                 onClose={() => setAccessTarget(null)}
                 onChanged={() => void fetchPartners()}
+            />
+
+            <AuthorBlockModal
+                partner={authorTarget}
+                onClose={() => setAuthorTarget(null)}
+                onSaved={() => void fetchPartners()}
             />
 
             <Modal

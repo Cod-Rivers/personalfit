@@ -20,6 +20,7 @@ export function toExerciseLog(ex: ExerciseResponse): ExerciseLog {
         video_url: ex.video_url ?? '',
         // Só usa video_thumb se for URL http (não caminho GCS privado)
         video_thumb: ex.video_thumb?.startsWith('http') ? ex.video_thumb : '',
+        video_credit: ex.video_credit,
         weight: 0,
         // notes é a anotação do próprio aluno (começa vazia); comments são as
         // instruções do personal e vão no campo certo, não sobrescrevem notes.

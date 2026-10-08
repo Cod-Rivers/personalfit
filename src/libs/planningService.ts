@@ -14,6 +14,9 @@ export interface ExerciseResponse {
     series_label?: string; // Texto livre de séries (modo livre)
     video_url: string;
     video_thumb: string;
+    /** Crédito do vídeo da biblioteca que veio de um autor da loja ("Vídeo:
+     *  Fulano · CREF …"). Só o servidor preenche. */
+    video_credit?: string;
     timed: boolean;
     /** Vínculo com exercise_library, resolvido no seed/picker. Não é editável
      * na UI, mas precisa sobreviver ao round-trip de edição do plano. */
@@ -117,11 +120,26 @@ export interface MacrocycleResponse {
     start_date?: string;
     end_date?: string;
     status: string;
-    /** Origem do macrociclo: "celebrity" (aluno aplicou da biblioteca
-     * estilo-famosos), "imported_pdf", "self_made", "anamnesis" (gerado pela
-     * Triagem automática, que saiu do produto em 2026-09-29 — só planos
-     * antigos) ou vazio (montado pelo personal). */
+    /** Origem do macrociclo: "celebrity" (comprado na loja — o nome interno
+     * vem dos antigos planos "estilo famosos"), "imported_pdf", "self_made",
+     * "anamnesis" (gerado pela Triagem automática, que saiu do produto em
+     * 2026-09-29 — só planos antigos) ou vazio (montado pelo personal). */
     category?: string;
+    /** O plano veio de um programa da loja. */
+    store_program_id?: string;
+    /** Assinatura do programa comprado (só nas rotas do próprio aluno). */
+    store_byline?: {
+        program_id: string;
+        author_name?: string;
+        author_code?: string;
+        cref?: string;
+        venafit_collection: boolean;
+        /** Versão do programa no plano e a mais nova (loja, fase 3). */
+        plan_version?: number;
+        latest_version?: number;
+        /** Há versão nova: o aluno pode passar para ela sem pagar de novo. */
+        update_available?: boolean;
+    };
     /** "periodized" (padrão) ou "simple" — definido só na criação do macrociclo. */
     planning_mode?: 'periodized' | 'simple';
     /** "weekday" (padrão) ou "number" — só relevante quando planning_mode=simple. */
@@ -401,6 +419,13 @@ export interface ExerciseLibraryItem {
     owner_id?: string;
     created_at: string;
     updated_at: string;
+    /** Vídeo da biblioteca que veio de um autor da loja: "Vídeo: Fulano ·
+     *  CREF …" (fase 3 da loja). */
+    video_credit?: string;
+    /** Exercício próprio do autor da loja: o vídeo foi autorizado para a
+     *  biblioteca geral, e já está lá (in_library). */
+    library_consent?: boolean;
+    in_library?: boolean;
 }
 
 export interface CreatePersonalExerciseRequest {
@@ -911,16 +936,30 @@ export async function getMyActiveMacrocycle(): Promise<MacrocycleResponse | null
     }
 }
 
-/**
- * GET /my-planning/celebrity-templates — vitrine da loja de planos
- * estilo-famosos. Qualquer aluno pode navegar; a compra/aplicação de um plano
- * é paga (avulsa) via pagamento?produto=plano&templateId=... .
- */
-export async function getCelebrityTemplates(): Promise<MacrocycleResponse[]> {
-    const { data } = await Api.get<MacrocycleResponse[]>(
-        '/my-planning/celebrity-templates',
-    );
-    return data ?? [];
+/** Um treino (A, B, C...) da 1ª fase na prévia da loja. */
+export interface StorePlanTrainingPreview {
+    reference: string;
+    name?: string;
+    exercise_count: number;
+    muscle_groups: string[];
+    /** Só no 1º treino: uma amostra do que o aluno vai fazer. */
+    exercise_names?: string[];
+}
+
+/** O que a vitrine mostra de um plano antes da compra (StorePlanPreviewResponse
+ * no backend): a estrutura, nunca séries, repetições nem a lista completa de
+ * exercícios. */
+export interface StorePlanPreview {
+    id: string;
+    name: string;
+    goal?: string;
+    featured?: boolean;
+    phases: number;
+    duration_weeks: number;
+    days_per_week: number;
+    cover_video_thumb?: string;
+    cover_video_url?: string;
+    trainings: StorePlanTrainingPreview[];
 }
 
 /* ── Plano montado pelo PRÓPRIO aluno ──────────────────────────────────────

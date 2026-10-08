@@ -1,0 +1,147 @@
+/* "Vender seus treinos": explicação e candidatura a autor. */
+
+.section {
+    margin-bottom: var(--space-6);
+}
+
+.h2 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 var(--space-3);
+}
+
+.steps,
+.facts {
+    margin: 0 0 var(--space-3);
+    padding-left: 1.2rem;
+    color: var(--text-secondary);
+    line-height: 1.55;
+    font-size: 0.9375rem;
+}
+
+.steps li,
+.facts li {
+    margin-bottom: var(--space-2);
+}
+
+.facts {
+    list-style: disc;
+}
+
+.muted {
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    margin: 4px 0 0;
+    line-height: 1.45;
+}
+
+.card {
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    margin-bottom: var(--space-5);
+}
+
+.quote {
+    margin: var(--space-2) 0;
+    padding: var(--space-2) var(--space-3);
+    border-left: 3px solid var(--border-mid);
+    color: var(--text-primary);
+    font-size: 0.9375rem;
+}
+
+.notice,
+.error {
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    font-size: 0.875rem;
+    line-height: 1.45;
+    color: var(--text-primary);
+    margin: 0 0 var(--space-4);
+}
+
+.notice {
+    background: var(--surface-2);
+    border: 1px solid var(--border-mid);
+}
+
+.error {
+    background: rgba(255, 107, 107, 0.12);
+    border: 1px solid var(--coral);
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    margin-bottom: var(--space-6);
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.input {
+    width: 100%;
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    padding: 8px 10px;
+    font-size: 1rem;
+}
+
+.twoCols {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: var(--space-3);
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+}
+
+.btnPrimary,
+.btnGhost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border-radius: var(--radius-md);
+    padding: 10px 16px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    text-decoration: none;
+    border: 1px solid transparent;
+}
+
+.btnPrimary {
+    background: var(--grad-mint);
+    color: var(--btn-text);
+}
+
+.btnGhost {
+    background: transparent;
+    border-color: var(--border-mid);
+    color: var(--text-primary);
+}
+
+.btnPrimary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

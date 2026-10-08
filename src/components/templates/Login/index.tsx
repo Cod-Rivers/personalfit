@@ -87,6 +87,9 @@ const TLogin: FC = () => {
         if (params.get('reason') === 'account_suspended') {
             setError(ACCOUNT_SUSPENDED_MESSAGE);
         }
+        if (params.get('reason') === 'signup_done') {
+            setInfo('Conta criada! Entre para continuar.');
+        }
         if (params.get('reason') === 'password_reset') {
             setInfo(
                 'Senha redefinida com sucesso! Faça login com a nova senha.',

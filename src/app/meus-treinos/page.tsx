@@ -68,7 +68,6 @@ import {
 import styles from '../../components/features/TrainingProtocolList.module.css';
 import { summarizeTraining } from '@/libs/trainingSummary';
 import TrainingPdfUploadModal from '@/components/features/TrainingPdfUploadModal';
-import { getPlans } from '@/libs/paymentService';
 import { usePlanStoreHidden } from '@/hooks/usePlanStoreHidden';
 import CurrentPlanCard from './_components/CurrentPlanCard';
 import PlanShortcuts from './_components/PlanShortcuts';
@@ -206,8 +205,6 @@ export default function MeusTreinosPage() {
     // Aluno com personal não monta nem importa treino (quem prescreve é o
     // personal) — os atalhos de "treinar por conta própria" somem.
     const [hasPersonal, setHasPersonal] = useState(false);
-    // Preço do plano avulso da loja, exibido no cartão de venda.
-    const [storePrice, setStorePrice] = useState<number | null>(null);
     // Loja escondida para aluno de personal PRO; enquanto não se sabe
     // (null), também fica escondida — ver usePlanStoreHidden.
     const showStore = usePlanStoreHidden(hasPersonal) === false;
@@ -216,10 +213,6 @@ export default function MeusTreinosPage() {
     useEffect(() => {
         setIsMounted(true);
         setHasPersonal(!!getUser()?.has_personal);
-        // Best-effort: sem o preço, o cartão da loja só omite o valor.
-        getPlans()
-            .then((catalog) => setStorePrice(catalog.library_plan.value))
-            .catch(() => {});
     }, []);
 
     useEffect(() => {
@@ -353,6 +346,21 @@ export default function MeusTreinosPage() {
         }
     }
 
+    // Versão nova de um programa comprado: a lista muda (o plano antigo vai
+    // para o histórico) e o plano novo vira o selecionado.
+    async function handleStoreUpdated(fresh: MacrocycleResponse) {
+        setLoading(true);
+        try {
+            setMacrocycles(await getMyPlannings());
+            await selectMacro(await getMyMacrocycle(fresh.id));
+        } catch (e) {
+            const err = e as Error;
+            setError(`Versão nova aplicada, mas houve um erro ao carregá-la: ${err.message}`);
+        } finally {
+            setLoading(false);
+        }
+    }
+
     async function handlePdfImportApplied(result: { macrocycleId: string }) {
         setPdfImportOpen(false);
         setLoading(true);
@@ -456,7 +464,6 @@ export default function MeusTreinosPage() {
                 </div>
                 <PlanShortcuts
                     hasPersonal={hasPersonal}
-                    storePrice={storePrice}
                     showStore={showStore}
                     onImportPdf={() => setPdfImportOpen(true)}
                     showHistory={false}
@@ -510,6 +517,7 @@ export default function MeusTreinosPage() {
                     deletingId={deletingId}
                     onSelect={selectMacro}
                     onDelete={handleDeleteMacro}
+                    onStoreUpdated={handleStoreUpdated}
                 />
                 {/* Dias treinados nesta semana contra a meta que o personal
                     definiu na prescrição (ou o número de treinos da fase).
@@ -686,6 +694,7 @@ export default function MeusTreinosPage() {
                         planId={selectedMacro.id}
                         category={selectedMacro.category}
                         hasPersonal={!!getUser()?.has_personal}
+                        storeProgramId={selectedMacro.store_program_id}
                     />
                 )}
 
@@ -701,7 +710,6 @@ export default function MeusTreinosPage() {
                     própria (só sem personal) e loja de planos. */}
                 <PlanShortcuts
                     hasPersonal={hasPersonal}
-                    storePrice={storePrice}
                     showStore={showStore}
                     onImportPdf={() => setPdfImportOpen(true)}
                 />

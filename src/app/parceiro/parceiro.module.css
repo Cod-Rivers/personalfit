@@ -397,3 +397,61 @@
 .linksSection {
     margin-top: 24px;
 }
+
+/* Loja (fase 2): botão principal do aceite e o Termo do Autor no modal. */
+.btnPrimary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--grad-mint);
+    color: var(--btn-text);
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btnPrimary:disabled,
+.btnGhost:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.terms section {
+    margin-bottom: 16px;
+}
+
+.terms h2 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 6px;
+}
+
+.terms p,
+.terms li {
+    font-size: 0.875rem;
+    line-height: 1.55;
+    color: var(--text-secondary);
+}
+
+.terms ul {
+    padding-left: 1.1rem;
+    margin: 0;
+}
+
+.termsCheck {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    margin-top: 12px;
+}
+
+.termsCheck input {
+    margin-top: 3px;
+    flex-shrink: 0;
+}

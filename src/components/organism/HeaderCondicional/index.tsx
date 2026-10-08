@@ -1,7 +1,9 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Header from '@/components/organism/Header';
+import StorePublicBar from '@/components/organism/StorePublicBar';
+import { getToken } from '@/libs/session';
 
 // /excluir-conta entra aqui pelo mesmo motivo da política de privacidade: é
 // uma página que o Google Play exige que abra para quem NÃO está logado (e,
@@ -25,6 +27,17 @@ export default function HeaderCondicional() {
         pathname.startsWith('/redefinir-senha/') ||
         pathname.startsWith('/excluir-conta/');
 
+    // A loja é pública (fase 3 do plano da loja): sem login, a barra própria
+    // dela no lugar do Header, que manda quem não tem sessão para o login.
+    // null = sessão ainda não lida (no servidor e no primeiro render).
+    const isStore = pathname === '/loja' || pathname.startsWith('/loja/');
+    const [hasSession, setHasSession] = useState<boolean | null>(null);
+    useEffect(() => {
+        setHasSession(!!getToken());
+    }, [pathname]);
+    const storeVisitor = isStore && hasSession === false;
+    const storeUnknown = isStore && hasSession === null;
+
     // Publica a altura real do header como CSS var, usada pelos modais
     // full-screen (components/system/Modal) para começar exatamente abaixo
     // do header, mantendo-o sempre visível.
@@ -45,13 +58,13 @@ export default function HeaderCondicional() {
         });
         observer.observe(el);
         return () => observer.disconnect();
-    }, [isPublic]);
+    }, [isPublic, storeVisitor, storeUnknown]);
 
-    if (isPublic) return null;
+    if (isPublic || storeUnknown) return null;
 
     return (
         <div ref={ref} className="header-shell">
-            <Header />
+            {storeVisitor ? <StorePublicBar /> : <Header />}
         </div>
     );
 }

@@ -6,6 +6,8 @@ export interface ExerciseLog {
     variations: string;
     video_url: string;
     video_thumb: string;
+    /** Crédito do vídeo da biblioteca que veio de um autor da loja. */
+    video_credit?: string;
     timed?: boolean;
     weight: number;
     notes?: string;        // Anotações do próprio aluno (campo notes do ExerciseLog)

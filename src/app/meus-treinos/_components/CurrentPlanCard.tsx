@@ -1,13 +1,17 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { isAxiosError } from 'axios';
 import {
     FiCheck,
     FiChevronDown,
+    FiGift,
     FiLayers,
     FiRepeat,
     FiTrash2,
 } from 'react-icons/fi';
+import Modal from '@/components/system/Modal';
+import { upgradeStorePlan } from '@/libs/storeService';
 import DownloadOfflineButton from '@/components/features/DownloadOfflineButton';
 import SyncPendingBadge from '@/components/features/SyncPendingBadge';
 import type { MacrocycleResponse } from '@/libs/planningService';
@@ -20,8 +24,18 @@ export function planOriginLabel(
     personalName?: string | null,
 ): string {
     switch (plan.category) {
-        case 'celebrity':
-            return 'Plano dos famosos';
+        case 'celebrity': {
+            // Comprado na loja: "por Fulano · CREF 012345-G/SP".
+            const byline = plan.store_byline;
+            if (byline?.author_name) {
+                return byline.cref
+                    ? `Programa por ${byline.author_name} · ${byline.cref}`
+                    : `Programa por ${byline.author_name}`;
+            }
+            return byline?.venafit_collection
+                ? 'Coleção Venafit'
+                : 'Comprado na loja';
+        }
         case 'imported_pdf':
             return 'Importado de PDF';
         case 'self_made':
@@ -54,6 +68,9 @@ interface CurrentPlanCardProps {
     deletingId: string | null;
     onSelect: (plan: MacrocycleResponse) => void;
     onDelete: (plan: MacrocycleResponse) => void;
+    /** Depois de passar o plano comprado para a versão nova do programa (o
+     *  plano novo, para a tela recarregar e selecionar). */
+    onStoreUpdated?: (fresh: MacrocycleResponse) => void;
 }
 
 /**
@@ -68,8 +85,12 @@ export default function CurrentPlanCard({
     deletingId,
     onSelect,
     onDelete,
+    onStoreUpdated,
 }: CurrentPlanCardProps) {
     const [open, setOpen] = useState(false);
+    const [confirmUpdate, setConfirmUpdate] = useState(false);
+    const [updating, setUpdating] = useState(false);
+    const [updateError, setUpdateError] = useState('');
     const rootRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -89,6 +110,29 @@ export default function CurrentPlanCard({
 
     if (!selected) return null;
     const canSwitch = plans.length > 1;
+    // Versão nova do programa comprado (fase 3 do plano da loja): o aluno
+    // passa para ela sem pagar de novo.
+    const update = selected.store_byline?.update_available
+        ? selected.store_byline
+        : null;
+
+    const applyUpdate = async () => {
+        setUpdating(true);
+        setUpdateError('');
+        try {
+            const fresh = await upgradeStorePlan(selected.id);
+            setConfirmUpdate(false);
+            onStoreUpdated?.(fresh);
+        } catch (err) {
+            setUpdateError(
+                (isAxiosError(err) &&
+                    (err.response?.data as { error?: string })?.error) ||
+                    'Não foi possível passar para a versão nova. Tente de novo.',
+            );
+        } finally {
+            setUpdating(false);
+        }
+    };
 
     return (
         <section
@@ -130,6 +174,68 @@ export default function CurrentPlanCard({
                     <SyncPendingBadge />
                 </div>
             </div>
+
+            {update && (
+                <div className={s.updateBox} role="status">
+                    <FiGift size={18} aria-hidden="true" />
+                    <div>
+                        <p className={s.updateTitle}>
+                            Versão nova deste programa
+                        </p>
+                        <p className={s.planOrigin}>
+                            O autor atualizou o programa (versão{' '}
+                            {update.latest_version}; o seu plano é a versão{' '}
+                            {update.plan_version}). Você pode passar para ela
+                            sem pagar de novo.
+                        </p>
+                        <button
+                            type="button"
+                            className={s.switchButton}
+                            onClick={() => {
+                                setUpdateError('');
+                                setConfirmUpdate(true);
+                            }}
+                        >
+                            Usar a versão nova
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            <Modal
+                open={confirmUpdate}
+                onClose={() => setConfirmUpdate(false)}
+                title="Usar a versão nova"
+                footer={
+                    <>
+                        <button
+                            type="button"
+                            className="btn btn-outline-secondary btn-sm"
+                            onClick={() => setConfirmUpdate(false)}
+                            disabled={updating}
+                        >
+                            Agora não
+                        </button>
+                        <button
+                            type="button"
+                            className="btn btn-primary btn-sm"
+                            onClick={() => void applyUpdate()}
+                            disabled={updating}
+                        >
+                            {updating ? 'Atualizando…' : 'Usar a versão nova'}
+                        </button>
+                    </>
+                }
+            >
+                {updateError && (
+                    <div className="alert alert-danger py-2">{updateError}</div>
+                )}
+                <p>
+                    A versão nova entra como o seu plano atual. O plano de
+                    agora fica no histórico, com os treinos e as cargas que você
+                    registrou. Não há cobrança.
+                </p>
+            </Modal>
 
             {canSwitch && (
                 <button

@@ -11,6 +11,8 @@ import {
 } from '@/libs/planningService';
 import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
 import HelpTooltip from '@/components/atoms/HelpTooltip';
+import { useOwnMediaUpload } from '@/hooks/useOwnMediaUpload';
+import CreateOwnExercise from './CreateOwnExercise';
 import {
     GROUP_TECHNIQUE_CATALOG,
     isGroupTechniqueValidForSize,
@@ -65,6 +67,8 @@ export default function ExercisePicker({
     const [groupTechnique, setGroupTechnique] = useState('');
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const multi = !!onPickMany;
+    // Criar o exercício que falta, com vídeo próprio: PRO ou autor da loja.
+    const ownUpload = useOwnMediaUpload();
     // A escolha fica guardada, mas só vale enquanto couber na seleção atual:
     // marcar um 3º exercício com "Bi-set" escolhido desliga o agrupamento em
     // vez de gerar um bi-set de três.
@@ -250,6 +254,24 @@ export default function ExercisePicker({
                 >
                     Digite para buscar exercícios
                 </p>
+            )}
+            {ownUpload && !loading && search.trim().length >= 2 && (
+                <div style={{ margin: '4px 0 10px', textAlign: 'center' }}>
+                    <CreateOwnExercise
+                        initialName={search}
+                        initialMuscle={muscle || undefined}
+                        onCreated={(item) => {
+                            if (multi) {
+                                setSelected((prev) =>
+                                    new Map(prev).set(item.id, item),
+                                );
+                                setTab('mine');
+                            } else {
+                                onPick?.(item);
+                            }
+                        }}
+                    />
+                </div>
             )}
             {multi && !loading && results.length > 0 && (
                 <div

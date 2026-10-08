@@ -62,6 +62,10 @@ function downloadSalesCsv(sales: PartnershipSale[], from: string, to: string) {
         'Líquido estimado',
         'Comissão',
         'Comissão (situação)',
+        'Programa',
+        'Autor',
+        'Parte do autor',
+        'Venda direta',
     ];
     const esc = (v: string) => `"${v.replace(/"/g, '""')}"`;
     const num = (v: number) => v.toFixed(2).replace('.', ',');
@@ -80,12 +84,18 @@ function downloadSalesCsv(sales: PartnershipSale[], from: string, to: string) {
                 ? 'Link'
                 : x.attribution_source === 'checkout'
                   ? 'Checkout'
-                  : '',
+                  : x.attribution_source === 'sale_link'
+                    ? 'Link do programa'
+                    : '',
             num(x.gross),
             num(x.net),
             x.net_estimated ? 'sim' : 'não',
             num(x.commission),
             x.commission_status,
+            x.program_title ?? '',
+            x.author_name ?? '',
+            num(x.author_amount ?? 0),
+            x.direct_sale ? 'sim' : '',
         ]
             .map((v) => esc(String(v)))
             .join(';'),
@@ -281,7 +291,9 @@ export default function AdminPartnershipReport() {
     );
     const toPay = partnerRows.reduce((t, r) => t + Math.max(r.due, 0), 0);
     const toDeduct = partnerRows.reduce((t, r) => t - Math.min(r.due, 0), 0);
-    const costs = sum ? sum.commission + sum.other_expenses : 0;
+    const costs = sum
+        ? sum.commission + sum.author_share + sum.other_expenses
+        : 0;
 
     return (
         <div className={s.container}>
@@ -433,8 +445,10 @@ export default function AdminPartnershipReport() {
                             <p className={s.kpiLabel}>Gastos</p>
                             <p className={s.kpiValue}>{money(costs)}</p>
                             <p className={s.kpiSub}>
-                                comissões {money(sum.commission)} · outros{' '}
-                                {money(sum.other_expenses)}
+                                comissões {money(sum.commission)}
+                                {sum.author_share > 0 &&
+                                    ` · autores ${money(sum.author_share)}`}{' '}
+                                · outros {money(sum.other_expenses)}
                             </p>
                         </div>
                         <div className={s.kpi}>
@@ -504,6 +518,9 @@ export default function AdminPartnershipReport() {
                                                     Comissões
                                                 </th>
                                                 <th className={s.num}>
+                                                    Autores
+                                                </th>
+                                                <th className={s.num}>
                                                     Outros gastos
                                                 </th>
                                             </tr>
@@ -525,6 +542,9 @@ export default function AdminPartnershipReport() {
                                                         {money(m.commission)}
                                                     </td>
                                                     <td className={s.num}>
+                                                        {money(m.author_share)}
+                                                    </td>
+                                                    <td className={s.num}>
                                                         {money(
                                                             m.other_expenses,
                                                         )}
@@ -539,6 +559,67 @@ export default function AdminPartnershipReport() {
                                     months={report.months}
                                 />
                             )}
+                        </section>
+                    )}
+
+                    {report.programs.length > 0 && (
+                        <section className={s.card}>
+                            <h3 className={s.cardTitle}>
+                                Loja de treinos: por programa
+                            </h3>
+                            <div className={s.tableWrap}>
+                                <table className={s.table}>
+                                    <thead>
+                                        <tr>
+                                            <th>Programa</th>
+                                            <th>Autor</th>
+                                            <th className={s.num}>Vendas</th>
+                                            <th className={s.num}>Estornos</th>
+                                            <th className={s.num}>Líquido</th>
+                                            <th className={s.num}>Autor</th>
+                                            <th className={s.num}>Comissão</th>
+                                            <th className={s.num}>Venafit</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {report.programs.map((p) => (
+                                            <tr key={p.program_id}>
+                                                <td>{p.title}</td>
+                                                <td>
+                                                    {p.author_name ||
+                                                        'Coleção Venafit'}
+                                                </td>
+                                                <td className={s.num}>
+                                                    {p.sales}
+                                                    {p.direct_sales > 0 &&
+                                                        ` (${p.direct_sales} diretas)`}
+                                                </td>
+                                                <td className={s.num}>
+                                                    {p.refunds}
+                                                </td>
+                                                <td className={s.num}>
+                                                    {money(p.net)}
+                                                </td>
+                                                <td className={s.num}>
+                                                    {money(p.author_share)}
+                                                </td>
+                                                <td className={s.num}>
+                                                    {money(p.commission)}
+                                                </td>
+                                                <td className={s.num}>
+                                                    {money(p.venafit)}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p className={s.hint}>
+                                Venafit = líquido − parte do autor − comissão de
+                                quem indicou. A parte de cada autor entra no
+                                &quot;A repassar&quot; da linha dele, junto com
+                                a comissão de indicação.
+                            </p>
                         </section>
                     )}
 

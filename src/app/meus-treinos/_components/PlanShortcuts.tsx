@@ -13,19 +13,10 @@ import {
 } from 'react-icons/fi';
 import s from './meusTreinos.module.css';
 
-function formatBRL(value: number): string {
-    return value.toLocaleString('pt-BR', {
-        style: 'currency',
-        currency: 'BRL',
-    });
-}
-
 interface PlanShortcutsProps {
     /** Aluno vinculado a um personal não monta nem importa treino: quem
      * prescreve é o personal. Só vê o histórico e a loja de planos. */
     hasPersonal: boolean;
-    /** Preço do plano avulso da loja; null enquanto não carregou. */
-    storePrice: number | null;
     onImportPdf: () => void;
     /** Estado vazio (sem plano ainda) não tem histórico para mostrar. */
     showHistory?: boolean;
@@ -42,7 +33,6 @@ interface PlanShortcutsProps {
  */
 export default function PlanShortcuts({
     hasPersonal,
-    storePrice,
     onImportPdf,
     showHistory = true,
     showStore,
@@ -132,24 +122,21 @@ export default function PlanShortcuts({
                             <FiAward size={20} aria-hidden="true" />
                         </span>
                         <div>
-                            <p className={s.storeEyebrow}>Loja de planos</p>
+                            <p className={s.storeEyebrow}>Loja de treinos</p>
                             <h2 id="plan-store-title" className={s.storeTitle}>
-                                Treine como os famosos
+                                Programas de profissionais
                             </h2>
                             <p className={s.storeText}>
-                                Planos completos inspirados na rotina de grandes
-                                atletas, prontos para começar hoje
-                                {storePrice != null
-                                    ? ` por ${formatBRL(storePrice)}`
-                                    : ''}
-                                .
+                                Programas completos montados por profissionais
+                                de Educação Física com CREF, prontos para
+                                começar hoje.
                             </p>
                         </div>
                     </div>
                     <ul className={s.storePerks}>
                         <li className={s.storePerk}>
                             <FiCheckCircle size={14} aria-hidden="true" />
-                            Plano completo
+                            Profissional com CREF
                         </li>
                         <li className={s.storePerk}>
                             <FiCheckCircle size={14} aria-hidden="true" />
@@ -160,11 +147,8 @@ export default function PlanShortcuts({
                             Pagamento único
                         </li>
                     </ul>
-                    <Link
-                        href="/meus-treinos/escolher-plano"
-                        className={s.storeCta}
-                    >
-                        Conhecer os planos
+                    <Link href="/loja" className={s.storeCta}>
+                        Ver os programas
                         <FiArrowRight size={18} aria-hidden="true" />
                     </Link>
                 </section>

@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { FiFileText, FiVideo } from 'react-icons/fi';
+import { useEffect, useState } from 'react';
+import { isAxiosError } from 'axios';
+import { FiBookOpen, FiFileText, FiVideo } from 'react-icons/fi';
 import {
     MUSCLE_GROUPS,
     EXERCISE_CATEGORIES,
@@ -13,6 +14,11 @@ import { usePersonalExercises } from '@/hooks/usePersonalExercises';
 import VideoUploadModal from '@/components/features/VideoUploadModal';
 import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
 import Modal from '@/components/system/Modal';
+import {
+    fetchIsStoreAuthor,
+    useOwnMediaUpload,
+} from '@/hooks/useOwnMediaUpload';
+import { LIBRARY_CONSENT_TEXT, setLibraryConsent } from '@/libs/storeService';
 import s from '../personal.module.css';
 
 interface ExercisesTabProps {
@@ -21,6 +27,9 @@ interface ExercisesTabProps {
 }
 
 export default function ExercisesTab({ planType = 'free' }: ExercisesTabProps) {
+    // O autor da loja envia vídeo próprio mesmo sem o PRO.
+    const ownUpload = useOwnMediaUpload();
+    const uploadPlan: 'free' | 'pro' = planType === 'pro' || ownUpload ? 'pro' : 'free';
     const {
         myExercises,
         exLoading,
@@ -46,6 +55,35 @@ export default function ExercisesTab({ planType = 'free' }: ExercisesTabProps) {
 
     const [videoModalExercise, setVideoModalExercise] =
         useState<ExerciseLibraryItem | null>(null);
+
+    // Autor da loja: autoriza, vídeo a vídeo, levar o vídeo para a biblioteca
+    // geral do app com o crédito dele (decisão 13 do plano da loja).
+    const [isAuthor, setIsAuthor] = useState(false);
+    const [consentTarget, setConsentTarget] =
+        useState<ExerciseLibraryItem | null>(null);
+    const [consentBusy, setConsentBusy] = useState(false);
+    const [consentError, setConsentError] = useState('');
+    useEffect(() => {
+        void fetchIsStoreAuthor().then(setIsAuthor);
+    }, []);
+
+    const changeConsent = async (ex: ExerciseLibraryItem, consent: boolean) => {
+        setConsentBusy(true);
+        setConsentError('');
+        try {
+            await setLibraryConsent(ex.id, consent);
+            setConsentTarget(null);
+            refetchExercises();
+        } catch (err) {
+            setConsentError(
+                (isAxiosError(err) &&
+                    (err.response?.data as { error?: string })?.error) ||
+                    'Não deu certo. Tente de novo.',
+            );
+        } finally {
+            setConsentBusy(false);
+        }
+    };
 
     const toggleTag = (tag: string) => {
         const current = exForm.tags ?? [];
@@ -121,6 +159,14 @@ export default function ExercisesTab({ planType = 'free' }: ExercisesTabProps) {
                                     {ex.muscle_group}
                                     {ex.category ? ` · ${ex.category}` : ''}
                                 </p>
+                                {isAuthor && (ex.in_library || ex.library_consent) && (
+                                    <p className={s.exCardMeta}>
+                                        <FiBookOpen aria-hidden />{' '}
+                                        {ex.in_library
+                                            ? 'Na biblioteca do app, com o seu crédito'
+                                            : 'Autorizado para a biblioteca do app (a equipe avalia)'}
+                                    </p>
+                                )}
                             </div>
                             <div className={s.studentActions}>
                                 <button
@@ -136,6 +182,26 @@ export default function ExercisesTab({ planType = 'free' }: ExercisesTabProps) {
                                 >
                                     Editar
                                 </button>
+                                {isAuthor && ex.video_url && !ex.in_library && (
+                                    <button
+                                        onClick={() => {
+                                            setConsentError('');
+                                            if (ex.library_consent) {
+                                                void changeConsent(ex, false);
+                                            } else {
+                                                setConsentTarget(ex);
+                                            }
+                                        }}
+                                        className={s.btnAction}
+                                        disabled={consentBusy}
+                                        title="Levar este vídeo para a biblioteca geral do app"
+                                    >
+                                        <FiBookOpen />{' '}
+                                        {ex.library_consent
+                                            ? 'Retirar da biblioteca'
+                                            : 'Oferecer à biblioteca'}
+                                    </button>
+                                )}
                                 <button
                                     onClick={() => openExDelete(ex)}
                                     className={s.btnDanger}
@@ -147,6 +213,48 @@ export default function ExercisesTab({ planType = 'free' }: ExercisesTabProps) {
                     ))}
                 </div>
             )}
+
+            {consentError && !consentTarget && (
+                <div className={s.errorMsg}>{consentError}</div>
+            )}
+
+            <Modal
+                open={!!consentTarget}
+                onClose={() => setConsentTarget(null)}
+                title="Oferecer o vídeo à biblioteca do app"
+                footer={
+                    <>
+                        <button
+                            onClick={() => setConsentTarget(null)}
+                            className={s.btnCancel}
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={() =>
+                                consentTarget &&
+                                void changeConsent(consentTarget, true)
+                            }
+                            disabled={consentBusy}
+                            className={s.btnSubmit}
+                        >
+                            {consentBusy ? 'Enviando…' : 'Autorizo'}
+                        </button>
+                    </>
+                }
+            >
+                {consentError && (
+                    <div className={s.errorMsg}>{consentError}</div>
+                )}
+                <p className={s.confirmText}>
+                    <strong>{consentTarget?.name}</strong>
+                </p>
+                <p className={s.confirmText}>{LIBRARY_CONSENT_TEXT}</p>
+                <p className={s.confirmText}>
+                    A equipe avalia o vídeo antes. Trocar o vídeo deste
+                    exercício apaga a autorização.
+                </p>
+            </Modal>
 
             {/* ── Exercise Create Modal ── */}
             <Modal
@@ -443,7 +551,7 @@ export default function ExercisesTab({ planType = 'free' }: ExercisesTabProps) {
                 <VideoUploadModal
                     exerciseId={videoModalExercise.id}
                     mode="personal"
-                    planType={planType}
+                    planType={uploadPlan}
                     onSuccess={() => {
                         setVideoModalExercise(null);
                         refetchExercises();

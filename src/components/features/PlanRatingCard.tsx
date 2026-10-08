@@ -10,6 +10,9 @@ interface PlanRatingCardProps {
     category?: string;
     /** O aluno tem personal vinculado (muda só o texto de apoio). */
     hasPersonal?: boolean;
+    /** Plano comprado na loja: o comentário pode ir para a página do
+     *  programa, se o aluno autorizar (fase 3 do plano da loja). */
+    storeProgramId?: string;
 }
 
 // Planos que o próprio aluno montou ou importou, e o plano que ele manteve
@@ -22,12 +25,19 @@ const SELF_AUTHORED = new Set(['self_made', 'imported_pdf', 'kept']);
  * do personal e, se o plano veio de um modelo da biblioteca, para o ranking
  * de modelos do admin. Uma nota por plano: enviar de novo substitui.
  */
-export default function PlanRatingCard({ planId, category, hasPersonal }: PlanRatingCardProps) {
+const MODERATION_LABEL = {
+    pending: 'Seu comentário aparece na página do programa depois da revisão da equipe.',
+    approved: 'Seu comentário está na página do programa.',
+    rejected: 'A equipe não publicou seu comentário na página do programa.',
+} as const;
+
+export default function PlanRatingCard({ planId, category, hasPersonal, storeProgramId }: PlanRatingCardProps) {
     const [rating, setRating] = useState<MyRating | null>(null);
     const [loaded, setLoaded] = useState(false);
     const [editing, setEditing] = useState(false);
     const [error, setError] = useState('');
     const [justSaved, setJustSaved] = useState(false);
+    const [publicConsent, setPublicConsent] = useState(false);
 
     useEffect(() => {
         let alive = true;
@@ -36,7 +46,11 @@ export default function PlanRatingCard({ planId, category, hasPersonal }: PlanRa
         setJustSaved(false);
         setError('');
         getMyRating(planId)
-            .then((r) => alive && setRating(r))
+            .then((r) => {
+                if (!alive) return;
+                setRating(r);
+                setPublicConsent(!!r?.public);
+            })
             .catch(() => alive && setRating(null))
             .finally(() => alive && setLoaded(true));
         return () => {
@@ -49,7 +63,13 @@ export default function PlanRatingCard({ planId, category, hasPersonal }: PlanRa
     const handleSubmit = async (stars: number, comment: string) => {
         setError('');
         try {
-            await submitRating({ target_id: planId, target_type: 'macrocycle', stars, comment });
+            await submitRating({
+                target_id: planId,
+                target_type: 'macrocycle',
+                stars,
+                comment,
+                ...(storeProgramId ? { public_consent: publicConsent && !!comment } : {}),
+            });
             setRating(await getMyRating(planId));
             setEditing(false);
             setJustSaved(true);
@@ -92,6 +112,11 @@ export default function PlanRatingCard({ planId, category, hasPersonal }: PlanRa
                                 “{rating.comment}”
                             </p>
                         )}
+                        {rating.public && rating.moderation && (
+                            <p className="mb-0 mt-1" style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
+                                {MODERATION_LABEL[rating.moderation]}
+                            </p>
+                        )}
                     </div>
                     <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setEditing(true)}>
                         Alterar
@@ -106,6 +131,25 @@ export default function PlanRatingCard({ planId, category, hasPersonal }: PlanRa
                         submitLabel={rating ? 'Salvar avaliação' : 'Enviar avaliação'}
                         onSubmit={handleSubmit}
                         onCancel={rating ? () => setEditing(false) : undefined}
+                        extra={
+                            storeProgramId ? (
+                                <label
+                                    className="d-flex align-items-start gap-2 mb-2"
+                                    style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}
+                                >
+                                    <input
+                                        type="checkbox"
+                                        checked={publicConsent}
+                                        onChange={(e) => setPublicConsent(e.target.checked)}
+                                        style={{ marginTop: 3 }}
+                                    />
+                                    <span>
+                                        Mostrar meu comentário na página do programa, na loja, com o meu
+                                        primeiro nome. A equipe revisa antes.
+                                    </span>
+                                </label>
+                            ) : undefined
+                        }
                     />
                 </>
             )}

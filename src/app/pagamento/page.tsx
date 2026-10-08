@@ -45,6 +45,14 @@ import {
     normalizeReferralCode,
 } from '@/libs/referralPartnerService';
 import { readAcquisitionRef } from '@/libs/acquisition';
+import {
+    getStoreProgram,
+    purchaseStoreProgramCard,
+    purchaseStoreProgramPix,
+    type StoreProgramDetail,
+} from '@/libs/storeService';
+import { readStoreSaleRef } from '@/libs/storeSaleRef';
+import { STORE_HEALTH_NOTICE } from '@/libs/storeFormat';
 import PersonalPlanLadder, { type LadderPlan } from '@/components/features/PersonalPlanLadder';
 import {
     getStudentHomeRoute,
@@ -207,8 +215,10 @@ function PaymentPageInner() {
     const produtoParam = searchParams.get('produto');
     // 'ia-substituicao' é o nome antigo do produto (links anteriores a
     // 2026-09-27): a assinatura avulsa de IA virou o Aluno Plus.
+    // 'programa' (loja de programas) é a mesma compra avulsa de 'plano', com
+    // o preço da faixa do programa.
     const initialProduto: Produto =
-        produtoParam === 'plano'
+        produtoParam === 'plano' || produtoParam === 'programa'
             ? 'plano'
             : produtoParam === 'plus' || produtoParam === 'ia-substituicao'
               ? 'plus'
@@ -234,6 +244,13 @@ function PaymentPageInner() {
     // personal em vez de aplicar um modelo da loja (mesmo produto e preço).
     const lockedPlanId = searchParams.get('planId') ?? '';
     const keepsPlan = produto === 'plano' && lockedPlanId !== '';
+    // Programa da loja (produto=programa&programId=...): preço, produto do
+    // Google Play e título vêm dele; a compra leva o ?ref= do link do
+    // programa (storeSaleRef).
+    const programId =
+        produtoParam === 'programa' ? (searchParams.get('programId') ?? '') : '';
+    const [storeProgram, setStoreProgram] = useState<StoreProgramDetail | null>(null);
+    const [programMissing, setProgramMissing] = useState(false);
     // Planos que o aluno já tinha ANTES da compra: no polling do PIX, a compra
     // confirmada (o webhook aplica o plano) aparece como um plano novo. Não
     // dá para comparar "o plano ativo": com personal, a compra não encerra o
@@ -314,6 +331,13 @@ function PaymentPageInner() {
             if (pollingRef.current) clearInterval(pollingRef.current);
         };
     }, []);
+
+    useEffect(() => {
+        if (!programId) return;
+        getStoreProgram(programId)
+            .then(setStoreProgram)
+            .catch(() => setProgramMissing(true));
+    }, [programId]);
 
     useEffect(() => {
         const rank = planRank(getUser()?.plan_type);
@@ -493,7 +517,9 @@ function PaymentPageInner() {
             : produto === 'personal-plus'
               ? catalog?.personal_plus.value
               : produto === 'plano'
-                ? catalog?.library_plan.value
+                ? programId
+                    ? storeProgram?.price
+                    : catalog?.library_plan.value
                 : catalog?.student_plus.value;
     // Menor preço por mês do PRO entre os ciclos longos, para o cartão do PRO.
     const proFromMonthly = (() => {
@@ -511,9 +537,13 @@ function PaymentPageInner() {
               ? 'Personal Plus — Mensal'
               : keepsPlan
                 ? 'Manter o plano do seu personal'
-                : produto === 'plano'
-                  ? 'Plano de treino selecionado'
-                  : 'Aluno Plus — Mensal';
+                : programId
+                  ? storeProgram
+                      ? `Programa ${storeProgram.title}`
+                      : 'Programa de treino'
+                  : produto === 'plano'
+                    ? 'Plano de treino selecionado'
+                    : 'Aluno Plus — Mensal';
     const priceNote =
         produto === 'pro'
             ? CYCLE_CHARGE[cycle]
@@ -527,9 +557,16 @@ function PaymentPageInner() {
               ? PERSONAL_PLUS_BENEFITS
               : keepsPlan
                 ? MANTER_BENEFITS
-                : produto === 'plano'
-                  ? PLANO_BENEFITS
-                  : PLUS_BENEFITS;
+                : programId
+                  ? [
+                        storeProgram?.author
+                            ? `Montado por ${storeProgram.author.name} (${storeProgram.author.cref})`
+                            : 'Da Coleção Venafit',
+                        ...PLANO_BENEFITS,
+                    ]
+                  : produto === 'plano'
+                    ? PLANO_BENEFITS
+                    : PLUS_BENEFITS;
     const indicationLabel =
         indicationChoice === INDICATION_CODE
             ? confirmedCode
@@ -542,7 +579,9 @@ function PaymentPageInner() {
 
     // Motivo para não vender agora (produto fora de venda ou fora do perfil).
     const unavailableReason =
-        produto === 'plus' && plusStatus?.active
+        programId && programMissing
+            ? 'Este programa não está à venda no momento.'
+            : produto === 'plus' && plusStatus?.active
             ? 'Você já tem o Aluno Plus ativo. Para cancelar, vá em Minha conta.'
             : produto === 'plus' && plusStatus?.own_pro
               ? 'Sua conta já tem os benefícios do Aluno Plus.'
@@ -641,7 +680,9 @@ function PaymentPageInner() {
                 }
                 const res = keepsPlan
                     ? await purchaseLockedPlanPix(lockedPlanId, alt)
-                    : await purchaseLibraryPlanPix(templateId, alt);
+                    : programId
+                      ? await purchaseStoreProgramPix(programId, readStoreSaleRef(), alt)
+                      : await purchaseLibraryPlanPix(templateId, alt);
                 setPix({
                     qrImageUrl: res.qr_image_url,
                     payload: res.qr_code_payload,
@@ -668,7 +709,9 @@ function PaymentPageInner() {
                     : produto === 'personal-plus'
                       ? (catalog?.personal_plus.play_product_id ?? '')
                       : produto === 'plano'
-                        ? (catalog?.library_plan.play_product_id ?? '')
+                        ? programId
+                            ? (storeProgram?.play_product_id ?? '')
+                            : (catalog?.library_plan.play_product_id ?? '')
                         : (catalog?.student_plus.play_product_id ?? '');
             const productType = isPersonalPlan || produto === 'plus' ? 'subs' : 'inapp';
             if (!productId) throw new Error('Produto indisponível');
@@ -681,14 +724,21 @@ function PaymentPageInner() {
                 setStep('pay');
                 return;
             }
-            const verify = await verifyGooglePlayPurchase(
+            const baseArgs = [
                 productId,
                 result.purchaseToken!,
                 productType,
-                produto === 'plano' && !keepsPlan ? templateId : undefined,
+                produto === 'plano' && !keepsPlan && !programId ? templateId : undefined,
                 keepsPlan ? lockedPlanId : undefined,
                 isPersonalPlan ? indicationReceiver || INDICATION_NONE : undefined,
-            );
+            ] as const;
+            // O programa da loja (e o ?ref= do link) só vai quando há programa.
+            const verify = programId
+                ? await verifyGooglePlayPurchase(...baseArgs, {
+                      programId,
+                      ref: readStoreSaleRef(),
+                  })
+                : await verifyGooglePlayPurchase(...baseArgs);
             if (verify.success) {
                 if (isPersonalPlan) {
                     updateSessionPlanType(produto === 'personal-plus' ? 'plus' : 'pro');
@@ -730,7 +780,9 @@ function PaymentPageInner() {
             } else if (produto === 'plano') {
                 const res = keepsPlan
                     ? await purchaseLockedPlanCard(lockedPlanId, form, alt)
-                    : await purchaseLibraryPlanCard(templateId, form, alt);
+                    : programId
+                      ? await purchaseStoreProgramCard(programId, form, readStoreSaleRef(), alt)
+                      : await purchaseLibraryPlanCard(templateId, form, alt);
                 if (res.applied) {
                     setConfirmed(true);
                 } else {
@@ -1270,6 +1322,7 @@ function PaymentPageInner() {
                                 <BenefitList items={benefits} />
                             </div>
                         )}
+                        {programId && <p className={s.hint}>{STORE_HEALTH_NOTICE}</p>}
                         {produto === 'pro' && (
                             <p className={s.hint}>
                                 Seus alunos registram a própria evolução (medidas e fotos) de
@@ -1290,7 +1343,7 @@ function PaymentPageInner() {
                 type="button"
                 className={`btn btn-gold ${s.cta}`}
                 onClick={handleGooglePlay}
-                disabled={loading || !catalog || !googleChecked}
+                disabled={loading || !catalog || !googleChecked || (!!programId && !storeProgram)}
             >
                 {loading ? spinner : 'Continuar para o pagamento'}
             </button>
@@ -1299,7 +1352,7 @@ function PaymentPageInner() {
                 type="button"
                 className={`btn btn-gold ${s.cta}`}
                 onClick={goNext}
-                disabled={!catalog || !googleChecked}
+                disabled={!catalog || !googleChecked || (!!programId && !storeProgram)}
             >
                 {googleChecked ? 'Escolher forma de pagamento' : spinner}
             </button>

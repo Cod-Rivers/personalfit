@@ -82,6 +82,11 @@ export default function PersonalDashboard() {
         }
         setUser(parsed);
         setPlanType(parsed.plan_type ?? 'free');
+        // Links de fora (e-mails da loja de treinos) abrem direto numa aba:
+        // /personal?tab=ciclos é "Minha biblioteca". Lido da URL sem
+        // useSearchParams para a página não precisar de Suspense.
+        const linked = new URLSearchParams(window.location.search).get('tab');
+        if (linked === 'ciclos' || linked === 'exercises') setTab(linked);
     }, [router]);
 
     // Plano vindo do servidor: o da sessão é o do login, e o teste grátis do
