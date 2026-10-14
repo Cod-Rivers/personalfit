@@ -594,6 +594,24 @@ export default function MeusTreinosPage() {
                               } de treino`}
                     </div>
                 )}
+                {/* Linha do tempo das fases (read-only), acima dos treinos:
+                    no fim da página, depois de avaliação, personal e
+                    gamificação, o aluno nunca chegava a vê-la. Aparece em
+                    qualquer plano periodizado com datas (loja, personal ou
+                    o próprio aluno). */}
+                {ganttPhases.length > 0 && (
+                    <div
+                        className={styles.protocolButton}
+                        style={{ marginBottom: '1.2rem' }}
+                    >
+                        <GanttPlanning
+                            phases={ganttPhases}
+                            enabled={ganttEnabled}
+                            onToggle={setGanttEnabled}
+                            readOnly
+                        />
+                    </div>
+                )}
                 {/* Trainings list agrupada por mesociclo — vem primeiro na
                     página para o aluno ver os treinos sem precisar rolar
                     por cards de contexto (personal, gamificação, seletor). */}
@@ -791,22 +809,6 @@ export default function MeusTreinosPage() {
                     onClose={() => setPdfImportOpen(false)}
                     onApplied={handlePdfImportApplied}
                 />
-                {/* Gantt chart (read-only) — só faz sentido mostrar (com o
-                    toggle de ocultar) quando o personal já definiu datas */}
-                {ganttPhases.length > 0 && (
-                    <div
-                        className={styles.protocolButton}
-                        style={{ marginBottom: '1.2rem' }}
-                    >
-                        <GanttPlanning
-                            phases={ganttPhases}
-                            enabled={ganttEnabled}
-                            onToggle={setGanttEnabled}
-                            readOnly
-                        />
-                    </div>
-                )}
-
                 <div className="py-3">
                     <GoogleAdSlot />
                 </div>
