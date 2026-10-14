@@ -16,12 +16,16 @@ interface UserData {
     phone?: string;
     cpf?: string;
     role?: string;
+    has_personal?: boolean;
 }
 
 export default function MinhaContaPage() {
     const router = useRouter();
     const [user, setUser] = useState<UserData>({});
     const [showConfirm, setShowConfirm] = useState(false);
+    const [showUnlink, setShowUnlink] = useState(false);
+    const [unlinking, setUnlinking] = useState(false);
+    const [unlinkError, setUnlinkError] = useState('');
     const [loading, setLoading] = useState(false);
     const [exporting, setExporting] = useState(false);
     const [error, setError] = useState('');
@@ -29,7 +33,11 @@ export default function MinhaContaPage() {
     const [editing, setEditing] = useState(false);
     const [saving, setSaving] = useState(false);
     const [editError, setEditError] = useState('');
-    const [editForm, setEditForm] = useState({ name: '', email: '', phone: '' });
+    const [editForm, setEditForm] = useState({
+        name: '',
+        email: '',
+        phone: '',
+    });
     // Trocar o e-mail exige a senha atual: com o e-mail na mão, quem pegasse
     // uma sessão aberta pedia a redefinição de senha e ficava com a conta.
     const [currentPassword, setCurrentPassword] = useState('');
@@ -58,6 +66,24 @@ export default function MinhaContaPage() {
         } catch {
             setError('Erro ao excluir conta. Tente novamente.');
             setLoading(false);
+        }
+    };
+
+    // O aluno sai do personal: o vínculo acaba, a conta e os treinos ficam.
+    const handleUnlink = async () => {
+        setUnlinking(true);
+        setUnlinkError('');
+        try {
+            await Api.delete('/students/unlink');
+            const updatedUser = { ...user, has_personal: false };
+            setUser(updatedUser);
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+            setShowUnlink(false);
+            router.push('/meus-treinos');
+        } catch {
+            setUnlinkError('Não foi possível desvincular. Tente novamente.');
+        } finally {
+            setUnlinking(false);
         }
     };
 
@@ -94,7 +120,12 @@ export default function MinhaContaPage() {
         } catch (err: unknown) {
             const response = (
                 err as
-                    | { response?: { status?: number; data?: { error?: string } } }
+                    | {
+                          response?: {
+                              status?: number;
+                              data?: { error?: string };
+                          };
+                      }
                     | undefined
             )?.response;
             const status = response?.status;
@@ -106,9 +137,13 @@ export default function MinhaContaPage() {
             ) {
                 setEditError('Senha atual incorreta.');
             } else if (status === 400) {
-                setEditError('Dados inválidos. Verifique os campos e tente novamente.');
+                setEditError(
+                    'Dados inválidos. Verifique os campos e tente novamente.',
+                );
             } else {
-                setEditError('Erro ao salvar suas informações. Tente novamente.');
+                setEditError(
+                    'Erro ao salvar suas informações. Tente novamente.',
+                );
             }
         } finally {
             setSaving(false);
@@ -256,7 +291,8 @@ export default function MinhaContaPage() {
                                         className="form-text"
                                         style={{ fontSize: '0.8rem' }}
                                     >
-                                        Para trocar o e-mail, confirme que é você.
+                                        Para trocar o e-mail, confirme que é
+                                        você.
                                     </div>
                                 </div>
                             )}
@@ -316,6 +352,34 @@ export default function MinhaContaPage() {
                 {user.role === 'student' && <StudentPlusCard />}
                 {user.role === 'personal' && <ProPlanCard />}
 
+                {user.role === 'student' && user.has_personal && (
+                    <div className="card mb-4">
+                        <div className="card-header fw-semibold">
+                            Meu personal
+                        </div>
+                        <div className="card-body">
+                            <p
+                                className="text-secondary mb-3"
+                                style={{ fontSize: '0.9rem' }}
+                            >
+                                Você pode encerrar o vínculo com seu personal a
+                                qualquer momento. Sua conta continua ativa e,
+                                sem personal, você passa a montar o próprio
+                                treino.
+                            </p>
+                            <button
+                                className="btn btn-outline-danger"
+                                onClick={() => {
+                                    setUnlinkError('');
+                                    setShowUnlink(true);
+                                }}
+                            >
+                                Desvincular do meu personal
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 {/* Portabilidade de dados (Art. 18, V LGPD) */}
                 <div className="card mb-4">
                     <div className="card-header fw-semibold">Meus dados</div>
@@ -360,11 +424,11 @@ export default function MinhaContaPage() {
                             className="text-secondary mb-3"
                             style={{ fontSize: '0.9rem' }}
                         >
-                            Ao excluir sua conta, seus dados de identificação são
-                            anonimizados e seus dados de saúde e de treino são
-                            apagados permanentemente, conforme a LGPD.
-                            Esta ação não pode ser desfeita. Veja o que é
-                            apagado, o que é retido e por quanto tempo em{' '}
+                            Ao excluir sua conta, seus dados de identificação
+                            são anonimizados e seus dados de saúde e de treino
+                            são apagados permanentemente, conforme a LGPD. Esta
+                            ação não pode ser desfeita. Veja o que é apagado, o
+                            que é retido e por quanto tempo em{' '}
                             <Link href="/excluir-conta">
                                 Excluir conta e dados
                             </Link>
@@ -379,6 +443,49 @@ export default function MinhaContaPage() {
                     </div>
                 </div>
             </div>
+
+            <Modal
+                open={showUnlink}
+                onClose={() => !unlinking && setShowUnlink(false)}
+                title="Desvincular do personal"
+                footer={
+                    <>
+                        <button
+                            className="btn btn-secondary"
+                            onClick={() => setShowUnlink(false)}
+                            disabled={unlinking}
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            className="btn btn-danger"
+                            onClick={handleUnlink}
+                            disabled={unlinking}
+                        >
+                            {unlinking ? (
+                                <>
+                                    <span className="spinner-border spinner-border-sm me-2" />
+                                    Desvinculando...
+                                </>
+                            ) : (
+                                'Sim, desvincular'
+                            )}
+                        </button>
+                    </>
+                }
+            >
+                <p>
+                    Tem certeza que deseja encerrar o vínculo com seu personal?
+                </p>
+                <p className="text-secondary" style={{ fontSize: '0.875rem' }}>
+                    Ele deixa de acompanhar seus treinos, e os comentários que
+                    você enviou a ele são apagados. Para voltar, ele precisa
+                    cadastrar você de novo.
+                </p>
+                {unlinkError && (
+                    <div className="alert alert-danger py-2">{unlinkError}</div>
+                )}
+            </Modal>
 
             {/* Modal de confirmação */}
             <Modal
@@ -415,17 +522,12 @@ export default function MinhaContaPage() {
                     Tem certeza que deseja excluir sua conta?{' '}
                     <strong>Esta ação é irreversível.</strong>
                 </p>
-                <p
-                    className="text-secondary"
-                    style={{ fontSize: '0.875rem' }}
-                >
+                <p className="text-secondary" style={{ fontSize: '0.875rem' }}>
                     Seus dados de saúde e de treino serão apagados e os de
                     identificação, anonimizados conforme a LGPD.
                 </p>
                 {error && (
-                    <div className="alert alert-danger py-2">
-                        {error}
-                    </div>
+                    <div className="alert alert-danger py-2">{error}</div>
                 )}
             </Modal>
         </>
