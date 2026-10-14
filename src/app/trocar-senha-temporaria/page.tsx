@@ -1,6 +1,7 @@
 'use client';
 import { Api } from '@/libs/api';
 import { formatCpfInput } from '@/libs/formatters';
+import Input from '@/components/molecules/Input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
@@ -145,9 +146,9 @@ export default function TrocarSenhaTemporariaPage() {
                     className="d-flex flex-column gap-3"
                 >
                     <div>
-                        <input
+                        <Input
                             type="password"
-                            className="form-control"
+                            autoComplete="one-time-code"
                             placeholder="Senha temporária (recebida por e-mail)"
                             {...register('current_password')}
                         />
@@ -159,9 +160,9 @@ export default function TrocarSenhaTemporariaPage() {
                     </div>
 
                     <div>
-                        <input
+                        <Input
                             type="password"
-                            className="form-control"
+                            autoComplete="new-password"
                             placeholder="Nova senha"
                             {...register('new_password')}
                         />
@@ -173,9 +174,9 @@ export default function TrocarSenhaTemporariaPage() {
                     </div>
 
                     <div>
-                        <input
+                        <Input
                             type="password"
-                            className="form-control"
+                            autoComplete="new-password"
                             placeholder="Confirmar nova senha"
                             {...register('confirm_password')}
                         />
