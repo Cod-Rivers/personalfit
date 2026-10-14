@@ -38,8 +38,26 @@ const studentSections: HelpSection[] = [
                     o <strong>Marcar como feito</strong> dentro dele) marca o
                     que você já fez, para não se perder na ficha. É só uma
                     conferência sua, guardada neste aparelho: não substitui
-                    o registro das séries e some quando você finaliza o
-                    treino.
+                    o registro das séries e some quando você desmarca ou
+                    finaliza o treino. Sair do app no meio não apaga.
+                </p>
+                <p className="mb-2">
+                    <strong>Blocos em circuito</strong> (bi-set, tri-set,
+                    giant set): o selo do bloco diz a pausa entre os
+                    exercícios e o descanso entre as rodadas. Quando o bloco
+                    tem mais de uma rodada, toque em{' '}
+                    <strong>Iniciar circuito</strong>: o app mostra o
+                    exercício e as repetições da rodada (&quot;3 reps&quot;),
+                    você toca em <strong>Feito</strong> ao terminar cada um, e
+                    o descanso entre as rodadas corre sozinho, com aviso de
+                    voz ou bipe. Exercício por tempo conta sozinho.
+                </p>
+                <p className="mb-2">
+                    No fim da tela, junto de <strong>Finalizar Treino</strong>,
+                    aparece a{' '}
+                    <strong>ordem da semana</strong>: os treinos que você já
+                    finalizou, na ordem em que fez, e quantas vezes repetiu o
+                    treino aberto nesta semana.
                 </p>
                 <p className="mb-0">
                     No topo da tela fica o{' '}
