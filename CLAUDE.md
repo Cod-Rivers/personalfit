@@ -17,4 +17,8 @@ alterações não triviais nas áreas abaixo, leia a regra correspondente em `ru
 - Componente reutilizável / modal → `rules/component-composition-variant-enum.md`
 - Validação de CPF/telefone/campo mascarado → `rules/form-validation-normalize-before-length.md`
 
+- **Treino criado para a loja ou para um aluno** → segue o mesmo fluxo de
+  criação do personal; a tela do aluno é uma só para qualquer origem. Regra em
+  `../Personal-fit-Back/rules/training-same-flow-as-personal.md`
+
 Índice completo com prioridade/impacto: `rules/RULES.md`.
