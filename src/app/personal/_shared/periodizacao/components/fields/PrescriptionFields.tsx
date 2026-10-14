@@ -20,6 +20,7 @@ import {
 import {
     type LocalExercise,
     type LocalTraining,
+    perSetFields,
 } from '../../lib/mesocycleTransforms';
 import s from '../../builder.module.css';
 
@@ -207,7 +208,8 @@ export function TechniqueBlock({
     const params: TechniqueParamsValue = {};
     for (const f of TECHNIQUE_CATALOG[technique]?.fields ?? []) {
         const raw = getParamValue(f.key);
-        if (raw !== '' && Number.isFinite(Number(raw))) params[f.key] = Number(raw);
+        if (raw !== '' && Number.isFinite(Number(raw)))
+            params[f.key] = Number(raw);
     }
 
     return (
@@ -359,6 +361,8 @@ export function seriesSummary(ex: LocalExercise): string {
     const parts: string[] = [];
     if (ex.series_mode === 'free') {
         if (ex.series_free) parts.push(ex.series_free);
+    } else if (ex.series_mode === 'per_set') {
+        parts.push(`${perSetFields(ex).join('/')} reps`);
     } else {
         const sets = ex.series_sets || '?';
         const value = ex.series_value || '?';

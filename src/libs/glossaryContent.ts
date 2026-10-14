@@ -368,7 +368,7 @@ const trainingFieldTerms: GlossaryTerm[] = [
         id: 'series-repeticoes',
         term: 'Séries e Repetições',
         short: 'Quantas séries fazer e quantas repetições em cada uma — a prescrição do seu personal (ou do plano aplicado) para este exercício.',
-        long: 'Séries são os "blocos" de execução do exercício (ex.: 3 séries); repetições são quantas vezes você repete o movimento dentro de cada série (ex.: 10-12 reps). Quando há uma faixa de repetições, a ideia geral é subir até o topo da faixa antes de aumentar a carga.',
+        long: 'Séries são os "blocos" de execução do exercício (ex.: 3 séries); repetições são quantas vezes você repete o movimento dentro de cada série (ex.: 10-12 reps). Quando há uma faixa de repetições, a ideia geral é subir até o topo da faixa antes de aumentar a carga. As repetições podem mudar de uma série para outra, como numa pirâmide (12, 10, 8) ou numa escada (1, 2, 3, 2, 1): o app mostra cada série com o seu número.',
         seeAlso: {
             id: 'dupla-progressao',
             label: 'Dupla Progressão',
@@ -391,7 +391,7 @@ const trainingFieldTerms: GlossaryTerm[] = [
         id: 'combinacao',
         term: 'Combinação (bissérie/trissérie/superssérie)',
         short: 'Este exercício faz parte de um bloco com outro(s), executados em sequência e sem descanso entre eles.',
-        long: 'Combinação indica que este exercício faz parte de um bloco — bissérie (2 exercícios), trissérie (3) ou superssérie/giant set (mais) — executados em sequência, sem descanso entre eles, só ao final do bloco inteiro.',
+        long: 'Combinação indica que este exercício faz parte de um bloco — bissérie (2 exercícios), trissérie (3) ou superssérie/giant set (mais) — executados em sequência, sem descanso entre eles, só ao final do bloco inteiro. Quando o bloco tem duas ou mais rodadas e descanso, o app abre o guia de rodadas: você toca em Feito a cada exercício e o descanso entre as rodadas corre sozinho.',
     },
     {
         id: 'variacoes',

@@ -1753,7 +1753,13 @@ const personalSections: HelpSection[] = [
                         aba Prescrição tem as séries, o descanso e a
                         intensidade (carga, % de 1RM, cadência e RPE); Técnica
                         e Mídia são ajuste fino. <strong>Prescrição geral</strong>{' '}
-                        preenche todos os exercícios do treino de uma vez.
+                        preenche todos os exercícios do treino de uma vez. Para
+                        repetições diferentes em cada série (pirâmide 12/10/8,
+                        escada 1-2-3-2-1), escolha <strong>Por série</strong>{' '}
+                        e preencha um campo por série; o{' '}
+                        <strong>Livre (texto)</strong> fica para o que não é
+                        número. Num bloco em circuito, o descanso do último
+                        exercício é o descanso entre as rodadas.
                     </li>
                 </ol>
                 <p className="mb-0">

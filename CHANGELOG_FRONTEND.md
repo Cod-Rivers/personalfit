@@ -934,3 +934,28 @@
 ## 2026-10-08 15:19 — River (via Claude Code)
 **Resumo:** Combinado: não rode a migração `cmd/migrate-store-programs`. Nada no código precisa mudar. - **Vitrine:** a `/loja` abre vazia até o primeiro autor publicar um programa. - **Os 20 "Estilo X":** sem a migração, eles não aparecem na `/loja`. Continuam existindo no banco e na biblioteca pública dos personais. A rota antiga ainda os vende, na faixa padrão de R$ 29,90. Se eram só exemplos, o mais limpo é apagá-los do banco ou despublicá-los. Quer que eu faça isso? - **Documentação:** registrei a migração como dispensada no plano, em `TAREFAS_PENDENTES.md`, em `TESTES_A_FAZER.md` e na memória. Essas…
 **Arquivos:** CHANGELOG_FRONTEND.md
+
+## 2026-10-08 15:58 — River (via Claude Code)
+**Resumo:** Commit e push feitos nos três repositórios. | Repositório | Commit | O que foi | |---|---|---| | `Personal-fit-Back` | `44e25fb` | ferramenta `cmd/purge-celebrity-mocks` e changelog | | `personalfit` | `766f4ed` | seção da Ajuda, os três "?" de ajuda e changelog | | `VenafitApp` | `d8a678c` | só o changelog | A ferramenta que apaga os "Estilo X" está no repositório, mas ainda não foi executada em produção. Para rodá-la preciso que você me autorize a ler o `MONGO_URL`, ou que rode você mesmo (`MONGO_URL=... go run ./cmd/purge-celebrity-mocks`, depois com `-apply`).
+**Commits:** Ajuda: passo a passo para vender na loja e help tips nas telas do autor
+
+## 2026-10-13 21:00 — River (via Claude Code)
+**Resumo:** Criei os dois programas: **"Escada 9 Meses - Academia"** e **"Escada 9 Meses - Em Casa"**. O build passou e o teste novo confere os totais da sua ficha (375, 615 e 1.500 repetições). Ainda não está em produção: não rodei nada no banco de prod e não fiz commit. **Como cada programa ficou** - **Duração:** 39 semanas (cerca de 9 meses), meta de 3 treinos por semana, em 9 fases. - **Cada nível tem 3 fases:** - Adaptação: 6 semanas, com o descanso maior da sua faixa. - Desenvolvimento: 6 semanas, com o descanso menor. - Deload: 1 semana, com a escada reduzida. - **Os três níveis:** | Nível | Degrau…
+**Arquivos:** CHANGELOG_FRONTEND.md
+
+## 2026-10-14 10:11 — River (via Claude Code)
+**Resumo:** Corrigi os dois programas da escada no backend. O código não foi commitado e não rodou em produção, porque mexe no banco de produção e preciso que você libere. **O que mudou** - **[escada-programs-seed.go](Personal-fit-Back/internal/infra/persistance/seed/escada-programs-seed.go):** cada fase agora é montada pelo `commands.BuildNewMesocycle`, o mesmo caminho do editor de periodização do personal. Com isso: - A metodologia passa a ser "Linear", um valor do select do editor. A explicação de cada fase foi para as observações das semanas. - O plano grava as partes do nome do treino (letra + nome).…
+**Commits:** Troca da senha temporária: botão de mostrar senha e sem autopreenchimento do navegador | Minha Conta: aluno pode se desvincular do personal | Site declara pt-BR: o Chrome parava de oferecer tradução e estragar palavras
+
+## 2026-10-14 12:27 — River (via Claude Code)
+**Resumo:** Gravei a correção na cópia do aluno e enviei o código dos dois repositórios. O deploy é feito pelo Cloud Build no push e leva alguns minutos. - **Cópia do aluno (cryptoburguer):** as 9 fases agora têm datas em sequência, de 13/10/2026, o dia da compra, até 13/07/2027. - **Backend (`01b7ba2`):** toda compra nova de plano periodizado já sai com as fases agendadas a partir do dia da compra. O seed da escada passou a usar o mesmo caminho do editor, e os comandos de correção estão no repositório. - **Frontend (`e77a673`):** "Meus treinos" mostra só a fase atual, com a etiqueta "Fase atual". As outr…
+**Commits:** Meus treinos mostra só a fase atual do plano periodizado
+
+## 2026-10-14 13:48 — River (via Claude Code)
+**Resumo:** O plano está em [PLANO_ESCADA_DESCANSO_SERIES.md](Todo/PLANO_ESCADA_DESCANSO_SERIES.md) e registrei a pendência como **-50** em [TAREFAS_PENDENTES.md](Todo/TAREFAS_PENDENTES.md). Ao montar o plano, achei uma causa que eu não tinha visto antes: **o editor não consegue guardar repetições diferentes por série.** Quando a série é 1/2/3/4/5, o editor abre como texto livre ("1 × 2 × 3…"). Ao salvar, os números viram texto e as séries viram só a contagem. Ou seja, o personal não consegue montar a escada de forma estruturada. E se alguém abrir a Escada no editor e salvar o card, as repetições por degr…
+**Arquivos:** WeekCompletionSummary, currentWeek.test.ts, currentWeek.ts, exerciseDoneMarks.test.ts, exerciseDoneMarks.ts, page.tsx
+**Commits:** CLAUDE.md aponta a regra de criação de treino pelo fluxo do personal | Meus treinos: linha do tempo das fases acima dos treinos
+
+## 2026-10-14 14:05 — River (via Claude Code)
+**Resumo:** Implementei o plano todo, mas a parte de tela (frontend) não foi para produção: não fiz o commit dela. O backend está publicado e os dados da Escada já foram corrigidos em produção. Segui as recomendações do plano: guia de rodadas em todo bloco com 2 ou mais rodadas e descanso, e um campo por série. **O que foi feito** - **Fase 1 – modo "Por série":** o editor da fase e o card do exercício ganharam o tipo **Por série (repetições diferentes)**, com um campo por série. Escadas e pirâmides abrem uma série por vez e são gravadas sem perder os números. Texto livre gravado antes continua como estava…
+**Arquivos:** AjudaClient.tsx, ExerciseCard.tsx, ExerciseDetailCard.tsx, MesocycleFormModal.tsx, PrescriptionFields.tsx, circuitPlan.test.ts, circuitPlan.ts, glossaryContent.ts, mesocycleTransforms.test.ts, mesocycleTransforms.ts, seriesPrescription.test.ts, seriesPrescription.ts

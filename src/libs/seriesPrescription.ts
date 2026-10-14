@@ -12,8 +12,10 @@
  * tela do aluno, e ele não deve importar de dentro da área do personal.
  */
 
-/** reps = séries × repetições · time = séries × segundos · free = texto livre. */
-export type SeriesPrescriptionMode = 'reps' | 'time' | 'free';
+/** reps = séries × repetições · time = séries × segundos · per_set = um
+ * número de repetições por série (escada, pirâmide 12/10/8) · free = texto
+ * livre. */
+export type SeriesPrescriptionMode = 'reps' | 'time' | 'per_set' | 'free';
 
 /** Estado do formulário. Campos ficam como string para casar direto com os
  * inputs, mesmo padrão de LocalExercise no editor. */
@@ -25,6 +27,8 @@ export interface SeriesPrescriptionDraft {
     value: string;
     /** Texto livre (modo free) — vai para series_label. */
     free: string;
+    /** Repetições de cada série (modo per_set), uma entrada por série. */
+    perSet: string[];
 }
 
 /** Recorte de ExerciseRequest que uma edição de séries altera. */
@@ -49,6 +53,23 @@ export const MAX_SETS = 30;
 /** Reps por série, ou segundos por série no modo tempo (~16 min). */
 export const MAX_SERIES_VALUE = 999;
 
+/** Lista de repetições por série no tamanho pedido: corta o excesso e, ao
+ * crescer, repete o último valor (em 5/4/3, a quarta série é 3 — o mesmo que
+ * o + de série faz). Vazio cresce com `fill`. Usada pelo editor da fase e pelo
+ * card do exercício, para os dois lerem e gravarem igual. */
+export function resizePerSet<T>(values: T[], count: number, fill: T): T[] {
+    const n = Math.max(0, Math.min(count, MAX_SETS));
+    const out = values.slice(0, n);
+    while (out.length < n)
+        out.push(out.length > 0 ? out[out.length - 1] : fill);
+    return out;
+}
+
+/** Campos do formulário → números, limitados como no modo reps. */
+export function parsePerSet(raw: string[]): number[] {
+    return raw.map((v) => clamp(v, 0, MAX_SERIES_VALUE, 0));
+}
+
 export function toSeriesDraft(ex: SeriesSource): SeriesPrescriptionDraft {
     const series = ex.series ?? [];
 
@@ -62,6 +83,7 @@ export function toSeriesDraft(ex: SeriesSource): SeriesPrescriptionDraft {
             sets: series.length > 0 ? String(series.length) : '',
             value: '10',
             free: ex.series_label,
+            perSet: [],
         };
     }
     if (ex.timed) {
@@ -70,17 +92,20 @@ export function toSeriesDraft(ex: SeriesSource): SeriesPrescriptionDraft {
             sets: String(series.length || 3),
             value: String(series[0] ?? 30),
             free: '',
+            perSet: [],
         };
     }
-    // Séries não-uniformes (ex: 12/10/8) não cabem em "N × M" — viram texto
-    // livre, que é o mesmo que o editor faz ao carregar o plano.
+    // Séries não-uniformes (escada, pirâmide 12/10/8) não cabem em "N × M":
+    // abrem uma a uma, como o editor da fase. Antes viravam texto livre e, ao
+    // salvar, os números se perdiam (o texto livre só guarda a contagem).
     const uniform = series.every((v) => v === series[0]);
     if (!uniform && series.length > 0) {
         return {
-            mode: 'free',
+            mode: 'per_set',
             sets: String(series.length),
             value: String(series[0]),
-            free: series.join(' × '),
+            free: '',
+            perSet: series.map(String),
         };
     }
     return {
@@ -88,10 +113,16 @@ export function toSeriesDraft(ex: SeriesSource): SeriesPrescriptionDraft {
         sets: String(series.length || 3),
         value: String(series[0] ?? 10),
         free: '',
+        perSet: [],
     };
 }
 
-function clamp(raw: string, min: number, max: number, fallback: number): number {
+function clamp(
+    raw: string,
+    min: number,
+    max: number,
+    fallback: number,
+): number {
     const parsed = parseInt(raw.trim(), 10);
     if (Number.isNaN(parsed)) return fallback;
     return Math.max(min, Math.min(max, parsed));
@@ -117,6 +148,15 @@ export function fromSeriesDraft(
     }
     const sets = clamp(draft.sets, 1, MAX_SETS, 1);
     const value = clamp(draft.value, 0, MAX_SERIES_VALUE, 0);
+    if (draft.mode === 'per_set') {
+        return {
+            series: parsePerSet(
+                resizePerSet(draft.perSet, sets, String(value)),
+            ),
+            timed: false,
+            series_label: undefined,
+        };
+    }
     return {
         series: Array(sets).fill(value),
         timed: draft.mode === 'time',

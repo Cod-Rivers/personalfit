@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildCircuitPlan, circuitHasTimedWork } from './circuitPlan';
+import { blockRestLabel, buildCircuitPlan, circuitGuides } from './circuitPlan';
 
 const timed = (name: string, sets: number, secs: number, rest?: number) => ({
     name,
@@ -23,9 +23,12 @@ describe('buildCircuitPlan', () => {
         const kinds = plan.steps.map((s) => s.kind).join(',');
         expect(kinds).toBe(
             [
-                ...Array(5).fill('work'), 'rest',
-                ...Array(5).fill('work'), 'rest',
-                ...Array(5).fill('work'), 'rest',
+                ...Array(5).fill('work'),
+                'rest',
+                ...Array(5).fill('work'),
+                'rest',
+                ...Array(5).fill('work'),
+                'rest',
                 ...Array(5).fill('work'),
             ].join(','),
         );
@@ -82,12 +85,21 @@ describe('buildCircuitPlan', () => {
 describe('buildCircuitPlan — modo tabata', () => {
     it('recuperação entre os exercícios da rodada, não depois do último', () => {
         const plan = buildCircuitPlan(
-            [timed('A', 2, 20, 60), timed('B', 2, 20, 60), timed('C', 2, 20, 60)],
+            [
+                timed('A', 2, 20, 60),
+                timed('B', 2, 20, 60),
+                timed('C', 2, 20, 60),
+            ],
             { recoverySeconds: 10 },
         );
         const round1 = plan.steps.filter((s) => s.round === 1);
         expect(round1.map((s) => s.kind)).toEqual([
-            'work', 'recover', 'work', 'recover', 'work', 'rest',
+            'work',
+            'recover',
+            'work',
+            'recover',
+            'work',
+            'rest',
         ]);
         expect(round1[1]).toEqual({
             kind: 'recover',
@@ -98,7 +110,11 @@ describe('buildCircuitPlan — modo tabata', () => {
         // Última rodada: sem recuperação após o último nem descanso.
         const round2 = plan.steps.filter((s) => s.round === 2);
         expect(round2.map((s) => s.kind)).toEqual([
-            'work', 'recover', 'work', 'recover', 'work',
+            'work',
+            'recover',
+            'work',
+            'recover',
+            'work',
         ]);
     });
 
@@ -110,24 +126,88 @@ describe('buildCircuitPlan — modo tabata', () => {
     });
 
     it('exercício que sai das últimas rodadas não deixa recuperação órfã', () => {
-        const plan = buildCircuitPlan(
-            [timed('A', 2, 20), timed('B', 1, 20)],
-            { recoverySeconds: 10 },
-        );
+        const plan = buildCircuitPlan([timed('A', 2, 20), timed('B', 1, 20)], {
+            recoverySeconds: 10,
+        });
         const round2 = plan.steps.filter((s) => s.round === 2);
         expect(round2.map((s) => s.kind)).toEqual(['work']);
     });
 });
 
-describe('circuitHasTimedWork', () => {
-    it('só com algum exercício por tempo num bloco de 2+', () => {
-        expect(circuitHasTimedWork([timed('A', 3, 30), timed('B', 3, 30)])).toBe(true);
+describe('circuitGuides', () => {
+    it('abre com algum exercício por tempo num bloco de 2+', () => {
+        expect(circuitGuides([timed('A', 3, 30), timed('B', 3, 30)])).toBe(
+            true,
+        );
+        expect(circuitGuides([timed('A', 3, 30)])).toBe(false);
+    });
+
+    it('abre em bloco só de repetições com rodadas e descanso', () => {
+        // Escada: 5 degraus, descanso de 90 s no último exercício.
         expect(
-            circuitHasTimedWork([
-                { name: 'A', series: [10] },
-                { name: 'B', series: [10] },
+            circuitGuides([
+                { name: 'Puxada', series: [1, 2, 3, 2, 1] },
+                { name: 'Leg', series: [5, 10, 15, 10, 5], rest: 90 },
+            ]),
+        ).toBe(true);
+    });
+
+    it('não abre sem descanso ou com uma rodada só', () => {
+        expect(
+            circuitGuides([
+                { name: 'A', series: [10, 10] },
+                { name: 'B', series: [10, 10] },
             ]),
         ).toBe(false);
-        expect(circuitHasTimedWork([timed('A', 3, 30)])).toBe(false);
+        expect(
+            circuitGuides([
+                { name: 'A', series: [10] },
+                { name: 'B', series: [10], rest: 60 },
+            ]),
+        ).toBe(false);
+    });
+
+    it('monta as rodadas de repetições com descanso entre elas', () => {
+        const plan = buildCircuitPlan([
+            { name: 'Puxada', series: [1, 2, 1] },
+            { name: 'Leg', series: [5, 10, 5], rest: 90 },
+        ]);
+        expect(plan.rounds).toBe(3);
+        expect(plan.steps.filter((st) => st.kind === 'rest')).toHaveLength(2);
+        const work = plan.steps.filter((st) => st.kind === 'work');
+        expect(work.map((w) => (w.kind === 'work' ? w.target : ''))).toEqual([
+            '1 reps',
+            '5 reps',
+            '2 reps',
+            '10 reps',
+            '1 reps',
+            '5 reps',
+        ]);
+    });
+});
+
+describe('blockRestLabel', () => {
+    const ladder = [
+        { name: 'Puxada', series: [1, 2, 1] },
+        { name: 'Leg', series: [5, 10, 5], rest: 90 },
+    ];
+    it('mostra a pausa entre exercícios e o descanso entre rodadas', () => {
+        expect(blockRestLabel(ladder, 0)).toBe(
+            'sem pausa entre os exercícios · 90 s de descanso entre as rodadas',
+        );
+        expect(blockRestLabel(ladder, 20)).toBe(
+            '20 s de recuperação entre os exercícios · 90 s de descanso entre as rodadas',
+        );
+    });
+    it('sem descanso entre rodadas fala só da pausa', () => {
+        expect(
+            blockRestLabel(
+                [
+                    { name: 'A', series: [10] },
+                    { name: 'B', series: [10] },
+                ],
+                0,
+            ),
+        ).toBe('sem pausa entre os exercícios');
     });
 });

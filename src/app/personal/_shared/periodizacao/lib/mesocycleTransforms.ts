@@ -8,8 +8,11 @@ import type {
     TrainingResponse,
 } from '@/libs/planningService';
 import type { ExerciseLog } from '@/components/features/types';
-import { partitionExerciseGroups, comboGroupLabel } from '@/libs/trainingTechniques';
-import { MAX_SETS } from '@/libs/seriesPrescription';
+import {
+    partitionExerciseGroups,
+    comboGroupLabel,
+} from '@/libs/trainingTechniques';
+import { MAX_SETS, parsePerSet, resizePerSet } from '@/libs/seriesPrescription';
 
 export { partitionExerciseGroups, comboGroupLabel };
 
@@ -112,7 +115,7 @@ export function formatDate(iso?: string) {
     return new Date(iso).toLocaleDateString('pt-BR');
 }
 
-export type SeriesMode = 'reps' | 'time' | 'free';
+export type SeriesMode = 'reps' | 'time' | 'per_set' | 'free';
 
 export interface LocalExercise {
     _id: string;
@@ -131,6 +134,9 @@ export interface LocalExercise {
     series_value: string; // reps/set (reps) ou segundos/set (time)
     // Free mode: texto livre armazenado em series_label
     series_free: string;
+    // Per-set mode: repetições de cada série separadas por vírgula ("1,2,3,2,1").
+    // O tamanho segue series_sets (ver perSetValues).
+    series_per_set: string;
     // Observações do personal (campo comments no backend)
     observations: string;
     variations: string;
@@ -254,22 +260,41 @@ function fieldToNum(
  * contagem, igual sempre foi; só grava um array quando o personal de fato
  * preencheu o campo. Os valores em si não importam, só o tamanho do array
  * (ver formatSeries, que é quem lê essa contagem de volta). */
+/** Repetições de cada série no modo per_set, no tamanho de series_sets —
+ * mesma regra do card do exercício (resizePerSet em seriesPrescription.ts). */
+export function perSetFields(
+    ex: Pick<LocalExercise, 'series_sets' | 'series_value' | 'series_per_set'>,
+): string[] {
+    const listed = (ex.series_per_set ?? '')
+        .split(',')
+        .filter((v) => v.trim() !== '');
+    const count = parseInt(ex.series_sets, 10) || listed.length;
+    return resizePerSet(listed, count, ex.series_value || '10');
+}
+
 function freeSeriesCount(setsField: string): number[] {
     const n = parseInt(setsField, 10);
-    return Number.isFinite(n) && n > 0 ? Array(Math.min(n, MAX_SETS)).fill(0) : [];
+    return Number.isFinite(n) && n > 0
+        ? Array(Math.min(n, MAX_SETS)).fill(0)
+        : [];
 }
 
 export function localExerciseToLog(ex: LocalExercise): ExerciseLog {
     const isFree = ex.series_mode === 'free';
     const sets = Math.max(1, parseInt(ex.series_sets, 10) || 1);
     const val = Math.max(0, parseInt(ex.series_value, 10) || 0);
+    const series = isFree
+        ? freeSeriesCount(ex.series_sets)
+        : ex.series_mode === 'per_set'
+          ? parsePerSet(perSetFields(ex))
+          : Array(sets).fill(val);
 
     return {
         // Exercício novo ainda não tem id do backend; o _id local basta aqui,
         // só serve para identificar o card aberto.
         id: ex.id ?? ex._id,
         name: ex.name || 'Exercício sem nome',
-        series: isFree ? freeSeriesCount(ex.series_sets) : Array(sets).fill(val),
+        series,
         series_label: isFree ? ex.series_free || undefined : undefined,
         timed: ex.series_mode === 'time',
         variations: ex.variations ?? '',
@@ -314,17 +339,20 @@ export function localExerciseToLog(ex: LocalExercise): ExerciseLog {
               }
             : undefined,
         group_technique: ex.group_technique,
-        group_recovery_seconds: fieldToNum(ex.group_recovery_seconds ?? '', {
-            min: 0,
-            max: MAX_GROUP_RECOVERY_SECONDS,
-        }) || undefined,
+        group_recovery_seconds:
+            fieldToNum(ex.group_recovery_seconds ?? '', {
+                min: 0,
+                max: MAX_GROUP_RECOVERY_SECONDS,
+            }) || undefined,
         group_id: ex.group_id,
         muscle_group: ex.muscle_group || undefined,
         non_substitutable: fieldToTriBool(ex.non_substitutable),
     };
 }
 
-export function makeDefaultMicrocycles(durationWeeks: number): LocalMicrocycle[] {
+export function makeDefaultMicrocycles(
+    durationWeeks: number,
+): LocalMicrocycle[] {
     const total = Math.max(1, durationWeeks || 1);
     return Array.from({ length: total }, (_, i) => ({
         _id: genId(),
@@ -397,6 +425,7 @@ export function exerciseToLocal(ex: ExerciseResponse): LocalExercise {
     let sets = String(series.length || 3);
     let value = String(series[0] ?? 10);
     let free = '';
+    let perSet = '';
 
     if (seriesLabel) {
         mode = 'free';
@@ -411,11 +440,14 @@ export function exerciseToLocal(ex: ExerciseResponse): LocalExercise {
         value = String(series[0] ?? 30);
     } else {
         mode = 'reps';
-        // se as séries forem não-uniformes, usa texto livre
+        // Séries não-uniformes (escada, pirâmide) abrem uma a uma. Antes
+        // viravam texto livre, e o save gravava só a contagem: as repetições
+        // de cada série se perdiam.
         const uniform = series.every((v) => v === series[0]);
         if (!uniform && series.length > 0) {
-            mode = 'free';
-            free = series.join(' × ');
+            mode = 'per_set';
+            sets = String(series.length);
+            perSet = series.join(',');
         } else {
             sets = String(series.length || 3);
             value = String(series[0] ?? 10);
@@ -431,6 +463,7 @@ export function exerciseToLocal(ex: ExerciseResponse): LocalExercise {
         series_sets: sets,
         series_value: value,
         series_free: free,
+        series_per_set: perSet,
         observations: ex.comments ?? '',
         variations: ex.variations ?? '',
         rest_seconds: numToField(ex.rest_seconds),
@@ -466,7 +499,12 @@ export function seriesPatchToLocal(patch: {
     timed: boolean;
 }): Pick<
     LocalExercise,
-    'series_mode' | 'series_sets' | 'series_value' | 'series_free' | 'timed'
+    | 'series_mode'
+    | 'series_sets'
+    | 'series_value'
+    | 'series_free'
+    | 'series_per_set'
+    | 'timed'
 > {
     const l = exerciseToLocal({ name: '', ...patch } as ExerciseResponse);
     return {
@@ -474,11 +512,14 @@ export function seriesPatchToLocal(patch: {
         series_sets: l.series_sets,
         series_value: l.series_value,
         series_free: l.series_free,
+        series_per_set: l.series_per_set ?? '',
         timed: l.timed,
     };
 }
 
-export function responseToLocal(trainings: TrainingResponse[]): LocalTraining[] {
+export function responseToLocal(
+    trainings: TrainingResponse[],
+): LocalTraining[] {
     return trainings.map((t) => ({
         _id: genId(),
         id: t.id,
@@ -559,6 +600,9 @@ export function localExerciseToRequest(ex: LocalExercise): ExerciseRequest {
     if (ex.series_mode === 'reps') {
         series = Array(sets).fill(val);
         timed = false;
+    } else if (ex.series_mode === 'per_set') {
+        series = parsePerSet(perSetFields(ex));
+        timed = false;
     } else if (ex.series_mode === 'time') {
         series = Array(sets).fill(val);
         timed = true;
@@ -593,10 +637,11 @@ export function localExerciseToRequest(ex: LocalExercise): ExerciseRequest {
         muscle_group: ex.muscle_group || undefined,
         group_id: ex.group_id,
         group_technique: ex.group_technique,
-        group_recovery_seconds: fieldToNum(ex.group_recovery_seconds ?? '', {
-            min: 0,
-            max: MAX_GROUP_RECOVERY_SECONDS,
-        }) || undefined,
+        group_recovery_seconds:
+            fieldToNum(ex.group_recovery_seconds ?? '', {
+                min: 0,
+                max: MAX_GROUP_RECOVERY_SECONDS,
+            }) || undefined,
         technique: ex.technique || undefined,
         technique_params: ex.technique
             ? {

@@ -66,9 +66,16 @@ import {
 import {
     currentCycle,
     logsOfWeek,
+    weekCompletions,
     weeklyProgress,
     weeklyTargetDays,
 } from '@/libs/currentWeek';
+import WeekCompletionSummary from '@/components/features/WeekCompletionSummary';
+import {
+    clearExerciseDoneMarks,
+    readExerciseDoneMarks,
+    writeExerciseDoneMarks,
+} from '@/libs/exerciseDoneMarks';
 import {
     getStudentMicrocycleWorkoutLogs,
     type NewWorkoutLogResponse,
@@ -136,7 +143,7 @@ import CircuitTimer, {
 } from '@/components/molecules/CircuitTimer';
 import {
     blockRecoverySeconds,
-    circuitHasTimedWork,
+    circuitGuides,
     type CircuitExercise,
 } from '@/libs/circuitPlan';
 import { GroupRecoverySelect } from '@/app/personal/_shared/periodizacao/components/GroupingControls';
@@ -209,8 +216,13 @@ export default function AcompanharTreinoPage() {
     const [loggerOpen, setLoggerOpen] = useState(false);
     /** Histórico de carga do aluno (resumo): "última vez" de cada exercício,
      * atalho para o histórico e o recorde ao concluir no atendimento. */
-    const [loadHistory, setLoadHistory] = useState<LoadHistoryResponse | null>(null);
-    const [historyFor, setHistoryFor] = useState<{ key: string; name: string } | null>(null);
+    const [loadHistory, setLoadHistory] = useState<LoadHistoryResponse | null>(
+        null,
+    );
+    const [historyFor, setHistoryFor] = useState<{
+        key: string;
+        name: string;
+    } | null>(null);
     /** Exercício aberto no card do aluno (ajuste rápido). Só o ID: o card é
      * derivado do macrociclo atual, então uma gravação aparece nele na hora. */
     const [openExerciseId, setOpenExerciseId] = useState<string | null>(null);
@@ -219,23 +231,56 @@ export default function AcompanharTreinoPage() {
      * combinar exercícios que já foram incluídos separados. Não é o "feito"
      * (doneExerciseIds, abaixo): até 30/09 os dois eram uma marcação só, e o
      * personal pediu uma exclusiva para conferir a execução. */
-    const [selectedExerciseIds, setSelectedExerciseIds] = useState<
-        Set<string>
-    >(new Set());
+    const [selectedExerciseIds, setSelectedExerciseIds] = useState<Set<string>>(
+        new Set(),
+    );
     /** "Feito" do personal durante o atendimento presencial — o círculo ao
      * lado do trocar, na lista e no card aberto. Marcar grava na hora a
      * carga prescrita do exercício no histórico do aluno (como
      * personal_assisted, ver libs/exerciseDoneRecord.ts); desmarcar tira. A
-     * marcação na tela reinicia ao trocar de treino ou recarregar a página,
-     * de propósito, para nunca ficar marcado de uma sessão presencial para a
-     * próxima — o que já foi gravado continua no histórico. */
-    const [doneExerciseIds, setDoneExerciseIds] = useState<
-        ReadonlySet<string>
-    >(() => new Set());
+     * marcação fica no aparelho (libs/exerciseDoneMarks.ts, por aluno +
+     * microciclo + treino): sair da tela ou trocar de treino não apaga; só
+     * desmarcar ou finalizar o treino. */
+    const [doneExerciseIds, setDoneExerciseIds] = useState<ReadonlySet<string>>(
+        () => new Set(),
+    );
     // Cópia sempre atual: o CircuitTimer chama markCircuitDone com a closure
     // de um render anterior.
     const doneIdsRef = useRef(doneExerciseIds);
     doneIdsRef.current = doneExerciseIds;
+    const saveDone = (next: ReadonlySet<string>) => {
+        doneIdsRef.current = next;
+        setDoneExerciseIds(next);
+        if (cycle && selectedTraining) {
+            writeExerciseDoneMarks(
+                cycle.micro.id,
+                selectedTraining.reference,
+                next,
+                studentId,
+            );
+        }
+    };
+    /** Treino finalizado: única saída do "feito" além de desmarcar. */
+    const forgetDone = () => {
+        if (cycle && selectedTraining) {
+            clearExerciseDoneMarks(
+                cycle.micro.id,
+                selectedTraining.reference,
+                studentId,
+            );
+        }
+        doneIdsRef.current = new Set();
+        setDoneExerciseIds(new Set());
+    };
+    /** Finalizações que ainda estão na fila offline: entram na ordem da
+     * semana na hora (as sincronizadas vêm de `logs`, recarregado). */
+    const [queuedCompletions, setQueuedCompletions] = useState<
+        {
+            training_ref: string;
+            status: 'completed';
+            client_completed_at: string;
+        }[]
+    >([]);
     /** Grava (ou tira) no histórico. Mesmos valores com que o "Finalizar
      * treino" abre no modo assistido — carga prescrita, RPE 7 —, para a
      * finalização não desfazer o "feito". */
@@ -262,8 +307,7 @@ export default function AcompanharTreinoPage() {
         const next = new Set(doneIdsRef.current);
         const done = !next.delete(id);
         if (done) next.add(id);
-        doneIdsRef.current = next;
-        setDoneExerciseIds(next);
+        saveDone(next);
         recordDone([id], done);
     };
     /** Marca/desmarca um bloco inteiro: exercício solto ou todos os de um
@@ -281,17 +325,15 @@ export default function AcompanharTreinoPage() {
     };
     /** Circuitos concluídos no cronômetro, pelo id do 1º exercício do bloco:
      * entram como conferidos no registro (ver WorkoutLogger). */
-    const [circuitDoneKeys, setCircuitDoneKeys] = useState<
-        ReadonlySet<string>
-    >(() => new Set());
+    const [circuitDoneKeys, setCircuitDoneKeys] = useState<ReadonlySet<string>>(
+        () => new Set(),
+    );
     /** Fim do circuito = o bloco foi aplicado: marca como feito (sem
      * desmarcar, ao contrário do círculo) e conta para o registro. */
     const markCircuitDone = (ids: string[]) => {
         const added = ids.filter((id) => !doneIdsRef.current.has(id));
         if (added.length > 0) {
-            const next = new Set([...doneIdsRef.current, ...added]);
-            doneIdsRef.current = next;
-            setDoneExerciseIds(next);
+            saveDone(new Set([...doneIdsRef.current, ...added]));
             recordDone(added, true);
         }
         setCircuitDoneKeys((prev) =>
@@ -508,11 +550,13 @@ export default function AcompanharTreinoPage() {
         for (const log of logs) {
             // in_progress: exercícios já marcados "feito" num treino ainda
             // não finalizado — a carga já é registro.
-            if (log.status !== 'completed' && log.status !== 'in_progress') continue;
+            if (log.status !== 'completed' && log.status !== 'in_progress')
+                continue;
             for (const perf of log.exercises ?? []) {
                 if (perf.load_kg <= 0) continue;
                 byKey.set(perf.exercise_id, perf.load_kg);
-                if (perf.exercise_key) byKey.set(`key:${perf.exercise_key}`, perf.load_kg);
+                if (perf.exercise_key)
+                    byKey.set(`key:${perf.exercise_key}`, perf.load_kg);
                 if (perf.name) byKey.set(perf.name.toLowerCase(), perf.load_kg);
             }
         }
@@ -524,8 +568,13 @@ export default function AcompanharTreinoPage() {
     const lastEverFor = useCallback(
         (ex: ExerciseResponse): string | undefined => {
             if (!loadHistory || ex.timed) return undefined;
-            const key = resolveExerciseKey(exerciseKeyFor(ex), loadHistory.aliases);
-            const found = loadHistory.exercises.find((e) => e.exercise_key === key);
+            const key = resolveExerciseKey(
+                exerciseKeyFor(ex),
+                loadHistory.aliases,
+            );
+            const found = loadHistory.exercises.find(
+                (e) => e.exercise_key === key,
+            );
             const last = found?.summary.last;
             if (!found || !last) return undefined;
             const value =
@@ -607,7 +656,9 @@ export default function AcompanharTreinoPage() {
                     ? currentCycle(macroRef.current)
                     : null;
                 if (!current) {
-                    throw new Error('Plano não carregado. Recarregue a página.');
+                    throw new Error(
+                        'Plano não carregado. Recarregue a página.',
+                    );
                 }
                 return job(current.meso);
             });
@@ -711,7 +762,7 @@ export default function AcompanharTreinoPage() {
         const block = exerciseBlocks.find(
             (b) => b.length > 1 && b.some((e) => e.id === openExerciseId),
         );
-        return block && circuitHasTimedWork(block.map(toCircuitExercise))
+        return block && circuitGuides(block.map(toCircuitExercise))
             ? blockId(block)
             : null;
     }, [exerciseBlocks, openExerciseId]);
@@ -922,9 +973,7 @@ export default function AcompanharTreinoPage() {
                     className={s.completeToggle}
                     data-checked={checked || undefined}
                     title={
-                        checked
-                            ? 'Tirar da seleção'
-                            : 'Selecionar para agrupar'
+                        checked ? 'Tirar da seleção' : 'Selecionar para agrupar'
                     }
                 >
                     <FiCheck aria-hidden />
@@ -957,9 +1006,9 @@ export default function AcompanharTreinoPage() {
             // O exercício trocado nasce com id novo (ver
             // replaceExerciseInTraining): o card aberto nele segue para o
             // novo, achado pela posição, em vez de sumir.
-            const newId = saved?.trainings
-                .find((t) => t.id === selectedTraining.id)
-                ?.exercises[position]?.id;
+            const newId = saved?.trainings.find(
+                (t) => t.id === selectedTraining.id,
+            )?.exercises[position]?.id;
             if (openExerciseId === exerciseId) {
                 setOpenExerciseId(newId ?? null);
             }
@@ -1010,14 +1059,23 @@ export default function AcompanharTreinoPage() {
         markWorkoutStartIfNeeded(cycle.micro.id, selectedTraining.reference);
     }, [cycle, selectedTraining]);
 
-    // Troca de treino (A/B/C) = novo atendimento: as marcações do anterior
-    // não fazem sentido aqui.
+    // Troca de treino (A/B/C): seleção de agrupamento recomeça; o "feito" é
+    // relido do aparelho — cada treino guarda o seu até ser finalizado.
+    const doneMicroId = cycle?.micro.id;
+    const doneTrainingRef = selectedTraining?.reference;
     useEffect(() => {
         setSelectedExerciseIds(new Set());
-        setDoneExerciseIds(new Set());
         setCircuitDoneKeys(new Set());
         setGroupTechnique('');
     }, [selectedTraining?.id]);
+    useEffect(() => {
+        const stored =
+            doneMicroId && doneTrainingRef
+                ? readExerciseDoneMarks(doneMicroId, doneTrainingRef, studentId)
+                : new Set<string>();
+        doneIdsRef.current = stored;
+        setDoneExerciseIds(stored);
+    }, [doneMicroId, doneTrainingRef, studentId]);
 
     if (loading) {
         return (
@@ -1040,10 +1098,9 @@ export default function AcompanharTreinoPage() {
                                 : 'Este aluno ainda não tem treino'}
                         </h1>
                         <p className={s.noPlanText}>
-                            Monte um treino do zero (por dia da
-                            semana ou A/B/C) ou copie um treino da sua
-                            biblioteca. Assim que você adicionar os
-                            exercícios, o aluno já vê no app.
+                            Monte um treino do zero (por dia da semana ou A/B/C)
+                            ou copie um treino da sua biblioteca. Assim que você
+                            adicionar os exercícios, o aluno já vê no app.
                         </p>
                         <div className={s.noPlanActions}>
                             <Button onClick={() => setCreatingPlan(true)}>
@@ -1314,11 +1371,16 @@ export default function AcompanharTreinoPage() {
                                     )}
                                 </div>
                                 <p className={s.hint}>
-                                    Toque no exercício para ver e editar. A
-                                    alça ⠿ muda a ordem; o <FiCheck aria-hidden className={s.hintIcon} /> acima
-                                    dela marca o exercício como aplicado com o
-                                    aluno nesta sessão. Marque 2 ou mais para
-                                    agrupá-los em bi-set, tri-set, superset…
+                                    Toque no exercício para ver e editar. A alça
+                                    ⠿ muda a ordem; o{' '}
+                                    <FiCheck
+                                        aria-hidden
+                                        className={s.hintIcon}
+                                    />{' '}
+                                    acima dela marca o exercício como aplicado
+                                    com o aluno nesta sessão. Marque 2 ou mais
+                                    para agrupá-los em bi-set, tri-set,
+                                    superset…
                                 </p>
                                 <SortableList
                                     ids={exerciseBlocks.map(blockId)}
@@ -1343,11 +1405,10 @@ export default function AcompanharTreinoPage() {
                                         // Bloco com série por tempo roda como
                                         // circuito: o descanso da rodada fica
                                         // no CircuitTimer, não no último item.
-                                        const circuit = block.map(
-                                            toCircuitExercise,
-                                        );
+                                        const circuit =
+                                            block.map(toCircuitExercise);
                                         const asCircuit =
-                                            circuitHasTimedWork(circuit);
+                                            circuitGuides(circuit);
                                         const rows = block.map((ex, i) => {
                                             const kg =
                                                 lastLoadByExercise.get(ex.id) ??
@@ -1363,7 +1424,9 @@ export default function AcompanharTreinoPage() {
                                                     : kg != null
                                                       ? { kind: 'load', kg }
                                                       : selectedDone
-                                                        ? { kind: 'done-no-load' }
+                                                        ? {
+                                                              kind: 'done-no-load',
+                                                          }
                                                         : { kind: 'not-done' };
                                             return (
                                                 <StudentExerciseRow
@@ -1375,10 +1438,14 @@ export default function AcompanharTreinoPage() {
                                                         ex.timed
                                                             ? undefined
                                                             : () =>
-                                                                  setHistoryFor({
-                                                                      key: exerciseKeyFor(ex),
-                                                                      name: ex.name,
-                                                                  })
+                                                                  setHistoryFor(
+                                                                      {
+                                                                          key: exerciseKeyFor(
+                                                                              ex,
+                                                                          ),
+                                                                          name: ex.name,
+                                                                      },
+                                                                  )
                                                     }
                                                     showRestTimer={
                                                         i ===
@@ -1634,6 +1701,13 @@ export default function AcompanharTreinoPage() {
                                         </div>
                                     )}
 
+                                <WeekCompletionSummary
+                                    completions={weekCompletions([
+                                        ...logs,
+                                        ...queuedCompletions,
+                                    ])}
+                                    trainingRef={selectedTraining.reference}
+                                />
                                 <div className={s.finishBar}>
                                     <button
                                         type="button"
@@ -1654,11 +1728,11 @@ export default function AcompanharTreinoPage() {
                                         className={s.empty}
                                         style={{ marginTop: 'var(--space-2)' }}
                                     >
-                                        O treino “{labelOf(selectedTraining)}” já
-                                        consta como feito nesta semana. Um novo
-                                        registro para a mesma data é recusado
-                                        pelo servidor — use outro dia ou outro
-                                        treino.
+                                        O treino “{labelOf(selectedTraining)}”
+                                        já consta como feito nesta semana. Um
+                                        novo registro para a mesma data é
+                                        recusado pelo servidor — use outro dia
+                                        ou outro treino.
                                     </p>
                                 )}
                             </>
@@ -1804,10 +1878,10 @@ export default function AcompanharTreinoPage() {
                     <p className={s.confirmText}>
                         {pendingDelete.kind === 'training' ? (
                             <>
-                                <strong>{pendingDelete.name}</strong> e todos
-                                os exercícios dele saem do plano do aluno. O
-                                que ele já registrou continua no histórico,
-                                mas o treino deixa de aparecer para ele.
+                                <strong>{pendingDelete.name}</strong> e todos os
+                                exercícios dele saem do plano do aluno. O que
+                                ele já registrou continua no histórico, mas o
+                                treino deixa de aparecer para ele.
                             </>
                         ) : (
                             <>
@@ -1816,10 +1890,9 @@ export default function AcompanharTreinoPage() {
                                 {selectedTraining
                                     ? labelOf(selectedTraining)
                                     : ''}
-                                ” do aluno.
-                                As cargas que ele já registrou continuam no
-                                histórico, mas o exercício deixa de aparecer no
-                                treino.
+                                ” do aluno. As cargas que ele já registrou
+                                continuam no histórico, mas o exercício deixa de
+                                aparecer no treino.
                             </>
                         )}
                     </p>
@@ -1839,14 +1912,27 @@ export default function AcompanharTreinoPage() {
                     onClose={() => setLoggerOpen(false)}
                     onComplete={() => {
                         setLoggerOpen(false);
+                        forgetDone();
                         showSuccess('Treino registrado no histórico do aluno.');
                         void loadLogs();
                     }}
                     onQueued={(info) => {
                         setLoggerOpen(false);
+                        forgetDone();
+                        setQueuedCompletions((prev) => [
+                            ...prev,
+                            {
+                                training_ref: selectedTraining.reference,
+                                status: 'completed',
+                                client_completed_at: new Date().toISOString(),
+                            },
+                        ]);
                         // Recorde do aluno no atendimento, contra o histórico
                         // que a tela já carregou — sem esperar a sincronização.
-                        const records = detectNewRecords(info?.performed ?? [], loadHistory);
+                        const records = detectNewRecords(
+                            info?.performed ?? [],
+                            loadHistory,
+                        );
                         const recordText = records.length
                             ? ` Novo recorde${records.length > 1 ? 's' : ''}: ${records
                                   .map((r) =>
@@ -1910,7 +1996,9 @@ function GroupHeader({
                 className="form-control form-control-sm"
                 aria-label="Tipo de agrupamento do bloco"
             >
-                <option value="">{comboGroupLabel(size)} (sem tipo definido)</option>
+                <option value="">
+                    {comboGroupLabel(size)} (sem tipo definido)
+                </option>
                 {GROUP_TECHNIQUE_CATALOG.map((gt) => (
                     <option
                         key={gt.value}
@@ -1939,7 +2027,7 @@ function GroupHeader({
             <span className={s.groupLabel}>
                 {recoverySeconds > 0
                     ? `${recoverySeconds} s de recuperação entre os exercícios`
-                    : 'Sem descanso entre os exercícios'}
+                    : 'Sem pausa entre os exercícios'}
             </span>
         </div>
     );

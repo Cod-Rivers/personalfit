@@ -52,6 +52,7 @@ import {
     MAX_SETS,
     formatSeries,
     fromSeriesDraft,
+    resizePerSet,
     seriesSignature,
     toSeriesDraft,
     type SeriesPrescriptionDraft,
@@ -116,7 +117,9 @@ interface ExerciseDetailCardProps {
      * repetições, séries × segundos, ou texto livre). Separado porque a carga
      * é um número só e as séries mexem em três campos do exercício
      * (series/series_label/timed) — ver libs/seriesPrescription.ts. */
-    onPrescribeSeries?: (patch: SeriesPrescriptionPatch) => void | Promise<void>;
+    onPrescribeSeries?: (
+        patch: SeriesPrescriptionPatch,
+    ) => void | Promise<void>;
     /** Edição completa do exercício, renderizada dentro do card (só na tela do
      * treino do aluno, pelo personal). O card não sabe gravar a fase — quem
      * passa o editor é que sabe; ver ExerciseInlineEditor. */
@@ -198,8 +201,8 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
     >(exercise.plannedWeight ?? '');
     // Edição da prescrição de SÉRIES pelo personal (ver onPrescribeSeries).
     const [isSeriesEditing, setIsSeriesEditing] = useState<boolean>(false);
-    const [seriesDraft, setSeriesDraft] = useState<SeriesPrescriptionDraft>(() =>
-        toSeriesDraft(exercise),
+    const [seriesDraft, setSeriesDraft] = useState<SeriesPrescriptionDraft>(
+        () => toSeriesDraft(exercise),
     );
     // Estado de uma gravação de prescrição (carga ou séries). Diferente de
     // weightSaveStatus, que é o registro de carga do próprio ALUNO.
@@ -338,9 +341,7 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
         // (R2/CDN, ou link do YouTube/Vimeo/TikTok). embedUrl tem prioridade
         // quando aplicável; Instagram (e TikTok com link curto) só redireciona.
         const playUrl =
-            embedUrl || isExternalRedirectOnly
-                ? ''
-                : exercise.video_url || '';
+            embedUrl || isExternalRedirectOnly ? '' : exercise.video_url || '';
 
         if (isExternalRedirectOnly) {
             const platform = isInstagramUrl(exercise.video_url || '')
@@ -504,8 +505,7 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
     const isExternalRedirectOnly =
         !embedUrl &&
         !!exercise.video_url &&
-        (isInstagramUrl(exercise.video_url) ||
-            isTikTokUrl(exercise.video_url));
+        (isInstagramUrl(exercise.video_url) || isTikTokUrl(exercise.video_url));
     //função de alteração da carga
     const handleWeightEditStart = () => {
         setIsWeightEditing(true);
@@ -514,7 +514,9 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
     const handleWeightEditEnd = () => {
         setIsWeightEditing(false);
         const numericWeight =
-            typeof weightValue === 'number' ? weightValue : parseFloat(weightValue);
+            typeof weightValue === 'number'
+                ? weightValue
+                : parseFloat(weightValue);
         if (Number.isFinite(numericWeight)) {
             persistWeight(numericWeight);
         }
@@ -745,7 +747,11 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                 </div>
                             ) : (
                                 <div className={styles.thumbnailPlaceholder}>
-                                    {exercise.video_url ? <FiVideo /> : <FiActivity />}
+                                    {exercise.video_url ? (
+                                        <FiVideo />
+                                    ) : (
+                                        <FiActivity />
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -825,173 +831,239 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                 </p>
                             )}
                             <div className={styles.detailRow}>
-                                    <div
-                                        className={
-                                            isSeriesEditing
-                                                ? `${styles.repet} ${styles.repetEditing}`
-                                                : styles.repet
+                                <div
+                                    className={
+                                        isSeriesEditing
+                                            ? `${styles.repet} ${styles.repetEditing}`
+                                            : styles.repet
+                                    }
+                                >
+                                    <strong>Repetições:</strong>{' '}
+                                    <HelpTooltip
+                                        text={
+                                            getGlossaryTerm('series-repeticoes')
+                                                .short
                                         }
-                                    >
-                                        <strong>Repetições:</strong>{' '}
-                                        <HelpTooltip
-                                            text={getGlossaryTerm('series-repeticoes').short}
-                                            href="/ajuda#glossario-series-repeticoes"
-                                            label="Ajuda sobre séries e repetições"
-                                        />
-                                        {onPrescribeSeries &&
-                                        isSeriesEditing ? (
-                                            <div
-                                                className={styles.seriesEditRow}
-                                            >
-                                                {seriesDraft.mode === 'free' ? (
-                                                    <>
-                                                        <input
-                                                            type="number"
-                                                            autoFocus
-                                                            min="1"
-                                                            max={MAX_SETS}
-                                                            value={
-                                                                seriesDraft.sets
-                                                            }
-                                                            onChange={(e) =>
-                                                                setSeriesDraft({
-                                                                    ...seriesDraft,
-                                                                    sets: e
-                                                                        .target
-                                                                        .value,
-                                                                })
-                                                            }
-                                                            onKeyDown={
-                                                                handleSeriesKeyDown
-                                                            }
-                                                            placeholder="Séries"
-                                                            aria-label="Quantidade de séries (opcional — deixe em branco se o texto já descrever todas as séries)"
-                                                            className={
-                                                                styles.seriesNumInput
-                                                            }
-                                                        />
-                                                        <span aria-hidden>
-                                                            ×
-                                                        </span>
-                                                        <input
-                                                            type="text"
-                                                            value={
-                                                                seriesDraft.free
-                                                            }
-                                                            onChange={(e) =>
-                                                                setSeriesDraft({
-                                                                    ...seriesDraft,
-                                                                    free: e
-                                                                        .target
-                                                                        .value,
-                                                                })
-                                                            }
-                                                            onKeyDown={
-                                                                handleSeriesKeyDown
-                                                            }
-                                                            placeholder="Ex: 8 a 10"
-                                                            aria-label="Descrição livre das séries"
-                                                            className={
-                                                                styles.seriesFreeInput
-                                                            }
-                                                        />
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <input
-                                                            type="number"
-                                                            autoFocus
-                                                            min="1"
-                                                            max={MAX_SETS}
-                                                            value={
-                                                                seriesDraft.sets
-                                                            }
-                                                            onChange={(e) =>
-                                                                setSeriesDraft({
-                                                                    ...seriesDraft,
-                                                                    sets: e
-                                                                        .target
-                                                                        .value,
-                                                                })
-                                                            }
-                                                            onKeyDown={
-                                                                handleSeriesKeyDown
-                                                            }
-                                                            aria-label="Quantidade de séries"
-                                                            className={
-                                                                styles.seriesNumInput
-                                                            }
-                                                        />
-                                                        <span aria-hidden>×</span>
-                                                        <input
-                                                            type="number"
-                                                            min="0"
-                                                            max={
-                                                                MAX_SERIES_VALUE
-                                                            }
-                                                            value={
-                                                                seriesDraft.value
-                                                            }
-                                                            onChange={(e) =>
-                                                                setSeriesDraft({
-                                                                    ...seriesDraft,
-                                                                    value: e
-                                                                        .target
-                                                                        .value,
-                                                                })
-                                                            }
-                                                            onKeyDown={
-                                                                handleSeriesKeyDown
-                                                            }
-                                                            aria-label={
-                                                                seriesDraft.mode ===
-                                                                'time'
-                                                                    ? 'Segundos por série'
-                                                                    : 'Repetições por série'
-                                                            }
-                                                            className={
-                                                                styles.seriesNumInput
-                                                            }
-                                                        />
-                                                        <span
-                                                            className={
-                                                                styles.seriesUnit
-                                                            }
-                                                        >
-                                                            {seriesDraft.mode ===
+                                        href="/ajuda#glossario-series-repeticoes"
+                                        label="Ajuda sobre séries e repetições"
+                                    />
+                                    {onPrescribeSeries && isSeriesEditing ? (
+                                        <div className={styles.seriesEditRow}>
+                                            {seriesDraft.mode === 'per_set' ? (
+                                                <>
+                                                    <input
+                                                        type="number"
+                                                        autoFocus
+                                                        min="1"
+                                                        max={MAX_SETS}
+                                                        value={seriesDraft.sets}
+                                                        onChange={(e) =>
+                                                            setSeriesDraft({
+                                                                ...seriesDraft,
+                                                                sets: e.target
+                                                                    .value,
+                                                                perSet: resizePerSet(
+                                                                    seriesDraft.perSet,
+                                                                    parseInt(
+                                                                        e.target
+                                                                            .value,
+                                                                        10,
+                                                                    ) || 0,
+                                                                    seriesDraft.value,
+                                                                ),
+                                                            })
+                                                        }
+                                                        onKeyDown={
+                                                            handleSeriesKeyDown
+                                                        }
+                                                        aria-label="Quantidade de séries"
+                                                        className={
+                                                            styles.seriesNumInput
+                                                        }
+                                                    />
+                                                    <span aria-hidden>
+                                                        séries:
+                                                    </span>
+                                                    {seriesDraft.perSet.map(
+                                                        (v, i) => (
+                                                            <input
+                                                                key={i}
+                                                                type="number"
+                                                                min="0"
+                                                                max={
+                                                                    MAX_SERIES_VALUE
+                                                                }
+                                                                value={v}
+                                                                onChange={(e) =>
+                                                                    setSeriesDraft(
+                                                                        {
+                                                                            ...seriesDraft,
+                                                                            perSet: seriesDraft.perSet.map(
+                                                                                (
+                                                                                    old,
+                                                                                    j,
+                                                                                ) =>
+                                                                                    j ===
+                                                                                    i
+                                                                                        ? e
+                                                                                              .target
+                                                                                              .value
+                                                                                        : old,
+                                                                            ),
+                                                                        },
+                                                                    )
+                                                                }
+                                                                onKeyDown={
+                                                                    handleSeriesKeyDown
+                                                                }
+                                                                aria-label={`Repetições da série ${i + 1}`}
+                                                                className={
+                                                                    styles.seriesNumInput
+                                                                }
+                                                            />
+                                                        ),
+                                                    )}
+                                                    <span
+                                                        className={
+                                                            styles.seriesUnit
+                                                        }
+                                                    >
+                                                        reps
+                                                    </span>
+                                                </>
+                                            ) : seriesDraft.mode === 'free' ? (
+                                                <>
+                                                    <input
+                                                        type="number"
+                                                        autoFocus
+                                                        min="1"
+                                                        max={MAX_SETS}
+                                                        value={seriesDraft.sets}
+                                                        onChange={(e) =>
+                                                            setSeriesDraft({
+                                                                ...seriesDraft,
+                                                                sets: e.target
+                                                                    .value,
+                                                            })
+                                                        }
+                                                        onKeyDown={
+                                                            handleSeriesKeyDown
+                                                        }
+                                                        placeholder="Séries"
+                                                        aria-label="Quantidade de séries (opcional — deixe em branco se o texto já descrever todas as séries)"
+                                                        className={
+                                                            styles.seriesNumInput
+                                                        }
+                                                    />
+                                                    <span aria-hidden>×</span>
+                                                    <input
+                                                        type="text"
+                                                        value={seriesDraft.free}
+                                                        onChange={(e) =>
+                                                            setSeriesDraft({
+                                                                ...seriesDraft,
+                                                                free: e.target
+                                                                    .value,
+                                                            })
+                                                        }
+                                                        onKeyDown={
+                                                            handleSeriesKeyDown
+                                                        }
+                                                        placeholder="Ex: 8 a 10"
+                                                        aria-label="Descrição livre das séries"
+                                                        className={
+                                                            styles.seriesFreeInput
+                                                        }
+                                                    />
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <input
+                                                        type="number"
+                                                        autoFocus
+                                                        min="1"
+                                                        max={MAX_SETS}
+                                                        value={seriesDraft.sets}
+                                                        onChange={(e) =>
+                                                            setSeriesDraft({
+                                                                ...seriesDraft,
+                                                                sets: e.target
+                                                                    .value,
+                                                            })
+                                                        }
+                                                        onKeyDown={
+                                                            handleSeriesKeyDown
+                                                        }
+                                                        aria-label="Quantidade de séries"
+                                                        className={
+                                                            styles.seriesNumInput
+                                                        }
+                                                    />
+                                                    <span aria-hidden>×</span>
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        max={MAX_SERIES_VALUE}
+                                                        value={
+                                                            seriesDraft.value
+                                                        }
+                                                        onChange={(e) =>
+                                                            setSeriesDraft({
+                                                                ...seriesDraft,
+                                                                value: e.target
+                                                                    .value,
+                                                            })
+                                                        }
+                                                        onKeyDown={
+                                                            handleSeriesKeyDown
+                                                        }
+                                                        aria-label={
+                                                            seriesDraft.mode ===
                                                             'time'
-                                                                ? 'seg'
-                                                                : 'reps'}
-                                                        </span>
-                                                    </>
-                                                )}
-                                                <button
-                                                    type="button"
-                                                    className={
-                                                        styles.seriesEditConfirm
-                                                    }
-                                                    onClick={handleSeriesSave}
-                                                    aria-label="Salvar séries"
-                                                    title="Salvar"
-                                                >
-                                                    <FiCheck />
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    className={
-                                                        styles.seriesEditCancel
-                                                    }
-                                                    onClick={
-                                                        handleSeriesEditCancel
-                                                    }
-                                                    aria-label="Cancelar edição das séries"
-                                                    title="Cancelar"
-                                                >
-                                                    <FiX />
-                                                </button>
-                                            </div>
-                                        ) : onPrescribeSeries ? (
-                                            <>
+                                                                ? 'Segundos por série'
+                                                                : 'Repetições por série'
+                                                        }
+                                                        className={
+                                                            styles.seriesNumInput
+                                                        }
+                                                    />
+                                                    <span
+                                                        className={
+                                                            styles.seriesUnit
+                                                        }
+                                                    >
+                                                        {seriesDraft.mode ===
+                                                        'time'
+                                                            ? 'seg'
+                                                            : 'reps'}
+                                                    </span>
+                                                </>
+                                            )}
+                                            <button
+                                                type="button"
+                                                className={
+                                                    styles.seriesEditConfirm
+                                                }
+                                                onClick={handleSeriesSave}
+                                                aria-label="Salvar séries"
+                                                title="Salvar"
+                                            >
+                                                <FiCheck />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className={
+                                                    styles.seriesEditCancel
+                                                }
+                                                onClick={handleSeriesEditCancel}
+                                                aria-label="Cancelar edição das séries"
+                                                title="Cancelar"
+                                            >
+                                                <FiX />
+                                            </button>
+                                        </div>
+                                    ) : onPrescribeSeries ? (
+                                        <>
                                             <button
                                                 type="button"
                                                 className={styles.valueBoxBtn}
@@ -1101,30 +1173,30 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                                         </button>
                                                     </div>
                                                 ))}
-                                            </>
-                                        ) : (
-                                            <div className={styles.valueBox}>
-                                                <span>
-                                                    {formatSeries(exercise)}
-                                                </span>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div>
-                                        <strong>Peso (KG):</strong>{' '}
-                                        <HelpTooltip
-                                            text={getGlossaryTerm('carga').short}
-                                            href="/ajuda#glossario-carga"
-                                            label="Ajuda sobre carga"
-                                        />
-                                        <div
-                                            style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                flexWrap: 'wrap',
-                                                gap: '0.4rem',
-                                            }}
-                                        >
+                                        </>
+                                    ) : (
+                                        <div className={styles.valueBox}>
+                                            <span>
+                                                {formatSeries(exercise)}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+                                <div>
+                                    <strong>Peso (KG):</strong>{' '}
+                                    <HelpTooltip
+                                        text={getGlossaryTerm('carga').short}
+                                        href="/ajuda#glossario-carga"
+                                        label="Ajuda sobre carga"
+                                    />
+                                    <div
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            flexWrap: 'wrap',
+                                            gap: '0.4rem',
+                                        }}
+                                    >
                                         {readOnly && onPrescribeWeight ? (
                                             isPrescribedWeightEditing ? (
                                                 <div
@@ -1198,7 +1270,8 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                                     }
                                                     title="Alterar a carga prescrita"
                                                 >
-                                                    {prescribedWeightValue !== ''
+                                                    {prescribedWeightValue !==
+                                                    ''
                                                         ? `${prescribedWeightValue} kg (prescrito)`
                                                         : 'Sem carga prescrita'}
                                                     <svg
@@ -1207,7 +1280,9 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                                         width="1em"
                                                         height="1em"
                                                         fill="currentColor"
-                                                        className={styles.editIcon}
+                                                        className={
+                                                            styles.editIcon
+                                                        }
                                                     >
                                                         <path
                                                             fillRule="evenodd"
@@ -1261,344 +1336,359 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                                 </svg>
                                             </span>
                                         )}
-                                        {!readOnly && recommendedWeight != null && (
-                                            <button
-                                                type="button"
-                                                className={styles.recommendedWeightChip}
-                                                onClick={handleApplyRecommendedWeight}
-                                                title={
-                                                    loadSuggestion?.reason ??
-                                                    'Sugestão baseada no Controle do Microciclo (Autorregulação)'
-                                                }
-                                            >
-                                                Sugerido: {recommendedWeight} kg
-                                            </button>
-                                        )}
-                                        </div>
-                                        {weightSaveStatus !== 'idle' && (
-                                            <p
-                                                className={
-                                                    weightSaveStatus === 'error'
-                                                        ? styles.annotationsStatusError
-                                                        : styles.annotationsStatus
-                                                }
-                                            >
-                                                {weightSaveStatus === 'saved' && (
-                                                    <>
-                                                        <FiCheck /> Peso salvo.
-                                                    </>
-                                                )}
-                                                {weightSaveStatus ===
-                                                    'saved-offline' && (
-                                                    <>
-                                                        <FiSave /> Salvo neste dispositivo — sem conexão para sincronizar agora.
-                                                    </>
-                                                )}
-                                                {weightSaveStatus === 'error' &&
-                                                    'Não foi possível salvar o peso. Tente novamente.'}
-                                            </p>
-                                        )}
-                                        {loadSuggestion?.abovePrescribed && (
-                                            <p
-                                                className="small"
-                                                style={{
-                                                    color: 'var(--coral, #ff6b6b)',
-                                                    marginTop: '0.25rem',
-                                                }}
-                                            >
-                                                Acima da carga prescrita pelo
-                                                personal — considere revisar
-                                                com ele.
-                                            </p>
-                                        )}
-                                        {onShowHistory && !exercise.timed && (
-                                            <button
-                                                type="button"
-                                                className={styles.historyLink}
-                                                onClick={onShowHistory}
-                                            >
-                                                <FiTrendingUp aria-hidden="true" />{' '}
-                                                Histórico de carga
-                                            </button>
-                                        )}
+                                        {!readOnly &&
+                                            recommendedWeight != null && (
+                                                <button
+                                                    type="button"
+                                                    className={
+                                                        styles.recommendedWeightChip
+                                                    }
+                                                    onClick={
+                                                        handleApplyRecommendedWeight
+                                                    }
+                                                    title={
+                                                        loadSuggestion?.reason ??
+                                                        'Sugestão baseada no Controle do Microciclo (Autorregulação)'
+                                                    }
+                                                >
+                                                    Sugerido:{' '}
+                                                    {recommendedWeight} kg
+                                                </button>
+                                            )}
                                     </div>
-                                </div>
-                                {/* Sem este aviso a edição fica invisível: os
-                                    dois campos parecem rótulos, e o lápis
-                                    sozinho não diz que o valor é do ALUNO. */}
-                                {(onPrescribeSeries || onPrescribeWeight) &&
-                                    prescriptionStatus === 'idle' &&
-                                    !isSeriesEditing &&
-                                    !isPrescribedWeightEditing && (
-                                        <p className={styles.prescriptionHint}>
-                                            Toque{' '}
-                                            {onPrescribeSeries
-                                                ? 'nas séries ou na carga'
-                                                : 'na carga'}{' '}
-                                            para ajustar a prescrição do aluno.
+                                    {weightSaveStatus !== 'idle' && (
+                                        <p
+                                            className={
+                                                weightSaveStatus === 'error'
+                                                    ? styles.annotationsStatusError
+                                                    : styles.annotationsStatus
+                                            }
+                                        >
+                                            {weightSaveStatus === 'saved' && (
+                                                <>
+                                                    <FiCheck /> Peso salvo.
+                                                </>
+                                            )}
+                                            {weightSaveStatus ===
+                                                'saved-offline' && (
+                                                <>
+                                                    <FiSave /> Salvo neste
+                                                    dispositivo — sem conexão
+                                                    para sincronizar agora.
+                                                </>
+                                            )}
+                                            {weightSaveStatus === 'error' &&
+                                                'Não foi possível salvar o peso. Tente novamente.'}
                                         </p>
                                     )}
-                                {/* Andamento da gravação da PRESCRIÇÃO (personal).
-                                    Fica fora das duas colunas porque vale para
-                                    séries e carga. */}
-                                {prescriptionStatus !== 'idle' && (
-                                    <p
-                                        role={
-                                            prescriptionStatus === 'error'
-                                                ? 'alert'
-                                                : 'status'
-                                        }
-                                        className={
-                                            prescriptionStatus === 'error'
-                                                ? styles.annotationsStatusError
-                                                : styles.annotationsStatus
-                                        }
-                                    >
-                                        {prescriptionStatus === 'saving' && (
-                                            <>
-                                                <FiSave /> Salvando prescrição...
-                                            </>
-                                        )}
-                                        {prescriptionStatus === 'saved' && (
-                                            <>
-                                                <FiCheck /> Prescrição atualizada
-                                                para o aluno.
-                                            </>
-                                        )}
-                                        {prescriptionStatus === 'saved-offline' && (
-                                            <>
-                                                <FiSave /> Salvo neste
-                                                dispositivo — sem conexão para
-                                                enviar ao aluno agora. Será
-                                                sincronizado automaticamente.
-                                            </>
-                                        )}
-                                        {prescriptionStatus === 'error' && (
-                                            <>
-                                                <FiAlertCircle />{' '}
-                                                {prescriptionError}
-                                            </>
-                                        )}
+                                    {loadSuggestion?.abovePrescribed && (
+                                        <p
+                                            className="small"
+                                            style={{
+                                                color: 'var(--coral, #ff6b6b)',
+                                                marginTop: '0.25rem',
+                                            }}
+                                        >
+                                            Acima da carga prescrita pelo
+                                            personal — considere revisar com
+                                            ele.
+                                        </p>
+                                    )}
+                                    {onShowHistory && !exercise.timed && (
+                                        <button
+                                            type="button"
+                                            className={styles.historyLink}
+                                            onClick={onShowHistory}
+                                        >
+                                            <FiTrendingUp aria-hidden="true" />{' '}
+                                            Histórico de carga
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                            {/* Sem este aviso a edição fica invisível: os
+                                    dois campos parecem rótulos, e o lápis
+                                    sozinho não diz que o valor é do ALUNO. */}
+                            {(onPrescribeSeries || onPrescribeWeight) &&
+                                prescriptionStatus === 'idle' &&
+                                !isSeriesEditing &&
+                                !isPrescribedWeightEditing && (
+                                    <p className={styles.prescriptionHint}>
+                                        Toque{' '}
+                                        {onPrescribeSeries
+                                            ? 'nas séries ou na carga'
+                                            : 'na carga'}{' '}
+                                        para ajustar a prescrição do aluno.
                                     </p>
                                 )}
-                                {onEquipmentUnavailable && (
-                                    <button
-                                        type="button"
-                                        className={styles.watchVideoLink}
-                                        style={{
-                                            background: 'none',
-                                            border: 'none',
-                                            cursor: 'pointer',
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                            gap: '0.35rem',
-                                            padding: 0,
-                                            marginTop: '0.5rem',
-                                        }}
-                                        onClick={() => onEquipmentUnavailable(exercise)}
-                                    >
-                                        <FiAlertCircle /> Equipamento indisponível?
-                                    </button>
-                                )}
-                                {exercise.variations && (
-                                    <div className={styles.detailRow}>
-                                        <p>
-                                            <strong>Variações:</strong>{' '}
-                                            <HelpTooltip
-                                                text={getGlossaryTerm('variacoes').short}
-                                                href="/ajuda#glossario-variacoes"
-                                                label="Ajuda sobre variações"
-                                            />{' '}
-                                            {exercise.variations}
-                                        </p>
-                                    </div>
-                                )}
-                                {exercise.timed && (
-                                    <>
-                                        <p className={styles.timedInfo}>
-                                            Controlado por tempo
-                                        </p>
-                                        {/* Contador regressivo por série, para
+                            {/* Andamento da gravação da PRESCRIÇÃO (personal).
+                                    Fica fora das duas colunas porque vale para
+                                    séries e carga. */}
+                            {prescriptionStatus !== 'idle' && (
+                                <p
+                                    role={
+                                        prescriptionStatus === 'error'
+                                            ? 'alert'
+                                            : 'status'
+                                    }
+                                    className={
+                                        prescriptionStatus === 'error'
+                                            ? styles.annotationsStatusError
+                                            : styles.annotationsStatus
+                                    }
+                                >
+                                    {prescriptionStatus === 'saving' && (
+                                        <>
+                                            <FiSave /> Salvando prescrição...
+                                        </>
+                                    )}
+                                    {prescriptionStatus === 'saved' && (
+                                        <>
+                                            <FiCheck /> Prescrição atualizada
+                                            para o aluno.
+                                        </>
+                                    )}
+                                    {prescriptionStatus === 'saved-offline' && (
+                                        <>
+                                            <FiSave /> Salvo neste dispositivo —
+                                            sem conexão para enviar ao aluno
+                                            agora. Será sincronizado
+                                            automaticamente.
+                                        </>
+                                    )}
+                                    {prescriptionStatus === 'error' && (
+                                        <>
+                                            <FiAlertCircle />{' '}
+                                            {prescriptionError}
+                                        </>
+                                    )}
+                                </p>
+                            )}
+                            {onEquipmentUnavailable && (
+                                <button
+                                    type="button"
+                                    className={styles.watchVideoLink}
+                                    style={{
+                                        background: 'none',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '0.35rem',
+                                        padding: 0,
+                                        marginTop: '0.5rem',
+                                    }}
+                                    onClick={() =>
+                                        onEquipmentUnavailable(exercise)
+                                    }
+                                >
+                                    <FiAlertCircle /> Equipamento indisponível?
+                                </button>
+                            )}
+                            {exercise.variations && (
+                                <div className={styles.detailRow}>
+                                    <p>
+                                        <strong>Variações:</strong>{' '}
+                                        <HelpTooltip
+                                            text={
+                                                getGlossaryTerm('variacoes')
+                                                    .short
+                                            }
+                                            href="/ajuda#glossario-variacoes"
+                                            label="Ajuda sobre variações"
+                                        />{' '}
+                                        {exercise.variations}
+                                    </p>
+                                </div>
+                            )}
+                            {exercise.timed && (
+                                <>
+                                    <p className={styles.timedInfo}>
+                                        Controlado por tempo
+                                    </p>
+                                    {/* Contador regressivo por série, para
                                             o aluno e o personal — sem ele os
                                             dois cronometravam fora do app.
                                             key: outro exercício, contador novo. */}
-                                        <SeriesTimer
-                                            key={exercise.id}
-                                            durations={(
-                                                exercise.series ?? []
-                                            ).filter((d) => d > 0)}
-                                            exerciseName={exercise.name}
+                                    <SeriesTimer
+                                        key={exercise.id}
+                                        durations={(
+                                            exercise.series ?? []
+                                        ).filter((d) => d > 0)}
+                                        exerciseName={exercise.name}
+                                    />
+                                </>
+                            )}
+                            {exercise.video_url && !exercise.video_thumb && (
+                                <p>
+                                    <strong>Vídeo:</strong>{' '}
+                                    <a
+                                        href="#" // Poderia também abrir o player interno
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            handleOpenVideoPlayer();
+                                        }}
+                                        className={styles.watchVideoLink}
+                                    >
+                                        Assistir exemplo
+                                    </a>
+                                </p>
+                            )}
+                            {/* Observações do Exercício (renomeado de Anotações) */}
+                            {exercise.notes && (
+                                <div className={styles.notesSection}>
+                                    <p>
+                                        <strong>Observações:</strong>
+                                    </p>
+                                    <p>{exercise.notes}</p>
+                                </div>
+                            )}
+                            {/* Técnica de treinamento avançada marcada pelo personal */}
+                            {exercise.technique && (
+                                <div className={styles.notesSection}>
+                                    <p>
+                                        <strong>Técnica:</strong>{' '}
+                                        <TechniqueHelpTooltip
+                                            technique={exercise.technique}
+                                            params={exercise.technique_params}
                                         />
-                                    </>
-                                )}
-                                {exercise.video_url &&
-                                    !exercise.video_thumb && (
-                                        <p>
-                                            <strong>Vídeo:</strong>{' '}
-                                            <a
-                                                href="#" // Poderia também abrir o player interno
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    handleOpenVideoPlayer();
-                                                }}
-                                                className={
-                                                    styles.watchVideoLink
-                                                }
-                                            >
-                                                Assistir exemplo
-                                            </a>
-                                        </p>
-                                    )}
-                                {/* Observações do Exercício (renomeado de Anotações) */}
-                                {exercise.notes && (
-                                    <div className={styles.notesSection}>
-                                        <p>
-                                            <strong>Observações:</strong>
-                                        </p>
-                                        <p>{exercise.notes}</p>
-                                    </div>
-                                )}
-                                {/* Técnica de treinamento avançada marcada pelo personal */}
-                                {exercise.technique && (
-                                    <div className={styles.notesSection}>
-                                        <p>
-                                            <strong>Técnica:</strong>{' '}
-                                            <TechniqueHelpTooltip
-                                                technique={exercise.technique}
-                                                params={exercise.technique_params}
-                                            />
-                                        </p>
-                                        <p>
-                                            {formatTechniqueSummary(
-                                                exercise.technique,
-                                                exercise.technique_params,
-                                            )}
-                                        </p>
-                                    </div>
-                                )}
-                                {exercise.group_technique && (
-                                    <div className={styles.notesSection}>
-                                        <p>
-                                            <strong>Combinação:</strong>{' '}
-                                            <HelpTooltip
-                                                text={getGlossaryTerm('combinacao').short}
-                                                href="/ajuda#glossario-combinacao"
-                                                label="Ajuda sobre combinação de exercícios"
-                                            />
-                                        </p>
-                                        <p>
-                                            {groupTechniqueLabel(
-                                                exercise.group_technique,
-                                            )}
-                                        </p>
-                                    </div>
-                                )}
-                                {/* Intensidade prescrita (% de 1RM, cadência,
-                                    RPE). A carga em kg fica no topo do card. */}
-                                {(exercise.loadPercentage ||
-                                    exercise.tempoSeconds ||
-                                    exercise.rpeTarget) && (
-                                    <div className={styles.notesSection}>
-                                        <p>
-                                            <strong>Intensidade:</strong>
-                                        </p>
-                                        <ul className={styles.intensityList}>
-                                            {exercise.loadPercentage ? (
-                                                <li>
-                                                    {exercise.loadPercentage}% de
-                                                    1RM{' '}
-                                                    <HelpTooltip
-                                                        text={getGlossaryTerm('1rm').short}
-                                                        href="/ajuda#glossario-1rm"
-                                                        label="Ajuda sobre 1RM"
-                                                    />
-                                                </li>
-                                            ) : null}
-                                            {exercise.tempoSeconds ? (
-                                                <li>
-                                                    Cadência:{' '}
-                                                    {exercise.tempoSeconds} s por
-                                                    repetição{' '}
-                                                    <HelpTooltip
-                                                        text={getGlossaryTerm('cadencia').short}
-                                                        href="/ajuda#glossario-cadencia"
-                                                        label="Ajuda sobre cadência"
-                                                    />
-                                                </li>
-                                            ) : null}
-                                            {exercise.rpeTarget ? (
-                                                <li>
-                                                    Esforço alvo: RPE{' '}
-                                                    {exercise.rpeTarget} de 10{' '}
-                                                    <HelpTooltip
-                                                        text={getGlossaryTerm('rpe').short}
-                                                        href="/ajuda#glossario-rpe"
-                                                        label="Ajuda sobre RPE"
-                                                    />
-                                                </li>
-                                            ) : null}
-                                        </ul>
-                                    </div>
-                                )}
-                                {/* Instruções do personal trainer (campo comments) */}
-                                {exercise.comments && (
-                                    <div className={styles.notesSection}>
-                                        <p>
-                                            <strong>
-                                                Instruções do Personal:
-                                            </strong>
-                                        </p>
-                                        <p>{exercise.comments}</p>
-                                    </div>
-                                )}
-                                {editor && (
-                                    <div className={styles.collapsibleCard}>
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                setEditorOpen((v) => !v)
+                                    </p>
+                                    <p>
+                                        {formatTechniqueSummary(
+                                            exercise.technique,
+                                            exercise.technique_params,
+                                        )}
+                                    </p>
+                                </div>
+                            )}
+                            {exercise.group_technique && (
+                                <div className={styles.notesSection}>
+                                    <p>
+                                        <strong>Combinação:</strong>{' '}
+                                        <HelpTooltip
+                                            text={
+                                                getGlossaryTerm('combinacao')
+                                                    .short
                                             }
-                                            aria-expanded={editorOpen}
-                                            className={styles.collapsibleToggle}
-                                        >
-                                            <span
-                                                className={
-                                                    styles.collapsibleTitle
-                                                }
-                                            >
-                                                Editar tudo neste exercício
-                                            </span>
-                                            <span
-                                                aria-hidden
-                                                className={
-                                                    editorOpen
-                                                        ? styles.collapsibleChevronOpen
-                                                        : styles.collapsibleChevron
-                                                }
-                                            >
-                                                ▾
-                                            </span>
-                                        </button>
-                                        {/* Sempre montado, só escondido: recolher
-                                            não pode jogar fora o que o personal
-                                            ainda não salvou. */}
-                                        <div
-                                            hidden={!editorOpen}
-                                            className={styles.editorSection}
-                                        >
-                                            {editor}
-                                        </div>
-                                    </div>
-                                )}
-                                {/* Campo de Anotações do Usuário — omitido em modo somente
-                                    leitura, são anotações do próprio aluno */}
-                                {!readOnly && (
+                                            href="/ajuda#glossario-combinacao"
+                                            label="Ajuda sobre combinação de exercícios"
+                                        />
+                                    </p>
+                                    <p>
+                                        {groupTechniqueLabel(
+                                            exercise.group_technique,
+                                        )}
+                                    </p>
+                                </div>
+                            )}
+                            {/* Intensidade prescrita (% de 1RM, cadência,
+                                    RPE). A carga em kg fica no topo do card. */}
+                            {(exercise.loadPercentage ||
+                                exercise.tempoSeconds ||
+                                exercise.rpeTarget) && (
+                                <div className={styles.notesSection}>
+                                    <p>
+                                        <strong>Intensidade:</strong>
+                                    </p>
+                                    <ul className={styles.intensityList}>
+                                        {exercise.loadPercentage ? (
+                                            <li>
+                                                {exercise.loadPercentage}% de
+                                                1RM{' '}
+                                                <HelpTooltip
+                                                    text={
+                                                        getGlossaryTerm('1rm')
+                                                            .short
+                                                    }
+                                                    href="/ajuda#glossario-1rm"
+                                                    label="Ajuda sobre 1RM"
+                                                />
+                                            </li>
+                                        ) : null}
+                                        {exercise.tempoSeconds ? (
+                                            <li>
+                                                Cadência:{' '}
+                                                {exercise.tempoSeconds} s por
+                                                repetição{' '}
+                                                <HelpTooltip
+                                                    text={
+                                                        getGlossaryTerm(
+                                                            'cadencia',
+                                                        ).short
+                                                    }
+                                                    href="/ajuda#glossario-cadencia"
+                                                    label="Ajuda sobre cadência"
+                                                />
+                                            </li>
+                                        ) : null}
+                                        {exercise.rpeTarget ? (
+                                            <li>
+                                                Esforço alvo: RPE{' '}
+                                                {exercise.rpeTarget} de 10{' '}
+                                                <HelpTooltip
+                                                    text={
+                                                        getGlossaryTerm('rpe')
+                                                            .short
+                                                    }
+                                                    href="/ajuda#glossario-rpe"
+                                                    label="Ajuda sobre RPE"
+                                                />
+                                            </li>
+                                        ) : null}
+                                    </ul>
+                                </div>
+                            )}
+                            {/* Instruções do personal trainer (campo comments) */}
+                            {exercise.comments && (
+                                <div className={styles.notesSection}>
+                                    <p>
+                                        <strong>Instruções do Personal:</strong>
+                                    </p>
+                                    <p>{exercise.comments}</p>
+                                </div>
+                            )}
+                            {editor && (
                                 <div className={styles.collapsibleCard}>
                                     <button
                                         type="button"
-                                        onClick={() =>
-                                            setNotesOpen((v) => !v)
-                                        }
+                                        onClick={() => setEditorOpen((v) => !v)}
+                                        aria-expanded={editorOpen}
+                                        className={styles.collapsibleToggle}
+                                    >
+                                        <span
+                                            className={styles.collapsibleTitle}
+                                        >
+                                            Editar tudo neste exercício
+                                        </span>
+                                        <span
+                                            aria-hidden
+                                            className={
+                                                editorOpen
+                                                    ? styles.collapsibleChevronOpen
+                                                    : styles.collapsibleChevron
+                                            }
+                                        >
+                                            ▾
+                                        </span>
+                                    </button>
+                                    {/* Sempre montado, só escondido: recolher
+                                            não pode jogar fora o que o personal
+                                            ainda não salvou. */}
+                                    <div
+                                        hidden={!editorOpen}
+                                        className={styles.editorSection}
+                                    >
+                                        {editor}
+                                    </div>
+                                </div>
+                            )}
+                            {/* Campo de Anotações do Usuário — omitido em modo somente
+                                    leitura, são anotações do próprio aluno */}
+                            {!readOnly && (
+                                <div className={styles.collapsibleCard}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setNotesOpen((v) => !v)}
                                         aria-expanded={notesOpen}
                                         className={styles.collapsibleToggle}
                                     >
@@ -1650,13 +1740,17 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                                     {annotationsStatus ===
                                                         'saved' && (
                                                         <>
-                                                            <FiCheck /> Anotações salvas.
+                                                            <FiCheck />{' '}
+                                                            Anotações salvas.
                                                         </>
                                                     )}
                                                     {annotationsStatus ===
                                                         'saved-offline' && (
                                                         <>
-                                                            <FiSave /> Salvo neste dispositivo — sem conexão para sincronizar agora.
+                                                            <FiSave /> Salvo
+                                                            neste dispositivo —
+                                                            sem conexão para
+                                                            sincronizar agora.
                                                         </>
                                                     )}
                                                     {annotationsStatus ===
@@ -1667,45 +1761,43 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                         </div>
                                     )}
                                 </div>
-                                )}
-                                {/* Bloco de bi-set/triset/superset: sem descanso até o
+                            )}
+                            {/* Bloco de bi-set/triset/superset: sem descanso até o
                                     último exercício do bloco — troca o timer por um
                                     atalho direto para o próximo. */}
-                                {nextInGroup ? (
-                                    <div className={styles.restTimerSection}>
-                                        <p className={styles.noRestNotice}>
-                                            <strong>Sem descanso</strong> —
-                                            siga direto para o próximo
-                                            exercício do bloco.
-                                        </p>
-                                        <Button
-                                            variant="primary"
-                                            size="sm"
-                                            rightIcon={<FiChevronRight />}
-                                            onClick={() =>
-                                                onSelectExercise?.(
-                                                    nextInGroup,
-                                                )
-                                            }
-                                        >
-                                            Ir para {nextInGroup.name}
-                                        </Button>
-                                    </div>
-                                ) : (
-                                    (exercise.restTime ?? 0) > 0 && (
+                            {nextInGroup ? (
+                                <div className={styles.restTimerSection}>
+                                    <p className={styles.noRestNotice}>
+                                        <strong>Sem descanso</strong> — siga
+                                        direto para o próximo exercício do
+                                        bloco.
+                                    </p>
+                                    <Button
+                                        variant="primary"
+                                        size="sm"
+                                        rightIcon={<FiChevronRight />}
+                                        onClick={() =>
+                                            onSelectExercise?.(nextInGroup)
+                                        }
+                                    >
+                                        Ir para {nextInGroup.name}
+                                    </Button>
+                                </div>
+                            ) : (
+                                (exercise.restTime ?? 0) > 0 && (
                                     <div className={styles.restTimerSection}>
                                         <div className={styles.timerDisplay}>
-                                            <span
-                                                className={styles.timerValue}
-                                            >
+                                            <span className={styles.timerValue}>
                                                 {formatTime(timerValue)}
                                             </span>
-                                            <span
-                                                className={styles.timerLabel}
-                                            >
+                                            <span className={styles.timerLabel}>
                                                 Descanso entre exercícios{' '}
                                                 <HelpTooltip
-                                                    text={getGlossaryTerm('descanso').short}
+                                                    text={
+                                                        getGlossaryTerm(
+                                                            'descanso',
+                                                        ).short
+                                                    }
                                                     href="/ajuda#glossario-descanso"
                                                     label="Ajuda sobre descanso entre exercícios"
                                                 />
@@ -1745,11 +1837,11 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                             </Button>
                                         </div>
                                     </div>
-                                    )
-                                )}
-                            </div>
+                                )
+                            )}
                         </div>
                     </div>
+                </div>
             </Modal>
 
             {/* Modal do Player de Vídeo. O title é o que desenha o header com o

@@ -4,11 +4,12 @@ import { FiPlay, FiRepeat } from 'react-icons/fi';
 import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
 import HelpTooltip from '@/components/atoms/HelpTooltip';
 import { getGlossaryTerm } from '@/libs/glossaryContent';
-import type { LocalExercise } from '../../lib/mesocycleTransforms';
 import {
-    EXERCISE_TABS,
-    type ExerciseTab,
-} from '../../lib/editorNavigation';
+    type LocalExercise,
+    perSetFields,
+} from '../../lib/mesocycleTransforms';
+import { resizePerSet } from '@/libs/seriesPrescription';
+import { EXERCISE_TABS, type ExerciseTab } from '../../lib/editorNavigation';
 import {
     PrescriptionNumber,
     LoadPercentageWarning,
@@ -84,9 +85,7 @@ export default function ExerciseCard({
                     min="0"
                     step="5"
                     value={ex.rest_seconds}
-                    onChange={(e) =>
-                        onUpdate('rest_seconds', e.target.value)
-                    }
+                    onChange={(e) => onUpdate('rest_seconds', e.target.value)}
                     placeholder="90"
                     className={s.smallNumInput}
                     aria-label="Descanso em segundos"
@@ -183,10 +182,18 @@ export default function ExerciseCard({
                                 Reps (séries × repetições)
                             </option>
                             <option value="time">Tempo (min/seg)</option>
+                            <option value="per_set">
+                                Por série (repetições diferentes)
+                            </option>
                             <option value="free">Livre (texto)</option>
                         </select>
 
-                        {ex.series_mode !== 'free' && (
+                        {ex.series_mode === 'per_set' && (
+                            <PerSetRow ex={ex} onUpdate={onUpdate} />
+                        )}
+
+                        {(ex.series_mode === 'reps' ||
+                            ex.series_mode === 'time') && (
                             <div className={s.seriesSubfieldRow}>
                                 <input
                                     type="number"
@@ -242,9 +249,7 @@ export default function ExerciseCard({
                                         className={s.smallNumInput}
                                         aria-label="Quantidade de séries (opcional)"
                                     />
-                                    <span className={s.seriesTimesSign}>
-                                        ×
-                                    </span>
+                                    <span className={s.seriesTimesSign}>×</span>
                                     <input
                                         value={ex.series_free}
                                         onChange={(e) =>
@@ -262,10 +267,10 @@ export default function ExerciseCard({
                                     Quantidade de séries é opcional aqui — só
                                     preencha se o texto acima descrever UMA
                                     série repetida (ex.: &ldquo;8 a 10
-                                    reps&rdquo; × 3). Deixe em branco se o
-                                    texto já descreve a progressão inteira
-                                    (ex.: &ldquo;8 até a falha + 5 a 6 rep + 1
-                                    a 3 rep&rdquo;).
+                                    reps&rdquo; × 3). Deixe em branco se o texto
+                                    já descreve a progressão inteira (ex.:
+                                    &ldquo;8 até a falha + 5 a 6 rep + 1 a 3
+                                    rep&rdquo;).
                                 </small>
                             </div>
                         )}
@@ -385,5 +390,67 @@ export default function ExerciseCard({
                 </>
             )}
         </>
+    );
+}
+
+/** Modo "Por série": a quantidade de séries e um campo de repetições para
+ * cada uma (escada 1-2-3-2-1, pirâmide 12/10/8). Grava em series_per_set,
+ * que vira o array de séries sem passar por texto livre. */
+function PerSetRow({
+    ex,
+    onUpdate,
+}: {
+    ex: LocalExercise;
+    onUpdate: (field: UpdateField, value: string | boolean) => void;
+}) {
+    const values = perSetFields(ex);
+    return (
+        <div style={{ marginTop: 8 }}>
+            <div className={s.seriesSubfieldRow}>
+                <input
+                    type="number"
+                    min="1"
+                    value={ex.series_sets}
+                    onChange={(e) => {
+                        onUpdate('series_sets', e.target.value);
+                        onUpdate(
+                            'series_per_set',
+                            resizePerSet(
+                                values,
+                                parseInt(e.target.value, 10) || 0,
+                                ex.series_value || '10',
+                            ).join(','),
+                        );
+                    }}
+                    placeholder="Séries"
+                    className={s.smallNumInput}
+                    aria-label="Quantidade de séries"
+                />
+                <span className={s.seriesUnitLabel}>séries</span>
+            </div>
+            <div className={s.seriesSubfieldRow} style={{ flexWrap: 'wrap' }}>
+                {values.map((v, i) => (
+                    <input
+                        key={i}
+                        type="number"
+                        min="0"
+                        value={v}
+                        onChange={(e) =>
+                            onUpdate(
+                                'series_per_set',
+                                values
+                                    .map((old, j) =>
+                                        j === i ? e.target.value : old,
+                                    )
+                                    .join(','),
+                            )
+                        }
+                        className={s.smallNumInput}
+                        aria-label={`Repetições da série ${i + 1}`}
+                    />
+                ))}
+                <span className={s.seriesUnitLabel}>reps</span>
+            </div>
+        </div>
     );
 }

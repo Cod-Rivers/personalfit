@@ -26,7 +26,14 @@ import {
     TrainingResponse,
     searchExercises,
 } from '@/libs/planningService';
-import { currentMicrocycleOf, localDateKey, logsOfWeek } from '@/libs/currentWeek';
+import {
+    currentMicrocycleOf,
+    localDateKey,
+    logsOfWeek,
+    weekCompletions,
+    type WeekLog,
+} from '@/libs/currentWeek';
+import WeekCompletionSummary from '@/components/features/WeekCompletionSummary';
 import { ExerciseLog } from '../../../../components/features/types';
 import Button from '@/components/atoms/Button';
 import CircuitTimer, {
@@ -34,7 +41,8 @@ import CircuitTimer, {
 } from '@/components/molecules/CircuitTimer';
 import {
     blockRecoverySeconds,
-    circuitHasTimedWork,
+    blockRestLabel,
+    circuitGuides,
     type CircuitExercise,
 } from '@/libs/circuitPlan';
 import ExerciseDetailCard from '../../../../components/features/ExerciseDetailCard';
@@ -66,7 +74,10 @@ import {
     readExerciseDoneMarks,
     writeExerciseDoneMarks,
 } from '@/libs/exerciseDoneMarks';
-import { recordExerciseDone, studentDoneLoadKg } from '@/libs/exerciseDoneRecord';
+import {
+    recordExerciseDone,
+    studentDoneLoadKg,
+} from '@/libs/exerciseDoneRecord';
 import { getCachedWeight } from '@/libs/exerciseWeightService';
 import DoneToggle from '@/components/atoms/DoneToggle';
 import { getPendingMutations, onQueueChanged } from '@/libs/offline/syncQueue';
@@ -212,18 +223,29 @@ export default function MeusTreinosExercisesPage({
     const [isOffline, setIsOffline] = useState(false);
     const [studentId, setStudentId] = useState('');
     const [microLogsCount, setMicroLogsCount] = useState(0);
+    /** Registros desta semana: ordem dos treinos finalizados e quantas vezes
+     * este foi repetido (WeekCompletionSummary). */
+    const [weekLogs, setWeekLogs] = useState<
+        (WeekLog & { training_ref: string })[]
+    >([]);
     const [previousMicroAvgRPE, setPreviousMicroAvgRPE] = useState(7);
-    const [autoregulationOverrides, setAutoregulationOverrides] = useState<
-        Parameters<typeof resolveAutoregulationPolicy>[0]['personal']
-    >(null);
+    const [autoregulationOverrides, setAutoregulationOverrides] =
+        useState<Parameters<typeof resolveAutoregulationPolicy>[0]['personal']>(
+            null,
+        );
     const [loadHistoryByExercise, setLoadHistoryByExercise] = useState<
         Record<string, LoadHistoryEntry[]>
     >({});
     // Histórico de carga completo (resumo por exercício): "ver histórico" do
     // card e o aviso de recorde ao finalizar. Vem do cache offline quando não
     // há rede — é exatamente na academia sem sinal que ele mais serve.
-    const [loadHistory, setLoadHistory] = useState<LoadHistoryResponse | null>(null);
-    const [historyFor, setHistoryFor] = useState<{ key: string; name: string } | null>(null);
+    const [loadHistory, setLoadHistory] = useState<LoadHistoryResponse | null>(
+        null,
+    );
+    const [historyFor, setHistoryFor] = useState<{
+        key: string;
+        name: string;
+    } | null>(null);
     const [newRecords, setNewRecords] = useState<NewRecord[]>([]);
     const [recordShareOpen, setRecordShareOpen] = useState(false);
 
@@ -297,10 +319,14 @@ export default function MeusTreinosExercisesPage({
                                 meso.id,
                                 selectedMicro.id,
                             );
-                            setMicroLogsCount(logsOfWeek(currentLogs).length);
+                            const ofWeek = logsOfWeek(currentLogs);
+                            setMicroLogsCount(ofWeek.length);
+                            setWeekLogs(ofWeek);
 
                             const prevMicro = meso.microcycles?.find(
-                                (m) => m.week_number === selectedMicro.week_number - 1,
+                                (m) =>
+                                    m.week_number ===
+                                    selectedMicro.week_number - 1,
                             );
                             if (prevMicro) {
                                 const prevLogs = await getNewWorkoutLogs(
@@ -352,9 +378,14 @@ export default function MeusTreinosExercisesPage({
                     const offline = await getOfflineMacrocycle(macrocycleId);
                     if (offline) {
                         setIsOffline(true);
-                        const found = await applyMacrocycle(offline.data, loggedStudentId);
+                        const found = await applyMacrocycle(
+                            offline.data,
+                            loggedStudentId,
+                        );
                         if (!found) {
-                            setError('Treino não encontrado no plano salvo offline.');
+                            setError(
+                                'Treino não encontrado no plano salvo offline.',
+                            );
                         }
                     } else {
                         setError(
@@ -571,9 +602,9 @@ export default function MeusTreinosExercisesPage({
 
     /** Circuitos concluídos, pelo id do 1º exercício do bloco: entram como
      * conferidos no registro do treino (ver WorkoutLogger). */
-    const [circuitDoneKeys, setCircuitDoneKeys] = useState<
-        ReadonlySet<string>
-    >(() => new Set());
+    const [circuitDoneKeys, setCircuitDoneKeys] = useState<ReadonlySet<string>>(
+        () => new Set(),
+    );
     const markCircuitDone = (key: string) =>
         setCircuitDoneKeys((prev) =>
             prev.has(key) ? prev : new Set(prev).add(key),
@@ -651,10 +682,22 @@ export default function MeusTreinosExercisesPage({
         saveDone(new Set([...current, ...added]));
         recordDone(added, true);
     };
-    /** Treino finalizado: a conferência desta sessão acabou. A tela continua
-     * mostrando as marcações até o aluno sair dela. */
+    /** Treino finalizado: a conferência desta sessão acabou — único jeito,
+     * além de desmarcar, de as marcações saírem. Tela limpa para a próxima
+     * vez que o treino for repetido na semana. Entra também na ordem da
+     * semana na hora, sem esperar a sincronização. */
     const forgetDone = () => {
         if (microId) clearExerciseDoneMarks(microId, trainingRef);
+        doneRef.current = new Set();
+        setDoneIds(new Set());
+        setWeekLogs((prev) => [
+            ...prev,
+            {
+                training_ref: trainingRef,
+                status: 'completed',
+                client_completed_at: new Date().toISOString(),
+            },
+        ]);
     };
 
     const handleCloseDetailCard = () => {
@@ -801,7 +844,8 @@ export default function MeusTreinosExercisesPage({
                         ? 0.5
                         : 0)
                 : 7;
-        const isDeload = Boolean(currentMicro?.is_deload) || decision.triggerDeload;
+        const isDeload =
+            Boolean(currentMicro?.is_deload) || decision.triggerDeload;
 
         const map: Record<string, LoadSuggestion> = {};
         for (const exercise of exercises) {
@@ -809,7 +853,9 @@ export default function MeusTreinosExercisesPage({
                 prescribedKg: exercise.plannedWeight,
                 prescribedAt: exercise.loadPrescribedAt,
                 history: [
-                    ...(loadHistoryByExercise[`key:${exerciseKeyFor(exercise)}`] ?? []),
+                    ...(loadHistoryByExercise[
+                        `key:${exerciseKeyFor(exercise)}`
+                    ] ?? []),
                     ...(loadHistoryByExercise[`id:${exercise.id}`] ?? []),
                 ],
                 targetRPE,
@@ -860,12 +906,9 @@ export default function MeusTreinosExercisesPage({
     const selectedCircuitKey = useMemo(() => {
         if (!selectedExercise?.group_id) return null;
         const group = exerciseGroups.find(
-            (g) =>
-                g.length > 1 && g.some((e) => e.id === selectedExercise.id),
+            (g) => g.length > 1 && g.some((e) => e.id === selectedExercise.id),
         );
-        return group && circuitHasTimedWork(toCircuit(group))
-            ? group[0].id
-            : null;
+        return group && circuitGuides(toCircuit(group)) ? group[0].id : null;
     }, [exerciseGroups, selectedExercise]);
 
     if (isLoading) {
@@ -903,7 +946,8 @@ export default function MeusTreinosExercisesPage({
                         className="alert alert-warning py-2 px-3 mb-3 d-flex align-items-center gap-2"
                         style={{ fontSize: '0.85rem' }}
                     >
-                        <FiWifiOff /> Exibindo treino salvo offline (sem conexão no momento).
+                        <FiWifiOff /> Exibindo treino salvo offline (sem conexão
+                        no momento).
                     </div>
                 )}
                 <div className="mb-8">
@@ -978,229 +1022,237 @@ export default function MeusTreinosExercisesPage({
                     </div>
 
                     {microPanelOpen && (
-                    <div className="card-body pt-0">
-                        <p className="small alert alert-info py-2 px-3 mb-3 d-flex align-items-start gap-2">
-                            <FiInfo className="flex-shrink-0 mt-1" /> Preencha estes campos todos os dias antes de
-                            treinar e sempre finalize o treino pelo app (não
-                            deixe pendente) — é isso que alimenta o histórico
-                            usado para calcular e evoluir a sugestão de carga.
-                        </p>
-                        {currentMeso && currentMicro && (
-                            <p className="small text-muted mb-2">
-                                {currentMeso.name} · foco:{' '}
-                                {currentMicro.focus || 'não definido'} · RPE
-                                alvo: {currentMicro.target_rpe ?? '—'} · logs:{' '}
-                                {microLogsCount}
+                        <div className="card-body pt-0">
+                            <p className="small alert alert-info py-2 px-3 mb-3 d-flex align-items-start gap-2">
+                                <FiInfo className="flex-shrink-0 mt-1" />{' '}
+                                Preencha estes campos todos os dias antes de
+                                treinar e sempre finalize o treino pelo app (não
+                                deixe pendente) — é isso que alimenta o
+                                histórico usado para calcular e evoluir a
+                                sugestão de carga.
                             </p>
-                        )}
-
-                        <div className="row g-2 mb-2">
-                            <div className="col-6 col-md-2">
-                                <label className="form-label small mb-1 d-flex align-items-center">
-                                    Prontidão (1-10)
-                                    <HelpTooltip
-                                        text={
-                                            getMicrocycleHelpTopic('prontidao')
-                                                .short
-                                        }
-                                        href="/ajuda#prontidao"
-                                    />
-                                </label>
-                                <input
-                                    type="number"
-                                    min={1}
-                                    max={10}
-                                    className="form-control form-control-sm"
-                                    value={readinessScore}
-                                    onChange={(e) =>
-                                        setReadinessScore(
-                                            parseInt(e.target.value, 10) || 1,
-                                        )
-                                    }
-                                />
-                            </div>
-                            <div className="col-6 col-md-2">
-                                <label className="form-label small mb-1 d-flex align-items-center">
-                                    Sono (h)
-                                    <HelpTooltip
-                                        text={
-                                            getMicrocycleHelpTopic('sono')
-                                                .short
-                                        }
-                                        href="/ajuda#sono"
-                                    />
-                                </label>
-                                <input
-                                    type="number"
-                                    min={0}
-                                    max={12}
-                                    step={0.5}
-                                    className="form-control form-control-sm"
-                                    value={sleepHours}
-                                    onChange={(e) =>
-                                        setSleepHours(
-                                            parseFloat(e.target.value) || 0,
-                                        )
-                                    }
-                                />
-                            </div>
-                            <div className="col-6 col-md-2">
-                                <label className="form-label small mb-1 d-flex align-items-center">
-                                    Estresse (1-10)
-                                    <HelpTooltip
-                                        text={
-                                            getMicrocycleHelpTopic('estresse')
-                                                .short
-                                        }
-                                        href="/ajuda#estresse"
-                                    />
-                                </label>
-                                <input
-                                    type="number"
-                                    min={1}
-                                    max={10}
-                                    className="form-control form-control-sm"
-                                    value={stressScore}
-                                    onChange={(e) =>
-                                        setStressScore(
-                                            parseInt(e.target.value, 10) || 1,
-                                        )
-                                    }
-                                />
-                            </div>
-                            <div className="col-6 col-md-2">
-                                <label className="form-label small mb-1 d-flex align-items-center">
-                                    Dor muscular (1-10)
-                                    <HelpTooltip
-                                        text={
-                                            getMicrocycleHelpTopic(
-                                                'dor-muscular',
-                                            ).short
-                                        }
-                                        href="/ajuda#dor-muscular"
-                                    />
-                                </label>
-                                <input
-                                    type="number"
-                                    min={1}
-                                    max={10}
-                                    className="form-control form-control-sm"
-                                    value={sorenessScore}
-                                    onChange={(e) =>
-                                        setSorenessScore(
-                                            parseInt(e.target.value, 10) || 1,
-                                        )
-                                    }
-                                />
-                            </div>
-                            <div className="col-6 col-md-2">
-                                <label className="form-label small mb-1 d-flex align-items-center">
-                                    Delta VFC (ms)
-                                    <HelpTooltip
-                                        text={
-                                            getMicrocycleHelpTopic(
-                                                'delta-vfc',
-                                            ).short
-                                        }
-                                        href="/ajuda#delta-vfc"
-                                    />
-                                </label>
-                                <input
-                                    type="number"
-                                    min={-30}
-                                    max={30}
-                                    className="form-control form-control-sm"
-                                    value={hrvDeltaMs}
-                                    onChange={(e) =>
-                                        setHrvDeltaMs(
-                                            parseInt(e.target.value, 10) || 0,
-                                        )
-                                    }
-                                />
-                            </div>
-                            <div className="col-6 col-md-2">
-                                <label className="form-label small mb-1 d-flex align-items-center">
-                                    RPE prévio
-                                    <HelpTooltip
-                                        text={
-                                            getMicrocycleHelpTopic(
-                                                'rpe-previo',
-                                            ).short
-                                        }
-                                        href="/ajuda#rpe-previo"
-                                    />
-                                </label>
-                                <input
-                                    type="number"
-                                    min={1}
-                                    max={10}
-                                    step={0.5}
-                                    className="form-control form-control-sm"
-                                    value={previousRPE}
-                                    onChange={(e) =>
-                                        setPreviousRPE(
-                                            parseFloat(e.target.value) || 1,
-                                        )
-                                    }
-                                />
-                            </div>
-                        </div>
-
-                        <p className="small text-muted mb-2">
-                            RPE médio do microciclo anterior:{' '}
-                            {previousMicroAvgRPE.toFixed(1)}
-                        </p>
-
-                        <div
-                            className={`alert ${
-                                decision.zone === 'supercompensacao'
-                                    ? 'alert-success'
-                                    : decision.zone === 'fadiga'
-                                      ? 'alert-warning'
-                                      : 'alert-info'
-                            } mb-2`}
-                        >
-                            <div className="fw-semibold mb-1">
-                                {decision.message}
-                            </div>
-                            <div className="small">
-                                Aptidão: {decision.fitnessScore} · Fadiga:{' '}
-                                {decision.fatigueScore} · Balanço:{' '}
-                                {decision.balance}
-                            </div>
-                            <div className="small">
-                                Ajuste intersessão: volume{' '}
-                                {decision.volumeAdjustPct}% · intensidade{' '}
-                                {decision.intensityAdjustPct}%
-                            </div>
-                            <div className="small">
-                                Ajuste intrassessão: carga{' '}
-                                {decision.intraSessionLoadAdjustPct}%
-                                {decision.intraSessionLoadAdjustPct < 0
-                                    ? ' quando RIR cair mais que o alvo'
-                                    : ' quando séries estiverem leves'}
-                            </div>
-                            {decision.triggerDeload && (
-                                <div className="small fw-semibold mt-1">
-                                    Gatilho de deload ativo para o próximo
-                                    microciclo.
-                                </div>
+                            {currentMeso && currentMicro && (
+                                <p className="small text-muted mb-2">
+                                    {currentMeso.name} · foco:{' '}
+                                    {currentMicro.focus || 'não definido'} · RPE
+                                    alvo: {currentMicro.target_rpe ?? '—'} ·
+                                    logs: {microLogsCount}
+                                </p>
                             )}
-                        </div>
-                        {decision.reasons.length > 0 && (
-                            <p className="small text-muted mb-0">
-                                Fatores: {decision.reasons.join(', ')}.
+
+                            <div className="row g-2 mb-2">
+                                <div className="col-6 col-md-2">
+                                    <label className="form-label small mb-1 d-flex align-items-center">
+                                        Prontidão (1-10)
+                                        <HelpTooltip
+                                            text={
+                                                getMicrocycleHelpTopic(
+                                                    'prontidao',
+                                                ).short
+                                            }
+                                            href="/ajuda#prontidao"
+                                        />
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        max={10}
+                                        className="form-control form-control-sm"
+                                        value={readinessScore}
+                                        onChange={(e) =>
+                                            setReadinessScore(
+                                                parseInt(e.target.value, 10) ||
+                                                    1,
+                                            )
+                                        }
+                                    />
+                                </div>
+                                <div className="col-6 col-md-2">
+                                    <label className="form-label small mb-1 d-flex align-items-center">
+                                        Sono (h)
+                                        <HelpTooltip
+                                            text={
+                                                getMicrocycleHelpTopic('sono')
+                                                    .short
+                                            }
+                                            href="/ajuda#sono"
+                                        />
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min={0}
+                                        max={12}
+                                        step={0.5}
+                                        className="form-control form-control-sm"
+                                        value={sleepHours}
+                                        onChange={(e) =>
+                                            setSleepHours(
+                                                parseFloat(e.target.value) || 0,
+                                            )
+                                        }
+                                    />
+                                </div>
+                                <div className="col-6 col-md-2">
+                                    <label className="form-label small mb-1 d-flex align-items-center">
+                                        Estresse (1-10)
+                                        <HelpTooltip
+                                            text={
+                                                getMicrocycleHelpTopic(
+                                                    'estresse',
+                                                ).short
+                                            }
+                                            href="/ajuda#estresse"
+                                        />
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        max={10}
+                                        className="form-control form-control-sm"
+                                        value={stressScore}
+                                        onChange={(e) =>
+                                            setStressScore(
+                                                parseInt(e.target.value, 10) ||
+                                                    1,
+                                            )
+                                        }
+                                    />
+                                </div>
+                                <div className="col-6 col-md-2">
+                                    <label className="form-label small mb-1 d-flex align-items-center">
+                                        Dor muscular (1-10)
+                                        <HelpTooltip
+                                            text={
+                                                getMicrocycleHelpTopic(
+                                                    'dor-muscular',
+                                                ).short
+                                            }
+                                            href="/ajuda#dor-muscular"
+                                        />
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        max={10}
+                                        className="form-control form-control-sm"
+                                        value={sorenessScore}
+                                        onChange={(e) =>
+                                            setSorenessScore(
+                                                parseInt(e.target.value, 10) ||
+                                                    1,
+                                            )
+                                        }
+                                    />
+                                </div>
+                                <div className="col-6 col-md-2">
+                                    <label className="form-label small mb-1 d-flex align-items-center">
+                                        Delta VFC (ms)
+                                        <HelpTooltip
+                                            text={
+                                                getMicrocycleHelpTopic(
+                                                    'delta-vfc',
+                                                ).short
+                                            }
+                                            href="/ajuda#delta-vfc"
+                                        />
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min={-30}
+                                        max={30}
+                                        className="form-control form-control-sm"
+                                        value={hrvDeltaMs}
+                                        onChange={(e) =>
+                                            setHrvDeltaMs(
+                                                parseInt(e.target.value, 10) ||
+                                                    0,
+                                            )
+                                        }
+                                    />
+                                </div>
+                                <div className="col-6 col-md-2">
+                                    <label className="form-label small mb-1 d-flex align-items-center">
+                                        RPE prévio
+                                        <HelpTooltip
+                                            text={
+                                                getMicrocycleHelpTopic(
+                                                    'rpe-previo',
+                                                ).short
+                                            }
+                                            href="/ajuda#rpe-previo"
+                                        />
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        max={10}
+                                        step={0.5}
+                                        className="form-control form-control-sm"
+                                        value={previousRPE}
+                                        onChange={(e) =>
+                                            setPreviousRPE(
+                                                parseFloat(e.target.value) || 1,
+                                            )
+                                        }
+                                    />
+                                </div>
+                            </div>
+
+                            <p className="small text-muted mb-2">
+                                RPE médio do microciclo anterior:{' '}
+                                {previousMicroAvgRPE.toFixed(1)}
                             </p>
-                        )}
-                        <div className="mt-3">
-                            <Link
-                                href="/meus-treinos/autorregulacao"
-                                className="btn btn-outline-secondary btn-sm"
+
+                            <div
+                                className={`alert ${
+                                    decision.zone === 'supercompensacao'
+                                        ? 'alert-success'
+                                        : decision.zone === 'fadiga'
+                                          ? 'alert-warning'
+                                          : 'alert-info'
+                                } mb-2`}
                             >
-                                Entender como esse controle funciona
-                            </Link>
+                                <div className="fw-semibold mb-1">
+                                    {decision.message}
+                                </div>
+                                <div className="small">
+                                    Aptidão: {decision.fitnessScore} · Fadiga:{' '}
+                                    {decision.fatigueScore} · Balanço:{' '}
+                                    {decision.balance}
+                                </div>
+                                <div className="small">
+                                    Ajuste intersessão: volume{' '}
+                                    {decision.volumeAdjustPct}% · intensidade{' '}
+                                    {decision.intensityAdjustPct}%
+                                </div>
+                                <div className="small">
+                                    Ajuste intrassessão: carga{' '}
+                                    {decision.intraSessionLoadAdjustPct}%
+                                    {decision.intraSessionLoadAdjustPct < 0
+                                        ? ' quando RIR cair mais que o alvo'
+                                        : ' quando séries estiverem leves'}
+                                </div>
+                                {decision.triggerDeload && (
+                                    <div className="small fw-semibold mt-1">
+                                        Gatilho de deload ativo para o próximo
+                                        microciclo.
+                                    </div>
+                                )}
+                            </div>
+                            {decision.reasons.length > 0 && (
+                                <p className="small text-muted mb-0">
+                                    Fatores: {decision.reasons.join(', ')}.
+                                </p>
+                            )}
+                            <div className="mt-3">
+                                <Link
+                                    href="/meus-treinos/autorregulacao"
+                                    className="btn btn-outline-secondary btn-sm"
+                                >
+                                    Entender como esse controle funciona
+                                </Link>
+                            </div>
                         </div>
-                    </div>
                     )}
                 </div>
                 {exercises.length > 0 ? (
@@ -1229,8 +1281,12 @@ export default function MeusTreinosExercisesPage({
                                             <div className="flex items-center">
                                                 <ExerciseThumbnail
                                                     name={exercise.name}
-                                                    videoThumb={exercise.video_thumb}
-                                                    videoUrl={exercise.video_url}
+                                                    videoThumb={
+                                                        exercise.video_thumb
+                                                    }
+                                                    videoUrl={
+                                                        exercise.video_url
+                                                    }
                                                     className={
                                                         styles.exerciseThumbnail
                                                     }
@@ -1246,7 +1302,8 @@ export default function MeusTreinosExercisesPage({
                                                     >
                                                         {exercise.name}
                                                     </span>
-                                                    {suggestion?.suggestedKg != null ? (
+                                                    {suggestion?.suggestedKg !=
+                                                    null ? (
                                                         <span
                                                             className="small"
                                                             style={{
@@ -1254,25 +1311,34 @@ export default function MeusTreinosExercisesPage({
                                                                     ? 'var(--coral, #ff6b6b)'
                                                                     : 'var(--mint, #3dffd0)',
                                                             }}
-                                                            title={suggestion.reason}
+                                                            title={
+                                                                suggestion.reason
+                                                            }
                                                         >
                                                             Sugerido hoje:{' '}
-                                                            {suggestion.suggestedKg} kg
-                                                            {suggestion.source === 'ambos'
+                                                            {
+                                                                suggestion.suggestedKg
+                                                            }{' '}
+                                                            kg
+                                                            {suggestion.source ===
+                                                            'ambos'
                                                                 ? ' · base: você + personal'
-                                                                : suggestion.source === 'aluno'
+                                                                : suggestion.source ===
+                                                                    'aluno'
                                                                   ? ' · base: seu histórico'
                                                                   : ' · base: personal'}
                                                         </span>
                                                     ) : (
-                                                        exercise.plannedWeight == null && (
+                                                        exercise.plannedWeight ==
+                                                            null && (
                                                             <span
                                                                 className="small"
                                                                 style={{
                                                                     color: 'var(--text-muted)',
                                                                 }}
                                                             >
-                                                                Sem carga registrada ainda
+                                                                Sem carga
+                                                                registrada ainda
                                                             </span>
                                                         )
                                                     )}
@@ -1324,14 +1390,16 @@ export default function MeusTreinosExercisesPage({
                                             group.length,
                                             group[0].group_technique,
                                         )}{' '}
-                                        {blockRecoverySeconds(group) > 0
-                                            ? `— ${blockRecoverySeconds(group)} s de recuperação entre os exercícios`
-                                            : '— sem descanso entre os exercícios'}
+                                        —{' '}
+                                        {blockRestLabel(
+                                            circuit,
+                                            blockRecoverySeconds(group),
+                                        )}
                                     </div>
                                     {/* Cronômetro ANTES dos exercícios: embaixo
                                         do bloco, o "Iniciar circuito" só
                                         aparecia depois de rolar a tela. */}
-                                    {circuitHasTimedWork(circuit) && (
+                                    {circuitGuides(circuit) && (
                                         <CircuitTimer
                                             key={JSON.stringify(circuit)}
                                             ref={(h) => {
@@ -1447,14 +1515,19 @@ export default function MeusTreinosExercisesPage({
                     />
                 )}
                 <div className={styles.finalizarContainer}>
+                    <WeekCompletionSummary
+                        completions={weekCompletions(weekLogs)}
+                        trainingRef={trainingRef}
+                        trainingLabel={trainingLabel}
+                    />
                     {sendStatus === 'success' ? (
                         <p className={styles.finalizarSuccess}>
                             <FiCheck /> Treino finalizado com sucesso!
                         </p>
                     ) : sendStatus === 'queued' ? (
                         <p className={styles.finalizarSuccess}>
-                            <FiSave /> Salvo localmente — será sincronizado quando a
-                            internet voltar.
+                            <FiSave /> Salvo localmente — será sincronizado
+                            quando a internet voltar.
                         </p>
                     ) : (
                         <button
@@ -1520,72 +1593,82 @@ export default function MeusTreinosExercisesPage({
                     )}
                     {photoDiscardedWarning && (
                         <p className={styles.finalizarWarning}>
-                            <FiAlertTriangle /> O treino foi salvo, mas a foto do
-                            check-in não pôde ser guardada (sem espaço no
+                            <FiAlertTriangle /> O treino foi salvo, mas a foto
+                            do check-in não pôde ser guardada (sem espaço no
                             aparelho ou arquivo inválido) — tente anexar uma
                             foto menor no próximo treino.
                         </p>
                     )}
                 </div>
             </div>
-            {showWorkoutLogger && currentMeso && currentMicro && currentTraining && (
-                <WorkoutLogger
-                    studentId={studentId}
-                    planningId={macrocycleId}
-                    mesocycle={currentMeso}
-                    microcycle={currentMicro}
-                    training={currentTraining}
-                    circuitDoneBlockKeys={circuitDoneKeys}
-                    doneLoadKg={Object.fromEntries(
-                        exercises
-                            .filter((e) => doneIds.has(e.id))
-                            .map((e) => [e.id, doneLoadKg(e)]),
-                    )}
-                    autoregulation={{
-                        targetRPE: sessionTargetRPE,
-                        intraSessionLoadAdjustPct:
-                            decision.intraSessionLoadAdjustPct,
-                        message: decision.message,
-                    }}
-                    onClose={() => setShowWorkoutLogger(false)}
-                    onComplete={() => {
-                        setShowWorkoutLogger(false);
-                        setSendStatus('success');
-                        forgetDone();
-                    }}
-                    loadHistory={loadHistory}
-                    onQueued={(info) => {
-                        setShowWorkoutLogger(false);
-                        setSendStatus('queued');
-                        forgetDone();
-                        if (info?.commented) {
-                            setCommentSentTo(getCachedMyLogWindow()?.personal_name ?? '');
-                        }
-                        if (info?.photoDiscarded) setPhotoDiscardedWarning(true);
-                        // Recorde contra o histórico que a tela já tem (ou o
-                        // do cache): o treino acabou de entrar na fila e
-                        // talvez nem sincronize agora — o aluno não precisa
-                        // esperar a rede para saber que bateu a marca.
-                        if (info?.performed?.length) {
-                            const performed = info.performed;
-                            void (async () => {
-                                const history = loadHistory ?? (await getCachedLoadHistorySummary());
-                                setNewRecords(detectNewRecords(performed, history));
-                            })();
-                        }
-                        if (info?.share) {
-                            setShareData(info.share);
-                            // Abre sozinho SÓ quando há foto: aí o convite é
-                            // sobre algo que o aluno acabou de criar. Sem
-                            // foto, o card existe igual, mas quem decide
-                            // abri-lo é o botão do aviso de sucesso — abrir
-                            // um diálogo de divulgação por conta própria a
-                            // cada treino cansaria rápido.
-                            setShareOpen(!!info.share.photo);
-                        }
-                    }}
-                />
-            )}
+            {showWorkoutLogger &&
+                currentMeso &&
+                currentMicro &&
+                currentTraining && (
+                    <WorkoutLogger
+                        studentId={studentId}
+                        planningId={macrocycleId}
+                        mesocycle={currentMeso}
+                        microcycle={currentMicro}
+                        training={currentTraining}
+                        circuitDoneBlockKeys={circuitDoneKeys}
+                        doneLoadKg={Object.fromEntries(
+                            exercises
+                                .filter((e) => doneIds.has(e.id))
+                                .map((e) => [e.id, doneLoadKg(e)]),
+                        )}
+                        autoregulation={{
+                            targetRPE: sessionTargetRPE,
+                            intraSessionLoadAdjustPct:
+                                decision.intraSessionLoadAdjustPct,
+                            message: decision.message,
+                        }}
+                        onClose={() => setShowWorkoutLogger(false)}
+                        onComplete={() => {
+                            setShowWorkoutLogger(false);
+                            setSendStatus('success');
+                            forgetDone();
+                        }}
+                        loadHistory={loadHistory}
+                        onQueued={(info) => {
+                            setShowWorkoutLogger(false);
+                            setSendStatus('queued');
+                            forgetDone();
+                            if (info?.commented) {
+                                setCommentSentTo(
+                                    getCachedMyLogWindow()?.personal_name ?? '',
+                                );
+                            }
+                            if (info?.photoDiscarded)
+                                setPhotoDiscardedWarning(true);
+                            // Recorde contra o histórico que a tela já tem (ou o
+                            // do cache): o treino acabou de entrar na fila e
+                            // talvez nem sincronize agora — o aluno não precisa
+                            // esperar a rede para saber que bateu a marca.
+                            if (info?.performed?.length) {
+                                const performed = info.performed;
+                                void (async () => {
+                                    const history =
+                                        loadHistory ??
+                                        (await getCachedLoadHistorySummary());
+                                    setNewRecords(
+                                        detectNewRecords(performed, history),
+                                    );
+                                })();
+                            }
+                            if (info?.share) {
+                                setShareData(info.share);
+                                // Abre sozinho SÓ quando há foto: aí o convite é
+                                // sobre algo que o aluno acabou de criar. Sem
+                                // foto, o card existe igual, mas quem decide
+                                // abri-lo é o botão do aviso de sucesso — abrir
+                                // um diálogo de divulgação por conta própria a
+                                // cada treino cansaria rápido.
+                                setShareOpen(!!info.share.photo);
+                            }
+                        }}
+                    />
+                )}
             {shareData && (
                 <ShareAchievementModal
                     open={shareOpen}
@@ -1638,7 +1721,8 @@ export default function MeusTreinosExercisesPage({
 function recordShareStats(records: NewRecord[]) {
     if (records.length === 1) {
         const r = records[0];
-        if (r.kind === 'reps') return [{ label: 'repetições', value: String(r.current) }];
+        if (r.kind === 'reps')
+            return [{ label: 'repetições', value: String(r.current) }];
         return [
             { label: 'kg', value: formatKg(r.topLoadKg) },
             { label: 'repetições', value: String(r.topReps) },
@@ -1646,7 +1730,10 @@ function recordShareStats(records: NewRecord[]) {
     }
     return records.slice(0, 3).map((r) => ({
         label: r.name,
-        value: r.kind === 'reps' ? `${r.current} reps` : `${formatKg(r.topLoadKg)} kg`,
+        value:
+            r.kind === 'reps'
+                ? `${r.current} reps`
+                : `${formatKg(r.topLoadKg)} kg`,
     }));
 }
 

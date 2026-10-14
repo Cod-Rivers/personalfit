@@ -15,6 +15,7 @@ describe('toSeriesDraft', () => {
             sets: '3',
             value: '10',
             free: '',
+            perSet: [],
         });
     });
 
@@ -24,13 +25,15 @@ describe('toSeriesDraft', () => {
             sets: '2',
             value: '30',
             free: '',
+            perSet: [],
         });
     });
 
-    it('falls back to free text for non-uniform series, like the phase editor does', () => {
+    it('opens non-uniform series one by one, like the phase editor does', () => {
         const draft = toSeriesDraft({ series: [12, 10, 8] });
-        expect(draft.mode).toBe('free');
-        expect(draft.free).toBe('12 × 10 × 8');
+        expect(draft.mode).toBe('per_set');
+        expect(draft.sets).toBe('3');
+        expect(draft.perSet).toEqual(['12', '10', '8']);
     });
 
     it('gives series_label priority over the numeric array', () => {
@@ -57,10 +60,52 @@ describe('toSeriesDraft', () => {
 });
 
 describe('fromSeriesDraft', () => {
+    it('keeps each set of a ladder as its own number, without free text', () => {
+        // Antes a escada 1-2-3-2-1 virava texto livre e o save gravava só a
+        // contagem (zeros): as repetições de cada degrau se perdiam.
+        const draft = toSeriesDraft({ series: [1, 2, 3, 2, 1] });
+        expect(fromSeriesDraft(draft)).toEqual({
+            series: [1, 2, 3, 2, 1],
+            timed: false,
+            series_label: undefined,
+        });
+    });
+
+    it('resizes a per-set list repeating the last value', () => {
+        expect(
+            fromSeriesDraft({
+                mode: 'per_set',
+                sets: '5',
+                value: '12',
+                free: '',
+                perSet: ['12', '10', '8'],
+            }).series,
+        ).toEqual([12, 10, 8, 8, 8]);
+        expect(
+            fromSeriesDraft({
+                mode: 'per_set',
+                sets: '2',
+                value: '12',
+                free: '',
+                perSet: ['12', '10', '8'],
+            }).series,
+        ).toEqual([12, 10]);
+    });
+
     it('expands séries × repetições into one entry per set', () => {
         expect(
-            fromSeriesDraft({ mode: 'reps', sets: '4', value: '8', free: '' }),
-        ).toEqual({ series: [8, 8, 8, 8], timed: false, series_label: undefined });
+            fromSeriesDraft({
+                mode: 'reps',
+                sets: '4',
+                value: '8',
+                free: '',
+                perSet: [],
+            }),
+        ).toEqual({
+            series: [8, 8, 8, 8],
+            timed: false,
+            series_label: undefined,
+        });
     });
 
     it('marks the exercise as timed without touching the numbers', () => {
@@ -69,6 +114,7 @@ describe('fromSeriesDraft', () => {
             sets: '3',
             value: '45',
             free: '',
+            perSet: [],
         });
         expect(patch.timed).toBe(true);
         expect(patch.series).toEqual([45, 45, 45]);
@@ -82,6 +128,7 @@ describe('fromSeriesDraft', () => {
             sets: '3',
             value: '12',
             free: 'texto antigo',
+            perSet: [],
         });
         expect(patch.series_label).toBeUndefined();
     });
@@ -93,6 +140,7 @@ describe('fromSeriesDraft', () => {
                 sets: '3',
                 value: '10',
                 free: '  3-4 × 10-12  ',
+                perSet: [],
             }),
         ).toEqual({
             series: [0, 0, 0],
@@ -103,15 +151,25 @@ describe('fromSeriesDraft', () => {
 
     it('leaves the set count out when the field is blank — the text stands alone', () => {
         expect(
-            fromSeriesDraft({ mode: 'free', sets: '', value: '10', free: '8 a 10' })
-                .series,
+            fromSeriesDraft({
+                mode: 'free',
+                sets: '',
+                value: '10',
+                free: '8 a 10',
+                perSet: [],
+            }).series,
         ).toEqual([]);
     });
 
     it('turns empty free text into undefined, not an empty label', () => {
         expect(
-            fromSeriesDraft({ mode: 'free', sets: '3', value: '10', free: '   ' })
-                .series_label,
+            fromSeriesDraft({
+                mode: 'free',
+                sets: '3',
+                value: '10',
+                free: '   ',
+                perSet: [],
+            }).series_label,
         ).toBeUndefined();
     });
 
@@ -121,6 +179,7 @@ describe('fromSeriesDraft', () => {
             sets: '900',
             value: '10',
             free: '',
+            perSet: [],
         });
         expect(patch.series).toHaveLength(MAX_SETS);
     });
@@ -131,6 +190,7 @@ describe('fromSeriesDraft', () => {
             sets: '',
             value: '10',
             free: '',
+            perSet: [],
         });
         expect(patch.series).toEqual([10]);
     });
@@ -144,7 +204,11 @@ describe('round trip', () => {
     });
 
     it('leaves an untouched free-text prescription identical', () => {
-        const original = { series: [], series_label: '3 × falha', timed: false };
+        const original = {
+            series: [],
+            series_label: '3 × falha',
+            timed: false,
+        };
         const patch = fromSeriesDraft(toSeriesDraft(original));
         expect(seriesSignature(patch)).toBe(seriesSignature(original));
     });
@@ -152,7 +216,9 @@ describe('round trip', () => {
 
 describe('formatSeries', () => {
     it('suffixes seconds for timed exercises', () => {
-        expect(formatSeries({ series: [30, 30], timed: true })).toBe('30s - 30s');
+        expect(formatSeries({ series: [30, 30], timed: true })).toBe(
+            '30s - 30s',
+        );
     });
 
     it('shows the free-text label verbatim when no set count was saved', () => {
@@ -174,7 +240,9 @@ describe('formatSeries', () => {
 
 describe('formatSeriesCompact', () => {
     it('collapses equal sets into sets × reps', () => {
-        expect(formatSeriesCompact({ series: [10, 10, 10, 10] })).toBe('4 × 10');
+        expect(formatSeriesCompact({ series: [10, 10, 10, 10] })).toBe(
+            '4 × 10',
+        );
     });
 
     it('keeps the seconds suffix for timed exercises', () => {
@@ -184,7 +252,9 @@ describe('formatSeriesCompact', () => {
     });
 
     it('falls back to the full list for pyramids', () => {
-        expect(formatSeriesCompact({ series: [12, 10, 8] })).toBe('12 - 10 - 8');
+        expect(formatSeriesCompact({ series: [12, 10, 8] })).toBe(
+            '12 - 10 - 8',
+        );
     });
 
     it('keeps single (non-label) sets as they are', () => {

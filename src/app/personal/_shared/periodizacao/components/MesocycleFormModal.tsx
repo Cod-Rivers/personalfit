@@ -94,6 +94,7 @@ function blankExercise(overrides: Partial<LocalExercise> = {}): LocalExercise {
         series_sets: '3',
         series_value: '10',
         series_free: '',
+        series_per_set: '',
         observations: '',
         variations: '',
         rest_seconds: '',

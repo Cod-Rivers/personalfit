@@ -104,15 +104,30 @@ export function buildCircuitPlan(
     return { rounds, steps };
 }
 
-/** O circuito só aparece quando há algo para cronometrar: um bloco só de
- * séries por repetições segue com o timer de descanso de sempre. */
-export function circuitHasTimedWork(exercises: CircuitExercise[]): boolean {
-    return (
-        exercises.length >= 2 &&
-        exercises.some(
-            (e) => e.timed && !e.series_label && e.series?.some((v) => v > 0),
-        )
+/** O guia de rodadas aparece num bloco de 2+ exercícios quando há algo para
+ * cronometrar: série por tempo, ou descanso entre as rodadas (2+ rodadas e
+ * descanso no último exercício). Antes só a série por tempo abria o guia, e
+ * um circuito só de repetições (a Escada, um bi-set 3×12) ficava sem descanso
+ * entre as rodadas: cada exercício mostrava "siga direto" e só o último tinha
+ * cronômetro. Num passo de repetições o aluno toca em "Feito" para seguir. */
+export function circuitGuides(exercises: CircuitExercise[]): boolean {
+    if (exercises.length < 2) return false;
+    const timedWork = exercises.some(
+        (e) => e.timed && !e.series_label && e.series?.some((v) => v > 0),
     );
+    if (timedWork) return true;
+    const rounds = exercises.reduce(
+        (max, e) => Math.max(max, e.series?.length ?? 0),
+        0,
+    );
+    const rest = exercises[exercises.length - 1]?.rest ?? 0;
+    return rounds >= 2 && rest > 0;
+}
+
+/** Descanso entre as rodadas do bloco: o do último exercício (ver
+ * buildCircuitPlan). */
+export function blockRoundRestSeconds(exercises: CircuitExercise[]): number {
+    return exercises[exercises.length - 1]?.rest ?? 0;
 }
 
 /** Teto da recuperação entre exercícios: acima disso já é descanso, que tem
@@ -140,4 +155,25 @@ export function blockRecoverySeconds(
         (max, e) => Math.max(max, e.group_recovery_seconds ?? 0),
         0,
     );
+}
+
+/** Texto do selo do bloco: a pausa entre os exercícios e o descanso entre as
+ * rodadas. Só "sem descanso entre os exercícios" fazia o aluno achar que o
+ * circuito não tinha descanso nenhum, quando ele vem entre as rodadas. */
+export function blockRestLabel(
+    exercises: CircuitExercise[],
+    recoverySeconds: number,
+): string {
+    const between =
+        recoverySeconds > 0
+            ? `${recoverySeconds} s de recuperação entre os exercícios`
+            : 'sem pausa entre os exercícios';
+    const rounds = exercises.reduce(
+        (max, e) => Math.max(max, e.series?.length ?? 0),
+        0,
+    );
+    const rest = blockRoundRestSeconds(exercises);
+    return rounds >= 2 && rest > 0
+        ? `${between} · ${rest} s de descanso entre as rodadas`
+        : between;
 }
