@@ -7,6 +7,7 @@ import {
     performedAt,
     startOfWeek,
     trainedDays,
+    weekCompletions,
     weeklyProgress,
     weeklyTargetDays,
     type WeekLog,
@@ -236,5 +237,30 @@ describe('meta semanal', () => {
             target: 3,
             completed: false,
         });
+    });
+});
+
+describe('weekCompletions', () => {
+    const fin = (ref: string, when: Date) => ({ ...done(when), training_ref: ref });
+
+    it('ordena os treinos finalizados da semana e conta a repetição de cada um', () => {
+        // Semana de 13/10/2026 (terça) a 18/10; A feito duas vezes.
+        const logs = [
+            fin('B', at(2026, 10, 15, 9)),
+            fin('A', at(2026, 10, 13, 7)),
+            fin('A', at(2026, 10, 16, 8)),
+        ];
+        const out = weekCompletions(logs, at(2026, 10, 17));
+        expect(out.map((c) => [c.order, c.trainingRef, c.repetition])).toEqual([
+            [1, 'A', 1],
+            [2, 'B', 1],
+            [3, 'A', 2],
+        ]);
+    });
+
+    it('ignora a semana passada e o que não foi finalizado', () => {
+        const pending = { status: 'pending' as const, updated_at: at(2026, 10, 14).toISOString(), training_ref: 'C' };
+        const logs = [fin('A', at(2026, 10, 9)), pending, fin('B', at(2026, 10, 14))];
+        expect(weekCompletions(logs, at(2026, 10, 15)).map((c) => c.trainingRef)).toEqual(['B']);
     });
 });

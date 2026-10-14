@@ -238,6 +238,36 @@ export function weeklyTargetDays(
     return Math.min((meso?.trainings ?? []).length, MAX_WEEKLY_TARGET_DAYS);
 }
 
+/** Um treino finalizado na semana, na ordem em que foi feito. */
+export interface WeekCompletion {
+    trainingRef: string;
+    at: Date;
+    /** 1º, 2º, 3º treino finalizado da semana. */
+    order: number;
+    /** Quantas vezes ESTE treino (training_ref) já tinha sido feito na
+     * semana, contando este: 2 = "2ª vez do Treino A". */
+    repetition: number;
+}
+
+/** Treinos finalizados na semana de `now`, em ordem cronológica — responde
+ * "quantas vezes o Treino A foi feito nesta semana" quando o aluno repete
+ * um treino. */
+export function weekCompletions(
+    logs: (WeekLog & { training_ref: string })[],
+    now: Date = new Date(),
+): WeekCompletion[] {
+    const done = logsOfWeek(logs, now)
+        .map((log) => ({ ref: log.training_ref, at: performedAt(log) }))
+        .filter((e): e is { ref: string; at: Date } => e.at !== null)
+        .sort((a, b) => a.at.getTime() - b.at.getTime());
+    const perRef = new Map<string, number>();
+    return done.map((e, i) => {
+        const repetition = (perRef.get(e.ref) ?? 0) + 1;
+        perRef.set(e.ref, repetition);
+        return { trainingRef: e.ref, at: e.at, order: i + 1, repetition };
+    });
+}
+
 export interface WeeklyProgress {
     /** Dias com treino concluído nesta semana. */
     done: number;

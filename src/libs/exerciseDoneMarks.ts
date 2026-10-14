@@ -1,47 +1,51 @@
 import { EXERCISE_DONE_CACHE_PREFIX, getUser } from '@/libs/session';
 
 /**
- * "Exercício feito" do aluno durante o treino: o checkbox ao lado do nome, na
- * lista e no card do exercício de /meus-treinos/[id]/[trainingId]. Aqui fica
- * só a MARCAÇÃO na tela; a carga do exercício marcado vai ao histórico por
- * outro caminho (libs/exerciseDoneRecord.ts, fila offline).
+ * "Exercício feito" durante o treino: o círculo ao lado do nome, na lista e
+ * no card do exercício — em /meus-treinos/[id]/[trainingId] (aluno) e em
+ * /personal/aluno/[id]/acompanhar (personal, `studentId` preenchido). Aqui
+ * fica só a MARCAÇÃO na tela; a carga do exercício marcado vai ao histórico
+ * por outro caminho (libs/exerciseDoneRecord.ts, fila offline).
  *
  * Fica no localStorage, por microciclo + treino (mesma chave de
- * workoutSessionTimer.ts), para sobreviver ao que interrompe um treino no
- * meio: a WebView recarregar, o aluno sair do app para responder mensagem.
- * Vence sozinho MAX_AGE_MS depois da última marcação — as marcações de um
- * treino abandonado não podem aparecer como feitas na próxima vez que o
- * aluno abrir o mesmo treino. É apagado ao finalizar o treino e no logout.
+ * workoutSessionTimer.ts), e só sai quando alguém desmarca ou quando o treino
+ * é finalizado (clearExerciseDoneMarks) — sair da tela, recarregar ou fechar
+ * o app não apaga. Não vence por tempo: até 10/2026 vencia em 12 h e o dono
+ * pediu que só saísse de propósito. A troca de semana já isola sozinha,
+ * porque a chave é pelo microciclo. Limpo no logout.
  */
-export const EXERCISE_DONE_MAX_AGE_MS = 12 * 60 * 60 * 1000;
 
 interface StoredMarks {
     ids: string[];
     updatedAt: number;
 }
 
-function storageKey(microcycleId: string, trainingRef: string): string | null {
+function storageKey(
+    microcycleId: string,
+    trainingRef: string,
+    studentId?: string,
+): string | null {
     const userId = getUser()?.id;
     if (!userId || !microcycleId || !trainingRef) return null;
-    return `${EXERCISE_DONE_CACHE_PREFIX}${userId}:${microcycleId}:${trainingRef}`;
+    // Personal acompanhando: separa por aluno, para a marcação de um não
+    // aparecer no treino de mesmo nome de outro.
+    const owner = studentId && studentId !== userId ? `${userId}>${studentId}` : userId;
+    return `${EXERCISE_DONE_CACHE_PREFIX}${owner}:${microcycleId}:${trainingRef}`;
 }
 
 export function readExerciseDoneMarks(
     microcycleId: string,
     trainingRef: string,
-    now: number = Date.now(),
+    studentId?: string,
 ): Set<string> {
     if (typeof window === 'undefined') return new Set();
-    const key = storageKey(microcycleId, trainingRef);
+    const key = storageKey(microcycleId, trainingRef, studentId);
     if (!key) return new Set();
     try {
         const raw = localStorage.getItem(key);
         if (!raw) return new Set();
         const stored = JSON.parse(raw) as Partial<StoredMarks>;
-        const fresh =
-            typeof stored.updatedAt === 'number' &&
-            now - stored.updatedAt <= EXERCISE_DONE_MAX_AGE_MS;
-        if (!fresh || !Array.isArray(stored.ids)) {
+        if (!Array.isArray(stored.ids)) {
             localStorage.removeItem(key);
             return new Set();
         }
@@ -57,10 +61,10 @@ export function writeExerciseDoneMarks(
     microcycleId: string,
     trainingRef: string,
     ids: Iterable<string>,
-    now: number = Date.now(),
+    studentId?: string,
 ): void {
     if (typeof window === 'undefined') return;
-    const key = storageKey(microcycleId, trainingRef);
+    const key = storageKey(microcycleId, trainingRef, studentId);
     if (!key) return;
     const list = [...ids];
     try {
@@ -68,16 +72,20 @@ export function writeExerciseDoneMarks(
             localStorage.removeItem(key);
             return;
         }
-        const stored: StoredMarks = { ids: list, updatedAt: now };
+        const stored: StoredMarks = { ids: list, updatedAt: Date.now() };
         localStorage.setItem(key, JSON.stringify(stored));
     } catch {
         /* melhor-esforço — ver readExerciseDoneMarks */
     }
 }
 
-export function clearExerciseDoneMarks(microcycleId: string, trainingRef: string): void {
+export function clearExerciseDoneMarks(
+    microcycleId: string,
+    trainingRef: string,
+    studentId?: string,
+): void {
     if (typeof window === 'undefined') return;
-    const key = storageKey(microcycleId, trainingRef);
+    const key = storageKey(microcycleId, trainingRef, studentId);
     if (!key) return;
     try {
         localStorage.removeItem(key);
