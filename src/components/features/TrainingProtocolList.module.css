@@ -66,3 +66,42 @@
     .header { margin-bottom: 0.75rem; }
     .title { font-size: 1rem; }
 }
+
+/* Fase do plano periodizado em relação a hoje (Meus treinos). */
+.phaseBadge,
+.phaseBadgeMuted {
+    display: inline-block;
+    margin-left: 0.5rem;
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    vertical-align: middle;
+}
+
+.phaseBadge {
+    color: var(--amber, #f0a500);
+    border: 1px solid var(--amber, #f0a500);
+}
+
+.phaseBadgeMuted {
+    color: var(--text-muted);
+    border: 1px solid var(--border-color, rgba(128, 128, 128, 0.4));
+}
+
+.phaseToggleRow {
+    display: flex;
+    justify-content: center;
+    margin: -0.5rem 5% 1.5rem;
+}
+
+.phaseToggle {
+    min-height: 2.75rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--amber, #f0a500);
+    background: transparent;
+    color: var(--amber, #f0a500);
+    font-size: 0.85rem;
+    font-weight: 600;
+}

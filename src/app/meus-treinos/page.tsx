@@ -26,6 +26,9 @@ interface MesoGroup {
     phase: string;
     durationWeeks: number;
     trainings: TrainingCardProps[];
+    /** Posição da fase em relação à de hoje (só em plano periodizado com
+     * mais de uma fase; nos outros fica undefined e tudo aparece). */
+    timing?: 'past' | 'current' | 'future';
 }
 import {
     getMyPlannings,
@@ -33,6 +36,7 @@ import {
     deleteMyPlanning,
     macroToGanttPhases,
     MacrocycleResponse,
+    MesocycleResponse,
 } from '@/libs/planningService';
 import {
     currentCycle,
@@ -79,6 +83,16 @@ import {
     NewWorkoutLogResponse,
 } from '@/libs/workoutLogService';
 
+/** Onde a fase está em relação à de hoje; undefined quando não há fase atual. */
+function phaseTiming(
+    meso: MesocycleResponse,
+    current: MesocycleResponse | undefined,
+): MesoGroup['timing'] {
+    if (!current) return undefined;
+    if (meso.id === current.id) return 'current';
+    return meso.order < current.order ? 'past' : 'future';
+}
+
 /**
  * Monta os grupos de treino e enriquece cada card com o status da SEMANA
  * ATUAL de cada mesociclo (busca best-effort — sem log, o card fica sem
@@ -100,6 +114,13 @@ async function buildMesoGroups(
     const todayWeekday = now.getDay();
     const weekLogs: NewWorkoutLogResponse[] = [];
     let logsLoaded = false;
+    // Fase de hoje, pelas datas das fases (ou pelo início do plano): é ela
+    // que o aluno treina; as outras ficam recolhidas na tela.
+    const currentMeso =
+        detail.planning_mode !== 'simple' &&
+        (detail.mesocycles ?? []).length > 1
+            ? currentCycle(detail, now)?.meso
+            : undefined;
 
     const groups = await Promise.all(
         (detail.mesocycles ?? []).map(async (meso) => {
@@ -138,6 +159,7 @@ async function buildMesoGroups(
                 mesoName: meso.name,
                 phase: meso.phase,
                 durationWeeks: meso.duration_weeks,
+                timing: phaseTiming(meso, currentMeso),
                 trainings: (meso.trainings ?? []).map((tr, i) => {
                     const summary = summarizeTraining(tr.exercises);
                     const log = logsByRef.get(tr.reference);
@@ -182,6 +204,13 @@ export default function MeusTreinosPage() {
     const [selectedMacro, setSelectedMacro] =
         useState<MacrocycleResponse | null>(null);
     const [mesoGroups, setMesoGroups] = useState<MesoGroup[]>([]);
+    // Plano com várias fases mostra só a de hoje; o aluno abre as outras.
+    const [showAllPhases, setShowAllPhases] = useState(false);
+    const hasCurrentPhase = mesoGroups.some((g) => g.timing === 'current');
+    const visibleGroups =
+        hasCurrentPhase && !showAllPhases
+            ? mesoGroups.filter((g) => g.timing === 'current')
+            : mesoGroups;
     // Dias treinados nesta semana contra a meta do personal (null = sem
     // registros para contar, ex.: offline).
     const [weekProgress, setWeekProgress] = useState<WeeklyProgress | null>(
@@ -355,7 +384,9 @@ export default function MeusTreinosPage() {
             await selectMacro(await getMyMacrocycle(fresh.id));
         } catch (e) {
             const err = e as Error;
-            setError(`Versão nova aplicada, mas houve um erro ao carregá-la: ${err.message}`);
+            setError(
+                `Versão nova aplicada, mas houve um erro ao carregá-la: ${err.message}`,
+            );
         } finally {
             setLoading(false);
         }
@@ -373,7 +404,9 @@ export default function MeusTreinosPage() {
             await selectMacro(macro);
         } catch (e) {
             const err = e as Error;
-            setError(`Treino importado, mas houve um erro ao carregá-lo: ${err.message}`);
+            setError(
+                `Treino importado, mas houve um erro ao carregá-lo: ${err.message}`,
+            );
         } finally {
             setLoading(false);
         }
@@ -504,8 +537,7 @@ export default function MeusTreinosPage() {
                         style={{ fontSize: '0.85rem' }}
                     >
                         <FiWifiOff size={14} style={{ flexShrink: 0 }} />
-                        Exibindo plano salvo offline (sem conexão no
-                        momento).
+                        Exibindo plano salvo offline (sem conexão no momento).
                     </div>
                 )}
                 {/* Plano em uso + troca de plano: fica no topo para que plano
@@ -544,7 +576,10 @@ export default function MeusTreinosPage() {
                         }}
                     >
                         {weekProgress.completed ? (
-                            <FiCheckCircle size={16} style={{ flexShrink: 0 }} />
+                            <FiCheckCircle
+                                size={16}
+                                style={{ flexShrink: 0 }}
+                            />
                         ) : (
                             <FiCalendar size={16} style={{ flexShrink: 0 }} />
                         )}
@@ -567,7 +602,7 @@ export default function MeusTreinosPage() {
                         Nenhum treino encontrado para este macrociclo.
                     </p>
                 ) : (
-                    mesoGroups.map((group) => (
+                    visibleGroups.map((group) => (
                         <div
                             key={group.mesoId}
                             style={{ marginBottom: '1.5rem' }}
@@ -594,6 +629,29 @@ export default function MeusTreinosPage() {
                                         }}
                                     >
                                         {group.mesoName}
+                                        {group.timing === 'current' && (
+                                            <span className={styles.phaseBadge}>
+                                                Fase atual
+                                            </span>
+                                        )}
+                                        {group.timing === 'past' && (
+                                            <span
+                                                className={
+                                                    styles.phaseBadgeMuted
+                                                }
+                                            >
+                                                Concluída
+                                            </span>
+                                        )}
+                                        {group.timing === 'future' && (
+                                            <span
+                                                className={
+                                                    styles.phaseBadgeMuted
+                                                }
+                                            >
+                                                Próxima
+                                            </span>
+                                        )}
                                     </p>
                                     <p
                                         style={{
@@ -610,8 +668,8 @@ export default function MeusTreinosPage() {
                                         {group.trainings.length > 0 && (
                                             <>
                                                 {' '}
-                                                &middot; {group.trainings.length}{' '}
-                                                treino
+                                                &middot;{' '}
+                                                {group.trainings.length} treino
                                                 {group.trainings.length === 1
                                                     ? ''
                                                     : 's'}
@@ -685,6 +743,20 @@ export default function MeusTreinosPage() {
                             </div>
                         </div>
                     ))
+                )}
+                {hasCurrentPhase && (
+                    <div className={styles.phaseToggleRow}>
+                        <button
+                            type="button"
+                            className={styles.phaseToggle}
+                            onClick={() => setShowAllPhases((v) => !v)}
+                            aria-expanded={showAllPhases}
+                        >
+                            {showAllPhases
+                                ? 'Mostrar só a fase atual'
+                                : `Ver todas as fases (${mesoGroups.length})`}
+                        </button>
+                    </div>
                 )}
 
                 {/* Avaliação do plano: vai para o feedback do personal e,
