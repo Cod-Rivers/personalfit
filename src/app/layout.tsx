@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
-import { getLocale } from 'next-intl/server';
 import { headers } from 'next/headers';
 import { NextIntlClientProvider } from 'next-intl';
 import { ThemeProvider } from '@/context/ThemeContext';
@@ -53,14 +52,14 @@ export default async function RootLayout({
     // também é o que torna todas as rotas dinâmicas, requisito do nonce:
     // HTML pré-renderizado no build não tem como carregar um nonce que
     // muda a cada requisição.
-    const [locale, requestHeaders] = await Promise.all([
-        getLocale(),
-        headers(),
-    ]);
+    const requestHeaders = await headers();
     const nonce = requestHeaders.get('x-nonce') ?? undefined;
     return (
         <html
-            lang={locale}
+            // O conteúdo é todo em português. Com lang="en" (o locale fixo do
+            // next-intl), o Chrome oferecia traduzir para português e
+            // estragava as palavras ("Mensalidades" virava "Menstruações").
+            lang="pt-BR"
             data-theme="dark"
             className={inter.variable}
             suppressHydrationWarning
