@@ -25,7 +25,14 @@ export default function HeaderCondicional() {
         PUBLIC_PATHS.includes(pathname) ||
         pathname.startsWith('/cadastro/') ||
         pathname.startsWith('/redefinir-senha/') ||
-        pathname.startsWith('/excluir-conta/');
+        pathname.startsWith('/excluir-conta/') ||
+        // Página pública do personal (funil de vendas, -48): quem abre é um
+        // visitante sem conta, vindo da bio do Instagram. O Header do app
+        // chamaria a API sem sessão e o 401 mandaria a pessoa para o login.
+        pathname.startsWith('/p/') ||
+        // Inscrição no desafio de captação: mesmo caso. Até 2026-10-15 ficava
+        // de fora e todo visitante sem conta caía no login.
+        pathname.startsWith('/desafio/');
 
     // A loja é pública (fase 3 do plano da loja): sem login, a barra própria
     // dela no lugar do Header, que manda quem não tem sessão para o login.

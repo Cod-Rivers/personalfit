@@ -155,6 +155,12 @@ export default function PublicChallengePage() {
                             />
                         </div>
                         {error && <div className={s.error}>{error}</div>}
+                        <p className={s.consentNote}>
+                            Ao se inscrever, você autoriza{' '}
+                            {challenge.personal_name} a falar com você sobre o
+                            desafio e os treinos. Seus dados são apagados depois
+                            de 6 meses sem conversa.
+                        </p>
                         <button
                             className={s.btn}
                             type="submit"

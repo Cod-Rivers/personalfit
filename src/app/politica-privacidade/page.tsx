@@ -16,7 +16,7 @@ export default function PoliticaPrivacidadePage() {
         <div className="container py-5" style={{ maxWidth: 800 }}>
             <h1 className="mb-1 fw-bold">Política de Privacidade</h1>
             <p className="text-secondary mb-4">
-                Última atualização: 15 de setembro de 2026.
+                Última atualização: 15 de outubro de 2026.
             </p>
 
             <section className="mb-4">
@@ -83,6 +83,17 @@ export default function PoliticaPrivacidadePage() {
                         eventos não incluem dados de saúde, cargas nem conteúdo
                         dos treinos, e o identificador de publicidade do
                         aparelho não é coletado.
+                    </li>
+                    <li>
+                        <strong>Pedido de contato a um personal:</strong> quem
+                        preenche o formulário da página pública de um personal
+                        trainer (ou se inscreve num desafio dele) informa nome,
+                        WhatsApp e, se quiser, e-mail, objetivo, modalidade,
+                        horários e uma mensagem. Esses dados vão só para aquele
+                        personal, com a autorização marcada no formulário, e
+                        servem apenas para ele responder. Não é preciso ter
+                        conta. A página conta visitas por dia, sem guardar
+                        quem visitou.
                     </li>
                 </ul>
                 <p>
@@ -360,6 +371,14 @@ export default function PoliticaPrivacidadePage() {
                     meses enquanto houver vínculo com o personal. Ao encerrar o
                     vínculo, comentários e relatórios daquele personal são
                     apagados.
+                </p>
+                <p>
+                    Pedidos de contato a um personal (página pública e
+                    inscrição em desafio) são apagados depois de 6 meses sem
+                    movimento, quando o personal apaga o pedido ou quando ele
+                    exclui a conta. Quem pediu contato pode solicitar a
+                    exclusão a qualquer momento pelo contato do encarregado,
+                    abaixo.
                 </p>
             </section>
 

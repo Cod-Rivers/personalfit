@@ -3602,6 +3602,50 @@ const personalSections: HelpSection[] = [
         ),
     },
     {
+        id: 'interessados',
+        title: 'Interessados e página pública',
+        body: (
+            <>
+                <p className="mb-2">
+                    Em <strong>Interessados</strong> você publica a sua{' '}
+                    <strong>página pública</strong>, um endereço como{' '}
+                    <code>/p/seu-nome</code> para pôr na bio do Instagram. Ela
+                    mostra sua foto e apresentação, um botão{' '}
+                    <strong>Quero treinar com você</strong>, o seu WhatsApp e
+                    o desafio que estiver aberto. Quem preenche o formulário
+                    autoriza o seu contato e aparece na hora na sua{' '}
+                    <strong>caixa de interessados</strong>, com aviso no
+                    celular.
+                </p>
+                <p className="mb-2">
+                    Na caixa, <strong>Chamar no WhatsApp</strong> abre a
+                    conversa com uma mensagem pronta que cita o objetivo da
+                    pessoa, e o interessado passa de <em>Novo</em> para{' '}
+                    <em>Contatado</em>. Depois, mova pelas etapas: avaliação
+                    marcada, proposta, fechou ou perdeu (com o motivo, para
+                    você saber o que mais te faz perder aluno). Quem ficar um
+                    dia como novo gera um lembrete. Inscrições nos seus{' '}
+                    <Link href="#desafios">desafios</Link> também entram aqui,
+                    e você pode anotar à mão quem chegou por fora.
+                </p>
+                <p className="mb-2">
+                    Quando um aluno seu compartilha um card de treino, a
+                    legenda leva para a sua página com o código dele: se
+                    alguém pedir contato por ali, a caixa mostra{' '}
+                    <em>Indicação de</em> e o nome do aluno.
+                </p>
+                <p className="mb-0">
+                    A página existe em todos os planos. No grátis ela leva o
+                    selo &ldquo;Feito com Venafit&rdquo; e a caixa mostra os 3
+                    pedidos mais recentes; com o Plus, a página usa a sua{' '}
+                    <Link href="#minha-pagina">vitrine</Link> completa, sai sem
+                    o selo e a caixa mostra todos. Interessados sem conversa
+                    há 6 meses são apagados.
+                </p>
+            </>
+        ),
+    },
+    {
         id: 'anuncios',
         title: 'Meus Anúncios',
         pro: true,

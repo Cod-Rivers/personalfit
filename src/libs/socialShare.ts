@@ -195,11 +195,16 @@ const SHARE_LANDING_URL = 'https://codriverslabs.com/apps/venafit/?ref=share_car
 /** Legenda sugerida, já com as marcações que levam de volta ao app.
  *  Fica AQUI e não na tela porque a mesma legenda é usada no compartilhamento
  *  nativo (que a manda junto do arquivo) e no botão de copiar. */
-export function buildCaption(lines: string[]): string {
+export function buildCaption(lines: string[], personalPageUrl?: string): string {
+    // Com a página pública do personal (funil de vendas, -48), o link leva a
+    // ela — com o código do aluno que compartilhou — em vez do site do app.
+    const footer = personalPageUrl
+        ? `Quer treinar também? ${personalPageUrl}`
+        : `Treine com o Venafit — ${SHARE_LANDING_URL}`;
     return [
         ...lines.filter(Boolean),
         '',
-        `Treine com o Venafit — ${SHARE_LANDING_URL}`,
+        footer,
         '#venafit #treino',
     ]
         .join('\n')

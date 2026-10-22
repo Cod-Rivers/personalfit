@@ -190,6 +190,13 @@ describe('buildCaption', () => {
         expect(caption).toContain('codriverslabs.com/apps/venafit');
         expect(caption).toContain('ref=share_card');
     });
+
+    it('com página do personal, leva a ela no lugar do app', () => {
+        const url = 'https://venafit.codriverslabs.com/p/joao-silva?ref=a-bcd2345';
+        const caption = buildCaption(['Treino A concluído.'], url);
+        expect(caption).toContain(`Quer treinar também? ${url}`);
+        expect(caption).not.toContain('codriverslabs.com/apps/venafit');
+    });
 });
 
 describe('shareImage — canal restrito por origem do app atual', () => {

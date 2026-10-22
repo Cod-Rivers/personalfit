@@ -119,6 +119,15 @@
     font-size: 0.88rem;
 }
 
+/* Aviso de para que servem os dados (a inscrição vira interessado na caixa do
+   personal, funil de vendas -48). */
+.consentNote {
+    margin: 0;
+    font-size: var(--font-xs);
+    line-height: 1.45;
+    color: var(--text-muted);
+}
+
 .success {
     text-align: center;
     padding: 12px 0;

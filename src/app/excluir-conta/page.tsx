@@ -153,8 +153,10 @@ export default function ExcluirContaPage() {
                         <strong>Personal trainer:</strong> vitrine, marca,
                         biografia, redes sociais e depoimentos publicados,
                         inclusive fotos e nomes de alunos que apareciam nela,
-                        e o financeiro (cobranças lançadas, mensalidades
-                        automáticas e preferências de aviso).
+                        o financeiro (cobranças lançadas, mensalidades
+                        automáticas e preferências de aviso) e a página
+                        pública, com os interessados que pediram contato por
+                        ela e o contador de visitas.
                     </li>
                 </ul>
                 <p className="mb-0">

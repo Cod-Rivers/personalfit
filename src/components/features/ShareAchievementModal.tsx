@@ -14,6 +14,8 @@ import { buildShareCard, type ShareCardInput } from '@/libs/shareCard';
 import { useBranding } from '@/context/BrandingContext';
 import { getUser } from '@/libs/session';
 import { trackShareCard } from '@/libs/analytics';
+import { getShareLinkPath } from '@/libs/leadService';
+import { SITE_URL } from '@/libs/storePublic';
 import {
     buildCaption,
     copyToClipboard,
@@ -62,7 +64,21 @@ export default function ShareAchievementModal({
     const fileRef = useRef<File | null>(null);
     const { effectivePlanType, branding, personalName } = useBranding();
 
-    const caption = buildCaption(captionLines);
+    // Página do personal (do aluno, ou a do próprio personal) para a legenda.
+    // Sem página publicada, sem rede ou deslogado: fica o link do app.
+    const [pageUrl, setPageUrl] = useState<string | undefined>();
+    useEffect(() => {
+        if (!open || !getUser()) return;
+        let cancelled = false;
+        getShareLinkPath().then((path) => {
+            if (!cancelled && path) setPageUrl(`${SITE_URL}${path}`);
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, [open]);
+
+    const caption = buildCaption(captionLines, pageUrl);
 
     // Co-marca do personal PRO no card (o aluno dele, ou o próprio personal,
     // que não recebe personal_name do /branding e usa o nome da sessão). Fora

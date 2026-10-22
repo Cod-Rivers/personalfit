@@ -18,6 +18,7 @@ import {
     FiMessageCircle,
     FiFileText,
     FiDollarSign,
+    FiUserPlus,
 } from 'react-icons/fi';
 
 import { usePersonalStudents } from '@/hooks/usePersonalStudents';
@@ -36,6 +37,7 @@ import { type ProTrialStatus, daysUntil, getProTrialStatus } from '@/libs/paymen
 import { planRank, updateSessionPlanType } from '@/libs/session';
 import CountBadge from '@/components/atoms/CountBadge';
 import { getUnreadCommentCounts, type UnreadCommentCounts } from '@/libs/workoutCommentService';
+import { getMyPage, type MyPersonalPage } from '@/libs/leadService';
 
 interface UserData {
     id: string;
@@ -116,8 +118,18 @@ export default function PersonalDashboard() {
             .catch(() => {});
     }, [user]);
 
+    // Interessados novos (funil de vendas, -48): selo no atalho.
+    const [leadSummary, setLeadSummary] = useState<MyPersonalPage | null>(null);
+    useEffect(() => {
+        if (!user) return;
+        getMyPage()
+            .then(setLeadSummary)
+            .catch(() => {});
+    }, [user]);
+
     if (!user) return null;
 
+    const newLeads = leadSummary?.new_leads ?? 0;
     const activeCount = studentsState.students.filter((s) => s.active).length;
 
     return (
@@ -382,6 +394,24 @@ export default function PersonalDashboard() {
                             text="Sua vitrine: a tela que o aluno vê ao entrar no app, com bio, especialidades, resultados e redes. Recurso do plano Plus."
                             href="/ajuda#minha-pagina"
                             label="Ajuda sobre Minha Página"
+                        />
+                    </span>
+                    <span className={s.tabSlot}>
+                        <button
+                            className={s.tab}
+                            onClick={() => router.push('/personal/interessados')}
+                        >
+                            <FiUserPlus className={s.tabIcon} />
+                            Interessados
+                            <CountBadge
+                                count={newLeads}
+                                label={`${newLeads} interessados novos`}
+                            />
+                        </button>
+                        <HelpTooltip
+                            text="Sua página pública para a bio do Instagram e a caixa de quem pediu contato. Chame no WhatsApp e acompanhe cada interessado até fechar."
+                            href="/ajuda#interessados"
+                            label="Ajuda sobre Interessados"
                         />
                     </span>
                     <span className={s.tabSlot}>
