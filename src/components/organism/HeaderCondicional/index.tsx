@@ -37,7 +37,12 @@ export default function HeaderCondicional() {
     // A loja é pública (fase 3 do plano da loja): sem login, a barra própria
     // dela no lugar do Header, que manda quem não tem sessão para o login.
     // null = sessão ainda não lida (no servidor e no primeiro render).
-    const isStore = pathname === '/loja' || pathname.startsWith('/loja/');
+    // O mural de resultados também é público (Todo/PLANO_MURAL_DE_RESULTADOS.md).
+    const isStore =
+        pathname === '/loja' ||
+        pathname.startsWith('/loja/') ||
+        pathname === '/resultados' ||
+        pathname.startsWith('/resultados/');
     const [hasSession, setHasSession] = useState<boolean | null>(null);
     useEffect(() => {
         setHasSession(!!getToken());

@@ -11,6 +11,7 @@
 
 import React from 'react';
 import ExternalLink from '@/components/atoms/ExternalLink';
+import ShowcaseMuralResults from '@/components/features/results/ShowcaseMuralResults';
 import type { Showcase } from '@/libs/showcaseService';
 import styles from '../vitrine.module.css';
 
@@ -272,6 +273,9 @@ export default function ShowcaseCard({
                         </div>
                     </div>
                 )}
+
+                {/* Mural de resultados (-51): só o que o aluno autorizou. */}
+                <ShowcaseMuralResults results={showcase.mural_results} />
 
                 {sec.testimonial && showcase.testimonial_text && (
                     <div className={styles.testimonial}>

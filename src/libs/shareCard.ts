@@ -448,3 +448,94 @@ export async function buildShareCard(input: ShareCardInput): Promise<File> {
 
     return new File([blob], 'venafit.jpg', { type: 'image/jpeg' });
 }
+
+/* ── Antes e depois do mural de resultados ── */
+
+export interface BeforeAfterCardInput {
+    beforeUrl: string;
+    afterUrl: string;
+    headline: string;
+    subline?: string;
+    stats?: ShareCardStat[];
+    callToAction?: string;
+}
+
+/** Carrega uma imagem pública com CORS (as cópias públicas do mural vêm do
+ *  domínio do bucket). Sem o cabeçalho de CORS, o canvas fica "contaminado"
+ *  e o toBlob falha — quem chama cai no compartilhamento só do link. */
+function loadPublicImage(src: string): Promise<HTMLImageElement | null> {
+    return new Promise((resolve) => {
+        const timer = setTimeout(() => resolve(null), CARD_TIMEOUT_MS);
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+            clearTimeout(timer);
+            resolve(img);
+        };
+        img.onerror = () => {
+            clearTimeout(timer);
+            resolve(null);
+        };
+        img.src = src;
+    });
+}
+
+/** Junta antes e depois lado a lado (cada metade com object-fit: cover) e
+ *  passa pelo mesmo card da marca, com marca d'água e endereço. */
+export async function buildBeforeAfterShareCard(input: BeforeAfterCardInput): Promise<File> {
+    const [before, after] = await Promise.all([
+        loadPublicImage(input.beforeUrl),
+        loadPublicImage(input.afterUrl),
+    ]);
+    if (!before || !after) throw new Error('Não foi possível carregar as fotos.');
+
+    const canvas = document.createElement('canvas');
+    canvas.width = SHARE_CARD_WIDTH;
+    canvas.height = SHARE_CARD_HEIGHT;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Este aparelho não conseguiu montar a imagem.');
+    const half = SHARE_CARD_WIDTH / 2;
+    const drawHalf = (img: HTMLImageElement, x: number) => {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(x, 0, half, SHARE_CARD_HEIGHT);
+        ctx.clip();
+        const scale = Math.max(half / img.width, SHARE_CARD_HEIGHT / img.height);
+        const dw = img.width * scale;
+        const dh = img.height * scale;
+        ctx.drawImage(img, x + (half - dw) / 2, (SHARE_CARD_HEIGHT - dh) / 2, dw, dh);
+        ctx.restore();
+    };
+    drawHalf(before, 0);
+    drawHalf(after, half);
+    ctx.fillStyle = BRAND.white;
+    ctx.fillRect(half - 2, 0, 4, SHARE_CARD_HEIGHT);
+    ctx.font = `800 30px ${FONT_STACK}`;
+    ctx.textBaseline = 'middle';
+    for (const [label, x] of [['ANTES', 40], ['DEPOIS', half + 40]] as const) {
+        const w = ctx.measureText(label).width + 36;
+        ctx.fillStyle = 'rgba(5,12,20,0.6)';
+        ctx.fillRect(x, SHARE_CARD_HEIGHT * 0.36, w, 52);
+        ctx.fillStyle = BRAND.white;
+        ctx.fillText(label, x + 18, SHARE_CARD_HEIGHT * 0.36 + 27);
+    }
+
+    const pair = await new Promise<Blob>((resolve, reject) => {
+        try {
+            canvas.toBlob(
+                (b) => (b ? resolve(b) : reject(new Error('Falha ao gerar a imagem'))),
+                'image/jpeg',
+                0.9,
+            );
+        } catch (err) {
+            reject(err);
+        }
+    });
+    return buildShareCard({
+        photo: pair,
+        headline: input.headline,
+        subline: input.subline,
+        stats: input.stats,
+        callToAction: input.callToAction,
+    });
+}

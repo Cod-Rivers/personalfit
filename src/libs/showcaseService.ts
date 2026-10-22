@@ -1,4 +1,5 @@
 import { Api } from '@/libs/api';
+import type { ResultCard } from '@/libs/resultService';
 
 /**
  * Vitrine do personal — a página de divulgação da marca dele, exibida como
@@ -73,6 +74,10 @@ export interface Showcase {
     announcement_url: string;
 
     sections: ShowcaseSections;
+
+    /** Resultados do mural em que o personal aceitou aparecer, com a
+     *  autorização do aluno registrada (mural de resultados, -51). */
+    mural_results?: ResultCard[] | null;
 
     /** Presente só nas respostas de leitura: o personal dono pode editar. */
     can_edit?: boolean;

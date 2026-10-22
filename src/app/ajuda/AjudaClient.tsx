@@ -559,6 +559,60 @@ const studentSections: HelpSection[] = [
         ),
     },
     {
+        id: 'resultados',
+        title: 'Mural de resultados (antes e depois)',
+        body: (
+            <>
+                <p className="mb-2">
+                    O <Link href="/resultados">mural de resultados</Link> mostra
+                    o antes e depois de alunos do Venafit. Qualquer pessoa vê,
+                    mesmo sem conta. Para publicar o seu, vá em{' '}
+                    <strong>Evolução → Resultados → Publicar antes e depois</strong>:
+                </p>
+                <ol className="mb-2">
+                    <li>Escolha duas fotos da sua Evolução: a mais antiga vira o antes.</li>
+                    <li>
+                        Enquadre cada foto. Você pode cortar o rosto ou usar{' '}
+                        <strong>Esconder área</strong> para cobrir o que quiser.
+                    </li>
+                    <li>
+                        Marque o que aparece: seu primeiro nome, a diferença de
+                        peso, de % de gordura e das medidas. Tudo começa
+                        desligado, e os números saem da sua Evolução.
+                    </li>
+                    <li>Leia e aceite o termo de autorização. É preciso ter 18 anos ou mais.</li>
+                </ol>
+                <p className="mb-2">
+                    Nada fica público antes da revisão da equipe. Você recebe um
+                    aviso quando a publicação entra no mural ou, se ela for
+                    recusada, com o motivo, para ajustar e reenviar.
+                </p>
+                <p className="mb-2">
+                    O selo <GlossaryLink id="resultado-verificado">Resultado verificado</GlossaryLink>{' '}
+                    aparece quando as duas fotos foram enviadas pela Evolução
+                    com pelo menos 4 semanas de diferença e há treinos
+                    registrados no período. Se no começo você fazia um programa
+                    da loja, o resultado verificado pode aparecer na página do
+                    programa, se você autorizar.
+                </p>
+                <p className="mb-2">
+                    <strong>Dica:</strong> tire a foto de antes logo no começo.
+                    Em <strong>Foto de hoje com guia</strong>, a foto anterior
+                    aparece em transparência sobre a câmera, para a nova sair na
+                    mesma pose. O app lembra você de tirar a foto de antes
+                    quando compra um programa, e de comparar depois de 8 semanas.
+                </p>
+                <p className="mb-0">
+                    <strong>Para apagar:</strong> em Evolução → Resultados,
+                    toque em Apagar. A publicação sai do mural na hora. Apagar a
+                    foto da Evolução ou excluir a conta também apaga a
+                    publicação. O app não consegue apagar cópias que outras
+                    pessoas tenham salvado enquanto ela estava no ar.
+                </p>
+            </>
+        ),
+    },
+    {
         id: 'desafios',
         title: 'Desafios',
         body: (
@@ -2491,6 +2545,37 @@ const personalSections: HelpSection[] = [
                 aluno vê as avaliações que você registra, mas não pode
                 editá-las nem excluí-las.
             </p>
+        ),
+    },
+    {
+        id: 'resultados-personal',
+        title: 'Resultados dos alunos no mural',
+        body: (
+            <>
+                <p className="mb-2">
+                    O aluno pode publicar o antes e depois dele no{' '}
+                    <Link href="/resultados">mural de resultados</Link>, a partir
+                    das fotos da Evolução, e marcar você. Quando a publicação é
+                    aprovada pela equipe, você recebe um aviso e decide em{' '}
+                    <Link href="/personal/resultados">Resultados dos alunos</Link>:
+                </p>
+                <ul className="mb-2">
+                    <li>
+                        <strong>Aceitar:</strong> seu nome aparece na publicação
+                        (“Acompanhado por…”) e o resultado entra na sua vitrine.
+                    </li>
+                    <li>
+                        <strong>Recusar:</strong> a publicação continua no mural,
+                        sem o seu nome.
+                    </li>
+                </ul>
+                <p className="mb-0">
+                    A diferença para as fotos de resultado que você sobe na
+                    vitrine: aqui a autorização do aluno fica registrada no
+                    termo do mural, e ele pode tirar a publicação do ar quando
+                    quiser.
+                </p>
+            </>
         ),
     },
     {

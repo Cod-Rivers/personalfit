@@ -52,3 +52,42 @@ export function readStoreSaleRef(now = Date.now()): string | null {
         return null;
     }
 }
+
+/* ── Origem da navegação (mural de resultados) ──
+ * Quem abre um programa a partir de um resultado do mural leva a origem
+ * ("mural:<id>") até a compra. Só métrica: a comissão segue o `ref` acima.
+ * Validade curta (7 dias) — depois disso a compra não é mais "do mural". */
+
+const ENTRY_KEY = 'venafit_store_entry_point';
+const ENTRY_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const ENTRY_RE = /^mural(:[0-9a-f]{24})?$/;
+
+/** Guarda a origem ("mural" ou "mural:<id>"). Silencioso. */
+export function saveStoreEntryPoint(entry: string, now = Date.now()): void {
+    try {
+        if (!ENTRY_RE.test(entry)) return;
+        window.localStorage.setItem(
+            ENTRY_KEY,
+            JSON.stringify({ entry, savedAt: now }),
+        );
+    } catch {
+        // storage bloqueado — a compra só fica sem a origem.
+    }
+}
+
+/** Lê a origem guardada, se ainda dentro dos 7 dias. */
+export function readStoreEntryPoint(now = Date.now()): string | null {
+    try {
+        const raw = window.localStorage.getItem(ENTRY_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw) as { entry?: string; savedAt?: number };
+        if (!parsed.entry || typeof parsed.savedAt !== 'number') return null;
+        if (now - parsed.savedAt > ENTRY_TTL_MS || !ENTRY_RE.test(parsed.entry)) {
+            window.localStorage.removeItem(ENTRY_KEY);
+            return null;
+        }
+        return parsed.entry;
+    } catch {
+        return null;
+    }
+}

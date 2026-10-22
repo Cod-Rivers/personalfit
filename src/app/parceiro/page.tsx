@@ -45,6 +45,7 @@ import { acceptAuthorTerms } from '@/libs/referralPartnerService';
 import Modal from '@/components/system/Modal';
 import HelpTooltip from '@/components/atoms/HelpTooltip';
 import PublishProgramModal from '@/components/organism/PublishProgramModal';
+import AuthorResultsSection from '@/components/features/results/AuthorResultsSection';
 import {
     AUTHOR_TERMS_VERSION,
     AuthorTermsText,
@@ -898,6 +899,9 @@ function PartnerPanelPage() {
                                 ))}
                             </>
                         ))}
+
+                    {/* Mural de resultados: o que o autor pode divulgar. */}
+                    {author && <AuthorResultsSection />}
 
                     <section
                         className={`${s.section} ${s.linksSection}`}

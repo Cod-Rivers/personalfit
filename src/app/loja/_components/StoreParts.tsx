@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { FiAward, FiStar } from 'react-icons/fi';
+import { FiAward, FiImage, FiStar } from 'react-icons/fi';
 import ExerciseThumbnail from '@/components/features/ExerciseThumbnail';
 import {
     equipmentLabel,
@@ -149,6 +149,12 @@ export function ProgramCard({ program }: { program: StoreProgramCard }) {
                         count={program.rating_count}
                     />
                 </div>
+                {(program.results_count ?? 0) > 0 && (
+                    <p className={s.meta}>
+                        <FiImage aria-hidden="true" /> {program.results_count}{' '}
+                        {program.results_count === 1 ? 'resultado verificado' : 'resultados verificados'}
+                    </p>
+                )}
             </div>
         </Link>
     );

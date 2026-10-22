@@ -1,23 +1,26 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { FiActivity, FiClipboard } from 'react-icons/fi';
+import { FiActivity, FiClipboard, FiImage } from 'react-icons/fi';
 import EvolutionTimeline from './EvolutionTimeline';
 import TrainingZonesCalculator from './TrainingZonesCalculator';
 import LoadHistoryPanel from './load-history/LoadHistoryPanel';
+import MyResultsPanel from './results/MyResultsPanel';
 import s from './EvolutionTabs.module.css';
 
-type Tab = 'avaliacoes' | 'cargas';
+type Tab = 'avaliacoes' | 'cargas' | 'resultados';
 
 const STORAGE_KEY = 'vf_evolution_tab';
 
 const TABS: Array<{ id: Tab; label: string; icon: React.ReactNode }> = [
     { id: 'avaliacoes', label: 'Avaliações', icon: <FiClipboard aria-hidden="true" /> },
     { id: 'cargas', label: 'Cargas', icon: <FiActivity aria-hidden="true" /> },
+    // Mural de resultados: só na Evolução do próprio aluno.
+    { id: 'resultados', label: 'Resultados', icon: <FiImage aria-hidden="true" /> },
 ];
 
 function isTab(v: unknown): v is Tab {
-    return v === 'avaliacoes' || v === 'cargas';
+    return v === 'avaliacoes' || v === 'cargas' || v === 'resultados';
 }
 
 /**
@@ -32,15 +35,23 @@ function isTab(v: unknown): v is Tab {
 export default function EvolutionTabs({ studentId }: { studentId?: string }) {
     const [tab, setTab] = useState<Tab>('avaliacoes');
     const [visited, setVisited] = useState<Set<Tab>>(() => new Set(['avaliacoes']));
+    // ?novo=foto | ?novo=resultado: vem dos lembretes do mural (push e app).
+    const [intent, setIntent] = useState<'foto' | 'resultado' | null>(null);
+    const tabs = studentId ? TABS.filter((t) => t.id !== 'resultados') : TABS;
 
     useEffect(() => {
         let initial: Tab | null = null;
         try {
-            const fromUrl = new URLSearchParams(window.location.search).get('aba');
-            if (isTab(fromUrl)) initial = fromUrl;
+            const params = new URLSearchParams(window.location.search);
+            const fromUrl = params.get('aba');
+            const novo = params.get('novo');
+            if (!studentId && (novo === 'foto' || novo === 'resultado')) {
+                initial = 'resultados';
+                setIntent(novo);
+            } else if (isTab(fromUrl) && (fromUrl !== 'resultados' || !studentId)) initial = fromUrl;
             else {
                 const stored = window.localStorage.getItem(STORAGE_KEY);
-                if (isTab(stored)) initial = stored;
+                if (isTab(stored) && (stored !== 'resultados' || !studentId)) initial = stored;
             }
         } catch {
             /* armazenamento bloqueado: fica na aba padrão */
@@ -49,6 +60,7 @@ export default function EvolutionTabs({ studentId }: { studentId?: string }) {
             setTab(initial);
             setVisited((prev) => new Set(prev).add(initial as Tab));
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const select = (next: Tab) => {
@@ -64,7 +76,7 @@ export default function EvolutionTabs({ studentId }: { studentId?: string }) {
     return (
         <>
             <div className={s.tabs} role="tablist" aria-label="Evolução">
-                {TABS.map((t) => (
+                {tabs.map((t) => (
                     <button
                         key={t.id}
                         type="button"
@@ -101,6 +113,16 @@ export default function EvolutionTabs({ studentId }: { studentId?: string }) {
             >
                 {visited.has('cargas') && <LoadHistoryPanel studentId={studentId} />}
             </div>
+            {!studentId && (
+                <div
+                    role="tabpanel"
+                    id="evolution-panel-resultados"
+                    aria-labelledby="evolution-tab-resultados"
+                    hidden={tab !== 'resultados'}
+                >
+                    {visited.has('resultados') && <MyResultsPanel intent={intent} />}
+                </div>
+            )}
         </>
     );
 }

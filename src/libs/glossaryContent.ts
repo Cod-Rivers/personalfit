@@ -199,6 +199,13 @@ const trainingScienceTerms: GlossaryTerm[] = [
 
 const productTerms: GlossaryTerm[] = [
     {
+        id: 'resultado-verificado',
+        term: 'Resultado verificado',
+        short: 'Selo do mural: as duas fotos vieram da Evolução, com 4 semanas ou mais entre elas, e há treinos registrados.',
+        long: 'Selo do mural de resultados. Aparece quando as duas fotos do antes e depois foram enviadas pela Evolução do app (a data que conta é a do envio, não a escolhida na avaliação), com pelo menos 4 semanas de diferença, e há, em média, pelo menos um treino registrado por semana entre elas. Só o resultado verificado pode aparecer na página de um programa da loja.',
+        seeAlso: { id: 'resultados', label: 'Mural de resultados', audience: 'student' },
+    },
+    {
         id: 'meta-semanal',
         term: 'Meta semanal (semana concluída)',
         short: 'Quantos dias de treino fecham a semana do aluno. Dois treinos no mesmo dia contam um dia; zera toda segunda-feira.',

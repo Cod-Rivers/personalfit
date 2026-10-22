@@ -12,6 +12,8 @@ import {
     type StoreProgramDetail,
 } from '@/libs/storeService';
 import { saveStoreSaleRef } from '@/libs/storeSaleRef';
+import ResultCardView, { RESULTS_DISCLAIMER } from '@/components/features/results/ResultCardView';
+import rs from '@/components/features/results/results.module.css';
 import {
     formatBRL,
     programFacts,
@@ -219,6 +221,25 @@ export default function ProgramView({
                             </div>
                         ))}
                     </div>
+                </section>
+            )}
+
+            {(program.results?.length ?? 0) > 0 && (
+                <section className={s.section} aria-labelledby="resultados">
+                    <h2 id="resultados" className={s.sectionTitle}>
+                        Resultados de quem fez
+                    </h2>
+                    <div className={rs.strip}>
+                        {program.results!.map((r) => (
+                            <ResultCardView key={r.id} result={r} hideProgram />
+                        ))}
+                    </div>
+                    {(program.results_count ?? 0) > program.results!.length && (
+                        <Link href={`/resultados?program=${program.id}`} className={rs.btn}>
+                            Ver todos os {program.results_count} resultados
+                        </Link>
+                    )}
+                    <p className={rs.disclaimer}>{RESULTS_DISCLAIMER}</p>
                 </section>
             )}
 

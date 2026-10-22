@@ -429,6 +429,21 @@ const Header: React.FC = () => {
                         {user.role === 'student' && (
                             <li className="nav-item header-nav-item">
                                 <Link
+                                    className={`nav-link${pathname.startsWith('/resultados') ? ' nav-link-active' : ''}`}
+                                    href="/resultados"
+                                >
+                                    Resultados
+                                </Link>
+                                <HelpTooltip
+                                    text="Mural de antes e depois dos alunos. Você publica o seu pela Evolução, e a equipe revisa antes de aparecer."
+                                    href="/ajuda#resultados"
+                                    label="Ajuda sobre o mural de resultados"
+                                />
+                            </li>
+                        )}
+                        {user.role === 'student' && (
+                            <li className="nav-item header-nav-item">
+                                <Link
                                     className={`nav-link${pathname === '/desafios' ? ' nav-link-active' : ''}`}
                                     href="/desafios"
                                 >

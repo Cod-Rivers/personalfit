@@ -4,6 +4,7 @@ import {
     nativeBillingPurchase,
 } from '@/libs/nativeBridge';
 import { Api } from '@/libs/api';
+import { readStoreEntryPoint } from '@/libs/storeSaleRef';
 
 /**
  * Serviço de pagamentos: catálogo de planos, assinatura Pro via Asaas
@@ -382,6 +383,9 @@ export async function verifyGooglePlayPurchase(
         ...(indicationReceiver ? { indication_receiver: indicationReceiver } : {}),
         ...(store?.programId ? { program_id: store.programId } : {}),
         ...(store?.ref ? { ref: store.ref } : {}),
+        ...(store?.programId && readStoreEntryPoint()
+            ? { entry_point: readStoreEntryPoint() }
+            : {}),
     });
     return res.data;
 }

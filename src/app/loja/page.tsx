@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import type { ResultPage } from '@/libs/resultService';
 import type { StoreCollection, StoreProgramCard } from '@/libs/storeService';
 import { fetchStore, SITE_URL } from '@/libs/storePublic';
 import StoreHome from './StoreHome';
@@ -23,14 +24,17 @@ export const metadata: Metadata = {
 /** Vitrine pública (fase 3 do plano da loja): o servidor manda os
  *  programas na ordem padrão e as coleções temáticas. */
 export default async function LojaPage() {
-    const [programs, collections] = await Promise.all([
+    const [programs, collections, results] = await Promise.all([
         fetchStore<StoreProgramCard[]>('/store/programs?sort=featured'),
         fetchStore<StoreCollection[]>('/store/collections'),
+        // Faixa "Resultados reais" (mural, só verificados).
+        fetchStore<ResultPage>('/results?verified=1&limit=8'),
     ]);
     return (
         <StoreHome
             initialPrograms={programs.ok ? programs.data : null}
             initialCollections={collections.ok ? collections.data : []}
+            initialResults={results.ok ? results.data.items : []}
         />
     );
 }

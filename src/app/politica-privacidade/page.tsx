@@ -123,6 +123,22 @@ export default function PoliticaPrivacidadePage() {
                     <strong>legítimo interesse</strong> (Art. 7º, IX) para
                     segurança e prevenção a fraude.
                 </p>
+                <p>
+                    <strong>Mural de resultados.</strong> Se você publicar um
+                    antes e depois no mural, as duas fotos que escolheu (com o
+                    recorte e a área coberta que definiu), o nome e os números
+                    que marcou ficam visíveis para qualquer pessoa, com ou sem
+                    conta, e podem aparecer na página do programa da loja que
+                    você fazia e na divulgação do autor do programa, só se você
+                    autorizar cada uso. A base legal é o{' '}
+                    <strong>consentimento específico e destacado</strong> (Art.
+                    11, I), dado no termo do mural antes da publicação. A cópia
+                    publicada é gerada pelo servidor sem os metadados do arquivo
+                    (como a localização). Você retira o consentimento a qualquer
+                    momento apagando a publicação em Evolução → Resultados: ela
+                    sai do ar na hora. Não conseguimos apagar cópias que outras
+                    pessoas tenham salvado enquanto ela estava no ar.
+                </p>
             </section>
 
             <section className="mb-4">

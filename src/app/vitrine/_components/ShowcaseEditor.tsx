@@ -656,6 +656,13 @@ export default function ShowcaseEditor({
                                 Fotos de antes/depois com uma legenda curta.
                                 Publique apenas fotos que o aluno autorizou.
                             </span>
+                            <span className={styles.hint}>
+                                Melhor ainda: quando um aluno publica o antes e
+                                depois no mural e marca você, a autorização dele
+                                fica registrada. Aceite a marcação em{' '}
+                                <a href="/personal/resultados">Resultados dos alunos</a>{' '}
+                                e o resultado entra na vitrine sozinho.
+                            </span>
                             {draft.results.map((r, i) => (
                                 <div key={i} className={styles.resultRow}>
                                     {previews.results[i] ? (

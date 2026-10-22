@@ -43,7 +43,13 @@ interface Props {
     /** Trava os botões enquanto o chamador processa a confirmação (upload). */
     busy?: boolean;
     onCancel: () => void;
-    onConfirm: (canvas: HTMLCanvasElement) => void;
+    onConfirm?: (canvas: HTMLCanvasElement) => void;
+    /** Em vez do canvas, devolve só o retângulo escolhido em frações (0..1)
+     *  da imagem natural — quem recorta é o servidor (mural de resultados).
+     *  Aceita URL remota em `src`, porque nada é lido do canvas. */
+    onConfirmRect?: (rect: { x: number; y: number; w: number; h: number }) => void;
+    /** Texto do botão de confirmar (padrão "Aplicar"). */
+    confirmLabel?: string;
 }
 
 /** Impede que as bordas da imagem entrem no quadro ao arrastar. */
@@ -78,6 +84,8 @@ export default function ImageCropper({
     busy = false,
     onCancel,
     onConfirm,
+    onConfirmRect,
+    confirmLabel = 'Aplicar',
 }: Props) {
     const [mounted, setMounted] = useState(false);
     const [natural, setNatural] = useState<{ w: number; h: number } | null>(
@@ -229,6 +237,19 @@ export default function ImageCropper({
         const srcX = natural.w / 2 - offset.x / scale - srcW / 2;
         const srcY = natural.h / 2 - offset.y / scale - srcH / 2;
 
+        if (onConfirmRect) {
+            const clamp = (v: number) => Math.min(1, Math.max(0, v));
+            const x = clamp(srcX / natural.w);
+            const y = clamp(srcY / natural.h);
+            onConfirmRect({
+                x,
+                y,
+                w: Math.min(1 - x, srcW / natural.w),
+                h: Math.min(1 - y, srcH / natural.h),
+            });
+            return;
+        }
+
         const canvas = document.createElement('canvas');
         canvas.width = Math.round(outputWidth);
         canvas.height = Math.round(outputWidth / aspect);
@@ -251,7 +272,7 @@ export default function ImageCropper({
             canvas.height,
         );
 
-        onConfirm(canvas);
+        onConfirm?.(canvas);
     };
 
     if (!mounted) return null;
@@ -349,7 +370,7 @@ export default function ImageCropper({
                         onClick={handleConfirm}
                         disabled={busy || !natural}
                     >
-                        {busy ? 'Enviando…' : 'Aplicar'}
+                        {busy ? 'Enviando…' : confirmLabel}
                     </button>
                 </div>
             </div>

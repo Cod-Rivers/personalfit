@@ -15,6 +15,9 @@ import {
     type StoreSort,
 } from '@/libs/storeService';
 import { getStudentHomeRoute } from '@/libs/session';
+import type { ResultCard } from '@/libs/resultService';
+import ResultCardView from '@/components/features/results/ResultCardView';
+import rs from '@/components/features/results/results.module.css';
 import { ProgramCard } from './_components/StoreParts';
 import { useStoreGuard } from './_components/useStoreGuard';
 import s from './loja.module.css';
@@ -36,9 +39,12 @@ const DEFAULT_SORT: StoreSort = 'featured';
 export default function StoreHome({
     initialPrograms,
     initialCollections,
+    initialResults = [],
 }: {
     initialPrograms: StoreProgramCard[] | null;
     initialCollections: StoreCollection[];
+    /** Resultados verificados do mural (faixa "Resultados reais"). */
+    initialResults?: ResultCard[];
 }) {
     const { ready, loggedIn } = useStoreGuard();
     const [filters, setFilters] = useState<StoreFilters>({
@@ -173,6 +179,24 @@ export default function StoreHome({
                     ))}
                 </select>
             </div>
+
+            {isDefault && initialResults.length > 0 && (
+                <section aria-labelledby="resultados-reais" className={s.collections}>
+                    <div className={s.collectionHead}>
+                        <h2 id="resultados-reais" className={s.collectionTitle}>
+                            Resultados reais
+                        </h2>
+                        <Link href="/resultados" className={s.collectionLink}>
+                            Ver o mural
+                        </Link>
+                    </div>
+                    <div className={rs.strip}>
+                        {initialResults.map((r) => (
+                            <ResultCardView key={r.id} result={r} />
+                        ))}
+                    </div>
+                </section>
+            )}
 
             {isDefault && initialCollections.length > 0 && (
                 <div className={s.collections}>

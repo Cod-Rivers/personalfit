@@ -11,10 +11,11 @@ import s from './StorePublicBar.module.css';
 export default function StorePublicBar() {
     const pathname = usePathname() || '/loja';
     const back = encodeURIComponent(pathname);
+    const onResults = pathname.startsWith('/resultados');
     return (
         <div className={s.bar}>
-            <Link href="/loja" className={s.brand}>
-                Venafit<span>Loja de treinos</span>
+            <Link href={onResults ? '/resultados' : '/loja'} className={s.brand}>
+                Venafit<span>{onResults ? 'Mural de resultados' : 'Loja de treinos'}</span>
             </Link>
             <nav className={s.actions} aria-label="Conta">
                 <Link href={`/?redirect=${back}`} className={s.login}>

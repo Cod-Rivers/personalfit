@@ -12,6 +12,7 @@ import AdBanner from '@/components/molecules/AdBanner';
 import GoogleAdSlot from '@/components/molecules/GoogleAdSlot';
 import PersonalTrainerCard from '@/components/molecules/PersonalTrainerCard';
 import PlanRatingCard from '@/components/features/PlanRatingCard';
+import { StoreBeforePhotoReminder } from '@/components/features/results/ResultReminders';
 import { getUser } from '@/libs/session';
 import { TrainingCardProps } from '../../components/features/types';
 import {
@@ -775,6 +776,16 @@ export default function MeusTreinosPage() {
                                 : `Ver todas as fases (${mesoGroups.length})`}
                         </button>
                     </div>
+                )}
+
+                {/* Mural de resultados: quem comprou um programa da loja
+                    tira a foto de antes logo no começo. */}
+                {selectedMacro?.store_program_id && (
+                    <StoreBeforePhotoReminder
+                        planId={selectedMacro.id}
+                        storeProgramId={selectedMacro.store_program_id}
+                        boughtAt={selectedMacro.created_at}
+                    />
                 )}
 
                 {/* Avaliação do plano: vai para o feedback do personal e,

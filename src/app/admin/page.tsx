@@ -43,6 +43,7 @@ import {
     FiChevronRight,
     FiDollarSign,
     FiShoppingBag,
+    FiImage,
 } from 'react-icons/fi';
 import type { IconType } from 'react-icons';
 
@@ -59,6 +60,11 @@ const AdminReferralPartners = dynamic(
     () => import('@/components/organism/AdminReferralPartners'),
     { ssr: false, loading: () => <div className="text-center py-4">Carregando…</div> },
 );
+// Mural de resultados: moderação do antes e depois (-51).
+const ResultsModeration = dynamic(() => import('./_components/ResultsModeration'), {
+    ssr: false,
+    loading: () => <div className="text-center py-4">Carregando…</div>,
+});
 const AdminStore = dynamic(() => import('@/components/organism/AdminStore'), {
     ssr: false,
     loading: () => <div className="text-center py-4">Carregando…</div>,
@@ -84,6 +90,7 @@ type Section =
     | 'referral-partners'
     | 'partnerships'
     | 'store'
+    | 'results'
     | 'poses'
     | 'relatorios'
     | 'diagnostics';
@@ -169,6 +176,12 @@ export default function AdminDashboard() {
             key: 'store',
             label: 'Loja de treinos',
             icon: FiShoppingBag,
+            fullAdminOnly: true,
+        },
+        {
+            key: 'results',
+            label: 'Mural de resultados',
+            icon: FiImage,
             fullAdminOnly: true,
         },
         {
@@ -266,6 +279,7 @@ export default function AdminDashboard() {
                 )}
                 {section === 'partnerships' && <AdminPartnershipReport />}
                 {section === 'store' && <AdminStore />}
+                {section === 'results' && <ResultsModeration />}
                 {section === 'relatorios' && <RelatoriosSection />}
                 {section === 'diagnostics' && <DiagnosticsSection />}
             </main>

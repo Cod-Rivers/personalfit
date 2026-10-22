@@ -120,6 +120,12 @@ export default function ExcluirContaPage() {
                         alimentar e de treino importado.
                     </li>
                     <li>
+                        <strong>Mural de resultados:</strong> suas publicações de
+                        antes e depois (e as cópias públicas das fotos), seus
+                        aplausos e denúncias; se você é personal, seu nome sai
+                        dos resultados em que foi marcado.
+                    </li>
+                    <li>
                         <strong>Treinos:</strong> planos de treino, protocolo
                         atribuído, observações do seu personal trainer,
                         histórico de treinos executados (séries, cargas, esforço

@@ -13,6 +13,8 @@ interface StoreSitemap {
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const fixed: MetadataRoute.Sitemap = [
         { url: `${SITE_URL}/loja`, changeFrequency: 'daily', priority: 1 },
+        // Mural de resultados: só a página geral (cada resultado é noindex).
+        { url: `${SITE_URL}/resultados`, changeFrequency: 'daily', priority: 0.8 },
         {
             url: `${SITE_URL}/loja/vender`,
             changeFrequency: 'monthly',

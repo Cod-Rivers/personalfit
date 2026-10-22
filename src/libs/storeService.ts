@@ -1,4 +1,5 @@
 import { Api } from '@/libs/api';
+import { readStoreEntryPoint } from '@/libs/storeSaleRef';
 import type {
     CardSubscriptionForm,
     PurchaseLibraryPlanResponse,
@@ -44,6 +45,7 @@ export const STORE_SORTS = [
     { value: 'best_selling', label: 'Mais vendidos' },
     { value: 'top_rated', label: 'Mais bem avaliados' },
     { value: 'newest', label: 'Mais novos' },
+    { value: 'most_results', label: 'Mais resultados' },
 ] as const;
 
 export type StoreSort = (typeof STORE_SORTS)[number]['value'];
@@ -98,6 +100,8 @@ export interface StoreProgramCard {
     sales_count: number;
     rating_avg: number;
     rating_count: number;
+    /** Antes e depois verificados do mural deste programa. */
+    results_count?: number;
     venafit_collection: boolean;
     author?: StoreAuthorCard;
     published_at?: string;
@@ -113,6 +117,8 @@ export interface StoreProgramDetail extends StoreProgramCard {
     preview: StorePlanPreview;
     /** Comentários aprovados de quem comprou (fase 3). */
     reviews?: StoreReview[];
+    /** Resultados do mural de quem fez (verificados e autorizados). */
+    results?: import('@/libs/resultService').ResultCard[];
 }
 
 /** Comentário público na página do programa: o primeiro nome que o aluno
@@ -178,8 +184,10 @@ export async function getStoreAuthor(code: string): Promise<StoreAuthorPage> {
     return data;
 }
 
+/** O ?ref= do link e a origem da navegação (mural de resultados). */
 function saleRefBody(ref?: string | null) {
-    return ref ? { ref } : {};
+    const entry = readStoreEntryPoint();
+    return { ...(ref ? { ref } : {}), ...(entry ? { entry_point: entry } : {}) };
 }
 
 function playChoice(externalTransactionToken?: string) {
