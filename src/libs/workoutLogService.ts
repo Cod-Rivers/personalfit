@@ -126,7 +126,6 @@ export function clientCompletedAtNow(date: Date = new Date()): string {
     );
 }
 
-
 /* ── New API ──
  * As rotas abaixo usam /me/planning/... (o aluno logado registrando o
  * próprio treino), não /students/:id/planning/... (essa é exclusiva do
@@ -403,6 +402,26 @@ export async function skipNewWorkoutLog(
     const { data } = await Api.patch<NewWorkoutLogResponse>(
         `/me/planning/${planningId}/mesocycle/${mesocycleId}/microcycle/${microcycleId}/workout-log/${workoutLogId}/skip`,
         { reason },
+    );
+    return data;
+}
+
+/** Desfaz "Finalizar treino" ou "Pular" marcado por engano: o log volta a
+ * em andamento (mantém as séries) ou pendente e sai da contagem da semana.
+ * Idempotente. O personal no atendimento vai por /students/:id. */
+export async function reopenWorkoutLog(
+    studentId: string,
+    planningId: string,
+    mesocycleId: string,
+    microcycleId: string,
+    workoutLogId: string,
+    asPersonal = false,
+): Promise<NewWorkoutLogResponse> {
+    const base = asPersonal
+        ? `/students/${studentId}/planning/${planningId}`
+        : `/me/planning/${planningId}`;
+    const { data } = await Api.patch<NewWorkoutLogResponse>(
+        `${base}/mesocycle/${mesocycleId}/microcycle/${microcycleId}/workout-log/${workoutLogId}/reopen`,
     );
     return data;
 }

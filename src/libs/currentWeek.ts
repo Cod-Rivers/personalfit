@@ -241,6 +241,9 @@ export function weeklyTargetDays(
 /** Um treino finalizado na semana, na ordem em que foi feito. */
 export interface WeekCompletion {
     trainingRef: string;
+    /** ID do log — ausente enquanto a finalização está na fila offline
+     * (não dá para desfazer o que o servidor ainda não tem). */
+    logId?: string;
     at: Date;
     /** 1º, 2º, 3º treino finalizado da semana. */
     order: number;
@@ -253,19 +256,52 @@ export interface WeekCompletion {
  * "quantas vezes o Treino A foi feito nesta semana" quando o aluno repete
  * um treino. */
 export function weekCompletions(
-    logs: (WeekLog & { training_ref: string })[],
+    logs: (WeekLog & { training_ref: string; id?: string })[],
     now: Date = new Date(),
 ): WeekCompletion[] {
     const done = logsOfWeek(logs, now)
-        .map((log) => ({ ref: log.training_ref, at: performedAt(log) }))
-        .filter((e): e is { ref: string; at: Date } => e.at !== null)
+        .map((log) => ({
+            ref: log.training_ref,
+            id: log.id,
+            at: performedAt(log),
+        }))
+        .filter(
+            (e): e is { ref: string; id: string | undefined; at: Date } =>
+                e.at !== null,
+        )
         .sort((a, b) => a.at.getTime() - b.at.getTime());
     const perRef = new Map<string, number>();
     return done.map((e, i) => {
         const repetition = (perRef.get(e.ref) ?? 0) + 1;
         perRef.set(e.ref, repetition);
-        return { trainingRef: e.ref, at: e.at, order: i + 1, repetition };
+        return {
+            trainingRef: e.ref,
+            logId: e.id,
+            at: e.at,
+            order: i + 1,
+            repetition,
+        };
     });
+}
+
+/** Treinos PULADOS na semana de `now` (o "Pular" do registro), para o
+ * resumo oferecer desfazer. `at` é a última vez que o log foi tocado. */
+export function weekSkips(
+    logs: (WeekLog & { training_ref: string; id?: string })[],
+    now: Date = new Date(),
+): WeekCompletion[] {
+    return logsOfWeek(logs, now)
+        .filter((log) => log.status === 'skipped')
+        .map((log) => ({ log, at: recordedAt(log) }))
+        .filter((e): e is { log: typeof e.log; at: Date } => e.at !== null)
+        .sort((a, b) => a.at.getTime() - b.at.getTime())
+        .map((e, i) => ({
+            trainingRef: e.log.training_ref,
+            logId: e.log.id,
+            at: e.at,
+            order: i + 1,
+            repetition: 1,
+        }));
 }
 
 export interface WeeklyProgress {

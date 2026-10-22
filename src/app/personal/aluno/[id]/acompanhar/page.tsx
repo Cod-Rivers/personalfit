@@ -67,8 +67,10 @@ import {
     currentCycle,
     logsOfWeek,
     weekCompletions,
+    weekSkips,
     weeklyProgress,
     weeklyTargetDays,
+    type WeekCompletion,
 } from '@/libs/currentWeek';
 import WeekCompletionSummary from '@/components/features/WeekCompletionSummary';
 import {
@@ -78,6 +80,7 @@ import {
 } from '@/libs/exerciseDoneMarks';
 import {
     getStudentMicrocycleWorkoutLogs,
+    reopenWorkoutLog,
     type NewWorkoutLogResponse,
 } from '@/libs/workoutLogService';
 import {
@@ -467,6 +470,21 @@ export default function AcompanharTreinoPage() {
             setLogsFailed(true);
         }
     }, [studentId, macro, cycle]);
+
+    /** Desfaz uma finalização marcada por engano (pelo personal, no
+     * atendimento ou conferindo depois). */
+    const undoCompletion = async (c: WeekCompletion) => {
+        if (!c.logId || !macro || !cycle) return;
+        await reopenWorkoutLog(
+            studentId,
+            macro.id,
+            cycle.meso.id,
+            cycle.micro.id,
+            c.logId,
+            true,
+        );
+        await loadLogs();
+    };
 
     useEffect(() => {
         void loadLogs();
@@ -1707,6 +1725,8 @@ export default function AcompanharTreinoPage() {
                                         ...queuedCompletions,
                                     ])}
                                     trainingRef={selectedTraining.reference}
+                                    skipped={weekSkips(logs)}
+                                    onUndo={undoCompletion}
                                 />
                                 <div className={s.finishBar}>
                                     <button

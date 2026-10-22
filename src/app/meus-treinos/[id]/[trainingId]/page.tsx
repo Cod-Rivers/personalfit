@@ -1,7 +1,14 @@
 // src/app/meus-treinos/[id]/[trainingId]/page.tsx
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState, use } from 'react';
+import React, {
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+    use,
+} from 'react';
 import Link from 'next/link';
 import axios from 'axios';
 import {
@@ -31,6 +38,8 @@ import {
     localDateKey,
     logsOfWeek,
     weekCompletions,
+    weekSkips,
+    type WeekCompletion,
     type WeekLog,
 } from '@/libs/currentWeek';
 import WeekCompletionSummary from '@/components/features/WeekCompletionSummary';
@@ -60,6 +69,7 @@ import {
     getNewWorkoutLogs,
     getMyWorkoutLogsInRange,
     NewWorkoutLogResponse,
+    reopenWorkoutLog,
 } from '@/libs/workoutLogService';
 import { computeAutoregulationDecision } from '@/libs/microcycleAutoregulation';
 import {
@@ -226,7 +236,7 @@ export default function MeusTreinosExercisesPage({
     /** Registros desta semana: ordem dos treinos finalizados e quantas vezes
      * este foi repetido (WeekCompletionSummary). */
     const [weekLogs, setWeekLogs] = useState<
-        (WeekLog & { training_ref: string })[]
+        (WeekLog & { training_ref: string; id?: string })[]
     >([]);
     const [previousMicroAvgRPE, setPreviousMicroAvgRPE] = useState(7);
     const [autoregulationOverrides, setAutoregulationOverrides] =
@@ -583,6 +593,49 @@ export default function MeusTreinosExercisesPage({
             unsubscribe();
         };
     }, [sendStatus, currentMicro, currentTraining]);
+
+    /** Recarrega a ordem da semana do servidor: as finalizações ganham o ID
+     * que o "desfazer" precisa (a da sessão local entra sem ID). */
+    const reloadWeekLogs = useCallback(async () => {
+        if (!studentId || !currentMeso || !currentMicro) return;
+        try {
+            const logs = await getNewWorkoutLogs(
+                studentId,
+                macrocycleId,
+                currentMeso.id,
+                currentMicro.id,
+            );
+            const ofWeek = logsOfWeek(logs);
+            setMicroLogsCount(ofWeek.length);
+            setWeekLogs(ofWeek);
+        } catch {
+            // Sem rede: fica a lista local; o desfazer volta quando recarregar.
+        }
+    }, [studentId, macrocycleId, currentMeso, currentMicro]);
+
+    useEffect(() => {
+        if (sendStatus === 'success') void reloadWeekLogs();
+    }, [sendStatus, reloadWeekLogs]);
+
+    /** Desfaz uma finalização marcada por engano. Se for a deste treino, o
+     * botão "Finalizar Treino" volta. */
+    const handleUndoCompletion = async (c: WeekCompletion) => {
+        if (!c.logId || !currentMeso || !currentMicro) return;
+        await reopenWorkoutLog(
+            studentId,
+            macrocycleId,
+            currentMeso.id,
+            currentMicro.id,
+            c.logId,
+        );
+        setWeekLogs((prev) => prev.filter((l) => l.id !== c.logId));
+        if (c.trainingRef === trainingRef) {
+            setSendStatus('idle');
+            setShareData(null);
+            setNewRecords([]);
+        }
+        void reloadWeekLogs();
+    };
 
     const markSessionStart = () => {
         if (currentMicro) {
@@ -1519,6 +1572,8 @@ export default function MeusTreinosExercisesPage({
                         completions={weekCompletions(weekLogs)}
                         trainingRef={trainingRef}
                         trainingLabel={trainingLabel}
+                        skipped={weekSkips(weekLogs)}
+                        onUndo={handleUndoCompletion}
                     />
                     {sendStatus === 'success' ? (
                         <p className={styles.finalizarSuccess}>
