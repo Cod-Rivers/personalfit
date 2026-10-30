@@ -186,7 +186,7 @@
     margin-bottom: var(--space-3);
     padding: var(--space-3);
     background: var(--surface-2);
-    border: 1px solid var(--mint);
+    border: 1px solid var(--mint-text);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-md);
 }
@@ -275,9 +275,13 @@
     transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
-.completeToggle:hover {
-    border-color: var(--mint);
-    color: var(--mint-text, var(--mint));
+/* Só com mouse: no toque o :hover fica preso, e o ✓ recém-desmarcado
+   continuava mint — com vários marcados, não dava para saber qual saiu. */
+@media (hover: hover) {
+    .completeToggle:hover {
+        border-color: var(--mint-text);
+        color: var(--mint-text);
+    }
 }
 
 .completeCheckbox:focus-visible + .completeToggle {

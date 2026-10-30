@@ -136,6 +136,7 @@ import {
     ungroupInTraining,
 } from '@/app/personal/_shared/periodizacao/lib/trainingEditPatch';
 import ExercisePicker from '@/app/personal/_shared/periodizacao/components/ExercisePicker';
+import ReplaceExerciseModal from '@/app/personal/_shared/periodizacao/components/ReplaceExerciseModal';
 import NewMacrocycleModal from '@/app/personal/_shared/periodizacao/components/NewMacrocycleModal';
 import ExerciseInlineEditor from '@/app/personal/_shared/periodizacao/components/ExerciseInlineEditor';
 import Modal from '@/components/system/Modal';
@@ -371,9 +372,9 @@ export default function AcompanharTreinoPage() {
     /** Variante escolhida na barra "Agrupar como" ('' = sem variante). */
     const [groupTechnique, setGroupTechnique] = useState('');
     /** Biblioteca aberta: para acrescentar exercícios ao treino, ou para
-     * trocar um deles. */
+     * trocar um deles (a troca pede confirmação: ReplaceExerciseModal). */
     const [picker, setPicker] = useState<
-        { mode: 'add' } | { mode: 'replace'; exerciseId: string } | null
+        { mode: 'add' } | { mode: 'replace'; exercise: ExerciseResponse } | null
     >(null);
     /** Exercício ou treino esperando a confirmação de exclusão. */
     const [pendingDelete, setPendingDelete] = useState<
@@ -1537,7 +1538,7 @@ export default function AcompanharTreinoPage() {
                                                     onReplace={() =>
                                                         setPicker({
                                                             mode: 'replace',
-                                                            exerciseId: ex.id,
+                                                            exercise: ex,
                                                         })
                                                     }
                                                     onDelete={() =>
@@ -1876,7 +1877,7 @@ export default function AcompanharTreinoPage() {
                             : () =>
                                   setPicker({
                                       mode: 'replace',
-                                      exerciseId: openExerciseView.raw.id,
+                                      exercise: openExerciseView.raw,
                                   })
                     }
                     // Mesmo "feito" do círculo da lista: marcar aqui aparece
@@ -1902,32 +1903,28 @@ export default function AcompanharTreinoPage() {
                 />
             )}
 
-            {picker && (
+            {picker?.mode === 'add' && (
                 <Modal
                     open
                     onClose={() => setPicker(null)}
-                    title={
-                        picker.mode === 'add'
-                            ? `Adicionar ao treino “${selectedTraining ? labelOf(selectedTraining) : ''}”`
-                            : 'Trocar exercício'
-                    }
+                    title={`Adicionar ao treino “${selectedTraining ? labelOf(selectedTraining) : ''}”`}
                 >
-                    {picker.mode === 'add' ? (
-                        <ExercisePicker
-                            onPickMany={(items, groupTechnique) =>
-                                void addExercises(items, groupTechnique)
-                            }
-                            onClose={() => setPicker(null)}
-                        />
-                    ) : (
-                        <ExercisePicker
-                            onPick={(item) =>
-                                void replaceExercise(picker.exerciseId, item)
-                            }
-                            onClose={() => setPicker(null)}
-                        />
-                    )}
+                    <ExercisePicker
+                        onPickMany={(items, groupTechnique) =>
+                            void addExercises(items, groupTechnique)
+                        }
+                        onClose={() => setPicker(null)}
+                    />
                 </Modal>
+            )}
+            {picker?.mode === 'replace' && (
+                <ReplaceExerciseModal
+                    current={picker.exercise}
+                    onConfirm={(item) =>
+                        void replaceExercise(picker.exercise.id, item)
+                    }
+                    onClose={() => setPicker(null)}
+                />
             )}
 
             {pendingDelete && (

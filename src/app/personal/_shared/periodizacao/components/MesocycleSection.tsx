@@ -37,8 +37,7 @@ import {
     useBlockSelection,
 } from './GroupingControls';
 import ExerciseInlineEditor from './ExerciseInlineEditor';
-import ExercisePicker from './ExercisePicker';
-import Modal from '@/components/system/Modal';
+import ReplaceExerciseModal from './ReplaceExerciseModal';
 import {
     reorderById,
     saveExerciseOrder,
@@ -300,6 +299,11 @@ export default function MesocycleSection({
     /** Troca o exercício aberto por outro da biblioteca, mantendo posição,
      * bloco e prescrição — mesma regra do /acompanhar e do editor da fase. */
     const [replacing, setReplacing] = useState<SelectedExercise | null>(null);
+    const replacingRaw = replacing
+        ? meso.trainings
+              .find((t) => t.id === replacing.trainingId)
+              ?.exercises.find((e) => e.id === replacing.exerciseId)
+        : undefined;
     const replaceExercise = async (
         target: SelectedExercise,
         item: ExerciseLibraryItem,
@@ -981,17 +985,12 @@ export default function MesocycleSection({
                     }
                 />
             )}
-            {replacing && (
-                <Modal
-                    open
+            {replacingRaw && replacing && (
+                <ReplaceExerciseModal
+                    current={replacingRaw}
+                    onConfirm={(item) => void replaceExercise(replacing, item)}
                     onClose={() => setReplacing(null)}
-                    title="Trocar exercício"
-                >
-                    <ExercisePicker
-                        onPick={(item) => void replaceExercise(replacing, item)}
-                        onClose={() => setReplacing(null)}
-                    />
-                </Modal>
+                />
             )}
         </div>
     );

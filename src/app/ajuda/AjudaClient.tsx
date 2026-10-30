@@ -1907,7 +1907,8 @@ const personalSections: HelpSection[] = [
                     hora, <strong>+</strong> e <strong>×</strong> para
                     acrescentar ou tirar uma série,{' '}
                     <strong>Trocar exercício</strong> para escolher outro da
-                    biblioteca mantendo séries e carga e, recolhido em{' '}
+                    biblioteca mantendo séries e carga (a troca só grava
+                    depois que você confirma) e, recolhido em{' '}
                     <strong>Editar tudo neste exercício</strong>, descanso,
                     RPE, técnica, vídeo e observações. Tudo salva sozinho. Na
                     lista, <strong>+ Exercício</strong> adiciona da

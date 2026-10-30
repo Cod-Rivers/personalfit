@@ -36,9 +36,13 @@
     transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
-.toggle:hover .circle {
-    border-color: var(--mint);
-    color: var(--mint);
+/* Só com mouse: no toque o :hover fica preso depois do toque, e o círculo
+   recém-desmarcado continuava mint — parecia ainda marcado. */
+@media (hover: hover) {
+    .toggle:hover .circle {
+        border-color: var(--mint-text);
+        color: var(--mint-text);
+    }
 }
 
 .input:focus-visible + .circle {
@@ -75,9 +79,10 @@
     font-weight: 600;
 }
 
+/* --mint-text: o --mint puro como cor de texto some no tema claro. */
 .pill[data-checked] {
-    border-color: var(--mint);
-    color: var(--mint);
+    border-color: var(--mint-text);
+    color: var(--mint-text);
 }
 
 .pill:has(.input:focus-visible) {

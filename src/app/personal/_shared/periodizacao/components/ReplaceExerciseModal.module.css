@@ -1,0 +1,122 @@
+.context {
+    margin: 0;
+    font-size: var(--font-sm);
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.swap {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+}
+
+.item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+    background: var(--surface-2);
+    min-width: 0;
+}
+
+/* Sai: apagado. Entra: realçado — dá para saber qual é qual sem ler o
+   rótulo, e o realce não depende só da cor (borda mais grossa). */
+.itemOut {
+    opacity: 0.7;
+}
+
+.itemIn {
+    border: 2px solid var(--mint-text);
+    background: var(--mint-glow);
+}
+
+.itemText {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.itemLabel {
+    font-size: var(--font-xs);
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.itemName {
+    font-size: var(--font-md, 1rem);
+    font-weight: 700;
+    color: var(--text-primary);
+    overflow-wrap: anywhere;
+}
+
+.itemOut .itemName {
+    text-decoration: line-through;
+    text-decoration-color: var(--text-muted);
+}
+
+.arrow {
+    align-self: center;
+    font-size: 1.25rem;
+    color: var(--text-muted);
+}
+
+.warn {
+    margin: var(--space-3) 0 0;
+    font-size: var(--font-sm);
+    color: var(--amber-text);
+    font-weight: 600;
+}
+
+.note {
+    margin: var(--space-3) 0 0;
+    font-size: var(--font-sm);
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+/* flex-wrap junto com flex-shrink: 0 nos botões — o par sem wrap já
+   estourou cards em quatro telas deste app. */
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--space-2);
+    width: 100%;
+}
+
+.btnSecondary,
+.btnPrimary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-md);
+    font-size: var(--font-sm);
+    cursor: pointer;
+}
+
+.btnSecondary {
+    background: transparent;
+    border: 1px solid var(--border-mid);
+    color: var(--text-primary);
+}
+
+.btnPrimary {
+    background: var(--mint);
+    border: 1px solid var(--mint);
+    color: var(--btn-text);
+    font-weight: 700;
+}
+
+.btnSecondary:active,
+.btnPrimary:active {
+    transform: translateY(1px);
+}

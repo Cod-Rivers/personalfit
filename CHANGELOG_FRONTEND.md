@@ -997,3 +997,8 @@
 ## 2026-10-30 18:13 — River (via Claude Code)
 **Resumo:** Corrigi 4 bugs de funcionamento e 3 visuais no circuito da série gigante. Typecheck limpo e os 98 testes dos componentes do circuito passam, com 2 testes novos para série gigante. **Não testei no app de verdade e não fiz commit.** ### Bugs de funcionamento 1. **O circuito não voltava ao início depois de finalizar o treino.** Ao repetir o treino no mesmo dia, o bloco abria em "Circuito concluído" em vez de "Iniciar circuito". Esse bug piorou com a mudança anterior. Agora finalizar zera os circuitos do treino, no aluno e no acompanhar. 2. **O circuito remarcava os exercícios como feitos.** Ao vo…
 **Arquivos:** CHANGELOG_FRONTEND.md, CircuitTimer.test.tsx, ExerciseDetailCard.tsx, circuitProgress.ts, index.tsx, page.tsx, styles.module.css
+
+## 2026-10-30 18:22 — River (via Claude Code)
+**Resumo:** A troca de exercício agora pede confirmação antes de gravar. Na seleção de vários exercícios achei e corrigi 6 problemas visuais. Typecheck, lint e testes (105) passam, mas não testei no celular nem no navegador. Nada foi commitado. **Confirmação da troca** Antes, o toque no botão de trocar abria a lista, e o toque num exercício dela já gravava a troca no plano do aluno. Agora vem uma segunda tela, "Confirmar troca?", que mostra com miniaturas o exercício que **sai** (riscado) e o que **entra** (destacado). Ela avisa que séries, carga e descanso continuam os mesmos e alerta se for o mesmo exer…
+**Arquivos:** AjudaClient.tsx, ExercisePicker.tsx, MesocycleSection.tsx, ReplaceExerciseModal.module.css, ReplaceExerciseModal.tsx, acompanhar.module.css, styles.module.css
+**Commits:** Circuito da série gigante: recomeça ao finalizar e não remarca o "feito"

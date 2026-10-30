@@ -295,7 +295,9 @@ export default function ExercisePicker({
                         style={{
                             background: 'transparent',
                             border: 'none',
-                            color: 'var(--mint)',
+                            // --mint puro some sobre o fundo claro do tema
+                            // light; --mint-text é o mint legível nos dois.
+                            color: 'var(--mint-text)',
                             fontSize: '0.75rem',
                             fontWeight: 600,
                             cursor: 'pointer',
@@ -337,13 +339,15 @@ export default function ExercisePicker({
                                 background: checked
                                     ? 'var(--mint-glow)'
                                     : 'var(--surface-2, rgba(255,255,255,0.04))',
-                                border: `1px solid ${
-                                    checked
-                                        ? 'var(--mint)'
-                                        : 'var(--border-subtle)'
-                                }`,
+                                // Marcado: borda de 2px em --mint-text — o
+                                // --mint de 1px quase não se via no tema
+                                // claro. O padding compensa o 1px a mais
+                                // para a linha não "pular" ao marcar.
+                                border: checked
+                                    ? '2px solid var(--mint-text)'
+                                    : '1px solid var(--border-subtle)',
                                 borderRadius: 8,
-                                padding: '8px 10px',
+                                padding: checked ? '7px 9px' : '8px 10px',
                                 cursor: 'pointer',
                                 textAlign: 'left',
                                 width: '100%',
@@ -351,11 +355,11 @@ export default function ExercisePicker({
                             }}
                             onMouseEnter={(e) =>
                                 (e.currentTarget.style.borderColor =
-                                    'var(--mint)')
+                                    'var(--mint-text)')
                             }
                             onMouseLeave={(e) =>
                                 (e.currentTarget.style.borderColor = checked
-                                    ? 'var(--mint)'
+                                    ? 'var(--mint-text)'
                                     : 'var(--border-subtle)')
                             }
                         >
@@ -396,15 +400,23 @@ export default function ExercisePicker({
                                 lazyCapture
                             />
                             <div style={{ flex: 1, minWidth: 0 }}>
+                                {/* Até 2 linhas: numa linha só, variações
+                                    ("Supino reto com halteres na…") ficavam
+                                    idênticas e não dava para saber qual
+                                    estava marcada. */}
                                 <p
+                                    title={item.name}
                                     style={{
                                         margin: 0,
                                         fontSize: '0.85rem',
                                         fontWeight: 600,
+                                        lineHeight: 1.3,
                                         color: 'var(--text-primary)',
-                                        whiteSpace: 'nowrap',
+                                        display: '-webkit-box',
+                                        WebkitLineClamp: 2,
+                                        WebkitBoxOrient: 'vertical',
                                         overflow: 'hidden',
-                                        textOverflow: 'ellipsis',
+                                        overflowWrap: 'anywhere',
                                     }}
                                 >
                                     {item.name}
@@ -416,8 +428,15 @@ export default function ExercisePicker({
                                         color: 'var(--text-muted)',
                                     }}
                                 >
-                                    {item.muscle_group}
-                                    {item.category ? ` · ${item.category}` : ''}
+                                    {/* Mesmo rótulo do filtro acima ("Core"
+                                        aparece como "Abdômen" lá). */}
+                                    {item.muscle_group
+                                        ? muscleGroupLabel(item.muscle_group)
+                                        : ''}
+                                    {item.muscle_group && item.category
+                                        ? ' · '
+                                        : ''}
+                                    {item.category}
                                 </p>
                             </div>
                         </button>
@@ -449,6 +468,87 @@ export default function ExercisePicker({
                         boxShadow: '0 -8px 16px -8px rgba(0, 0, 0, 0.45)',
                     }}
                 >
+                    {/* Os marcados, na ordem em que entram no treino. A
+                        seleção sobrevive à troca de busca/grupo, mas os
+                        marcados de outra busca não aparecem na lista acima:
+                        sem esta faixa só restava o contador, sem ver nem
+                        desmarcar. Rola na horizontal para a barra não
+                        crescer com 10 marcados. */}
+                    {selected.size > 0 && (
+                        <ol
+                            aria-label="Exercícios selecionados, na ordem"
+                            style={{
+                                flex: '1 1 100%',
+                                display: 'flex',
+                                gap: 6,
+                                margin: 0,
+                                padding: '0 0 4px',
+                                listStyle: 'none',
+                                overflowX: 'auto',
+                                minWidth: 0,
+                            }}
+                        >
+                            {Array.from(selected.values()).map((item, i) => (
+                                <li
+                                    key={item.id}
+                                    style={{
+                                        flexShrink: 0,
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: 4,
+                                        maxWidth: 200,
+                                        padding: '3px 4px 3px 8px',
+                                        borderRadius: 999,
+                                        border: '1px solid var(--mint-text)',
+                                        background: 'var(--mint-glow)',
+                                        fontSize: '0.75rem',
+                                        color: 'var(--text-primary)',
+                                    }}
+                                >
+                                    <span
+                                        style={{
+                                            fontWeight: 700,
+                                            color: 'var(--mint-text)',
+                                        }}
+                                    >
+                                        {i + 1}.
+                                    </span>
+                                    <span
+                                        title={item.name}
+                                        style={{
+                                            whiteSpace: 'nowrap',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            minWidth: 0,
+                                        }}
+                                    >
+                                        {item.name}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => toggle(item)}
+                                        aria-label={`Desmarcar ${item.name}`}
+                                        style={{
+                                            flexShrink: 0,
+                                            width: 24,
+                                            height: 24,
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            background: 'transparent',
+                                            border: 'none',
+                                            borderRadius: 999,
+                                            color: 'var(--text-muted)',
+                                            cursor: 'pointer',
+                                            padding: 0,
+                                        }}
+                                    >
+                                        <FiX />
+                                    </button>
+                                </li>
+                            ))}
+                        </ol>
+                    )}
                     <div
                         style={{
                             flex: '1 1 100%',
