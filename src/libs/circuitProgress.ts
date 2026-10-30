@@ -67,6 +67,17 @@ export function loadCircuitProgress(
     }
 }
 
+/** Treino finalizado: o circuito da próxima vez começa da rodada 1. Sem
+ * isto, repetir o treino no mesmo dia reabria "Circuito concluído" e marcava
+ * o bloco como feito de novo. */
+export function clearCircuitProgress(key: string): void {
+    try {
+        window.localStorage.removeItem(PREFIX + key);
+    } catch {
+        /* sem armazenamento: nada guardado */
+    }
+}
+
 export function saveCircuitProgress(
     key: string,
     signature: string,

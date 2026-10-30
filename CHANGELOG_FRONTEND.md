@@ -989,3 +989,11 @@
 ## 2026-10-22 09:45 — River (via Claude Code)
 **Resumo:** Agora dá para desfazer um treino finalizado ou pulado por engano, tanto na tela do aluno quanto no "Acompanhar" do personal. O código passou nos testes, mas não fiz commit nem push nos dois repositórios, e ainda não testei ao vivo no app. **Como funciona para quem usa** - Na "Ordem da semana", cada treino finalizado ganha um botão **desfazer**. Ao tocar, aparece "Desfazer? Sim / Não", para não desfazer sem querer. A confirmação fica na própria tela porque a janela de confirmação do navegador não funciona bem dentro do app Android. - Os treinos pulados agora também aparecem, numa linha **"Pulad…
 **Arquivos:** WeekCompletionSummary.module.css, WeekCompletionSummary.test.tsx, currentWeek.ts, index.tsx, page.tsx, workoutLogService.ts
+
+## 2026-10-22 09:45 — River (via Claude Code)
+**Resumo:** Fiz o commit e o push nos dois repositórios, e os dois estão sincronizados com o remoto: - **Backend:** `9acca51` em `main` - **Frontend:** `996a8b4` em `master` Os arquivos de changelog que já estavam modificados entraram junto nos commits. O push no backend dispara o deploy automático no Cloud Build. Para testar no app, finalize um treino, toque em **desfazer** e veja se o contador da semana e a pontuação do Desafio diminuem.
+**Commits:** Desfazer finalização ou pulo na ordem da semana (aluno e acompanhar)
+
+## 2026-10-30 18:13 — River (via Claude Code)
+**Resumo:** Corrigi 4 bugs de funcionamento e 3 visuais no circuito da série gigante. Typecheck limpo e os 98 testes dos componentes do circuito passam, com 2 testes novos para série gigante. **Não testei no app de verdade e não fiz commit.** ### Bugs de funcionamento 1. **O circuito não voltava ao início depois de finalizar o treino.** Ao repetir o treino no mesmo dia, o bloco abria em "Circuito concluído" em vez de "Iniciar circuito". Esse bug piorou com a mudança anterior. Agora finalizar zera os circuitos do treino, no aluno e no acompanhar. 2. **O circuito remarcava os exercícios como feitos.** Ao vo…
+**Arquivos:** CHANGELOG_FRONTEND.md, CircuitTimer.test.tsx, ExerciseDetailCard.tsx, circuitProgress.ts, index.tsx, page.tsx, styles.module.css

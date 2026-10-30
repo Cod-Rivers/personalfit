@@ -84,6 +84,7 @@ import {
     readExerciseDoneMarks,
     writeExerciseDoneMarks,
 } from '@/libs/exerciseDoneMarks';
+import { clearCircuitProgress } from '@/libs/circuitProgress';
 import {
     recordExerciseDone,
     studentDoneLoadKg,
@@ -662,6 +663,10 @@ export default function MeusTreinosExercisesPage({
         setCircuitDoneKeys((prev) =>
             prev.has(key) ? prev : new Set(prev).add(key),
         );
+    /** Sobe a cada finalização: remonta os cronômetros de circuito do zero. */
+    const [circuitEpoch, setCircuitEpoch] = useState(0);
+    const circuitStorageKey = (blockKey: string) =>
+        `${currentMicro?.id ?? macrocycleId}:${trainingId}:${blockKey}`;
 
     /** "Exercício feito" do aluno durante o treino — o círculo ao lado do
      * nome, na lista e no card aberto. A marcação fica no aparelho para
@@ -743,6 +748,15 @@ export default function MeusTreinosExercisesPage({
         if (microId) clearExerciseDoneMarks(microId, trainingRef);
         doneRef.current = new Set();
         setDoneIds(new Set());
+        // Circuitos também recomeçam: o andamento guardado reabria "Circuito
+        // concluído" ao repetir o treino e remarcava o bloco como feito.
+        for (const group of exerciseGroups) {
+            if (group.length > 1) {
+                clearCircuitProgress(circuitStorageKey(group[0].id));
+            }
+        }
+        setCircuitDoneKeys(new Set());
+        setCircuitEpoch((n) => n + 1);
         setWeekLogs((prev) => [
             ...prev,
             {
@@ -1454,7 +1468,7 @@ export default function MeusTreinosExercisesPage({
                                         aparecia depois de rolar a tela. */}
                                     {circuitGuides(circuit) && (
                                         <CircuitTimer
-                                            key={JSON.stringify(circuit)}
+                                            key={`${circuitEpoch}:${JSON.stringify(circuit)}`}
                                             ref={(h) => {
                                                 if (h) {
                                                     circuitTimers.current.set(
@@ -1471,13 +1485,21 @@ export default function MeusTreinosExercisesPage({
                                             recoverySeconds={blockRecoverySeconds(
                                                 group,
                                             )}
-                                            storageKey={`${currentMicro?.id ?? macrocycleId}:${trainingId}:${circuitKey}`}
+                                            storageKey={circuitStorageKey(
+                                                circuitKey,
+                                            )}
                                             onStart={markSessionStart}
-                                            onComplete={() => {
+                                            onComplete={({ reopened }) => {
                                                 markCircuitDone(circuitKey);
-                                                markDone(
-                                                    group.map((e) => e.id),
-                                                );
+                                                // Reaberto do aparelho: o
+                                                // "feito" já está guardado — e
+                                                // o que foi desmarcado depois
+                                                // fica desmarcado.
+                                                if (!reopened) {
+                                                    markDone(
+                                                        group.map((e) => e.id),
+                                                    );
+                                                }
                                             }}
                                             doneAction={
                                                 sendStatus === 'idle' ||

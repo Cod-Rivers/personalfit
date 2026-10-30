@@ -54,7 +54,7 @@ describe('CircuitTimer', () => {
         render(<CircuitTimer exercises={pair60} />);
         startNow();
         expect(screen.getByText('Rodada 1 de 2')).toBeTruthy();
-        expect(screen.getByText(/Exercício 1 de 2 · faltam 2 na rodada/)).toBeTruthy();
+        expect(screen.getByText(/Exercício 1 de 2 · falta 1 depois deste/)).toBeTruthy();
 
         tick(60_000);
         // Sem descanso entre os exercícios: já está no Burpee, contando.
@@ -177,6 +177,60 @@ describe('CircuitTimer', () => {
             expect(screen.getByRole('timer').textContent).toBe('0:45');
         });
 
+        it('circuito concluído reaberto avisa como reabertura (não remarca o "feito")', () => {
+            const giant = [
+                { name: 'A', series: [10, 10], rest: 30 },
+                { name: 'B', series: [10, 10], rest: 30 },
+                { name: 'C', series: [10, 10], rest: 30 },
+                { name: 'D', series: [10, 10], rest: 30 },
+            ];
+            const first = vi.fn();
+            const view = render(
+                <CircuitTimer
+                    exercises={giant}
+                    storageKey="t1:giant"
+                    onComplete={first}
+                />,
+            );
+            startNow();
+            for (let i = 0; i < 4; i++) click(/Feito/);
+            tick(30_000);
+            for (let i = 0; i < 4; i++) click(/Feito/);
+            expect(first).toHaveBeenCalledWith({ reopened: false });
+            view.unmount();
+
+            const again = vi.fn();
+            render(
+                <CircuitTimer
+                    exercises={giant}
+                    storageKey="t1:giant"
+                    onComplete={again}
+                />,
+            );
+            expect(screen.getByText('Circuito concluído!')).toBeTruthy();
+            expect(again).toHaveBeenCalledWith({ reopened: true });
+        });
+
+        it('série gigante por repetições: borda ativa durante o "Feito"', () => {
+            const { container } = render(
+                <CircuitTimer
+                    exercises={[
+                        { name: 'A', series: [12, 12], rest: 30 },
+                        { name: 'B', series: [12, 12], rest: 30 },
+                        { name: 'C', series: [12, 12], rest: 30 },
+                        { name: 'D', series: [12, 12], rest: 30 },
+                    ]}
+                />,
+            );
+            startNow();
+            expect(
+                container.firstElementChild?.getAttribute('data-state'),
+            ).toBe('running');
+            expect(
+                screen.getByText(/Exercício 1 de 4 · faltam 3 depois deste/),
+            ).toBeTruthy();
+        });
+
         it('prescrição mudou: o andamento antigo não reabre', () => {
             const view = render(
                 <CircuitTimer exercises={pair60} storageKey="t1:b1" />,
@@ -210,6 +264,7 @@ describe('CircuitTimer', () => {
             startNow();
             tick(20_000);
             expect(onComplete).toHaveBeenCalledTimes(1);
+            expect(onComplete).toHaveBeenCalledWith({ reopened: false });
             expect(
                 screen.getByRole('button', { name: 'Registrar treino' }),
             ).toBeTruthy();

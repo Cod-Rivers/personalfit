@@ -78,6 +78,7 @@ import {
     readExerciseDoneMarks,
     writeExerciseDoneMarks,
 } from '@/libs/exerciseDoneMarks';
+import { clearCircuitProgress } from '@/libs/circuitProgress';
 import {
     getStudentMicrocycleWorkoutLogs,
     reopenWorkoutLog,
@@ -146,6 +147,7 @@ import CircuitTimer, {
 } from '@/components/molecules/CircuitTimer';
 import {
     blockRecoverySeconds,
+    blockRestLabel,
     circuitGuides,
     type CircuitExercise,
 } from '@/libs/circuitPlan';
@@ -274,7 +276,25 @@ export default function AcompanharTreinoPage() {
         }
         doneIdsRef.current = new Set();
         setDoneExerciseIds(new Set());
+        // Circuitos recomeçam da rodada 1 (ver forgetDone em meus-treinos).
+        if (selectedTraining) {
+            for (const block of exerciseBlocks) {
+                if (block.length > 1) {
+                    clearCircuitProgress(
+                        circuitStorageKey(selectedTraining.id, block),
+                    );
+                }
+            }
+        }
+        setCircuitDoneKeys(new Set());
+        setCircuitEpoch((n) => n + 1);
     };
+    /** Sobe a cada finalização: remonta os cronômetros de circuito do zero. */
+    const [circuitEpoch, setCircuitEpoch] = useState(0);
+    const circuitStorageKey = (
+        trainingId: string,
+        block: { id: string; group_id?: string }[],
+    ) => `${studentId}:${cycle?.micro.id ?? ''}:${trainingId}:${blockId(block)}`;
     /** Finalizações que ainda estão na fila offline: entram na ordem da
      * semana na hora (as sincronizadas vêm de `logs`, recarregado). */
     const [queuedCompletions, setQueuedCompletions] = useState<
@@ -333,8 +353,12 @@ export default function AcompanharTreinoPage() {
     );
     /** Fim do circuito = o bloco foi aplicado: marca como feito (sem
      * desmarcar, ao contrário do círculo) e conta para o registro. */
-    const markCircuitDone = (ids: string[]) => {
-        const added = ids.filter((id) => !doneIdsRef.current.has(id));
+    const markCircuitDone = (ids: string[], reopened = false) => {
+        // Reaberto do aparelho: o "feito" já está guardado, e o que o
+        // personal desmarcou depois do circuito fica desmarcado.
+        const added = reopened
+            ? []
+            : ids.filter((id) => !doneIdsRef.current.has(id));
         if (added.length > 0) {
             saveDone(new Set([...doneIdsRef.current, ...added]));
             recordDone(added, true);
@@ -1537,9 +1561,13 @@ export default function AcompanharTreinoPage() {
                                                                     block[0]
                                                                         .group_technique,
                                                                 )}{' '}
-                                                                — sem descanso
-                                                                entre os
-                                                                exercícios
+                                                                —{' '}
+                                                                {blockRestLabel(
+                                                                    circuit,
+                                                                    blockRecoverySeconds(
+                                                                        block,
+                                                                    ),
+                                                                )}
                                                             </span>
                                                         ) : (
                                                             <GroupHeader
@@ -1584,9 +1612,9 @@ export default function AcompanharTreinoPage() {
                                                             depois de rolar. */}
                                                         {asCircuit && (
                                                             <CircuitTimer
-                                                                key={JSON.stringify(
+                                                                key={`${circuitEpoch}:${JSON.stringify(
                                                                     circuit,
-                                                                )}
+                                                                )}`}
                                                                 ref={(h) => {
                                                                     const k =
                                                                         blockId(
@@ -1608,8 +1636,13 @@ export default function AcompanharTreinoPage() {
                                                                 recoverySeconds={blockRecoverySeconds(
                                                                     block,
                                                                 )}
-                                                                storageKey={`${studentId}:${cycle?.micro.id ?? ''}:${selectedTraining.id}:${blockId(block)}`}
-                                                                onComplete={() =>
+                                                                storageKey={circuitStorageKey(
+                                                                    selectedTraining.id,
+                                                                    block,
+                                                                )}
+                                                                onComplete={({
+                                                                    reopened,
+                                                                }) =>
                                                                     markCircuitDone(
                                                                         block.map(
                                                                             (
@@ -1617,6 +1650,7 @@ export default function AcompanharTreinoPage() {
                                                                             ) =>
                                                                                 e.id,
                                                                         ),
+                                                                        reopened,
                                                                     )
                                                                 }
                                                                 doneAction={

@@ -84,9 +84,11 @@ type CircuitTimerProps = {
     storageKey?: string;
     /** O circuito começou (ex.: carimbar o início da sessão de treino). */
     onStart?: () => void;
-    /** Todas as rodadas feitas — também ao reabrir um circuito já concluído,
-     * então quem ouve precisa ser idempotente. */
-    onComplete?: () => void;
+    /** Todas as rodadas feitas — também ao reabrir um circuito já concluído
+     * (`reopened`), então quem ouve precisa ser idempotente. Na reabertura,
+     * quem ouve NÃO deve remarcar o "feito": o aluno pode ter desmarcado um
+     * exercício de propósito depois do circuito. */
+    onComplete?: (info: { reopened: boolean }) => void;
     /** Próxima ação oferecida no fim (ex.: "Registrar treino"). */
     doneAction?: ReactNode;
 };
@@ -169,7 +171,7 @@ const CircuitTimer = forwardRef<CircuitTimerHandle, CircuitTimerProps>(
                 }
                 if (t.cue === 'done') {
                     vibrate([300, 150, 300, 150, 300]);
-                    onCompleteRef.current?.();
+                    onCompleteRef.current?.({ reopened: false });
                 } else if (auto) {
                     vibrate([200, 100, 200]);
                 }
@@ -190,7 +192,9 @@ const CircuitTimer = forwardRef<CircuitTimerHandle, CircuitTimerProps>(
                     runRef.current = state;
                     setRun(state);
                     if (state.phase === 'step') setReopened(true);
-                    if (state.phase === 'done') onCompleteRef.current?.();
+                    if (state.phase === 'done') {
+                        onCompleteRef.current?.({ reopened: true });
+                    }
                 }
             }
             hydratedRef.current = true;
@@ -307,7 +311,11 @@ const CircuitTimer = forwardRef<CircuitTimerHandle, CircuitTimerProps>(
             index >= 0 ? steps[index] : undefined;
         const remaining = inProgress ? clockRemaining(run.clock, now) : 0;
         const paused = inProgress && run.clock.status === 'paused';
-        const running = inProgress && run.clock.status === 'running';
+        const manual = inProgress && run.clock.status === 'manual';
+        // Passo por repetições também é exercício em andamento: sem isto a
+        // borda ficava apagada (estado "idle") durante toda a série.
+        const running =
+            inProgress && (run.clock.status === 'running' || manual);
 
         const state =
             run.phase === 'done'
@@ -447,9 +455,11 @@ const CircuitTimer = forwardRef<CircuitTimerHandle, CircuitTimerProps>(
                         <p className={styles.current}>{step.name}</p>
                         <p className={styles.sub}>
                             Exercício {step.position + 1} de {step.roundSize} ·{' '}
-                            {step.roundSize - step.position === 1
+                            {step.roundSize - step.position - 1 === 0
                                 ? 'último da rodada'
-                                : `faltam ${step.roundSize - step.position} na rodada`}
+                                : step.roundSize - step.position - 1 === 1
+                                  ? 'falta 1 depois deste'
+                                  : `faltam ${step.roundSize - step.position - 1} depois deste`}
                         </p>
                     </div>
                 ) : null}
@@ -525,6 +535,7 @@ const CircuitTimer = forwardRef<CircuitTimerHandle, CircuitTimerProps>(
                         <div className={styles.row}>
                             <span
                                 className={styles.time}
+                                data-manual={manual || undefined}
                                 role="timer"
                                 aria-live="off"
                             >

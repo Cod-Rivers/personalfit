@@ -1783,6 +1783,17 @@ const ExerciseDetailCard: React.FC<ExerciseDetailCardProps> = ({
                                         Ir para {nextInGroup.name}
                                     </Button>
                                 </div>
+                            ) : onStartCircuit ? (
+                                // Último do circuito: o descanso entre as
+                                // rodadas corre no cronômetro do bloco. Um
+                                // segundo relógio aqui contava em paralelo.
+                                <div className={styles.restTimerSection}>
+                                    <p className={styles.noRestNotice}>
+                                        <strong>Último do bloco</strong> — o
+                                        descanso entre as rodadas corre no
+                                        cronômetro do circuito.
+                                    </p>
+                                </div>
                             ) : (
                                 (exercise.restTime ?? 0) > 0 && (
                                     <div className={styles.restTimerSection}>

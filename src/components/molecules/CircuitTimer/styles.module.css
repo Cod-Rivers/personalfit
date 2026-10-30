@@ -123,6 +123,14 @@
     color: var(--text-primary);
 }
 
+/* Passo por repetições: o visor mostra o alvo ("12 reps", "12-10-8-6"), não
+   um relógio — menor e com quebra, para não estourar o bloco no celular. */
+.time[data-manual] {
+    font-size: 1.5rem;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
 .wrap[data-state='running'] .time {
     color: var(--mint-text);
 }
