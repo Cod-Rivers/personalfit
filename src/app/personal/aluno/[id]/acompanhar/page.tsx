@@ -86,6 +86,7 @@ import {
 } from '@/libs/workoutLogService';
 import {
     cachePersonalMacrocycle,
+    cacheStudentPlannings,
     getCachedPersonalMacrocycle,
     getCachedPersonalStudents,
     getCachedStudentPlannings,
@@ -410,13 +411,18 @@ export default function AcompanharTreinoPage() {
      * `?planningId=` permite chegar aqui direto de um plano específico (o
      * botão da periodização manda o plano aberto); sem ele, resolve o plano
      * ativo do aluno. Offline cai no mesmo cache que a periodização alimenta
-     * — ver personalCache.ts. */
+     * — ver personalCache.ts. E esta tela também o ALIMENTA a cada carga com
+     * rede: até 30/10 ela só lia, e quem entrava pelo "Treino" do cartão do
+     * aluno (sem passar pela periodização) perdia a conexão no meio do
+     * atendimento e caía em "este plano ainda não foi aberto neste aparelho". */
     const loadPlan = useCallback(async () => {
         const fromQuery = searchParams.get('planningId');
         try {
             let planningId = fromQuery;
             if (!planningId) {
                 const plannings = await getStudentPlannings(studentId);
+                // É a lista que diz, offline, qual plano é o do aluno.
+                void cacheStudentPlannings(studentId, plannings);
                 // O plano que o personal montou — o aluno pode ter também um
                 // plano comprado na loja ativo (ver pickPrescribedPlanning).
                 // Arquivada não conta: o aluno não a vê mais.
@@ -432,11 +438,21 @@ export default function AcompanharTreinoPage() {
             setIsOfflineData(false);
             setPageError('');
             setNoPlan(false);
+            void cachePersonalMacrocycle(studentId, data);
         } catch (e) {
             // Mesma distinção de sempre (rules/api-error-offline-vs-server):
             // sem resposta = sem rede, cai na cópia local; resposta 4xx/5xx é
             // erro de verdade e o plano velho só esconderia o motivo.
             if (isOfflineError(e)) {
+                // A rede caiu com o plano já na tela (numa conexão instável o
+                // `online` dispara e a recarga falha logo em seguida): segue
+                // com ele, que é a cópia mais nova que existe, em vez de
+                // trocar o treino aberto por uma tela de erro.
+                const onScreen = macroRef.current;
+                if (onScreen && (!fromQuery || onScreen.id === fromQuery)) {
+                    setIsOfflineData(true);
+                    return;
+                }
                 const cachedPlannings =
                     await getCachedStudentPlannings(studentId);
                 const targetId =
@@ -454,7 +470,7 @@ export default function AcompanharTreinoPage() {
                     return;
                 }
                 setPageError(
-                    'Sem conexão e este plano ainda não foi aberto neste aparelho. Abra a periodização do aluno uma vez com internet para poder acompanhar offline.',
+                    'Sem conexão e o treino deste aluno ainda não foi aberto neste aparelho. Abra-o uma vez com internet para poder acompanhar offline.',
                 );
                 return;
             }
@@ -478,8 +494,11 @@ export default function AcompanharTreinoPage() {
      * carga por exercício. Falha não bloqueia: sem esses números a tela ainda
      * mostra a prescrição e finaliza o treino. Só entram registros desta
      * semana: no plano simples toda semana cai no mesmo microciclo. */
+    /** De qual plano:fase:microciclo são os registros em `logs`. */
+    const logsKeyRef = useRef('');
     const loadLogs = useCallback(async () => {
         if (!macro || !cycle) return;
+        const key = `${macro.id}:${cycle.meso.id}:${cycle.micro.id}`;
         try {
             const data = await getStudentMicrocycleWorkoutLogs(
                 studentId,
@@ -489,7 +508,17 @@ export default function AcompanharTreinoPage() {
             );
             setLogs(logsOfWeek(data));
             setLogsFailed(false);
-        } catch {
+            logsKeyRef.current = key;
+        } catch (e) {
+            // Sem rede, os registros desta semana que já estão na tela
+            // continuam valendo. Zerá-los fazia o treino escolhido voltar
+            // para o primeiro (e fechava o card aberto) a cada ajuste feito
+            // offline: o ajuste troca o `macro`, e isso refaz esta busca.
+            if (isOfflineError(e) && logsKeyRef.current === key) {
+                setLogs((prev) => logsOfWeek(prev));
+                return;
+            }
+            logsKeyRef.current = '';
             setLogs([]);
             setLogsFailed(true);
         }
