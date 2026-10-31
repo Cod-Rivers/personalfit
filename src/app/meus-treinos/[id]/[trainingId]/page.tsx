@@ -1031,7 +1031,7 @@ export default function MeusTreinosExercisesPage({
                             style={{ color: 'var(--text-primary)' }}
                         >
                             Meus treinos de{' '}
-                            <span style={{ color: 'var(--mint)' }}>
+                            <span style={{ color: 'var(--mint-text)' }}>
                                 {trainingLabel || trainingRef.toUpperCase()}
                             </span>
                         </h1>
@@ -1589,7 +1589,11 @@ export default function MeusTreinosExercisesPage({
                         onApply={handleApplySubstitution}
                     />
                 )}
-                <div className={styles.finalizarContainer}>
+                {/* Só o botão fica preso ao rodapé. O resumo da semana e o que
+                    aparece depois de finalizar ficam no fluxo: dentro do bloco
+                    sticky eles o deixavam mais alto que a tela, e ele cobria o
+                    título e a lista (com os círculos de feito boiando por cima). */}
+                <div className={styles.finalizarInfo}>
                     <WeekCompletionSummary
                         completions={weekCompletions(weekLogs)}
                         trainingRef={trainingRef}
@@ -1606,15 +1610,7 @@ export default function MeusTreinosExercisesPage({
                             <FiSave /> Salvo localmente — será sincronizado
                             quando a internet voltar.
                         </p>
-                    ) : (
-                        <button
-                            className={styles.finalizarBtn}
-                            onClick={openWorkoutLogger}
-                            disabled={exercises.length === 0}
-                        >
-                            Finalizar Treino
-                        </button>
-                    )}
+                    ) : null}
                     {sendStatus === 'error' && (
                         <p className={styles.finalizarError}>
                             Erro ao finalizar. Tente novamente.
@@ -1677,6 +1673,17 @@ export default function MeusTreinosExercisesPage({
                         </p>
                     )}
                 </div>
+                {sendStatus !== 'success' && sendStatus !== 'queued' && (
+                    <div className={styles.finalizarContainer}>
+                        <button
+                            className={styles.finalizarBtn}
+                            onClick={openWorkoutLogger}
+                            disabled={exercises.length === 0}
+                        >
+                            Finalizar Treino
+                        </button>
+                    </div>
+                )}
             </div>
             {showWorkoutLogger &&
                 currentMeso &&

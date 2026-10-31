@@ -53,7 +53,7 @@
 
 .errorMsg {
     background: rgba(255,80,80,0.12);
-    color: var(--coral);
+    color: var(--coral-text);
     border-radius: 8px;
     padding: 0.65rem 1rem;
     margin-bottom: 1rem;
@@ -98,7 +98,7 @@
     font-size: 0.875rem;
     transition: border-color 0.2s;
 }
-.btnFilter:hover { border-color: var(--mint); color: var(--mint); }
+.btnFilter:hover { border-color: var(--mint); color: var(--mint-text); }
 
 .btnPrimary {
     background: var(--grad-mint);
@@ -125,7 +125,7 @@
     font-size: 0.875rem;
     transition: border-color 0.2s;
 }
-.btnSecondary:hover { border-color: var(--mint); color: var(--mint); }
+.btnSecondary:hover { border-color: var(--mint); color: var(--mint-text); }
 
 .loadingMsg, .emptyMsg {
     color: var(--text-secondary);
@@ -166,15 +166,15 @@
     letter-spacing: 0.04em;
 }
 
-.typePresencial { background: rgba(240,165,0,0.15); color: var(--amber); }
-.typeOnline { background: rgba(15,252,190,0.12); color: var(--mint); }
+.typePresencial { background: rgba(240,165,0,0.15); color: var(--amber-text); }
+.typeOnline { background: rgba(15,252,190,0.12); color: var(--mint-text); }
 .typeConsultoria { background: rgba(200,100,200,0.15); color: #c85adc; }
-.typeAvaliacao { background: rgba(255,107,107,0.15); color: var(--coral); }
+.typeAvaliacao { background: rgba(255,107,107,0.15); color: var(--coral-text); }
 
 .statusPending { background: rgba(150,150,150,0.15); color: var(--text-secondary); }
-.statusConfirmed { background: rgba(15,252,190,0.12); color: var(--mint); }
-.statusAttended { background: rgba(15,252,190,0.12); color: var(--mint); }
-.statusMissed { background: rgba(255,80,80,0.12); color: var(--coral); }
+.statusConfirmed { background: rgba(15,252,190,0.12); color: var(--mint-text); }
+.statusAttended { background: rgba(15,252,190,0.12); color: var(--mint-text); }
+.statusMissed { background: rgba(255,80,80,0.12); color: var(--coral-text); }
 .statusCancelled { background: rgba(120,120,120,0.12); color: var(--text-secondary); }
 .statusCancelledAdvance { background: rgba(255,180,0,0.12); color: var(--amber-dim); }
 
@@ -189,7 +189,7 @@
     align-items: center;
     gap: 5px;
     font-size: 0.85rem;
-    color: var(--mint);
+    color: var(--mint-text);
     text-decoration: none;
     margin-bottom: 0.35rem;
 }
@@ -212,7 +212,7 @@
 .btnConfirm {
     background: rgba(15,252,190,0.1);
     border: 1px solid var(--mint);
-    color: var(--mint);
+    color: var(--mint-text);
     padding: 0.35rem 0.85rem;
     border-radius: 6px;
     cursor: pointer;
@@ -240,7 +240,7 @@
 .btnCancelAdvance {
     background: rgba(255,180,0,0.1);
     border: 1px solid var(--amber-dim);
-    color: var(--amber-dim);
+    color: var(--amber-text);
     padding: 0.3rem 0.75rem;
     border-radius: 6px;
     cursor: pointer;
@@ -286,6 +286,6 @@
     font-weight: 700;
     padding: 0.15rem 0.5rem;
     border-radius: 999px;
-    background: var(--amber-dim);
+    background: rgba(240, 165, 0, 0.12);
     color: var(--amber-text);
 }

@@ -36,7 +36,7 @@
 .cardIcon {
     height: 1.5rem;
     width: 1.5rem;
-    color: var(--mint);
+    color: var(--mint-text);
     filter: drop-shadow(0 0 4px rgba(61,255,208,0.4));
 }
 
@@ -45,6 +45,18 @@
     align-items: center;
     width: 100%;
     text-align: left;
+}
+
+/* Miniatura + texto encolhem dentro do card: sem min-width 0 um nome longo
+   ("Desenvolvimento") não quebrava e passava por baixo do círculo de feito. */
+.exerciseItemContainer > :global(.flex) {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.exerciseItemContainer :global(.flex-grow) {
+    min-width: 0;
+    hyphens: auto;
+    overflow-wrap: anywhere;
 }
 
 /* Linha do exercício: o botão que abre o card + o círculo de "feito"
@@ -114,9 +126,46 @@
     list-style-type: none;
 }
 
+/* Em 360px sobravam ~100px para o nome (lista a 90%, reserva de 60px do
+   círculo de feito, miniatura de 60px): "Supino Reto Barra" quebrava uma
+   palavra por linha. */
+@media (max-width: 480px) {
+    .exerciseListContainer {
+        width: 100%;
+    }
+    .exerciseItemRow > .cardButton {
+        padding-left: 0.75rem;
+        padding-right: 3.25rem;
+    }
+    .exerciseThumbnail {
+        width: 48px;
+        height: 48px;
+    }
+    /* 20px no nome cortava "Desenvolvimento" no meio dentro de um bloco. */
+    .exerciseItemContainer :global(.text-xl) {
+        font-size: 1.0625rem;
+        line-height: 1.35;
+    }
+}
+
+/* Resumo da semana e mensagens de depois de finalizar: no fluxo da página,
+   fora do rodapé sticky (ver page.tsx). */
+.finalizarInfo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 1.5rem;
+}
+.finalizarInfo:empty {
+    display: none;
+}
+
 .finalizarContainer {
     position: sticky;
     bottom: 0;
+    /* Acima do círculo de feito (.exerciseDone, z-index 1) dos cards que
+       passam por baixo. */
+    z-index: 2;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -160,7 +209,7 @@
 .finalizarSuccess {
     font-size: 1.125rem;
     font-weight: 600;
-    color: var(--mint);
+    color: var(--mint-text);
     text-align: center;
     padding: 1rem;
     display: flex;
@@ -215,7 +264,7 @@
 .exerciseGroupBadge {
     font-size: 0.8rem;
     font-weight: 700;
-    color: var(--mint);
+    color: var(--mint-text);
     padding: 0.6rem 0.25rem 0;
     letter-spacing: 0.02em;
     display: flex;

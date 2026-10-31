@@ -477,7 +477,7 @@
 /* Aviso exibido só para o personal dono, quando a página ainda está oculta
    para os alunos. */
 .draftNotice {
-    margin: var(--space-3) var(--space-4) 0;
+    margin: 0 0 var(--space-4);
     padding: var(--space-3);
     border-radius: var(--radius-md);
     border: 1px dashed var(--vt-accent);

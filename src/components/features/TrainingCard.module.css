@@ -144,3 +144,31 @@
     background: var(--surface-3);
     border: 1px solid var(--border-subtle);
 }
+
+/* No celular o selo ("Concluído", "Hoje") desce para baixo do título: ao lado
+   dele, em 360px, sobravam ~65px e o nome do treino ficava uma palavra por
+   linha ("Peito, / Tríceps / e / Ombros"). */
+@media (max-width: 480px) {
+    .cardButton {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-areas:
+            'icon content chevron'
+            'icon badge chevron';
+        column-gap: 0.75rem;
+        row-gap: 6px;
+    }
+    .iconChip {
+        grid-area: icon;
+    }
+    .cardContent {
+        grid-area: content;
+    }
+    .statusBadge {
+        grid-area: badge;
+        justify-self: start;
+    }
+    .cardIcon {
+        grid-area: chevron;
+    }
+}

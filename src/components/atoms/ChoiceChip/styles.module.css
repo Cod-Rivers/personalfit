@@ -24,16 +24,18 @@
     cursor: not-allowed;
 }
 
+/* Tinta translúcida, não o --*-dim: esse é um tom sólido da mesma cor do
+   texto, e o chip marcado ficava ilegível (1,6:1 no escuro, 1,4:1 no coral). */
 .selected {
     border-color: var(--mint);
-    background: var(--mint-dim);
+    background: var(--mint-glow);
     color: var(--mint-text);
 }
 
 .danger.selected {
     border-color: var(--coral);
-    background: var(--coral-dim);
-    color: var(--coral);
+    background: rgba(255, 107, 107, 0.12);
+    color: var(--coral-text);
 }
 
 .chip:focus-visible {

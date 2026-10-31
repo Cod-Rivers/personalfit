@@ -105,7 +105,7 @@
 }
 
 .successMsg {
-    color: var(--mint);
+    color: var(--mint-text);
     font-size: 0.85rem;
     margin-top: 0.75rem;
     display: flex;

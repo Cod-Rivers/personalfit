@@ -11,6 +11,9 @@
 
 .tab {
     flex: 1 1 0;
+    /* Sem min-width 0 a aba não encolhe abaixo do texto: com as três abas do
+       aluno (Avaliações, Cargas, Resultados) a página rolava para o lado. */
+    min-width: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -35,4 +38,12 @@
 .tab:focus-visible {
     outline: 2px solid var(--mint);
     outline-offset: 2px;
+}
+
+@media (max-width: 400px) {
+    .tab {
+        gap: 0.3rem;
+        padding: 0.55rem 0.35rem;
+        font-size: var(--font-sm);
+    }
 }

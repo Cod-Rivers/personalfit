@@ -16,12 +16,12 @@
 }
 
 .iconTileMint {
-    background: var(--mint-dim);
+    background: var(--mint-glow);
     color: var(--mint-text);
 }
 
 .iconTileAmber {
-    background: var(--amber-dim);
+    background: rgba(240, 165, 0, 0.12);
     color: var(--amber-text);
 }
 
@@ -390,7 +390,7 @@
     padding: var(--space-3) var(--space-4);
     border-radius: var(--radius-lg);
     border: 1px solid var(--amber);
-    background: var(--amber-dim);
+    background: rgba(240, 165, 0, 0.12);
     color: var(--amber-text);
 }
 

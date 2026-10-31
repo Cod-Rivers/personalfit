@@ -343,9 +343,14 @@ export default function NewMacrocycleModal({
                 ? 'Copiar de outro aluno'
                 : `Dados ${planKindText(planningMode).of}`;
 
+    // Uma key por etapa: sem ela o React reaproveita o mesmo <button> e, no
+    // próprio clique em "Continuar", troca o type para submit — o navegador
+    // executa a ação padrão depois do handler e enviava o formulário da etapa
+    // seguinte, criando o treino com os valores padrão sem mostrar "Dados".
     const footer =
         current === 'mode' ? (
             <button
+                key="mode"
                 type="button"
                 className={s.btnEdit}
                 onClick={() =>
@@ -360,6 +365,7 @@ export default function NewMacrocycleModal({
             </button>
         ) : current === 'student' ? (
             <button
+                key="student"
                 type="button"
                 className={s.btnEdit}
                 disabled={!selectedCopyId || submitting}
@@ -369,6 +375,7 @@ export default function NewMacrocycleModal({
             </button>
         ) : current === 'library' ? (
             <button
+                key="library"
                 type="button"
                 className={s.btnEdit}
                 disabled={!selectedTemplateId || submitting}
@@ -378,6 +385,7 @@ export default function NewMacrocycleModal({
             </button>
         ) : (
             <button
+                key="details"
                 type="submit"
                 form="new-macrocycle-form"
                 className={s.btnEdit}

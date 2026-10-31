@@ -60,8 +60,11 @@
 }
 
 /* Tabs */
+/* Quebra em vez de vazar: em 360px as três abas não cabem numa linha e
+   "Disponibilidade" empurrava a página inteira para o lado. */
 .tabs {
     display: flex;
+    flex-wrap: wrap;
     gap: 0.5rem;
     margin-bottom: 1.5rem;
     border-bottom: 1px solid var(--surface-3);
@@ -72,6 +75,7 @@
     background: transparent;
     border: none;
     color: var(--text-secondary);
+    white-space: nowrap;
     padding: 0.6rem 1.25rem;
     cursor: pointer;
     font-size: 0.95rem;
@@ -79,8 +83,8 @@
     transition: color 0.2s, border-color 0.2s;
     margin-bottom: -1px;
 }
-.tabBtn:hover { color: var(--mint); }
-.tabActive { color: var(--mint) !important; border-bottom-color: var(--mint) !important; }
+.tabBtn:hover { color: var(--mint-text); }
+.tabActive { color: var(--mint-text) !important; border-bottom-color: var(--mint) !important; }
 
 /* Configuração de antecedência */
 .advanceConfig {
@@ -99,6 +103,8 @@
 .advanceConfigLabel {
     color: var(--text-secondary);
     flex-shrink: 0;
+    /* Sem isto o rótulo longo não quebra e passa da borda do cartão. */
+    max-width: 100%;
 }
 
 .advanceConfigInput {
@@ -119,7 +125,7 @@
 .btnSaveAdvance {
     background: rgba(15,252,190,0.12);
     border: 1px solid var(--mint);
-    color: var(--mint);
+    color: var(--mint-text);
     padding: 0.3rem 0.9rem;
     border-radius: 6px;
     cursor: pointer;
@@ -168,7 +174,7 @@
     font-size: 0.875rem;
     transition: border-color 0.2s;
 }
-.btnFilter:hover { border-color: var(--mint); color: var(--mint); }
+.btnFilter:hover { border-color: var(--mint); color: var(--mint-text); }
 
 /* Buttons */
 .btnPrimary {
@@ -196,7 +202,7 @@
     font-size: 0.875rem;
     transition: border-color 0.2s;
 }
-.btnSecondary:hover { border-color: var(--mint); color: var(--mint); }
+.btnSecondary:hover { border-color: var(--mint); color: var(--mint-text); }
 
 /* Loading / empty */
 .loadingMsg, .emptyMsg {
@@ -241,14 +247,14 @@
 
 /* Type colors */
 .typePresencial { background: rgba(240,165,0,0.15); color: var(--amber); }
-.typeOnline { background: rgba(15,252,190,0.12); color: var(--mint); }
+.typeOnline { background: rgba(15,252,190,0.12); color: var(--mint-text); }
 .typeConsultoria { background: rgba(200,100,200,0.15); color: #c85adc; }
 .typeAvaliacao { background: rgba(255,107,107,0.15); color: var(--coral); }
 
 /* Status colors */
 .statusPending { background: rgba(150,150,150,0.15); color: var(--text-secondary); }
-.statusConfirmed { background: rgba(15,252,190,0.12); color: var(--mint); }
-.statusAttended { background: rgba(15,252,190,0.12); color: var(--mint); }
+.statusConfirmed { background: rgba(15,252,190,0.12); color: var(--mint-text); }
+.statusAttended { background: rgba(15,252,190,0.12); color: var(--mint-text); }
 .statusMissed { background: rgba(255,80,80,0.12); color: var(--coral); }
 .statusCancelled { background: rgba(120,120,120,0.12); color: var(--text-secondary); }
 .statusCancelledAdvance { background: rgba(255,180,0,0.12); color: var(--amber-dim); }
@@ -276,7 +282,7 @@
     align-items: center;
     gap: 5px;
     font-size: 0.85rem;
-    color: var(--mint);
+    color: var(--mint-text);
     text-decoration: none;
     margin-bottom: 0.35rem;
 }
@@ -299,7 +305,7 @@
 .btnAttended {
     background: rgba(15,252,190,0.12);
     border: 1px solid var(--mint);
-    color: var(--mint);
+    color: var(--mint-text);
     padding: 0.3rem 0.75rem;
     border-radius: 6px;
     cursor: pointer;
@@ -331,7 +337,7 @@
 .btnConfirm {
     background: rgba(15,252,190,0.1);
     border: 1px solid var(--mint);
-    color: var(--mint);
+    color: var(--mint-text);
     padding: 0.3rem 0.75rem;
     border-radius: 6px;
     cursor: pointer;
@@ -476,7 +482,7 @@
 .dayCheckbox input { display: none; }
 .dayCheckboxActive {
     border-color: var(--mint);
-    color: var(--mint);
+    color: var(--mint-text);
     background: rgba(15,252,190,0.1);
 }
 
@@ -522,13 +528,13 @@
 }
 
 .statusPendingExc { background: rgba(150,150,150,0.15); color: var(--text-secondary); font-size: 0.72rem; padding: 0.15rem 0.5rem; border-radius: 999px; }
-.statusAccepted { background: rgba(15,252,190,0.12); color: var(--mint); font-size: 0.72rem; padding: 0.15rem 0.5rem; border-radius: 999px; }
+.statusAccepted { background: rgba(15,252,190,0.12); color: var(--mint-text); font-size: 0.72rem; padding: 0.15rem 0.5rem; border-radius: 999px; }
 .statusRejected { background: rgba(255,80,80,0.12); color: #ff6b6b; font-size: 0.72rem; padding: 0.15rem 0.5rem; border-radius: 999px; }
 
 .btnAccept {
     background: rgba(15,252,190,0.1);
     border: 1px solid var(--mint);
-    color: var(--mint);
+    color: var(--mint-text);
     padding: 0.25rem 0.6rem;
     border-radius: 6px;
     cursor: pointer;
@@ -567,7 +573,9 @@
     padding: 1rem;
     border-radius: 8px;
     border: 1px solid var(--amber);
-    background: var(--amber-dim);
+    /* Tinta translúcida: sobre o --amber-dim (sólido) o título âmbar e o texto
+       cinza ficavam ilegíveis. Idem no .pausedBadge. */
+    background: rgba(240, 165, 0, 0.12);
 }
 
 .limitedTitle {
@@ -587,6 +595,6 @@
     font-weight: 700;
     padding: 0.15rem 0.5rem;
     border-radius: 999px;
-    background: var(--amber-dim);
+    background: rgba(240, 165, 0, 0.12);
     color: var(--amber-text);
 }

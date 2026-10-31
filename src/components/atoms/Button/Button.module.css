@@ -60,7 +60,7 @@
 /* ── Variante: secondary (outline) ── */
 .secondary {
     background: transparent;
-    color: var(--mint);
+    color: var(--mint-text);
     border: 1.5px solid var(--mint);
     font-weight: 600;
 }

@@ -203,21 +203,23 @@ export default function MinhaContaPage() {
                     </div>
                     {!editing ? (
                         <ul className="list-group list-group-flush">
-                            <li className="list-group-item d-flex justify-content-between">
+                            {/* gap + text-end: com nome longo o valor quebrava
+                                colado no rótulo ("NomeCarlos..."). */}
+                            <li className="list-group-item d-flex justify-content-between gap-3">
                                 <span className="text-secondary">Nome</span>
-                                <span>{user.name || '—'}</span>
+                                <span className="text-end text-break">{user.name || '—'}</span>
                             </li>
-                            <li className="list-group-item d-flex justify-content-between">
+                            <li className="list-group-item d-flex justify-content-between gap-3">
                                 <span className="text-secondary">E-mail</span>
-                                <span>{user.email || '—'}</span>
+                                <span className="text-end text-break">{user.email || '—'}</span>
                             </li>
-                            <li className="list-group-item d-flex justify-content-between">
+                            <li className="list-group-item d-flex justify-content-between gap-3">
                                 <span className="text-secondary">Telefone</span>
-                                <span>{user.phone || '—'}</span>
+                                <span className="text-end text-break">{user.phone || '—'}</span>
                             </li>
-                            <li className="list-group-item d-flex justify-content-between">
+                            <li className="list-group-item d-flex justify-content-between gap-3">
                                 <span className="text-secondary">CPF</span>
-                                <span>{user.cpf || '—'}</span>
+                                <span className="text-end text-break">{user.cpf || '—'}</span>
                             </li>
                         </ul>
                     ) : (

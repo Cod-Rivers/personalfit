@@ -26,7 +26,9 @@
     width: 2.75rem;
     height: 2.75rem;
     border-radius: var(--radius-md);
-    background: var(--amber-dim);
+    /* Tinta translúcida aqui e no .banner: o --amber-dim é sólido e o âmbar
+       por cima dele mal aparecia (1,4:1). */
+    background: rgba(240, 165, 0, 0.12);
     color: var(--amber-text);
 }
 
@@ -130,7 +132,7 @@
     padding: var(--space-3) var(--space-4);
     border-radius: var(--radius-md);
     border: 1px solid var(--amber);
-    background: var(--amber-dim);
+    background: rgba(240, 165, 0, 0.12);
     color: var(--amber-text);
 }
 

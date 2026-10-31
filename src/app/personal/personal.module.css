@@ -1,9 +1,15 @@
 ﻿.page {
     min-height: 100%;
+    /* Cresce com o conteúdo: quem rola é o .main-content, não a página. */
+    flex-shrink: 0;
     background: var(--mil-blue);
     color: var(--text-primary);
     padding: 40px 24px;
+    /* clip, não hidden: overflow-x hidden força overflow-y auto e a página
+       virava um 2º scroll dentro do .main-content — o ScrollHint, que observa
+       o .main-content, nunca aparecia. hidden fica para navegador sem clip. */
     overflow-x: hidden;
+    overflow-x: clip;
 }
 
 .container {
@@ -74,7 +80,7 @@
 .statValue {
     font-size: 1.8rem;
     font-weight: 700;
-    color: var(--mint);
+    color: var(--mint-text);
     margin: 0;
     text-shadow: 0 0 10px rgba(61,255,208,0.3);
 }
@@ -186,7 +192,7 @@
     margin-left: 8px;
     vertical-align: middle;
     background: rgba(61, 255, 208, 0.12);
-    color: var(--mint);
+    color: var(--mint-text);
     border: 1px solid rgba(61, 255, 208, 0.25);
 }
 
@@ -239,7 +245,7 @@
 }
 .btnAction:hover {
     border-color: var(--mint);
-    color: var(--mint);
+    color: var(--mint-text);
 }
 
 .btnDanger {
@@ -356,6 +362,20 @@
     grid-template-columns: 1fr 1fr;
     gap: 8px;
     margin-top: 8px;
+    /* Cor de cada atalho do card (inline no StudentsTab). */
+    --action-treinos: #5bc0be;
+    --action-finance: #2e9e77;
+    --action-anamnese: #e0a03c;
+    --action-pdf: #5b8def;
+}
+
+/* Os tons acima somem no bege do tema claro (1,9 a 3:1): lá vale a versão
+   escura do mesmo matiz. */
+[data-theme='light'] .actionsGrid {
+    --action-treinos: #1f7a78;
+    --action-finance: #1d7a5a;
+    --action-anamnese: #8a5f00;
+    --action-pdf: #2563c9;
 }
 
 .gridAction {
@@ -388,7 +408,7 @@
     gap: 5px;
 }
 .footLink:hover {
-    color: var(--mint);
+    color: var(--mint-text);
 }
 
 /* ── Empty State ── */
@@ -613,7 +633,7 @@
     color: var(--mint-text);
     border-bottom-color: var(--mint);
 }
-.tabActive:hover { color: var(--mint); }
+.tabActive:hover { color: var(--mint-text); }
 
 .tabIcon {
     flex-shrink: 0;
@@ -880,7 +900,8 @@
     font-weight: 600;
     margin-left: 8px;
     vertical-align: middle;
-    background: var(--amber-dim);
+    /* Tinta translúcida: o --amber-dim é sólido e o texto âmbar sumia (1,4:1). */
+    background: rgba(240, 165, 0, 0.12);
     color: var(--amber-text);
     border: 1px solid var(--amber);
 }

@@ -59,14 +59,18 @@ export default function ExcluirContaForm() {
 
     if (sent) {
         return (
+            // Um div só dentro do alerta: o .alert-success global é flex em
+            // linha e os dois parágrafos viravam duas colunas.
             <div className="alert alert-success mb-0">
-                <p className="mb-1 fw-semibold">Pedido registrado.</p>
-                <p className="mb-0">
-                    Se este e-mail possuir cadastro no Venafit, você receberá
-                    uma mensagem com um link para confirmar a exclusão. O link
-                    vale por 1 hora e só pode ser usado uma vez. Nada é apagado
-                    antes de você confirmar.
-                </p>
+                <div>
+                    <p className="mb-1 fw-semibold">Pedido registrado.</p>
+                    <p className="mb-0">
+                        Se este e-mail possuir cadastro no Venafit, você
+                        receberá uma mensagem com um link para confirmar a
+                        exclusão. O link vale por 1 hora e só pode ser usado
+                        uma vez. Nada é apagado antes de você confirmar.
+                    </p>
+                </div>
             </div>
         );
     }

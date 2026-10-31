@@ -60,16 +60,25 @@
 .navbar-brand { font-weight: 700; letter-spacing: 0.02em; }
 
 /* ── Alinhamento do topo: avatar/saudação + hambúrguer sempre na mesma
-   linha, com o toggler agrupado junto ao avatar em vez de solto na borda
-   da tela em telas estreitas. ── */
+   linha. A linha precisa continuar com wrap (o Bootstrap já impõe, via
+   .navbar > .container-fluid): é assim que o menu aberto (.navbar-collapse,
+   base 100%) desce para baixo. Quem garante a mesma linha é a base 0 da
+   saudação — com base auto, um nome longo ocupava a linha toda e o
+   hambúrguer caía sozinho numa 2ª linha (+48px de cabeçalho em toda tela).
+   Só abaixo do lg: acima dele o menu divide a linha com a saudação, e base 0
+   cortaria o nome sem necessidade. ── */
 .header-top-row {
-    flex-wrap: nowrap;
     gap: 10px;
 }
 .header-brand {
     flex: 1 1 auto;
     min-width: 0;
     margin-right: 0;
+}
+@media (max-width: 991.98px) {
+    .header-brand {
+        flex-basis: 0%;
+    }
 }
 .header-brand-name {
     overflow: hidden;

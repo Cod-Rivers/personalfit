@@ -305,7 +305,7 @@ export default function VideoUploadModal({
 
             {uploadDone ? (
                 <div className="text-center py-4">
-                    <div style={{ fontSize: 40, display: 'flex', justifyContent: 'center', color: 'var(--mint, #0fac9b)' }}>
+                    <div style={{ fontSize: 40, display: 'flex', justifyContent: 'center', color: 'var(--mint-text, #0fac9b)' }}>
                         <FiCheckCircle />
                     </div>
                     <p className="mb-0 mt-2 fw-semibold">

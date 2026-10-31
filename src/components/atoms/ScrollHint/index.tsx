@@ -1,5 +1,6 @@
 'use client';
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { FiChevronDown } from 'react-icons/fi';
 import styles from './ScrollHint.module.css';
 
@@ -45,9 +46,13 @@ export default function ScrollHint() {
 
     if (!visible) return null;
 
-    return (
+    // Portal no body: em Meus Treinos a seta é filha direta do .main-content,
+    // e a regra global `.main-content > :not(nav)` (largura 100% + padding)
+    // a esticava numa elipse da largura da tela por cima do conteúdo.
+    return createPortal(
         <div className={styles.hint} aria-hidden="true">
             <FiChevronDown />
-        </div>
+        </div>,
+        document.body,
     );
 }

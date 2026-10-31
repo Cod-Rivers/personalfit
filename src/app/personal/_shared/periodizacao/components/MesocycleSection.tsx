@@ -448,7 +448,7 @@ export default function MesocycleSection({
                 className={open ? s.mesoHeader : s.mesoHeaderCollapsed}
                 onClick={() => setOpen((v) => !v)}
             >
-                <div>
+                <div className={s.mesoHeaderInfo}>
                     <p className={s.mesoTitle}>
                         {simpleMode ? meso.name : `${meso.order}. ${meso.name}`}
                     </p>
@@ -476,7 +476,7 @@ export default function MesocycleSection({
                         </p>
                     )}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div className={s.mesoHeaderActions}>
                     <button
                         className={s.btnSmall}
                         onClick={(e) => {

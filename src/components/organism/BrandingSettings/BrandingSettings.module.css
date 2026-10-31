@@ -308,7 +308,7 @@
 }
 
 .successMsg {
-    color: var(--mint);
+    color: var(--mint-text);
     font-size: 0.85rem;
     margin-bottom: 0.75rem;
     font-weight: 600;

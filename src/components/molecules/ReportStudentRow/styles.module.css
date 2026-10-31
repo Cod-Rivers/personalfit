@@ -63,8 +63,10 @@
     color: var(--text-secondary);
 }
 
+/* Tintas translúcidas aqui e em .signal: o --*-dim é sólido e da mesma cor
+   do texto ("Aderência baixa" ficava 1,4:1, vermelho sobre vermelho). */
 .decided {
-    background: var(--mint-dim);
+    background: var(--mint-glow);
     border-color: var(--mint);
     color: var(--mint-text);
 }
@@ -89,8 +91,8 @@
 .signal {
     font-size: var(--font-xs);
     font-weight: 700;
-    color: var(--coral);
-    background: var(--coral-dim);
+    color: var(--coral-text);
+    background: rgba(255, 107, 107, 0.12);
     border-radius: var(--radius-sm);
     padding: 1px var(--space-2);
 }

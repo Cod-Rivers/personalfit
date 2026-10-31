@@ -14,7 +14,7 @@
     border-radius: 50%;
     background: var(--surface-1);
     border: 1px solid var(--border-mid);
-    color: var(--mint);
+    color: var(--mint-text);
     box-shadow: var(--shadow-md);
     pointer-events: none;
     animation: scrollHintBounce 1.6s ease-in-out infinite, scrollHintFadeIn 0.3s ease-out;

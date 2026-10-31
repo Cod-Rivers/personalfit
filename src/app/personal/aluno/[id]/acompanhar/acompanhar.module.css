@@ -4,10 +4,17 @@
 
 .page {
     min-height: 100%;
+    /* Cresce com o conteúdo: quem rola é o .main-content, não a página. */
+    flex-shrink: 0;
     background: var(--mil-blue);
     color: var(--text-primary);
     padding: var(--space-7) var(--space-4) var(--space-8);
+    /* clip, não hidden: overflow-x hidden força overflow-y auto e a página
+       virava um 2º scroll dentro do .main-content. Os .srOnly (absolutos,
+       presos ao .main-content) ainda o deixavam rolar ~1900px de tela preta
+       depois do fim da lista. hidden fica para navegador sem clip. */
     overflow-x: hidden;
+    overflow-x: clip;
 }
 
 .container {
@@ -127,6 +134,14 @@
 .trainingRef {
     font-size: var(--font-lg);
     font-weight: 700;
+}
+
+/* Em 360px o card tem ~72px livres ao lado do ×: no tamanho cheio "Treino 2"
+   já quebrava em duas linhas ("Treino" / "2") e "Treino 1" não. */
+@media (max-width: 380px) {
+    .trainingRef {
+        font-size: var(--font-md);
+    }
 }
 
 .trainingMeta {
@@ -551,7 +566,7 @@
 .btnAdd {
     composes: btnBack;
     border-color: var(--mint);
-    color: var(--mint);
+    color: var(--mint-text);
     font-weight: 600;
 }
 

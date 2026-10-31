@@ -57,6 +57,7 @@
 .fieldRange {
     font-size: 0.7rem;
     color: var(--text-muted);
+    white-space: nowrap;
 }
 
 .fieldInputWrapper {
@@ -65,8 +66,10 @@
     gap: 0.5rem;
 }
 
+/* 8.5rem cabe o placeholder "padrão Venafit": o reset global força 16px em
+   todo input (zoom do iOS), e com 90px ele aparecia cortado em "padrão V". */
 .fieldInput {
-    width: 90px;
+    width: 8.5rem;
     background: var(--surface-2);
     border: 1px solid var(--surface-3);
     border-radius: 8px;
@@ -85,7 +88,7 @@
 .resetBtn {
     background: none;
     border: none;
-    color: var(--mint);
+    color: var(--mint-text);
     font-size: 0.75rem;
     cursor: pointer;
     padding: 0;
@@ -133,7 +136,7 @@
 
 .previewZone[data-zone='supercompensacao'] {
     background: rgba(61, 255, 208, 0.15);
-    color: var(--mint);
+    color: var(--mint-text);
 }
 
 .previewZone[data-zone='fadiga'] {
@@ -159,7 +162,7 @@
 }
 
 .successMsg {
-    color: var(--mint);
+    color: var(--mint-text);
     font-size: 0.85rem;
     margin-bottom: 0.75rem;
     font-weight: 600;

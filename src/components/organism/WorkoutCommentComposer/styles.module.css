@@ -22,7 +22,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: var(--mint-dim);
+    background: var(--mint-glow);
     color: var(--mint-text);
     font-weight: 800;
     font-size: var(--font-lg);

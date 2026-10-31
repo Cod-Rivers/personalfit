@@ -40,7 +40,7 @@ export default function RecuperarCadastroPage() {
     };
 
     return (
-        <div className="min-vh-100 d-flex justify-content-center align-items-center bg-light">
+        <div className="d-flex justify-content-center align-items-center">
             <div
                 className="card shadow p-4"
                 style={{ maxWidth: 420, width: '100%' }}

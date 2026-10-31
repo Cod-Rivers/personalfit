@@ -124,7 +124,7 @@
 
 .attention,
 .attention strong {
-    color: var(--coral);
+    color: var(--coral-text);
 }
 
 .status {

@@ -99,6 +99,8 @@
 }
 
 .timeInput {
+    /* Encolhe na linha: em 360px os dois horários + o × passavam da borda. */
+    min-width: 0;
     background: var(--surface-2);
     border: 1px solid var(--surface-3);
     color: var(--text-primary);
@@ -143,7 +145,7 @@
     font-size: 0.78rem;
     transition: border-color 0.2s, color 0.2s;
 }
-.btnAddWindow:hover, .btnCopy:hover { border-color: var(--mint); color: var(--mint); }
+.btnAddWindow:hover, .btnCopy:hover { border-color: var(--mint); color: var(--mint-text); }
 
 /* Regras */
 .rulesGrid {
@@ -199,7 +201,7 @@
 }
 .typeCheckboxActive {
     border-color: var(--mint);
-    color: var(--mint);
+    color: var(--mint-text);
     background: rgba(15,252,190,0.1);
 }
 
@@ -229,7 +231,7 @@
 .btnAddSmall {
     background: rgba(15,252,190,0.1);
     border: 1px solid var(--mint);
-    color: var(--mint);
+    color: var(--mint-text);
     padding: 0.3rem 0.75rem;
     border-radius: 6px;
     cursor: pointer;
@@ -335,4 +337,4 @@
     font-size: 0.875rem;
     transition: border-color 0.2s;
 }
-.btnSecondary:hover { border-color: var(--mint); color: var(--mint); }
+.btnSecondary:hover { border-color: var(--mint); color: var(--mint-text); }

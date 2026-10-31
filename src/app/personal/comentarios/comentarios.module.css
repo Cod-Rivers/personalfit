@@ -28,9 +28,10 @@
     cursor: pointer;
 }
 
+/* Tinta translúcida: com o --mint-dim (sólido) o filtro ativo ficava 1,6:1. */
 .tabActive {
     border-color: var(--mint);
-    background: var(--mint-dim);
+    background: var(--mint-glow);
     color: var(--mint-text);
 }
 

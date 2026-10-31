@@ -27,7 +27,13 @@ export default function StudentFollowUpSection({ studentId }: { studentId: strin
     const [reports, setReports] = useState<WorkoutReport[] | null>(null);
     const [showAll, setShowAll] = useState(false);
     const [generating, setGenerating] = useState(false);
-    const isPro = getUser()?.plan_type === 'pro';
+    // Lido depois de montar: no servidor não há sessão, e ler no render fazia
+    // o HTML do servidor (link) divergir do cliente (botão) — erro de
+    // hidratação que remontava a seção inteira.
+    const [isPro, setIsPro] = useState(false);
+    useEffect(() => {
+        setIsPro(getUser()?.plan_type === 'pro');
+    }, []);
 
     useEffect(() => {
         let alive = true;

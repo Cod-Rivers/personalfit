@@ -86,7 +86,7 @@
 }
 .btnAdd:hover {
     border-color: var(--mint);
-    color: var(--mint);
+    color: var(--mint-text);
 }
 
 .btnSubmit {
@@ -104,13 +104,12 @@
     cursor: not-allowed;
 }
 
+/* Fica sozinho num cartão próprio: um divisor em cima (de quando vinha
+   depois de outro conteúdo) só deixava um espaço vazio no topo do cartão. */
 .toggleRow {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 12px 0 0;
-    border-top: 1px solid var(--border-subtle);
-    margin-top: 16px;
     font-size: 0.9rem;
     color: var(--text-muted);
 }
@@ -124,7 +123,7 @@
 }
 
 .pdfLink {
-    color: var(--mint);
+    color: var(--mint-text);
     font-size: 0.85rem;
     text-decoration: underline;
 }
@@ -139,7 +138,7 @@
 .historyToggle {
     background: transparent;
     border: none;
-    color: var(--mint);
+    color: var(--mint-text);
     cursor: pointer;
     font-size: 0.85rem;
     padding: 0;

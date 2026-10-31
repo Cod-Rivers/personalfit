@@ -1,6 +1,6 @@
 ﻿.ref {
     background: var(--mint-glow);
-    color: var(--mint);
+    color: var(--mint-text);
     padding: 2px 8px;
     border-radius: 4px;
     margin-left: 8px;
@@ -74,7 +74,7 @@
 }
 .addSeriesBtn:hover:not(:disabled) {
     border-color: var(--mint);
-    color: var(--mint);
+    color: var(--mint-text);
 }
 .addSeriesBtn:disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -285,7 +285,7 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    color: var(--mint);
+    color: var(--mint-text);
     font-weight: 600;
 }
 

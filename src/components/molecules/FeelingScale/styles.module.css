@@ -49,7 +49,7 @@
 
 .selected {
     border-color: var(--mint);
-    background: var(--mint-dim);
+    background: var(--mint-glow);
 }
 
 .emoji {

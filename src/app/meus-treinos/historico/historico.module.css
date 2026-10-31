@@ -37,9 +37,13 @@
     font-weight: 700;
     font-size: 1rem;
     color: var(--text-primary);
-    text-transform: capitalize;
     min-width: 130px;
     text-align: center;
+}
+
+/* Só a 1ª letra: capitalize no rótulo inteiro virava "Outubro De 2026". */
+.monthLabel::first-letter {
+    text-transform: uppercase;
 }
 
 .weekdayRow,

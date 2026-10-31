@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { FiArrowLeft, FiX } from 'react-icons/fi';
 import { useCloseOnBack } from '@/hooks/useCloseOnBack';
@@ -27,6 +27,8 @@ interface ModalProps {
  * formulário inteiro sem querer. */
 const openModals: symbol[] = [];
 
+const subscribeNoop = () => () => {};
+
 /**
  * Sheet full-screen: preenche a área abaixo do header (que permanece visível,
  * pois o backdrop começa em --app-header-height) e cobre o footer, que fica
@@ -43,6 +45,11 @@ export default function Modal({
 }: ModalProps) {
     const idRef = useRef<symbol | null>(null);
     if (idRef.current === null) idRef.current = Symbol('modal');
+
+    // false enquanto hidrata, true no cliente: o portal não existe no HTML do
+    // servidor, e decidir por `typeof document` fazia a página que já abre com
+    // o modal aberto (/periodizacao/novo) divergir na hidratação.
+    const isClient = useSyncExternalStore(subscribeNoop, () => true, () => false);
 
     // onClose vive num ref para o efeito abaixo depender só de `open`: se ele
     // remontasse a cada nova identidade de onClose, o modal se reempilharia e
@@ -114,7 +121,7 @@ export default function Modal({
         };
     }, [open]);
 
-    if (!open || typeof document === 'undefined') return null;
+    if (!open || !isClient) return null;
 
     return createPortal(
         <div

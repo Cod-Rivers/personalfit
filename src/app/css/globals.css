@@ -251,7 +251,7 @@ a:hover { color: var(--mint-text-dim); }
 
 .btn-outline-gold {
     background: transparent;
-    color: var(--mint);
+    color: var(--mint-text);
     border: 1.5px solid var(--mint);
     border-radius: 8px;
     padding: 9px 22px;
@@ -303,11 +303,11 @@ a:hover { color: var(--mint-text-dim); }
 .btn-outline-primary {
     background: transparent !important;
     border-color: var(--mint) !important;
-    color: var(--mint) !important;
+    color: var(--mint-text) !important;
 }
 .btn-outline-primary:hover, .btn-outline-primary:focus {
     background: var(--mint-glow) !important;
-    color: var(--mint) !important;
+    color: var(--mint-text) !important;
 }
 
 .btn-outline-secondary {
@@ -385,6 +385,32 @@ a:hover { color: var(--mint-text-dim); }
 }
 .form-control::placeholder, input::placeholder { color: var(--text-muted) !important; }
 
+/* O <input type="file"> nativo ("Escolher arquivo | Nenhum arquivo escolhido")
+   é mais largo que um cartão em 360px e empurrava a página para o lado
+   (Plano Alimentar, Nova avaliação da Evolução). */
+input[type='file'] { max-width: 100%; }
+
+/* .text-muted do Bootstrap é cinza-escuro pensado para fundo branco: no tema
+   escuro sumia (1,2:1 sobre o preto, ex.: introdução da Central de Ajuda). */
+.text-muted { color: var(--text-muted) !important; }
+
+/* Cartões e listas do Bootstrap no tema escuro: sem isto ficavam brancos
+   sobre o fundo preto (Minha Conta, Autorregulação e treino do aluno, telas de
+   senha) e o verde dos botões contornados sumia no branco. Só cartão, lista e
+   .text-secondary: tabelas e modais do Bootstrap ficam como estão. */
+[data-theme='dark'] .card {
+    --bs-card-bg: var(--surface-1);
+    --bs-card-cap-bg: var(--surface-2);
+    --bs-card-border-color: var(--border-subtle);
+    color: var(--text-primary);
+}
+[data-theme='dark'] .list-group {
+    --bs-list-group-bg: transparent;
+    --bs-list-group-color: var(--text-primary);
+    --bs-list-group-border-color: var(--border-subtle);
+}
+[data-theme='dark'] .text-secondary { color: var(--text-secondary) !important; }
+
 /* ── Checkbox/radio (Bootstrap .form-check-input) ──
    Fora do reset acima para não perder o preenchimento nativo do Bootstrap ao
    marcar; aqui só re-tematizamos as cores para bater com a marca. */
@@ -420,17 +446,19 @@ a:hover { color: var(--mint-text-dim); }
     -webkit-mask: var(--alert-icon) no-repeat center / contain;
     mask: var(--alert-icon) no-repeat center / contain;
 }
+/* Texto em --amber-text/--coral-text: o --amber e o --coral dão ~2:1 no tema
+   claro. No escuro são o mesmo tom. */
 .alert-warning {
     background: rgba(240,165,0,0.12) !important;
     border-color: var(--amber) !important;
-    color: var(--amber) !important;
+    color: var(--amber-text) !important;
     border-radius: 8px !important;
     --alert-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z'/%3E%3Cpath d='M12 9v4M12 17h.01'/%3E%3C/svg%3E");
 }
 .alert-danger {
     background: rgba(255,107,107,0.1) !important;
     border-color: var(--coral) !important;
-    color: var(--coral) !important;
+    color: var(--coral-text) !important;
     border-radius: 8px !important;
     --alert-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='m15 9-6 6M9 9l6 6'/%3E%3C/svg%3E");
 }
@@ -442,9 +470,18 @@ a:hover { color: var(--mint-text-dim); }
     --alert-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
 }
 
+/* O azul-claro padrão do Bootstrap virava uma caixa clara sobre o preto no
+   tema escuro (Autorregulação, treino, checkout, aviso do teste grátis). */
+.alert-info {
+    background: rgba(91,141,239,0.12) !important;
+    border-color: #5b8def !important;
+    color: var(--text-primary) !important;
+    border-radius: 8px !important;
+}
+
 /* ── Spinner ── */
 .spinner-border {
-    color: var(--mint) !important;
+    color: var(--mint-text) !important;
 }
 
 /* ── Animations ── */

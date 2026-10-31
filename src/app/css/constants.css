@@ -21,6 +21,8 @@
     --mint-text-dim:  #085e4b;
     --coral:          #ff6b6b;
     --coral-dim:      #e04f4f;
+    /* Texto coral legível sobre fundo claro (o --coral dá 2,6:1 no branco). */
+    --coral-text:     #b42318;
     --amber:          #f0a500;
     --amber-dim:      #cc8b00;
     --amber-text:     #8a5f00;
@@ -167,6 +169,7 @@
     --btn-text: #0b0b0b;
     --mint-text: #0ffcbe;
     --mint-text-dim: #0ac99a;
+    --coral-text: #ff6b6b;
     --amber-text: #f0a500;
     --violet-text: #a78bfa;
 

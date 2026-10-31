@@ -52,13 +52,18 @@ export default function ConfirmarExclusaoPage() {
 
             {done ? (
                 <>
+                    {/* Um div só dentro do alerta: o .alert-success global é
+                        flex em linha e os dois parágrafos viravam colunas. */}
                     <div className="alert alert-success">
-                        <p className="fw-semibold mb-1">Conta excluída.</p>
-                        <p className="mb-0">
-                            Seus dados de identificação foram anonimizados, seus
-                            dados de saúde e de treino foram apagados de forma
-                            permanente e todos os aparelhos foram desconectados.
-                        </p>
+                        <div>
+                            <p className="fw-semibold mb-1">Conta excluída.</p>
+                            <p className="mb-0">
+                                Seus dados de identificação foram anonimizados,
+                                seus dados de saúde e de treino foram apagados
+                                de forma permanente e todos os aparelhos foram
+                                desconectados.
+                            </p>
+                        </div>
                     </div>
                     <p className="text-secondary">
                         Se você tinha uma assinatura ativa pelo Google Play,

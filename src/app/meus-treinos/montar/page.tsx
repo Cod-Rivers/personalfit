@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FiArrowLeft, FiAlertTriangle } from 'react-icons/fi';
+import { FiArrowLeft } from 'react-icons/fi';
 import {
     getMyPlannings,
     getMyMacrocycle,
@@ -312,40 +312,43 @@ export default function MontarTreinoPage() {
                         {/* Termo de responsabilidade: o app hospeda e registra
                             um treino que ele não prescreveu nem revisou. O
                             backend recusa a criação sem o aceite. */}
+                        {/* Conteúdo num div só: o .alert-warning global é flex
+                            em linha (ícone + texto), e com título, parágrafo e
+                            aceite como filhos diretos virava três colunas
+                            estreitas, com o aceite cortado. O ícone vem do
+                            ::before do próprio alerta. */}
                         <div
                             className="alert alert-warning"
                             style={{ marginTop: 22 }}
                         >
-                            <p
-                                className="d-flex align-items-center gap-2"
-                                style={{ fontWeight: 600, marginBottom: 8 }}
-                            >
-                                <FiAlertTriangle aria-hidden /> Antes de
-                                continuar
-                            </p>
-                            <p style={{ marginBottom: 12 }}>
-                                Este treino é montado por você. O Venafit não
-                                prescreve, não revisa e não se responsabiliza
-                                pelo conteúdo dele, nem por lesões ou resultados
-                                decorrentes da sua execução. O app serve para
-                                você organizar, executar e registrar o que já
-                                escolheu treinar. Em caso de dúvida, procure um
-                                profissional de educação física.
-                            </p>
-                            <label className="d-flex align-items-start gap-2">
-                                <input
-                                    type="checkbox"
-                                    checked={waiverAccepted}
-                                    onChange={(e) =>
-                                        setWaiverAccepted(e.target.checked)
-                                    }
-                                    style={{ marginTop: 4, flexShrink: 0 }}
-                                />
-                                <span>
-                                    Li e concordo: o treino é de minha
-                                    responsabilidade.
-                                </span>
-                            </label>
+                            <div>
+                                <p style={{ fontWeight: 600, marginBottom: 8 }}>
+                                    Antes de continuar
+                                </p>
+                                <p style={{ marginBottom: 12 }}>
+                                    Este treino é montado por você. O Venafit não
+                                    prescreve, não revisa e não se responsabiliza
+                                    pelo conteúdo dele, nem por lesões ou resultados
+                                    decorrentes da sua execução. O app serve para
+                                    você organizar, executar e registrar o que já
+                                    escolheu treinar. Em caso de dúvida, procure um
+                                    profissional de educação física.
+                                </p>
+                                <label className="d-flex align-items-start gap-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={waiverAccepted}
+                                        onChange={(e) =>
+                                            setWaiverAccepted(e.target.checked)
+                                        }
+                                        style={{ marginTop: 4, flexShrink: 0 }}
+                                    />
+                                    <span>
+                                        Li e concordo: o treino é de minha
+                                        responsabilidade.
+                                    </span>
+                                </label>
+                            </div>
                         </div>
 
                         <button

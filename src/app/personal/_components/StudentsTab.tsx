@@ -325,8 +325,8 @@ export default function StudentsTab({ state, unreadComments }: Props) {
                                     ) : (
                                         <>
                                             <p className={s.studentMeta}>
-                                                {st.email} · {st.cpf}
-                                                {st.phone ? ` · ${st.phone}` : ''}
+                                                {/* CPF é opcional no pré-cadastro: sem o filtro sobrava "· ·". */}
+                                                {[st.email, st.cpf, st.phone].filter(Boolean).join(' · ')}
                                             </p>
                                             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                                                 {planSummary && (
@@ -453,8 +453,8 @@ export default function StudentsTab({ state, unreadComments }: Props) {
                                         }
                                         className={s.gridAction}
                                         style={{
-                                            borderColor: '#5bc0be',
-                                            color: '#5bc0be',
+                                            borderColor: 'var(--action-treinos)',
+                                            color: 'var(--action-treinos)',
                                         }}
                                     >
                                         <FiClipboard /> Treinos
@@ -487,8 +487,8 @@ export default function StudentsTab({ state, unreadComments }: Props) {
                                         }
                                         className={s.gridAction}
                                         style={{
-                                            borderColor: '#2e9e77',
-                                            color: '#2e9e77',
+                                            borderColor: 'var(--action-finance)',
+                                            color: 'var(--action-finance)',
                                         }}
                                     >
                                         <FiDollarSign /> Financeiro
@@ -507,8 +507,8 @@ export default function StudentsTab({ state, unreadComments }: Props) {
                                         }
                                         className={s.gridAction}
                                         style={{
-                                            borderColor: '#e0a03c',
-                                            color: '#e0a03c',
+                                            borderColor: 'var(--action-anamnese)',
+                                            color: 'var(--action-anamnese)',
                                         }}
                                     >
                                         <FiHeart /> Anamnese
@@ -537,8 +537,8 @@ export default function StudentsTab({ state, unreadComments }: Props) {
                                         }
                                         className={s.gridAction}
                                         style={{
-                                            borderColor: '#5b8def',
-                                            color: '#5b8def',
+                                            borderColor: 'var(--action-pdf)',
+                                            color: 'var(--action-pdf)',
                                         }}
                                     >
                                         <FiFileText /> Importar PDF

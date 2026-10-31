@@ -17,7 +17,7 @@
 
 .infoIcon {
     font-size: 1.75rem;
-    color: var(--mint);
+    color: var(--mint-text);
 }
 
 .spinner {
@@ -61,7 +61,7 @@
 .chipSelected {
     background: rgba(15, 252, 190, 0.12);
     border-color: var(--mint);
-    color: var(--mint);
+    color: var(--mint-text);
     font-weight: 600;
 }
 
@@ -78,7 +78,7 @@
 .price {
     font-size: 1.1rem;
     font-weight: 700;
-    color: var(--mint);
+    color: var(--mint-text);
 }
 
 .suggestionList {

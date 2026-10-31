@@ -75,7 +75,7 @@
 }
 
 .active {
-    color: var(--mint);
+    color: var(--mint-text);
     font-weight: 600;
 }
 
@@ -86,7 +86,7 @@
 
 .adUrl {
     font-size: 0.6875rem;
-    color: var(--mint);
+    color: var(--mint-text);
     text-decoration: none;
     white-space: nowrap;
     overflow: hidden;

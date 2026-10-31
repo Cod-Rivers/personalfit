@@ -34,8 +34,10 @@
     margin: var(--space-4) 0;
 }
 
+/* 12.5rem: com 160px cabiam dois por linha em 360px e o texto padrão
+   ("Todos os objetivos", "Qualquer duração") saía cortado. */
 .filter {
-    flex: 1 1 160px;
+    flex: 1 1 12.5rem;
     min-width: 0;
     background: var(--surface-1);
     border: 1px solid var(--border-subtle);

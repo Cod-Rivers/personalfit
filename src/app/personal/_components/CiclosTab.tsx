@@ -190,7 +190,10 @@ export default function CiclosTab({ view, students, planType = 'free', onBack }:
     const renderTemplateCard = useCallback(
         (tpl: MacrocycleResponse) => (
             <div key={tpl.id} className={s.templateCard}>
-                <div style={{ flex: 1, minWidth: 0 }}>
+                {/* Base de 14rem: no celular os botões descem para baixo do
+                    nome em vez de espremê-lo (com base 0 eles nunca quebravam
+                    e "Condicionamento" passava por baixo do botão). */}
+                <div style={{ flex: '1 1 14rem', minWidth: 0 }}>
                     <p
                         className={s.templateName}
                         style={!isPublic ? { cursor: 'pointer' } : undefined}

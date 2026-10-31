@@ -185,10 +185,11 @@ export default function ShowcaseCard({
                 </div>
             </div>
 
-            {notice}
-
             {/* ── Corpo ── */}
             <div className={styles.body}>
+                {/* Dentro do corpo, abaixo do recuo do avatar: logo depois da
+                    capa ele ficava sob o avatar, que desce 34px sobre ela. */}
+                {notice}
                 <div className={styles.identity}>
                     <div>
                         <h1 className={styles.name}>
