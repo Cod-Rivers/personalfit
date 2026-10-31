@@ -1019,3 +1019,19 @@
 ## 2026-10-31 11:59 — River (via Claude Code)
 **Resumo:** Fiz o commit e o push: **`b0659f4`** está na `master` do `personalfit`. O deploy é automático no push, então o Cloud Build já deve estar publicando. O commit leva só as correções das duas varreduras (personal + aluno), 65 arquivos. Antes de enviar, conferi que nenhum desses arquivos tinha mudanças de outra conversa. **Continuam sem commit no `personalfit`:** - **As correções de pagamento da outra conversa:** `pagamento/page.tsx` e o teste dela, `ProPlanCard.tsx`, `paymentService.ts` e três arquivos novos (`personalPlanPurchase.ts`, `personalPlanPurchase.test.ts` e `ProPlanCard.test.tsx`). Aque…
 **Commits:** Varredura visual do personal e do aluno: overflow, contraste no tema claro e Bootstrap no escuro
+
+## 2026-10-31 12:05 — River (via Claude Code)
+**Resumo:** Suas duas últimas mensagens chegaram só com letras repetidas ("wwwwqqqq…" e "-----j"). Parece que o teclado foi acionado sem querer, então não fiz nada com elas. O commit `b0659f4` já está no ar, e o resto continua como deixei. O que você quer fazer agora?
+**Commits:** Pagamentos: checkout não cobra em dobro e Minha conta mostra a renovação em atraso | Atualiza changelog
+
+## 2026-10-31 12:07 — River (via Claude Code)
+**Resumo:** Os commits estão separados e enviados nos três repositórios: | Repositório | Commits | |---|---| | Personal-fit-Back | `574dc94`: pagamentos (32 arquivos) · `dc7f595`: changelog | | personalfit | `14b919d`: pagamentos (7 arquivos) · `e52cde8`: changelog | | VenafitApp | `43fe84c`: changelog (o código do Android não mudou) | A varredura visual já tinha sido commitada e enviada por outra sessão às 11:58 (`b0659f4`), com 65 arquivos. Os meus commits levaram só os arquivos de pagamento e os changelogs, sem nada dela. Antes de commitar, corrigi um defeito meu. O aviso de renovação em atraso, em Min…
+**Arquivos:** CHANGELOG_FRONTEND.md
+
+## 2026-10-31 12:46 — River (via Claude Code)
+**Resumo:** Corrigi os itens 4, 5 e 7, os menores 1 e 2 e a parte de PIX do menor 3. Nada foi commitado. No caminho achei um defeito que eu introduzi na primeira rodada e que já está em produção; ele também está corrigido. **O defeito da primeira rodada (urgente)** - **O que acontece:** quando o app e o aviso do Google gravam a mesma compra do Play ao mesmo tempo, ficam duas cópias da assinatura. É a corrida do item 7; a outra sessão viu nos logs que ela aconteceu em produção em 14/10. - **O efeito:** a rotina que encerra a assinatura anterior ao subir de plano tratava a cópia mais velha como "anterior". …
+**Arquivos:** page.tsx, paymentService.googlePlay.test.ts, paymentService.ts, programa.test.tsx
+
+## 2026-10-31 17:03 — River (via Claude Code)
+**Resumo:** O aviso do gcloud ("Updates are available…") só diz que existe uma versão mais nova das ferramentas do Google Cloud no seu computador. Não tem a ver com o Venafit nem com o comando que você rodou, que funcionou. Atualizar é opcional (`gcloud components update`). O item 6 está feito pela proposta recomendada. Nada foi commitado ainda. **O que muda:** - **Antes de abrir o Google Play numa compra avulsa:** o site grava no servidor o que vai ser comprado (programa, ref, plano em quarentena). Se essa gravação falhar, a compra segue normalmente. - **Quando o Google avisa que a compra foi concluída:*…
+**Arquivos:** page.test.tsx
