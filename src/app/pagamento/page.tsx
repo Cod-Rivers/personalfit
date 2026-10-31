@@ -30,6 +30,7 @@ import {
     getProPlanStatus,
     pixPlanPaymentConfirmed,
     launchGooglePlayPurchase,
+    registerGooglePlayIntent,
     purchaseLibraryPlanCard,
     purchaseLibraryPlanPix,
     purchaseLockedPlanCard,
@@ -297,6 +298,8 @@ function PaymentPageInner() {
     // Cartão aceito, cobrança ainda sem confirmação (análise de risco): o
     // formulário some e o polling do /me espera o plano subir.
     const [cardPending, setCardPending] = useState(false);
+    // Texto do servidor para a compra de plano pendente ('' = o da assinatura).
+    const [cardPendingText, setCardPendingText] = useState('');
     // PIX de plano do personal: fim do período pago ANTES do QR Code ('' se
     // não havia). null = a compra em andamento não é PIX de plano. Ver
     // pixPlanPaymentConfirmed.
@@ -667,6 +670,16 @@ function PaymentPageInner() {
         }, 5000);
     }, [produto, isPersonalPlan, trial, trialStarted]);
 
+    // Foto dos planos de antes, para reconhecer o comprado no polling.
+    const snapshotPlans = async () => {
+        try {
+            const plans = await getMyPlannings();
+            plansBefore.current = new Set(plans.map((p) => p.id));
+        } catch {
+            plansBefore.current = null;
+        }
+    };
+
     const handleStartTrial = async () => {
         setError('');
         setLoading(true);
@@ -703,13 +716,7 @@ function PaymentPageInner() {
                     expiresAt: res.expires_at,
                 });
             } else {
-                // Foto dos planos de antes, para reconhecer o comprado no polling.
-                try {
-                    const plans = await getMyPlannings();
-                    plansBefore.current = new Set(plans.map((p) => p.id));
-                } catch {
-                    plansBefore.current = null;
-                }
+                await snapshotPlans();
                 const res = keepsPlan
                     ? await purchaseLockedPlanPix(lockedPlanId, alt)
                     : programId
@@ -747,6 +754,17 @@ function PaymentPageInner() {
                         : (catalog?.student_plus.play_product_id ?? '');
             const productType = isPersonalPlan || produto === 'plus' ? 'subs' : 'inapp';
             if (!productId) throw new Error('Produto indisponível');
+
+            if (productType === 'inapp') {
+                // Se o verify falhar (rede, app fechado) ou a compra ficar
+                // pendente, o aviso do Google entrega pelo que fica gravado aqui.
+                await registerGooglePlayIntent(productId, {
+                    programId: programId || undefined,
+                    templateId: !keepsPlan && !programId ? templateId : undefined,
+                    lockedPlanId: keepsPlan ? lockedPlanId : undefined,
+                    ref: programId ? readStoreSaleRef() : undefined,
+                }).catch(() => undefined);
+            }
 
             const result = await launchGooglePlayPurchase(productId, productType, accountId);
             if (result.status === 'alternative') {
@@ -810,6 +828,7 @@ function PaymentPageInner() {
                     startPolling();
                 }
             } else if (produto === 'plano') {
+                await snapshotPlans();
                 const res = keepsPlan
                     ? await purchaseLockedPlanCard(lockedPlanId, form, alt)
                     : programId
@@ -817,14 +836,25 @@ function PaymentPageInner() {
                       : await purchaseLibraryPlanCard(templateId, form, alt);
                 if (res.applied) {
                     setConfirmed(true);
+                } else if (res.under_review) {
+                    // Cartão retido em análise de risco (ou pago com a entrega
+                    // falhando): o webhook entrega e o polling vê o plano novo.
+                    // Antes caía no erro "não aprovado" e o aluno pagava de novo.
+                    setCardPendingText(res.message);
+                    setCardPending(true);
+                    startPolling();
                 } else {
                     setError(res.message || 'Pagamento não aprovado. Tente outro cartão ou use PIX.');
                 }
             } else {
                 const res = await subscribeStudentPlusCard(form, alt);
+                // ACTIVE só com a cobrança paga; PENDING = cartão aceito e
+                // cobrança em análise (o webhook libera o Plus). O formulário
+                // some para o aluno não assinar de novo.
                 if (res.status === 'ACTIVE') {
                     setConfirmed(true);
                 } else {
+                    setCardPending(true);
                     startPolling();
                 }
             }
@@ -1489,10 +1519,9 @@ function PaymentPageInner() {
                 {metodo === 'card' && cardPending && (
                     <div className={s.pending}>
                         {spinner}
-                        <p>
-                            O cartão foi aceito e a cobrança está em análise. O plano é ativado
-                            sozinho assim que ela for aprovada: pode fechar esta tela. Não assine de
-                            novo.
+                        <p role="status">
+                            {cardPendingText ||
+                                'O cartão foi aceito e a cobrança está em análise. O plano é ativado sozinho assim que ela for aprovada: pode fechar esta tela. Não assine de novo.'}
                         </p>
                     </div>
                 )}

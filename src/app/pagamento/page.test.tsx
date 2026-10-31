@@ -44,6 +44,7 @@ vi.mock('@/libs/paymentService', () => ({
     getProPlanStatus: vi.fn(),
     pixPlanPaymentConfirmed: vi.fn(),
     launchGooglePlayPurchase: vi.fn(),
+    registerGooglePlayIntent: vi.fn().mockResolvedValue(undefined),
     purchaseLibraryPlanCard: vi.fn(),
     purchaseLibraryPlanPix: vi.fn(),
     purchaseLockedPlanCard: vi.fn(),

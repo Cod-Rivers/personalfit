@@ -305,6 +305,9 @@ export interface PurchaseLibraryPlanResponse {
     message: string;
     method: string; // PIX | CREDIT_CARD
     applied: boolean; // true quando o cartão já aprovou e o plano foi aplicado
+    /** Cartão retido em análise de risco (ou pago com a entrega falhando): o
+     *  plano entra sozinho quando o Asaas aprovar. Não é recusa. */
+    under_review?: boolean;
     macrocycle_id?: string;
     payment_id?: string;
     qr_image_url?: string;
@@ -373,6 +376,28 @@ export interface GooglePlayVerifyResponse {
     success: boolean;
     message: string;
     status?: string;
+}
+
+/**
+ * Grava no servidor o que vai ser comprado numa compra avulsa, antes de abrir
+ * o Google Play: o produto é a faixa de preço, não o programa. Se o verify
+ * falhar (rede, app fechado) ou a compra ficar pendente, o aviso do Google
+ * entrega por esta intenção. Falhar aqui não impede a compra.
+ */
+export async function registerGooglePlayIntent(
+    productId: string,
+    target: { programId?: string; templateId?: string; lockedPlanId?: string; ref?: string | null },
+): Promise<void> {
+    await Api.post('/billing/google/intent', {
+        product_id: productId,
+        ...(target.programId ? { program_id: target.programId } : {}),
+        ...(target.templateId ? { template_id: target.templateId } : {}),
+        ...(target.lockedPlanId ? { locked_plan_id: target.lockedPlanId } : {}),
+        ...(target.ref ? { ref: target.ref } : {}),
+        ...(target.programId && readStoreEntryPoint()
+            ? { entry_point: readStoreEntryPoint() }
+            : {}),
+    });
 }
 
 export async function verifyGooglePlayPurchase(

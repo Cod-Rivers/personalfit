@@ -7,12 +7,14 @@ import {
     getPlans,
     isGooglePlayBillingAvailable,
     launchGooglePlayPurchase,
+    registerGooglePlayIntent,
     verifyGooglePlayPurchase,
     type PlanCatalog,
 } from '@/libs/paymentService';
 import { hasNativeBilling } from '@/libs/nativeBridge';
 import {
     getStoreProgram,
+    purchaseStoreProgramCard,
     purchaseStoreProgramPix,
     type StoreProgramDetail,
 } from '@/libs/storeService';
@@ -40,6 +42,7 @@ vi.mock('@/libs/paymentService', () => ({
     getProPlanStatus: vi.fn(),
     pixPlanPaymentConfirmed: vi.fn(),
     launchGooglePlayPurchase: vi.fn(),
+    registerGooglePlayIntent: vi.fn().mockResolvedValue(undefined),
     purchaseLibraryPlanCard: vi.fn(),
     purchaseLibraryPlanPix: vi.fn(),
     purchaseLockedPlanCard: vi.fn(),
@@ -134,6 +137,17 @@ describe('/pagamento?produto=programa', () => {
 
         expect(await screen.findByText('Pagamento confirmado!')).toBeInTheDocument();
         expect(launchGooglePlayPurchase).toHaveBeenCalledWith('program_4990', 'inapp', 'u1');
+        // A intenção vai ao servidor ANTES do Google Play: se o verify falhar
+        // ou a compra ficar pendente, o aviso do Google entrega por ela.
+        expect(registerGooglePlayIntent).toHaveBeenCalledWith('program_4990', {
+            programId: 'p1',
+            templateId: undefined,
+            lockedPlanId: undefined,
+            ref: 'CARLA',
+        });
+        expect(vi.mocked(registerGooglePlayIntent).mock.invocationCallOrder[0]).toBeLessThan(
+            vi.mocked(launchGooglePlayPurchase).mock.invocationCallOrder[0],
+        );
         expect(verifyGooglePlayPurchase).toHaveBeenCalledWith(
             'program_4990',
             'tok',
@@ -167,6 +181,55 @@ describe('/pagamento?produto=programa', () => {
         await user.click(screen.getByRole('button', { name: 'Gerar QR Code PIX' }));
 
         await waitFor(() => expect(purchaseStoreProgramPix).toHaveBeenCalledWith('p1', 'CARLA', undefined));
+    });
+
+    // Auditoria de pagamentos de 2026-10-31 (item 4): o cartão retido em
+    // análise de risco aparecia como "não aprovado", e o aluno pagava de novo.
+    it('no site, cartão em análise mostra a espera, não a recusa', async () => {
+        const user = userEvent.setup();
+        vi.mocked(hasNativeBilling).mockReturnValue(false);
+        vi.mocked(isGooglePlayBillingAvailable).mockResolvedValue(false);
+        vi.mocked(purchaseStoreProgramCard).mockResolvedValue({
+            success: true,
+            message: 'O pagamento está em análise. Assim que for aprovado, o plano entra em Meus treinos sozinho.',
+            method: 'CREDIT_CARD',
+            applied: false,
+            under_review: true,
+        });
+        render(<Payment />);
+
+        await screen.findByRole('heading', { name: 'Confira seu pedido' });
+        const next = screen.getByRole('button', { name: 'Escolher forma de pagamento' });
+        await waitFor(() => expect(next).toBeEnabled());
+        await user.click(next);
+        await user.click(await screen.findByRole('radio', { name: /Cartão/ }));
+        const fields: Record<string, string> = {
+            'Número do cartão': '4111111111111111',
+            'Nome impresso no cartão': 'ANA SOUZA',
+            'Mês (MM)': '12',
+            'Ano (AAAA)': '2030',
+            CVV: '123',
+            'Nome do titular': 'Ana Souza',
+            'CPF do titular': '52998224725',
+            'E-mail': 'ana@example.com',
+            Telefone: '11999998888',
+            CEP: '01310100',
+            'Número (endereço)': '100',
+        };
+        for (const [label, value] of Object.entries(fields)) {
+            await user.type(screen.getByLabelText(label), value);
+        }
+        await user.click(screen.getByRole('button', { name: /Pagar · R\$\s?49,90/ }));
+
+        expect(await screen.findByText(/O pagamento está em análise/)).toBeInTheDocument();
+        expect(purchaseStoreProgramCard).toHaveBeenCalledWith(
+            'p1',
+            expect.objectContaining({ card_number: '4111111111111111' }),
+            'CARLA',
+            undefined,
+        );
+        expect(screen.queryByText(/não aprovado/i)).not.toBeInTheDocument();
+        expect(screen.queryByLabelText('Número do cartão')).not.toBeInTheDocument();
     });
 
     it('programa fora de venda não deixa pagar', async () => {
