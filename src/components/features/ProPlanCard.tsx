@@ -10,6 +10,7 @@ import {
     switchToPersonalPlus,
 } from '@/libs/paymentService';
 import { PLAY_SUBSCRIPTIONS_URL } from '@/libs/androidApp';
+import { hasNativeBilling } from '@/libs/nativeBridge';
 import { planRank, updateSessionPlanType } from '@/libs/session';
 
 const CYCLE_LABELS: Record<string, string> = {
@@ -80,6 +81,13 @@ export default function ProPlanCard() {
     // (quem cobra é a loja), então a tela leva para a Play Store em vez de
     // oferecer botões que dariam erro.
     const viaGooglePlay = status.subscription_billing_type === 'GOOGLE_PLAY';
+    // Cobrança do cartão vencida sem pagamento: o plano vale até
+    // `payment_overdue_until` e cai depois (antes de 2026-10-31 nunca caía).
+    const overdueTier = status.payment_overdue_tier === 'plus' ? 'plus' : 'pro';
+    // Dentro do app não há link de pagamento fora do Google Play (política da
+    // loja): a fatura do Asaas só aparece no site, e "assinar de novo" segue
+    // para o Google Play.
+    const inApp = hasNativeBilling();
 
     const errorMessage = (err: unknown, fallback: string): string => {
         const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
@@ -111,10 +119,13 @@ export default function ProPlanCard() {
     const handleCancel = async () => {
         // Com a troca para o Plus agendada, cancelar desfaz a troca também: o
         // personal precisa saber que não vai mais para o Plus, e sim para o
-        // gratuito.
-        const message = status.plan_change_to
-            ? `Cancelar a assinatura? A mudança para o ${PLAN_LABELS[status.plan_change_to] ?? status.plan_change_to} também é desfeita: nada mais será cobrado, você continua no ${planLabel} até o fim do período já pago e, depois, a conta volta ao plano gratuito (até 3 alunos).`
-            : `Cancelar o ${planLabel}? Nada mais será cobrado, e você continua com o plano até o fim do período já pago. Depois, a conta volta ao plano gratuito (até 3 alunos).`;
+        // gratuito. Com a renovação em atraso não há período pago a manter:
+        // a conta volta ao gratuito na hora.
+        const message = status.payment_overdue_until
+            ? `Cancelar a assinatura? As próximas cobranças param e, como a renovação não foi paga, a conta volta agora ao plano gratuito (até 3 alunos).`
+            : status.plan_change_to
+              ? `Cancelar a assinatura? A mudança para o ${PLAN_LABELS[status.plan_change_to] ?? status.plan_change_to} também é desfeita: nada mais será cobrado, você continua no ${planLabel} até o fim do período já pago e, depois, a conta volta ao plano gratuito (até 3 alunos).`
+              : `Cancelar o ${planLabel}? Nada mais será cobrado, e você continua com o plano até o fim do período já pago. Depois, a conta volta ao plano gratuito (até 3 alunos).`;
         if (!confirm(message)) return;
         setBusy(true);
         setError('');
@@ -152,7 +163,7 @@ export default function ProPlanCard() {
             </p>
             <p className="text-secondary mb-3" style={{ fontSize: '0.85rem' }}>
                 O PRO continua valendo até o fim do período já pago; a partir daí a
-                cobrança passa a ser de {plusPriceLabel}.
+                cobrança passa a ser de {plusPriceLabel} por mês.
             </p>
             <div className="d-flex flex-wrap gap-2">
                 <button className="btn btn-primary" onClick={handleSwitchToPlus} disabled={busy}>
@@ -198,6 +209,55 @@ export default function ProPlanCard() {
 
                 {offeringPlus ? (
                     plusOffer
+                ) : status.payment_overdue_until ? (
+                    <>
+                        {/* Um div só dentro do alerta: o .alert-warning global é
+                            flex em linha e a data em <strong> virava coluna. */}
+                        <div className="alert alert-warning py-2" role="status" style={{ fontSize: '0.85rem' }}>
+                            <div>
+                                A renovação do seu {PLAN_LABELS[overdueTier]} não foi paga. O plano
+                                continua até <strong>{formatDay(status.payment_overdue_until)}</strong>;
+                                depois, a conta volta ao plano gratuito (até 3 alunos).
+                            </div>
+                        </div>
+                        <div className="d-flex flex-wrap gap-2">
+                            {!inApp && status.payment_overdue_invoice_url && (
+                                <a
+                                    className="btn btn-primary"
+                                    href={status.payment_overdue_invoice_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    Pagar a cobrança em aberto
+                                </a>
+                            )}
+                            <button
+                                className={
+                                    !inApp && status.payment_overdue_invoice_url
+                                        ? 'btn btn-outline-primary'
+                                        : 'btn btn-primary'
+                                }
+                                onClick={() =>
+                                    router.push(
+                                        overdueTier === 'plus'
+                                            ? '/pagamento?produto=personal-plus'
+                                            : '/pagamento?produto=pro',
+                                    )
+                                }
+                            >
+                                {inApp ? 'Assinar de novo' : 'Assinar com outro cartão'}
+                            </button>
+                            {!viaGooglePlay && (
+                                <button
+                                    className="btn btn-outline-secondary"
+                                    onClick={handleCancel}
+                                    disabled={busy}
+                                >
+                                    {busy ? 'Processando...' : 'Cancelar assinatura'}
+                                </button>
+                            )}
+                        </div>
+                    </>
                 ) : status.pro_access_until ? (
                     <>
                         <p className="text-secondary mb-3" style={{ fontSize: '0.9rem' }}>

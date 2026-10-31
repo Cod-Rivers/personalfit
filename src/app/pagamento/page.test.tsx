@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event';
 import Payment from './page';
 import {
     getPlans,
+    getProPlanStatus,
     isGooglePlayBillingAvailable,
     launchGooglePlayPurchase,
     verifyGooglePlayPurchase,
@@ -96,6 +97,7 @@ describe('/pagamento em passos (plano do personal)', () => {
         searchParams = new URLSearchParams('produto=personal-plus');
         pushMock.mockClear();
         vi.mocked(getPlans).mockResolvedValue(CATALOG);
+        vi.mocked(getProPlanStatus).mockResolvedValue({ plan_type: 'free' });
         vi.mocked(hasNativeBilling).mockReturnValue(true);
         vi.mocked(isGooglePlayBillingAvailable).mockResolvedValue(true);
         vi.mocked(launchGooglePlayPurchase).mockReset();
@@ -203,6 +205,62 @@ describe('/pagamento em passos (plano do personal)', () => {
 
         expect(screen.getByText('Plano PRO — Anual')).toBeInTheDocument();
         expect(screen.getByText('João Personal (código JOAO10)')).toBeInTheDocument();
+    });
+
+    // Auditoria de 2026-10-31: dentro do app, a compra pelo Google Play abria
+    // uma segunda assinatura sem encerrar a primeira. A tela é a única trava
+    // antes do Google.
+    it('quem já assina o Plus não compra o Plus de novo', async () => {
+        const user = userEvent.setup();
+        vi.mocked(getProPlanStatus).mockResolvedValue({
+            plan_type: 'plus',
+            has_active_subscription: true,
+            subscription_status: 'ACTIVE',
+            subscription_tier: 'plus',
+            subscription_cycle: 'MONTHLY',
+            subscription_billing_type: 'GOOGLE_PLAY',
+        });
+        render(<Payment />);
+
+        await screen.findByRole('heading', { name: 'Escolha seu plano' });
+        await waitFor(() =>
+            expect(screen.getByRole('button', { name: 'Continuar com o Plus' })).toBeEnabled(),
+        );
+        await continueTo(user, /Continuar com o Plus/, 'Como você conheceu o Venafit?');
+        await user.click(screen.getByRole('radio', { name: 'Ninguém me indicou' }));
+        await continueTo(user, /^Continuar$/, 'Confira seu pedido');
+
+        expect(screen.getByText('Você já assina o Plus neste período.')).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Continuar para o pagamento' })).not.toBeInTheDocument();
+        expect(launchGooglePlayPurchase).not.toHaveBeenCalled();
+    });
+
+    it('subir do Plus para o PRO avisa que o Plus é encerrado', async () => {
+        const user = userEvent.setup();
+        searchParams = new URLSearchParams('produto=pro');
+        vi.mocked(getProPlanStatus).mockResolvedValue({
+            plan_type: 'plus',
+            has_active_subscription: true,
+            subscription_status: 'ACTIVE',
+            subscription_tier: 'plus',
+            subscription_cycle: 'MONTHLY',
+            subscription_billing_type: 'GOOGLE_PLAY',
+        });
+        render(<Payment />);
+
+        await screen.findByRole('heading', { name: 'Escolha seu plano' });
+        await waitFor(() =>
+            expect(screen.getByRole('button', { name: 'Continuar com o PRO' })).toBeEnabled(),
+        );
+        await continueTo(user, /Continuar com o PRO/, 'Escolha o período');
+        await continueTo(user, /^Continuar$/, 'Como você conheceu o Venafit?');
+        await user.click(screen.getByRole('radio', { name: 'Ninguém me indicou' }));
+        await continueTo(user, /^Continuar$/, 'Confira seu pedido');
+
+        expect(screen.getByRole('note')).toHaveTextContent(
+            'sua assinatura atual do Plus no Google Play é encerrada',
+        );
+        expect(screen.getByRole('button', { name: 'Continuar para o pagamento' })).toBeEnabled();
     });
 
     it('o erro do Google Play aparece junto do botão, com o que fazer', async () => {

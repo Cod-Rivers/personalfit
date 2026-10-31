@@ -17,6 +17,7 @@ import s from './pagamento.module.css';
 import {
     CardSubscriptionForm,
     PlanCatalog,
+    ProPlanStatus,
     ProTrialStatus,
     StudentPlusStatus,
     SubscribePixResponse,
@@ -54,6 +55,10 @@ import {
 import { readStoreSaleRef } from '@/libs/storeSaleRef';
 import { STORE_HEALTH_NOTICE } from '@/libs/storeFormat';
 import PersonalPlanLadder, { type LadderPlan } from '@/components/features/PersonalPlanLadder';
+import {
+    personalPlanPurchaseConflict,
+    replacedSubscriptionNotice,
+} from '@/libs/personalPlanPurchase';
 import {
     getStudentHomeRoute,
     getUser,
@@ -344,6 +349,20 @@ function PaymentPageInner() {
         setCurrentPlan(rank >= 2 ? 'pro' : rank >= 1 ? 'plus' : 'free');
     }, []);
 
+    // Situação do plano do personal (GET /me): com ela o checkout recusa pagar
+    // em dobro (o mesmo plano já assinado, ou um nível abaixo do que a conta
+    // paga) e avisa quando a compra vai encerrar a assinatura atual. Dentro
+    // do app é a única trava: a compra pelo Google Play acontece antes do
+    // servidor. Se falhar, a compra segue — o servidor confere de novo no
+    // PIX e no cartão.
+    const [planStatus, setPlanStatus] = useState<ProPlanStatus | null>(null);
+    useEffect(() => {
+        if (!isPersonalPlan) return;
+        getProPlanStatus()
+            .then(setPlanStatus)
+            .catch(() => setPlanStatus(null));
+    }, [isPersonalPlan]);
+
     // Teste grátis (PRO, só personal) e situação do Plus (aluno): ambos são
     // complementos — se falharem, a compra continua disponível.
     useEffect(() => {
@@ -577,11 +596,24 @@ function PaymentPageInner() {
               : (INDICATION_CHANNELS.find((c) => c.value === indicationChoice)?.label ??
                 indicationChoice);
 
+    // Compra de plano do personal que faria a conta pagar em dobro, e o aviso
+    // de que a assinatura atual é encerrada quando a nova for paga.
+    const planConflict = isPersonalPlan
+        ? personalPlanPurchaseConflict(
+              planStatus,
+              produto === 'personal-plus' ? 'plus' : 'pro',
+              produto === 'pro' ? cycle : 'MONTHLY',
+          )
+        : '';
+    const replacedNotice = isPersonalPlan && !planConflict ? replacedSubscriptionNotice(planStatus) : '';
+
     // Motivo para não vender agora (produto fora de venda ou fora do perfil).
     const unavailableReason =
         programId && programMissing
             ? 'Este programa não está à venda no momento.'
-            : produto === 'plus' && plusStatus?.active
+            : planConflict
+              ? planConflict
+              : produto === 'plus' && plusStatus?.active
             ? 'Você já tem o Aluno Plus ativo. Para cancelar, vá em Minha conta.'
             : produto === 'plus' && plusStatus?.own_pro
               ? 'Sua conta já tem os benefícios do Aluno Plus.'
@@ -1300,6 +1332,11 @@ function PaymentPageInner() {
                                 </>
                             )}
                         </div>
+                        {replacedNotice && (
+                            <p className={s.hint} role="note">
+                                {replacedNotice}
+                            </p>
+                        )}
                         {isPersonalPlan ? (
                             <div>
                                 <button

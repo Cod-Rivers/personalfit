@@ -148,11 +148,24 @@ export interface ProPlanStatus {
     is_plus?: boolean;
     /** Tem o PRO completo: IA, upload de vídeo nativo e agenda. */
     is_pro?: boolean;
+    /** Assinatura ativa. A com a cobrança em atraso vem só em
+     *  `subscription_status` ('SUSPENDED'), com este campo false. */
     has_active_subscription?: boolean;
+    /** 'ACTIVE' ou 'SUSPENDED' (cobrança vencida); ausente sem assinatura. */
+    subscription_status?: string;
     subscription_cycle?: string;
     /** 'GOOGLE_PLAY' quando a assinatura foi feita pela loja: cancelar e trocar
      *  de plano só pela Play Store (o backend recusa os dois). */
     subscription_billing_type?: string;
+    /** Nível que a assinatura paga ('plus' | 'pro'), que pode diferir do
+     *  plano efetivo (teste grátis, admin, PIX acima). */
+    subscription_tier?: string;
+    /** A cobrança da assinatura no cartão venceu sem pagamento: o plano vale
+     *  até `payment_overdue_until` (ISO) e cai depois. A fatura aceita PIX,
+     *  boleto e outro cartão. Ausentes sem atraso. */
+    payment_overdue_tier?: string;
+    payment_overdue_until?: string;
+    payment_overdue_invoice_url?: string;
     /** ISO: plano (PRO ou Plus) cancelado que ainda vale até esta data. */
     pro_access_until?: string;
     /** Troca de plano agendada (hoje só 'plus'): o plano muda em
