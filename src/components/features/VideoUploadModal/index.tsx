@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { FiLink, FiMusic, FiUpload, FiCheckCircle, FiVideo } from 'react-icons/fi';
 import * as videoService from '@/libs/exerciseVideoService';
 import Modal from '@/components/system/Modal';
+import ProUpsell from '@/components/features/ProUpsell';
 
 interface VideoUploadModalProps {
     /** ID do exercício (pessoal ou fork via libraryId) ao qual a mídia será vinculada */
@@ -295,6 +296,13 @@ export default function VideoUploadModal({
                         </button>
                     </li>
                 </ul>
+            )}
+            {!isPro && (
+                <div className="mb-3">
+                    <ProUpsell feature="video_upload" title="Upload de vídeo e TikTok são do PRO">
+                        Grave o exercício do seu jeito e envie direto do celular.
+                    </ProUpsell>
+                </div>
             )}
 
             {error && (

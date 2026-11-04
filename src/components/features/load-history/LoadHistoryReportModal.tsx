@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import Link from 'next/link';
 import { FiPrinter, FiSend } from 'react-icons/fi';
 import Modal from '@/components/system/Modal';
 import {
@@ -21,6 +20,7 @@ import { getCachedPersonalStudents } from '@/libs/offline/personalCache';
 import { isInsideNativeApp } from '@/libs/androidApp';
 import { shareText } from '@/libs/socialShare';
 import s from './LoadHistory.module.css';
+import ProUpsell from '@/components/features/ProUpsell';
 
 type Period = '30' | '90' | 'all';
 
@@ -287,10 +287,9 @@ export default function LoadHistoryReportModal({ open, onClose, studentId, evalu
                 }
             >
                 {isPro === false ? (
-                    <p className={s.proLock}>
-                        O relatório de evolução para enviar ao aluno é um recurso do{' '}
-                        <Link href="/pagamento?produto=pro">plano Pro</Link>.
-                    </p>
+                    <ProUpsell feature="relatorio_carga" title="O relatório de evolução é do PRO">
+                        Gere um relatório de carga pronto para enviar ao aluno.
+                    </ProUpsell>
                 ) : (
                     <>
                         <div className={s.formRow}>

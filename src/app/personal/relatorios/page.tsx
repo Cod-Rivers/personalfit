@@ -20,6 +20,7 @@ import {
     type ReportSettings,
 } from '@/libs/workoutReportService';
 import s from './relatorios.module.css';
+import ProUpsell from '@/components/features/ProUpsell';
 
 const MAX_PROCESS_ROUNDS = 6;
 
@@ -161,9 +162,7 @@ function ReportsPanel() {
                                 decisões na ficha de cada aluno.
                             </p>
                         )}
-                        <Link href="/pagamento?produto=pro" className={s.teaserCta}>
-                            Conhecer o PRO
-                        </Link>
+                        <ProUpsell feature="relatorios" variant="cta" />
                     </div>
                 </section>
             )}

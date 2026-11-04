@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
-import Link from 'next/link';
 import Modal from '@/components/system/Modal';
 import {
     addDaysISO,
@@ -22,6 +21,7 @@ import { getExerciseLoadHistory, getLoadHistorySummary } from '@/libs/loadHistor
 import type { EvolutionEntry } from '@/libs/evolutionService';
 import type { CompareSeries } from './LoadHistoryCompareChart';
 import s from './LoadHistory.module.css';
+import ProUpsell from '@/components/features/ProUpsell';
 
 const LoadHistoryCompareChart = dynamic(() => import('./LoadHistoryCompareChart'), { ssr: false });
 
@@ -353,11 +353,10 @@ export default function LoadHistoryCompareModal({
             )}
 
             {mode !== 'period' && proLocked && (
-                <p className={s.proLock}>
-                    Comparar vários exercícios e cruzar a carga com as avaliações físicas são
-                    recursos do <Link href="/pagamento?produto=pro">plano Pro</Link>. A comparação
-                    entre períodos continua liberada.
-                </p>
+                <ProUpsell feature="comparar_carga" title="Comparação avançada é do PRO">
+                    Comparar vários exercícios e cruzar a carga com as avaliações físicas. A
+                    comparação entre períodos continua liberada.
+                </ProUpsell>
             )}
 
             {mode === 'exercises' && !proLocked && (

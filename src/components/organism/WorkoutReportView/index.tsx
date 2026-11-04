@@ -32,6 +32,7 @@ import {
 import { describeCommentFacts, feelingOption, painRegionLabel, WORKOUT_COMMENT_RETENTION_DAYS } from '@/libs/workoutComment';
 import { markReportDecided, retryReportAI } from '@/libs/workoutReportService';
 import styles from './styles.module.css';
+import ProUpsell from '@/components/features/ProUpsell';
 
 interface WorkoutReportViewProps {
     report: WorkoutReport;
@@ -399,10 +400,9 @@ export default function WorkoutReportView({ report, isPro, onChange, onError }: 
                         </div>
                     )}
                     {!isPro && (
-                        <p className={styles.muted}>
-                            Relatórios antigos continuam aqui para consulta. Para registrar decisões e receber novos, volte ao{' '}
-                            <Link href="/pagamento?produto=pro">PRO</Link>.
-                        </p>
+                        <ProUpsell feature="relatorio_decisoes" title="Decisões e relatórios novos são do PRO">
+                            Relatórios antigos continuam aqui para consulta.
+                        </ProUpsell>
                     )}
                 </section>
             )}

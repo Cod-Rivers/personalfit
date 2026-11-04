@@ -38,3 +38,13 @@ export function trackShareCard(surface: string): void {
 export function trackChallengeJoin(): void {
     nativeLogEvent('challenge_join');
 }
+
+/** Convite ao PRO visto num recurso bloqueado (componente ProUpsell).
+ *  `plan_rank`: 0 = free, 1 = Plus. Com o clique, mede qual tela converte. */
+export function trackProUpsellView(feature: string, planRank: number): void {
+    nativeLogEvent('pro_upsell_view', { feature, plan_rank: planRank });
+}
+
+export function trackProUpsellClick(feature: string, planRank: number): void {
+    nativeLogEvent('pro_upsell_click', { feature, plan_rank: planRank });
+}

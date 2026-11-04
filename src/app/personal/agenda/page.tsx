@@ -44,6 +44,7 @@ import SlotPicker from '@/components/agenda/SlotPicker';
 import ExternalLink from '@/components/atoms/ExternalLink';
 import { useBranding } from '@/context/BrandingContext';
 import s from './agenda.module.css';
+import ProUpsell from '@/components/features/ProUpsell';
 
 function todayStr(): string {
     return new Date().toISOString().slice(0, 10);
@@ -458,20 +459,12 @@ export default function AgendaPage() {
                             Agenda no modo limitado
                         </p>
                         <p className={s.limitedText}>
-                            A Agenda é um recurso do plano PRO. No plano
-                            gratuito você continua vendo e cancelando os
-                            horários já marcados e respondendo os pedidos dos
-                            alunos. As aulas fixas ficam pausadas e voltam
-                            quando você assinar o PRO.
+                            A Agenda é um recurso do plano PRO. Sem ele, você
+                            continua vendo e cancelando os horários já marcados
+                            e respondendo os pedidos dos alunos. As aulas fixas
+                            ficam pausadas e voltam quando você assinar o PRO.
                         </p>
-                        <button
-                            className={s.btnPrimary}
-                            onClick={() =>
-                                router.push('/pagamento?produto=pro')
-                            }
-                        >
-                            Assinar o PRO
-                        </button>
+                        <ProUpsell feature="agenda" variant="cta" />
                     </div>
                 )}
 

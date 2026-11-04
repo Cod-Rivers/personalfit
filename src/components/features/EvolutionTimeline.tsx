@@ -14,9 +14,9 @@ import {
 import Modal from '@/components/system/Modal';
 import { isOverdueBlockError } from '@/libs/overdueBlock';
 import { usePersonalProPlan } from '@/hooks/usePersonalProPlan';
-import Link from 'next/link';
 import OverdueBlockNotice from './OverdueBlockNotice';
 import s from './EvolutionTimeline.module.css';
+import ProUpsell from '@/components/features/ProUpsell';
 
 const EvolutionChart = dynamic(
     () => import('./EvolutionChart'),
@@ -659,15 +659,11 @@ export default function EvolutionTimeline({ studentId }: Props) {
                                 }
                             />
                         ) : (
-                            <p className={s.photoLocked}>
-                                Enviar fotos é um recurso do{' '}
-                                <Link href="/pagamento?produto=pro">
-                                    plano Pro
-                                </Link>
-                                . Peso, medidas, gráfico e comparação continuam
+                            <ProUpsell feature="evolucao_fotos" title="Fotos da avaliação são do PRO">
+                                Peso, medidas, gráfico e comparação continuam
                                 liberados — e as fotos que o próprio aluno envia
                                 aparecem aqui normalmente.
-                            </p>
+                            </ProUpsell>
                         )}
                     </div>
 
