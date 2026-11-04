@@ -369,12 +369,13 @@ export function usePersonalStudents(enabled: boolean) {
     );
 
     // Desativa o vínculo — ação instantânea do personal, sem confirmação do aluno.
+    // true = desativou (o servidor também pausa a mensalidade automática).
     const deactivate = useCallback(
-        async (st: Student) => {
+        async (st: Student): Promise<boolean> => {
             const token = localStorage.getItem('token');
             if (!token) {
                 setError('Sessão expirada. Faça login novamente.');
-                return;
+                return false;
             }
             setError('');
             setToggleBusyId(st.id);
@@ -385,6 +386,7 @@ export function usePersonalStudents(enabled: boolean) {
                     { headers: { Authorization: token } },
                 );
                 await fetchStudents();
+                return true;
             } catch (err: unknown) {
                 setError(
                     extractErrorMessage(
@@ -392,6 +394,7 @@ export function usePersonalStudents(enabled: boolean) {
                         'Erro ao desativar o aluno.',
                     ),
                 );
+                return false;
             } finally {
                 setToggleBusyId(null);
             }

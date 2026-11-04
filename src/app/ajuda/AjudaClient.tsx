@@ -1260,6 +1260,17 @@ const personalSections: HelpSection[] = [
                     avaliação), use a <strong>cobrança avulsa</strong>.
                 </p>
                 <p>
+                    <strong>Aluno que parou de treinar.</strong> Ao{' '}
+                    <strong>desativar</strong> ou <strong>desvincular</strong>{' '}
+                    o aluno (ou quando ele sai sozinho), a mensalidade
+                    automática dele é pausada na hora: as cobranças que ainda
+                    iam vencer saem da lista, e ele não recebe mais lembretes.
+                    O que já venceu continua no histórico, para você receber
+                    ou apagar. Se ele voltar, a mensalidade fica pausada até
+                    você tocar em <strong>Retomar</strong>, e recomeça a partir
+                    do dia, sem cobrar os meses em que ficou parado.
+                </p>
+                <p>
                     <strong>Registrar o pagamento.</strong> Em{' '}
                     <strong>Confirmar pagamento</strong>, informe a data real,
                     a forma (PIX, dinheiro, cartão, transferência) e o valor

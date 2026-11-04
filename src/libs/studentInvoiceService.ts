@@ -46,6 +46,9 @@ export interface BillingPlan {
     end_date?: string;
     active: boolean;
     monthly_equivalent: number;
+    /** Só com o plano pausado: o dia (YYYY-MM-DD) e quem pausou. */
+    paused_on?: string;
+    pause_reason?: 'personal' | 'link_ended';
 }
 
 export interface InvoiceList {

@@ -481,8 +481,9 @@ export default function MinhaContaPage() {
                 </p>
                 <p className="text-secondary" style={{ fontSize: '0.875rem' }}>
                     Ele deixa de acompanhar seus treinos, e os comentários que
-                    você enviou a ele são apagados. Para voltar, ele precisa
-                    cadastrar você de novo.
+                    você enviou a ele são apagados. A mensalidade automática
+                    que ele lança para você para de ser gerada. Para voltar,
+                    ele precisa cadastrar você de novo.
                 </p>
                 {unlinkError && (
                     <div className="alert alert-danger py-2">{unlinkError}</div>

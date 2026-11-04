@@ -209,6 +209,14 @@ export default function StudentFinanceiroPage() {
                                             {plan.description ? ` · ${plan.description}` : ''}
                                         </span>
                                     </div>
+                                    {!plan.active && (
+                                        <p className={s.sectionHint}>
+                                            {plan.pause_reason === 'link_ended'
+                                                ? `Pausada${plan.paused_on ? ` em ${fmtDate(plan.paused_on)}` : ''} porque o aluno parou de treinar com você (desativado ou desvinculado). As cobranças que ainda iam vencer foram retiradas; o que já venceu continua abaixo.`
+                                                : `Pausada${plan.paused_on ? ` em ${fmtDate(plan.paused_on)}` : ''}.`}{' '}
+                                            Ao retomar, a cobrança volta a partir de hoje, sem os meses parados.
+                                        </p>
+                                    )}
                                     <div className={s.actions}>
                                         {canEdit && (
                                             <button type="button" className={s.btn} onClick={() => setPlanOpen(true)} disabled={planBusy}>

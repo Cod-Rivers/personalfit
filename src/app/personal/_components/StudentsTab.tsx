@@ -27,6 +27,7 @@ import { needsNewPlan, studentPlanStatus } from '@/libs/studentPlanStatus';
 import AvatarUpload from '@/components/molecules/AvatarUpload';
 import CountBadge from '@/components/atoms/CountBadge';
 import Modal from '@/components/system/Modal';
+import { useToast } from '@/components/system/Toast';
 import TrainingPdfUploadModal from '@/components/features/TrainingPdfUploadModal';
 import LogWindowSettings from '@/components/features/LogWindowSettings';
 import { usePersonalStudents, studentDisplayName } from '@/hooks/usePersonalStudents';
@@ -61,6 +62,7 @@ export default function StudentsTab({ state, unreadComments }: Props) {
         name: string;
     } | null>(null);
     const [pdfImportPickerOpen, setPdfImportPickerOpen] = useState(false);
+    const toast = useToast();
     const [passwordCopied, setPasswordCopied] = useState(false);
     const {
         students,
@@ -375,7 +377,11 @@ export default function StudentsTab({ state, unreadComments }: Props) {
                                                         st.link_status ===
                                                         'active'
                                                     ) {
-                                                        deactivate(st);
+                                                        void deactivate(st).then((ok) => {
+                                                            if (ok && financeStatus[st.id]?.plan_active) {
+                                                                toast.showSuccess('Aluno desativado. A mensalidade automática dele foi pausada.');
+                                                            }
+                                                        });
                                                     } else {
                                                         requestActivation(st);
                                                     }
@@ -897,6 +903,12 @@ export default function StudentsTab({ state, unreadComments }: Props) {
                             com você. Sem um personal, o aluno passa a montar o
                             próprio treino.
                         </p>
+                        {financeStatus[unlinkTarget?.id ?? '']?.plan_active && (
+                            <p className={s.confirmText}>
+                                A mensalidade automática dele é pausada. O que
+                                já venceu continua no Financeiro do aluno.
+                            </p>
+                        )}
                     </>
                 )}
             </Modal>
