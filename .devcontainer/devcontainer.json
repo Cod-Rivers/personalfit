@@ -1,0 +1,16 @@
+{
+  "name": "Venafit",
+  "image": "mcr.microsoft.com/devcontainers/universal:2",
+  "customizations": {
+    "codespaces": {
+      "repositories": {
+        "Cod-Rivers/Personal-fit-Back": {
+          "permissions": { "contents": "write" }
+        },
+        "Cod-Rivers/VenafitApp": {
+          "permissions": { "contents": "write" }
+        }
+      }
+    }
+  }
+}
