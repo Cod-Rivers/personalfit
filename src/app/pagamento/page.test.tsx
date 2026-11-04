@@ -84,6 +84,11 @@ const CATALOG: PlanCatalog = {
         { cycle: 'YEARLY', value: 399.9, play_product_id: 'pro_yearly' },
     ],
     personal_plus: { cycle: 'MONTHLY', value: 19.9, play_product_id: 'personal_plus_monthly' },
+    personal_plus_pix: [
+        { cycle: 'MONTHLY', value: 19.9, play_product_id: '' },
+        { cycle: 'SEMIANNUALLY', value: 99.9, play_product_id: '' },
+        { cycle: 'YEARLY', value: 199.9, play_product_id: '' },
+    ],
     library_plan: { value: 29.9, play_product_id: 'library_plan' },
     student_plus: { cycle: 'MONTHLY', value: 9.9, play_product_id: 'aluno_plus_monthly' },
 };
@@ -369,5 +374,54 @@ describe('/pagamento em passos (plano do personal)', () => {
         // Aluno Plus só no cartão: o botão de assinar fica no rodapé.
         expect(screen.getByRole('button', { name: /Assinar · R\$\s?9,90/ })).toBeInTheDocument();
         expect(screen.getByLabelText('Número do cartão')).toBeInTheDocument();
+    });
+    it('no PIX do PRO mensal, oferece trocar para o anual', async () => {
+        const user = userEvent.setup();
+        searchParams = new URLSearchParams('produto=pro');
+        vi.mocked(hasNativeBilling).mockReturnValue(false);
+        vi.mocked(isGooglePlayBillingAvailable).mockResolvedValue(false);
+        render(<Payment />);
+
+        await screen.findByRole('heading', { name: 'Escolha seu plano' });
+        await waitFor(() =>
+            expect(screen.getByRole('button', { name: 'Continuar com o PRO' })).toBeEnabled(),
+        );
+        await continueTo(user, /Continuar com o PRO/, 'Escolha o período');
+        expect(screen.getByRole('radio', { name: /^Anual/ })).toHaveTextContent('Melhor no PIX');
+        await continueTo(user, /^Continuar$/, 'Como você conheceu o Venafit?');
+        await user.click(screen.getByRole('radio', { name: 'Ninguém me indicou' }));
+        await continueTo(user, /^Continuar$/, 'Confira seu pedido');
+        await continueTo(user, /Escolher forma de pagamento/, 'Forma de pagamento');
+
+        expect(screen.getByText(/No PIX, o anual vale mais/)).toBeInTheDocument();
+        await user.click(screen.getByRole('button', { name: 'Trocar para o anual' }));
+        expect(screen.getByText('Plano PRO — Anual')).toBeInTheDocument();
+        expect(screen.queryByText(/No PIX, o anual vale mais/)).not.toBeInTheDocument();
+    });
+    it('no PIX, o Plus pode ser pago por 6 ou 12 meses; no cartão volta ao mensal', async () => {
+        const user = userEvent.setup();
+        searchParams = new URLSearchParams('produto=personal-plus');
+        vi.mocked(hasNativeBilling).mockReturnValue(false);
+        vi.mocked(isGooglePlayBillingAvailable).mockResolvedValue(false);
+        render(<Payment />);
+
+        await screen.findByRole('heading', { name: 'Escolha seu plano' });
+        await waitFor(() =>
+            expect(screen.getByRole('button', { name: 'Continuar com o Plus' })).toBeEnabled(),
+        );
+        await continueTo(user, /Continuar com o Plus/, 'Como você conheceu o Venafit?');
+        await user.click(screen.getByRole('radio', { name: 'Ninguém me indicou' }));
+        await continueTo(user, /^Continuar$/, 'Confira seu pedido');
+        await continueTo(user, /Escolher forma de pagamento/, 'Forma de pagamento');
+
+        const anual = screen.getByRole('radio', { name: /^Anual/ });
+        expect(anual).toHaveTextContent('Melhor no PIX');
+        await user.click(anual);
+        expect(screen.getByText('Personal Plus — Anual')).toBeInTheDocument();
+        expect(screen.getByText(/O PIX paga\s+12 meses/)).toBeInTheDocument();
+
+        await user.click(screen.getByRole('radio', { name: 'Cartão' }));
+        expect(screen.getByText('Personal Plus — Mensal')).toBeInTheDocument();
+        expect(screen.queryByRole('radio', { name: /^Anual/ })).not.toBeInTheDocument();
     });
 });

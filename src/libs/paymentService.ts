@@ -24,6 +24,9 @@ export interface PlanCatalog {
     pro: PlanCatalogItem[];
     /** Personal Plus: alunos ilimitados, marca e financeiro. Só mensal. */
     personal_plus: PlanCatalogItem;
+    /** Personal Plus pago por PIX: mensal, semestral e anual. Ausente em
+     *  backend anterior a 2026-10-16. */
+    personal_plus_pix?: PlanCatalogItem[];
     library_plan: PlanCatalogItem;
     student_plus: PlanCatalogItem;
 }

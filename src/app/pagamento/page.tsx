@@ -269,6 +269,9 @@ function PaymentPageInner() {
     );
     const [catalog, setCatalog] = useState<PlanCatalog | null>(null);
     const [cycle, setCycle] = useState('MONTHLY');
+    // Período do Personal Plus no PIX. No cartão e no Google Play o Plus é
+    // só mensal; o PIX compra 1, 6 ou 12 meses (cobrança única).
+    const [plusPixCycle, setPlusPixCycle] = useState('MONTHLY');
     const [metodo, setMetodo] = useState<Metodo>(initialProduto === 'plus' ? 'card' : 'pix');
     const [googleAvailable, setGoogleAvailable] = useState(false);
     // Enquanto não se sabe se é o app, o botão de pagar espera: decidir
@@ -533,11 +536,17 @@ function PaymentPageInner() {
     // ── Preço e textos do produto ─────────────────────────────────────────
     const selectedProPlan = catalog?.pro.find((p) => p.cycle === cycle);
     const proMonthly = catalog?.pro.find((p) => p.cycle === 'MONTHLY')?.value;
+    const plusPixPlans = catalog?.personal_plus_pix ?? [];
+    const plusCycle = metodo === 'pix' ? plusPixCycle : 'MONTHLY';
+    // Ciclo que vai na cobrança do plano do personal.
+    const chargeCycle = produto === 'personal-plus' ? plusCycle : cycle;
+    const plusPrice =
+        plusPixPlans.find((p) => p.cycle === plusCycle)?.value ?? catalog?.personal_plus.value;
     const price =
         produto === 'pro'
             ? selectedProPlan?.value
             : produto === 'personal-plus'
-              ? catalog?.personal_plus.value
+              ? plusPrice
               : produto === 'plano'
                 ? programId
                     ? storeProgram?.price
@@ -552,11 +561,16 @@ function PaymentPageInner() {
         const min = perMonth.length ? Math.min(...perMonth) : undefined;
         return min !== undefined && min < proMonthly ? min : undefined;
     })();
+    // Plano anual do PRO: destacado no PIX, onde o mensal obriga a gerar e
+    // pagar um QR Code novo todo mês.
+    const pixYearly = catalog?.pro.find((p) => p.cycle === 'YEARLY');
+    const pixYearlySaving =
+        pixYearly && proMonthly ? Math.floor((1 - pixYearly.value / (proMonthly * 12)) * 100) : 0;
     const productTitle =
         produto === 'pro'
             ? `Plano PRO — ${CYCLE_LABELS[cycle] ?? cycle}`
             : produto === 'personal-plus'
-              ? 'Personal Plus — Mensal'
+              ? `Personal Plus — ${CYCLE_LABELS[plusCycle] ?? plusCycle}`
               : keepsPlan
                 ? 'Manter o plano do seu personal'
                 : programId
@@ -569,7 +583,9 @@ function PaymentPageInner() {
     const priceNote =
         produto === 'pro'
             ? CYCLE_CHARGE[cycle]
-            : produto === 'plano'
+            : produto === 'personal-plus' && plusCycle !== 'MONTHLY'
+              ? `pagamento único, vale ${CYCLE_MONTHS[plusCycle]} meses`
+              : produto === 'plano'
               ? 'pagamento único'
               : 'cobrado todo mês';
     const benefits =
@@ -705,7 +721,7 @@ function PaymentPageInner() {
                 const before = await getProPlanStatus().catch(() => null);
                 prepaidBefore.current = before?.prepaid_until ?? '';
                 const res: SubscribePixResponse = await subscribeProPix(
-                    cycle,
+                    chargeCycle,
                     indicationReceiver || INDICATION_NONE,
                     produto === 'personal-plus' ? 'personal_plus' : 'pro',
                     alt,
@@ -810,7 +826,7 @@ function PaymentPageInner() {
         try {
             if (isPersonalPlan) {
                 const res = await subscribeProCard(
-                    cycle,
+                    chargeCycle,
                     form,
                     indicationReceiver || INDICATION_NONE,
                     produto === 'personal-plus' ? 'personal_plus' : 'pro',
@@ -1120,6 +1136,9 @@ function PaymentPageInner() {
                                             <span className={s.badgeSave}>
                                                 Economize {saving}%
                                             </span>
+                                        )}
+                                        {key === 'YEARLY' && (
+                                            <span className={s.badgePix}>Melhor no PIX</span>
                                         )}
                                     </span>
                                     <span className={s.optionSub}>
@@ -1471,11 +1490,9 @@ function PaymentPageInner() {
                         {isPersonalPlan ? (
                             <>
                                 O PIX paga{' '}
-                                {produto === 'pro' && cycle === 'SEMIANNUALLY'
-                                    ? '6 meses'
-                                    : produto === 'pro' && cycle === 'YEARLY'
-                                      ? '12 meses'
-                                      : '1 mês'}{' '}
+                                {CYCLE_MONTHS[chargeCycle] > 1
+                                    ? `${CYCLE_MONTHS[chargeCycle]} meses`
+                                    : '1 mês'}{' '}
                                 e não renova sozinho: avisamos 3 dias antes do fim. Para cobrança
                                 automática todo mês, use o cartão.
                             </>
@@ -1483,6 +1500,79 @@ function PaymentPageInner() {
                             'Pagamento único. Assim que o PIX cair, o plano é liberado sozinho.'
                         )}
                     </p>
+                )}
+                {metodo === 'pix' && !pix && produto === 'personal-plus' && plusPixPlans.length > 1 && (
+                    <div className={s.options} role="radiogroup" aria-label="Período do Plus no PIX">
+                        {plusPixPlans.map((p) => {
+                            const key = p.cycle ?? '';
+                            const months = CYCLE_MONTHS[key] ?? 1;
+                            const plusMonthly = catalog?.personal_plus.value;
+                            const saving =
+                                plusMonthly && months > 1
+                                    ? Math.floor((1 - p.value / (plusMonthly * months)) * 100)
+                                    : 0;
+                            const isSelected = plusPixCycle === key;
+                            return (
+                                <button
+                                    key={key}
+                                    type="button"
+                                    role="radio"
+                                    aria-checked={isSelected}
+                                    className={`${s.option} ${isSelected ? s.optionSelected : ''}`}
+                                    onClick={() => setPlusPixCycle(key)}
+                                >
+                                    <span className={s.radio} aria-hidden="true">
+                                        {isSelected && <FiCheck />}
+                                    </span>
+                                    <span className={s.optionMain}>
+                                        <span className={s.optionTop}>
+                                            <span className={s.optionName}>
+                                                {CYCLE_LABELS[key] ?? key}
+                                            </span>
+                                            {saving >= 1 && (
+                                                <span className={s.badgeSave}>
+                                                    Economize {saving}%
+                                                </span>
+                                            )}
+                                            {key === 'YEARLY' && (
+                                                <span className={s.badgePix}>Melhor no PIX</span>
+                                            )}
+                                        </span>
+                                        <span className={s.optionSub}>
+                                            {formatBRL(p.value)}
+                                            {months > 1 ? `, um PIX para ${months} meses` : ', um PIX por mês'}
+                                        </span>
+                                    </span>
+                                    <span className={s.optionAside}>
+                                        <strong>{formatBRL(p.value / months)}</strong>
+                                        <span>por mês</span>
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
+                {metodo === 'pix' && !pix && produto === 'pro' && cycle !== 'YEARLY' && pixYearly && (
+                    <div className={s.callout} role="note">
+                        <div>
+                            <p className={s.calloutTitle}>
+                                No PIX, o anual vale mais: um pagamento só para o ano todo
+                            </p>
+                            <p className={s.calloutText}>
+                                {formatBRL(pixYearly.value)} por 12 meses, ou{' '}
+                                <strong>{formatBRL(pixYearly.value / 12)} por mês</strong>
+                                {pixYearlySaving >= 1 && <> (economize {pixYearlySaving}%)</>}.
+                                Sem gerar um PIX novo todo mês.
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            className="btn btn-outline-secondary btn-sm"
+                            onClick={() => setCycle('YEARLY')}
+                        >
+                            Trocar para o anual
+                        </button>
+                    </div>
                 )}
                 {metodo === 'pix' && pix && (
                     <div className={s.pixBox}>
