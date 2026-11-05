@@ -74,6 +74,7 @@ import {
 import { computeAutoregulationDecision } from '@/libs/microcycleAutoregulation';
 import {
     cacheMacrocycleForOffline,
+    deleteOfflineMacrocycle,
     getOfflineMacrocycle,
 } from '@/libs/offline/downloadManager';
 import HelpTooltip from '@/components/atoms/HelpTooltip';
@@ -107,6 +108,8 @@ import {
 import { applySubstitutability, toExerciseLog } from '@/libs/exerciseLog';
 import { isOverdueBlockError } from '@/libs/overdueBlock';
 import OverdueBlockNotice from '@/components/features/OverdueBlockNotice';
+import LinkInactiveNotice from '@/components/features/LinkInactiveNotice';
+import { isLinkInactiveError } from '@/libs/linkInactive';
 import { labelPartsOf, trainingDisplayLabel } from '@/libs/trainingLabel';
 import dynamic from 'next/dynamic';
 import {
@@ -204,6 +207,9 @@ export default function MeusTreinosExercisesPage({
     // Personal pausou o acesso por mensalidade vencida (403
     // student_blocked_overdue): aviso próprio em vez do erro genérico.
     const [overdueBlocked, setOverdueBlocked] = useState(false);
+    // Personal desativou o aluno (403 student_link_inactive): o treino dele
+    // sai do alcance, e a cópia offline sai do aparelho.
+    const [linkInactive, setLinkInactive] = useState(false);
     const [sendStatus, setSendStatus] = useState<
         'idle' | 'success' | 'queued' | 'error'
     >('idle');
@@ -405,6 +411,9 @@ export default function MeusTreinosExercisesPage({
                     }
                 } else if (isOverdueBlockError(err)) {
                     setOverdueBlocked(true);
+                } else if (isLinkInactiveError(err)) {
+                    setLinkInactive(true);
+                    void deleteOfflineMacrocycle(macrocycleId);
                 } else {
                     setError('Não foi possível carregar os exercícios.');
                 }
@@ -986,6 +995,14 @@ export default function MeusTreinosExercisesPage({
         return (
             <div className="p-6">
                 <OverdueBlockNotice what="ao seu treino" />
+            </div>
+        );
+    }
+
+    if (linkInactive) {
+        return (
+            <div className="p-6">
+                <LinkInactiveNotice />
             </div>
         );
     }

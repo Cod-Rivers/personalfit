@@ -230,6 +230,16 @@ export async function pruneOfflineMacrocycles(keepIds: string[]): Promise<void> 
     }
 }
 
+/** Apaga um plano do aparelho (o servidor recusou: personal desativou o aluno). */
+export async function deleteOfflineMacrocycle(id: string): Promise<void> {
+    try {
+        const db = await getOfflineDB();
+        await db.delete('macrocycles', id);
+    } catch (err) {
+        console.warn('[offline] Falha ao apagar o plano do aparelho:', err);
+    }
+}
+
 export async function getOfflineMacrocycle(id: string): Promise<StoredMacrocycle | undefined> {
     const db = await getOfflineDB();
     return db.get('macrocycles', id);

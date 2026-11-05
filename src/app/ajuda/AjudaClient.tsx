@@ -1151,7 +1151,11 @@ const personalSections: HelpSection[] = [
                     <strong>Editar</strong> fica no rodapé do cartão; as ações{' '}
                     <strong>Ativar</strong>/<strong>Desativar</strong> e{' '}
                     <strong>Desvincular</strong> ficam no menu{' '}
-                    <strong>⋯</strong> do cartão. Desvincular não apaga a
+                    <strong>⋯</strong> do cartão. Desativar tira do aluno, na
+                    hora, o treino que você montou (o que ele comprou na loja
+                    continua com ele) e pausa a mensalidade automática; ao
+                    reativar, ele confirma o pedido e o treino volta.
+                    Desvincular não apaga a
                     conta do aluno — remove só o vínculo com você. Sem um
                     personal, ele passa a montar o próprio treino. No plano
                     gratuito você mantém{' '}

@@ -49,6 +49,8 @@ import {
     type WeeklyProgress,
 } from '@/libs/currentWeek';
 import OverdueBlockNotice from '@/components/features/OverdueBlockNotice';
+import LinkInactiveNotice from '@/components/features/LinkInactiveNotice';
+import { getMyLinkStatus, type LinkStatus } from '@/libs/studentLinkService';
 import { isOverdueBlockError } from '@/libs/overdueBlock';
 import GamificationBanner from '../../components/features/GamificationBanner';
 import {
@@ -228,6 +230,11 @@ export default function MeusTreinosPage() {
     // Personal pausou o acesso por mensalidade vencida (403
     // student_blocked_overdue): tela própria em vez de "Erro: ...".
     const [overdueBlocked, setOverdueBlocked] = useState(false);
+    // Vínculo com o personal fora de "active" (ele desativou o aluno, ou
+    // pediu para reativar e falta confirmar): o servidor já tira o treino
+    // dele da lista; a tela explica por quê em vez de "a caminho".
+    const [linkStatus, setLinkStatus] = useState<LinkStatus | null>(null);
+    const linkPaused = linkStatus === 'inactive' || linkStatus === 'pending';
     const [isOfflineData, setIsOfflineData] = useState(false);
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [isMounted, setIsMounted] = useState(false);
@@ -268,8 +275,13 @@ export default function MeusTreinosPage() {
                 // personal bloqueado no fim da espera do plano gratuito)
                 // saem também da cópia offline do aparelho.
                 void pruneOfflineMacrocycles(macros.map((m) => m.id));
+                const linkStatusRead = getMyLinkStatus().catch(() => null);
+                void linkStatusRead.then(setLinkStatus);
 
                 if (macros.length === 0) {
+                    // Sem esperar, a lista vazia piscava "a caminho" antes
+                    // do aviso de acesso pausado.
+                    setLinkStatus(await linkStatusRead);
                     setLoading(false);
                     return;
                 }
@@ -479,23 +491,27 @@ export default function MeusTreinosPage() {
                 <PersonalAnamnesisPendingBanner />
                 <StudentOverflowNotice />
                 <LockedPlansOffer />
-                <div className={ownStyles.emptyNotice} role="status">
-                    <span className={ownStyles.iconTile}>
-                        <FiClipboard size={20} aria-hidden="true" />
-                    </span>
-                    <div>
-                        <p className={ownStyles.emptyTitle}>
-                            {hasPersonal
-                                ? 'Seu treino está a caminho'
-                                : 'Você ainda não tem um treino'}
-                        </p>
-                        <p className={ownStyles.emptyText}>
-                            {hasPersonal
-                                ? 'Seu personal está preparando seu plano. Assim que ficar pronto, ele aparece aqui.'
-                                : 'Crie o seu, importe uma ficha em PDF ou comece com um plano pronto da loja.'}
-                        </p>
+                {linkPaused ? (
+                    <LinkInactiveNotice pending={linkStatus === 'pending'} />
+                ) : (
+                    <div className={ownStyles.emptyNotice} role="status">
+                        <span className={ownStyles.iconTile}>
+                            <FiClipboard size={20} aria-hidden="true" />
+                        </span>
+                        <div>
+                            <p className={ownStyles.emptyTitle}>
+                                {hasPersonal
+                                    ? 'Seu treino está a caminho'
+                                    : 'Você ainda não tem um treino'}
+                            </p>
+                            <p className={ownStyles.emptyText}>
+                                {hasPersonal
+                                    ? 'Seu personal está preparando seu plano. Assim que ficar pronto, ele aparece aqui.'
+                                    : 'Crie o seu, importe uma ficha em PDF ou comece com um plano pronto da loja.'}
+                            </p>
+                        </div>
                     </div>
-                </div>
+                )}
                 <PlanShortcuts
                     hasPersonal={hasPersonal}
                     showStore={showStore}
@@ -532,6 +548,9 @@ export default function MeusTreinosPage() {
                 <PersonalAnamnesisPendingBanner />
                 <StudentOverflowNotice />
                 <LockedPlansOffer />
+                {linkPaused && (
+                    <LinkInactiveNotice pending={linkStatus === 'pending'} />
+                )}
                 {isOfflineData && (
                     <div
                         className="alert alert-warning py-2 px-3 mb-3 d-flex align-items-center gap-2"
