@@ -292,6 +292,32 @@ export async function nativeBillingAvailable(): Promise<boolean> {
     }
 }
 
+/** Compra que o app achou na conta do Google ao abrir e que ainda precisa do verify. */
+export interface RecoveredPurchase {
+    productId: string;
+    productType: 'subs' | 'inapp';
+    purchaseToken: string;
+    /** obfuscatedAccountId da compra: a conta Venafit que comprou. */
+    accountId?: string;
+}
+
+/**
+ * Compras recuperadas pelo app (BillingBridge.takeRecoveredPurchases), que o
+ * app esquece ao entregar. Só pelo canal restrito: a lista leva tokens de
+ * compra, e a interface antiga é injetada em todo frame. Lista vazia fora do
+ * app, em versão antiga do app ou em erro.
+ */
+export async function nativeBillingTakeRecovered(): Promise<RecoveredPurchase[]> {
+    const port = hardenedPort();
+    if (!port) return [];
+    try {
+        const list = await request<unknown>(port, 'billing', 'takeRecoveredPurchases');
+        return Array.isArray(list) ? (list as RecoveredPurchase[]) : [];
+    } catch {
+        return [];
+    }
+}
+
 /** Inicia a compra. O resultado chega pelo CustomEvent 'venafit-billing'. */
 export function nativeBillingPurchase(
     productId: string,

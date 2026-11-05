@@ -442,8 +442,11 @@ export function isGooglePlayBillingAvailable(): Promise<boolean> {
 
 export interface BillingBridgeEvent {
     /** 'alternative': na tela de escolha do Google, o usuário escolheu pagar
-     *  pelo Asaas — nada foi cobrado; segue para PIX/cartão com o token. */
-    status: 'success' | 'alternative' | 'canceled' | 'error';
+     *  pelo Asaas — nada foi cobrado; segue para PIX/cartão com o token.
+     *  'pending': o Google aceitou a compra, mas o pagamento ainda não caiu
+     *  (boleto, cartão em análise). Sem token: quando concluir, o aviso do
+     *  Google entrega pelo servidor. */
+    status: 'success' | 'pending' | 'alternative' | 'canceled' | 'error';
     productId?: string;
     productType?: 'subs' | 'inapp';
     purchaseToken?: string;
@@ -453,9 +456,9 @@ export interface BillingBridgeEvent {
 
 /**
  * Dispara a compra nativa e resolve quando o app devolver o resultado via
- * CustomEvent 'venafit-billing': compra no Google Play (status 'success') ou
- * escolha do Asaas na tela do Google ('alternative'). Rejeita em
- * cancelamento/erro/timeout.
+ * CustomEvent 'venafit-billing': compra no Google Play (status 'success'),
+ * compra aceita com pagamento pendente ('pending') ou escolha do Asaas na
+ * tela do Google ('alternative'). Rejeita em cancelamento/erro/timeout.
  */
 export function launchGooglePlayPurchase(
     productId: string,
@@ -481,6 +484,7 @@ export function launchGooglePlayPurchase(
             window.removeEventListener('venafit-billing', onEvent as EventListener);
             if (
                 (detail?.status === 'success' && detail.purchaseToken) ||
+                detail?.status === 'pending' ||
                 (detail?.status === 'alternative' && detail.externalTransactionToken)
             ) {
                 resolve(detail);

@@ -91,6 +91,17 @@ describe('launchGooglePlayPurchase', () => {
         await expect(p2).rejects.toThrow('Falha na compra pelo Google Play');
     });
 
+    it('pending (pagamento ainda não caiu) resolve na hora, sem token, com a mensagem do app', async () => {
+        const p = launchGooglePlayPurchase('library_plan', 'inapp', 'conta-1');
+        emit({ status: 'pending', productId: 'library_plan', productType: 'inapp', message: 'Pagamento pendente' });
+        await expect(p).resolves.toEqual({
+            status: 'pending',
+            productId: 'library_plan',
+            productType: 'inapp',
+            message: 'Pagamento pendente',
+        });
+    });
+
     it('rejeita sucesso sem purchaseToken (não há o que verificar)', async () => {
         const p = launchGooglePlayPurchase('pro_monthly', 'subs', 'conta-1');
         emit({ status: 'success', productId: 'pro_monthly' });

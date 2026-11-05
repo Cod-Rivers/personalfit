@@ -8,6 +8,7 @@ import {
     nativeAuthSave,
     nativeBillingAvailable,
     nativeBillingPurchase,
+    nativeBillingTakeRecovered,
     nativeKeepScreenOn,
     nativeShareImage,
     nativeShareText,
@@ -196,6 +197,27 @@ describe('Google Play Billing', () => {
         expect(() => nativeBillingPurchase('pro', 'subs', 'u')).toThrow(
             /indisponível/,
         );
+    });
+
+    it('busca as compras recuperadas pelo canal', async () => {
+        const list = [
+            { productId: 'program_4990', productType: 'inapp', purchaseToken: 'tok-1' },
+        ];
+        const { sent } = installPort((msg) =>
+            msg.action === 'takeRecoveredPurchases' ? { ok: true, result: list } : undefined,
+        );
+        expect(await nativeBillingTakeRecovered()).toEqual(list);
+        expect(sent[0]).toMatchObject({ bridge: 'billing', action: 'takeRecoveredPurchases' });
+    });
+
+    it('compras recuperadas: nunca pela interface antiga; erro do app vira lista vazia', async () => {
+        // A interface antiga é injetada em todo frame: tokens de compra não passam por ela.
+        (window as unknown as Win).VenafitBilling = { isAvailable: () => true, purchase: vi.fn() };
+        expect(await nativeBillingTakeRecovered()).toEqual([]);
+
+        // App antigo, sem a ação: responde erro.
+        installPort(() => ({ ok: false, error: 'Ação desconhecida: billing.takeRecoveredPurchases' }));
+        expect(await nativeBillingTakeRecovered()).toEqual([]);
     });
 });
 

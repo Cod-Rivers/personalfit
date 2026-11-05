@@ -10,6 +10,7 @@ import HeaderCondicional from '@/components/organism/HeaderCondicional';
 import FCMProvider from '@/components/FCMProvider';
 import ServiceWorkerRegistrar from '@/components/system/ServiceWorkerRegistrar';
 import AcquisitionCapture from '@/components/system/AcquisitionCapture';
+import GooglePlayRecovery from '@/components/system/GooglePlayRecovery';
 import InstallPwaPrompt from '@/components/system/InstallPwaPrompt';
 import GoogleAdsense from '@/components/system/GoogleAdsense';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -81,6 +82,7 @@ export default async function RootLayout({
                 <NextIntlClientProvider>
                     <ServiceWorkerRegistrar />
                     <AcquisitionCapture />
+                    <GooglePlayRecovery />
                     <InstallPwaPrompt />
                     <ThemeProvider>
                         <BrandingProvider>

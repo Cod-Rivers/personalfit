@@ -303,6 +303,9 @@ function PaymentPageInner() {
     const [cardPending, setCardPending] = useState(false);
     // Texto do servidor para a compra de plano pendente ('' = o da assinatura).
     const [cardPendingText, setCardPendingText] = useState('');
+    // Compra no Google Play aceita com o pagamento pendente: o aviso do
+    // Google entrega pelo servidor, e o polling vê o plano chegar.
+    const [googlePending, setGooglePending] = useState('');
     // PIX de plano do personal: fim do período pago ANTES do QR Code ('' se
     // não havia). null = a compra em andamento não é PIX de plano. Ver
     // pixPlanPaymentConfirmed.
@@ -782,7 +785,18 @@ function PaymentPageInner() {
                 }).catch(() => undefined);
             }
 
+            // Para o polling reconhecer o plano novo, se a compra ficar pendente.
+            if (produto === 'plano') await snapshotPlans();
+
             const result = await launchGooglePlayPurchase(productId, productType, accountId);
+            if (result.status === 'pending') {
+                setGooglePending(
+                    result.message ||
+                        'Pagamento pendente no Google Play. O plano é liberado assim que o pagamento for aprovado.',
+                );
+                startPolling();
+                return;
+            }
             if (result.status === 'alternative') {
                 // Escolheu o Asaas na tela do Google: nada foi cobrado.
                 // Aparecem PIX/cartão, e a compra leva o token.
@@ -959,9 +973,14 @@ function PaymentPageInner() {
                     <div className={s.body} ref={bodyRef}>
                         <div className={s.bodyInner}>{parts.body}</div>
                     </div>
-                    {(parts.footer || error) && (
+                    {(parts.footer || error || googlePending) && (
                         <footer className={s.foot}>
                             <div className={s.footInner}>
+                                {googlePending && !error && (
+                                    <div className="alert alert-info mb-0 py-2" role="status">
+                                        {googlePending} Pode fechar esta tela; não compre de novo.
+                                    </div>
+                                )}
                                 {error && (
                                     <div
                                         ref={errorRef}
@@ -1429,7 +1448,13 @@ function PaymentPageInner() {
                 type="button"
                 className={`btn btn-gold ${s.cta}`}
                 onClick={handleGooglePlay}
-                disabled={loading || !catalog || !googleChecked || (!!programId && !storeProgram)}
+                disabled={
+                    loading ||
+                    !!googlePending ||
+                    !catalog ||
+                    !googleChecked ||
+                    (!!programId && !storeProgram)
+                }
             >
                 {loading ? spinner : 'Continuar para o pagamento'}
             </button>
