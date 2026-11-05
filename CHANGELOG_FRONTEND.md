@@ -1035,3 +1035,11 @@
 ## 2026-10-31 17:03 — River (via Claude Code)
 **Resumo:** O aviso do gcloud ("Updates are available…") só diz que existe uma versão mais nova das ferramentas do Google Cloud no seu computador. Não tem a ver com o Venafit nem com o comando que você rodou, que funcionou. Atualizar é opcional (`gcloud components update`). O item 6 está feito pela proposta recomendada. Nada foi commitado ainda. **O que muda:** - **Antes de abrir o Google Play numa compra avulsa:** o site grava no servidor o que vai ser comprado (programa, ref, plano em quarentena). Se essa gravação falhar, a compra segue normalmente. - **Quando o Google avisa que a compra foi concluída:*…
 **Arquivos:** page.test.tsx
+
+## 2026-10-31 17:21 — River (via Claude Code)
+**Resumo:** A segunda rodada e o item 6 foram commitados e enviados nos dois repositórios: | Repositório | Commits | |---|---| | Backend | `2513f7d` pagamentos (30 arquivos) · `44a0512` changelog | | Frontend | `ab10d44` pagamentos (4 arquivos) · `7e9c0a3` changelog | Ficaram fora dos commits, de propósito, os arquivos da outra sessão, que continuam sem commit: - Os testes do Google Play no backend e no frontend. - As mudanças dela no Android (`build.gradle.kts` e dois testes novos). Registrei as mudanças: - **`TAREFAS_PENDENTES.md`, item -52:** status com os commits, passos 7 e 8 marcados como feitos e a…
+**Commits:** Pagamentos, 2ª rodada: cartão em análise não vira recusa e compra do Play grava a intenção | Atualiza changelog
+
+## 2026-10-31 17:27 — River (via Claude Code)
+**Resumo:** Os dois deploys terminaram com sucesso e estão no ar: | Serviço | Build (UTC) | Commit | Revisão servindo | |---|---|---|---| | Backend | 20:25 | `44a0512` (inclui `2513f7d`) | `venafit-backend-00139` | | Frontend | 20:26 | `7e9c0a3` (inclui `ab10d44`) | `venafit-frontend-00194` | Com isso, o defeito que podia cancelar no Google a compra recém-feita saiu de produção. A segunda rodada e o item 6 já estão valendo. Anotei as revisões no item -52 de `TAREFAS_PENDENTES.md`. Nada disso foi testado ao vivo ainda. O roteiro está em `Todo/TESTES_A_FAZER.md`, na seção da auditoria de pagamentos. Fica co…
+**Arquivos:** CHANGELOG_FRONTEND.md
